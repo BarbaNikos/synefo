@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<topology>
+	<synefo-server>
+		<host>127.0.0.1</host>
+		<port>50108</port>
+	</synefo-server>
+	<component>
+		<type>Spout</type>
+		<executors>1</executors>
+		<name>spout_1</name>
+		<stat-report-timestamp>100</stat-report-timestamp>
+	</component>
+	<component>
+		<type>Bolt</type>
+		<executors>1</executors>
+		<name>bolt_1</name>
+		<stat-report-timestamp>100</stat-report-timestamp>
+		<upstream>
+			<task>spout_1</task>
+		</upstream>
+	</component>
+	<component>
+		<type>Bolt</type>
+		<executors>1</executors>
+		<name>bolt_2</name>
+		<stat-report-timestamp>100</stat-report-timestamp>
+		<upstream>
+			<task>bolt_1</task>
+		</upstream>
+	</component>
+	<scale-out-event>
+		<action>remove</action>
+		<component-a>spout_1</component-a>
+		<component-b>bolt_1</component-b>
+		<wait-time>2000</wait-time>
+	</scale-out-event>
+</topology>
