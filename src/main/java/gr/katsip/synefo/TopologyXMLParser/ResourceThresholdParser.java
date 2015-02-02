@@ -73,15 +73,15 @@ public class ResourceThresholdParser {
 								Pair<Number, Number> values = thresholds.get(resourceName);
 								if(resourceBound.equals("min")) {
 									if(resourceName.equals("cpu") || resourceName.equals("memory")) {
-										values.lowerBound = new Double(Double.parseDouble(resourceBound));
+										values.lowerBound = new Double(Double.parseDouble(resource_val));
 									}else {
-										values.lowerBound = new Integer(Integer.parseInt(resourceBound));
+										values.lowerBound = new Integer(Integer.parseInt(resource_val));
 									}
 								}else {
 									if(resourceName.equals("cpu") || resourceName.equals("memory")) {
-										values.upperBound = new Double(Double.parseDouble(resourceBound));
+										values.upperBound = new Double(Double.parseDouble(resource_val));
 									}else {
-										values.upperBound = new Integer(Integer.parseInt(resourceBound));
+										values.upperBound = new Integer(Integer.parseInt(resource_val));
 									}
 								}
 								thresholds.put(resourceName, values);
@@ -89,15 +89,15 @@ public class ResourceThresholdParser {
 								Pair<Number, Number> values = new Pair<Number, Number>();
 								if(resourceBound.equals("min")) {
 									if(resourceName.equals("cpu") || resourceName.equals("memory")) {
-										values.lowerBound = new Double(Double.parseDouble(resourceBound));
+										values.lowerBound = new Double(Double.parseDouble(resource_val));
 									}else {
-										values.lowerBound = new Integer(Integer.parseInt(resourceBound));
+										values.lowerBound = new Integer(Integer.parseInt(resource_val));
 									}
 								}else {
 									if(resourceName.equals("cpu") || resourceName.equals("memory")) {
-										values.upperBound = new Double(Double.parseDouble(resourceBound));
+										values.upperBound = new Double(Double.parseDouble(resource_val));
 									}else {
-										values.upperBound = new Integer(Integer.parseInt(resourceBound));
+										values.upperBound = new Integer(Integer.parseInt(resource_val));
 									}
 								}
 								thresholds.put(resourceName, values);
