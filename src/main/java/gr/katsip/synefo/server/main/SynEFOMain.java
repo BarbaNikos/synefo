@@ -13,7 +13,7 @@ public class SynEFOMain {
 //    	}
     	ResourceThresholdParser parser = new ResourceThresholdParser();
 //    	parser.parseThresholds(args[0]);
-    	parser.parseThresholds("resource_thresholds.xml");
+    	parser.parseThresholds("conf/resource_thresholds.xml");
     	SynEFO synEFO = new SynEFO("127.0.0.1", 2181, parser.get_thresholds());
 		synEFO.runServer();
     }
