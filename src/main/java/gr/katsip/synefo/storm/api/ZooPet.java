@@ -47,6 +47,8 @@ public class ZooPet {
 	public String scaleInZnodeName;
 
 	public volatile String pendingCommand;
+	
+	private boolean submittedScaleTask = false;
 
 	private String task_ip;
 
@@ -102,10 +104,6 @@ public class ZooPet {
 		pendingCommand = null;
 		return returnCommand;
 	}
-//
-//	public synchronized String getPendingScaleCommand() {
-//		return pendingCommand;
-//	}
 
 	public void start() {
 		try {
@@ -184,7 +182,7 @@ public class ZooPet {
 	};
 
 	public void setStatisticData(double cpu, double memory, Integer latency, Integer throughput) {
-		if(state == BoltState.ACTIVE && scaleOutZnodeName.equals("") && scaleInZnodeName.equals("")) {
+		if(state == BoltState.ACTIVE && scaleOutZnodeName.equals("") && scaleInZnodeName.equals("") && submittedScaleTask == false) {
 			if(this.cpu.upperBound < cpu || this.mem.upperBound < memory) {
 				/**
 				 * Create also a node under scale-out-event znode with the name of the bolt.
@@ -194,6 +192,7 @@ public class ZooPet {
 //				LOG.info("setStatisticData(): Over-utilization detected. Generating scale out command (" + task_name + ":" + task_id + "@" + task_ip + ")...");
 				System.out.println("setStatisticData(): Over-utilization detected. Generating scale out command (" + task_name + ":" + task_id + "@" + task_ip + ")...");
 				createScaleOutTask();
+				submittedScaleTask = true;
 			}else if(this.cpu.lowerBound > cpu || this.mem.lowerBound > memory) {
 				/**
 				 * Create also a node under scale-in-event znode with the name of the bolt.
@@ -203,8 +202,13 @@ public class ZooPet {
 //				LOG.info("setStatisticData(): Under-utilization detected. Generating scale out command (" + task_name + ":" + task_id + "@" + task_ip + ")...");
 				System.out.println("setStatisticData(): Under-utilization detected. Generating scale out command (" + task_name + ":" + task_id + "@" + task_ip + ")...");
 				createScaleInTask();
+				submittedScaleTask = true;
 			}
 		}
+	}
+	
+	public void resetSubmittedScaleFlag() {
+		submittedScaleTask = false;
 	}
 
 	private void createScaleOutTask() {

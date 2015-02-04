@@ -463,6 +463,7 @@ public class SynEFOBolt extends BaseRichBolt {
 				}
 			}
 		}
+		pet.resetSubmittedScaleFlag();
 	}
 
 	public List<Values> getStateValue() {
