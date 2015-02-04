@@ -35,8 +35,7 @@ public class FilterOperator<T> implements AbstractOperator, Serializable {
 	}
 
 	@Override
-	public void init(Fields stateSchema, List<Values> stateValues) {
-		this.stateSchema = stateSchema;
+	public void init(List<Values> stateValues) {
 		this.stateValues = stateValues;
 	}
 
@@ -46,7 +45,11 @@ public class FilterOperator<T> implements AbstractOperator, Serializable {
 		@SuppressWarnings("unchecked")
 		T tValue = (T) values.get(fields.fieldIndex(field));
 		if(comparator.compare(value, tValue) == 0) {
-			returnTuples.add(new Values(values));
+			Values newValues = new Values();
+			for(int i = 0; i < values.size(); i++) {
+				newValues.add(values.get(i));
+			}
+			returnTuples.add(newValues);
 			return returnTuples;
 		}
 		return returnTuples;
@@ -74,6 +77,11 @@ public class FilterOperator<T> implements AbstractOperator, Serializable {
 	@Override
 	public void setOutputSchema(Fields _output_schema) {
 		output_schema = _output_schema;
+	}
+
+	@Override
+	public void setStateSchema(Fields stateSchema) {
+		this.stateSchema = new Fields(stateSchema.toList());
 	}
 
 }

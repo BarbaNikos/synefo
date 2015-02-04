@@ -173,8 +173,11 @@ public class SynEFOSpout extends BaseRichSpout {
 			/**
 			 * Add SYNEFO_HEADER in the beginning
 			 */
-			values.add(new String(""));
-			values.addAll(_tuple_producer.nextTuple(_int_active_downstream_tasks.get(idx)));
+			values.add("SYNEFO_HEADER");
+			Values returnedValues = _tuple_producer.nextTuple(_int_active_downstream_tasks.get(idx));
+			for(int i = 0; i < returnedValues.size(); i++) {
+				values.add(returnedValues.get(i));
+			}
 			_collector.emitDirect(_int_active_downstream_tasks.get(idx), values);
 			if(idx >= (_int_active_downstream_tasks.size() - 1)) {
 				idx = 0;
@@ -220,93 +223,21 @@ public class SynEFOSpout extends BaseRichSpout {
 			strBuild.append(SynEFOConstant.COMP_NUM_TAG + ":" + _downstream_tasks.size() + "/");
 			strBuild.append(SynEFOConstant.COMP_IP_TAG + ":" + taskIp + "/");
 			for(Integer d_task : _int_downstream_tasks) {
+				/**
+				 * TODO: Check whether there are problems with not populating the rest of the fields
+				 */
 				_collector.emitDirect(d_task, new Values(strBuild.toString()));
 			}
 		}
-		/*
-		_stat_tuple_counter += 1;
-		if(_stat_tuple_counter == this._stat_report_timestamp) {
-			try {
-				_output.writeObject(_stats);
-				_output.flush();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			SynEFOMessage command = null;
-			try {
-				command = (SynEFOMessage) _input.readObject();
-			} catch (ClassNotFoundException | IOException e) {
-				e.printStackTrace();
-			}
-			if(command != null && command._type.equals(SynEFOMessage.Type.SCLOUT)) {
-				String newTask = null;
-				String newTaskIp = null;
-				if(command._values.containsKey("ACTION")) {
-					if(command._values.get("ACTION").equals("ADD")) {
-						if(command._values.containsKey("NEW_TASK")) {
-							newTask = command._values.get("NEW_TASK");
-							newTaskIp = command._values.get("NEW_TASK_IP");
-							if(_downstream_tasks.lastIndexOf(newTask) != -1 && _active_downstream_tasks.lastIndexOf(newTask) == -1) {
-								_active_downstream_tasks.add(newTask);
-								StringTokenizer strTok = new StringTokenizer(newTask, ":");
-								strTok.nextToken();
-								_int_active_downstream_tasks.add(Integer.parseInt(strTok.nextToken()));
-								idx = 0;
-								// Populate values for punctuation tuple
-								StringBuilder strBuild = new StringBuilder();
-								strBuild.append(SynEFOConstant.PUNCT_TUPLE_TAG + "/");
-								strBuild.append(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.ADD_ACTION + "/");
-								strBuild.append(SynEFOConstant.COMP_TAG + ":" + newTask + "/");
-								strBuild.append(SynEFOConstant.COMP_NUM_TAG + ":" + _downstream_tasks.size() + "/");
-								strBuild.append(SynEFOConstant.COMP_IP_TAG + ":" + newTaskIp + "/");
-								for(Integer d_task : _int_downstream_tasks) {
-									_collector.emitDirect(d_task, new Values(strBuild.toString()));
-								}
-							}
-						}
-					}else if(command._values.get("ACTION").equals("REMOVE")) {
-						if(command._values.containsKey("NEW_TASK")) {
-							newTask = command._values.get("NEW_TASK");
-							newTaskIp = command._values.get("NEW_TASK_IP");
-							if(_downstream_tasks.lastIndexOf(newTask) != -1 && _active_downstream_tasks.lastIndexOf(newTask) != -1) {
-								_active_downstream_tasks.remove(_active_downstream_tasks.indexOf(newTask));
-								StringTokenizer strTok = new StringTokenizer(newTask, ":");
-								strTok.nextToken();
-								_int_active_downstream_tasks.remove(_int_active_downstream_tasks.indexOf(Integer.parseInt(strTok.nextToken())));
-								idx = 0;
-								// Populate values for punctuation tuple
-								StringBuilder strBuild = new StringBuilder();
-								strBuild.append(SynEFOConstant.PUNCT_TUPLE_TAG + "/");
-								strBuild.append(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.REMOVE_ACTION + "/");
-								strBuild.append(SynEFOConstant.COMP_TAG + ":" + newTask + "/");
-								strBuild.append(SynEFOConstant.COMP_NUM_TAG + ":" + _downstream_tasks.size() + "/");
-								strBuild.append(SynEFOConstant.COMP_IP_TAG + ":" + newTaskIp + "/");
-								for(Integer d_task : _int_downstream_tasks) {
-									_collector.emitDirect(d_task, new Values(strBuild.toString()));
-								}
-							}
-						}
-					}else {
-						System.out.println("+EFO-SPOUT: Received a SCLOUT command with unrecognizable ACTION (" + 
-								command._values.get("ACTION") + ")");
-					}
-				}else {
-					System.out.println("+EFO-SPOUT: Received a SCLOUT command with no ACTION value");
-				}
-			}else if(command != null && command._type.equals(SynEFOMessage.Type.DUMMY)) {
-				// Nothing to do in case of DUMMY variable
-				System.out.println("+EFO-SPOUT: Received a DUMMY command");
-			}else {
-				// Unrecognized message type
-				System.out.println("+EFO-SPOUT: Received an unrecognized message");
-			}
-			_stat_tuple_counter = 0;
-		}
-		*/
 	}
 
 	public void open(@SuppressWarnings("rawtypes") Map conf, TopologyContext context,
 			SpoutOutputCollector collector) {
+		try {
+			_task_ip = InetAddress.getLocalHost().getHostAddress();
+		} catch (UnknownHostException e1) {
+			e1.printStackTrace();
+		}
 		pet = new ZooPet("127.0.0.1", 2181, _task_name, _task_id, _task_ip);
 		if(_active_downstream_tasks == null && _downstream_tasks == null) {
 			registerToSynEFO();

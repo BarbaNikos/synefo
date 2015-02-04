@@ -21,8 +21,7 @@ public class CountAggrOperator implements AbstractOperator {
 	}
 	
 	@Override
-	public void init(Fields stateSchema, List<Values> stateValues) {
-		this.stateSchema = new Fields(stateSchema.toList());
+	public void init(List<Values> stateValues) {
 		this.stateValues = stateValues;
 	}
 
@@ -65,6 +64,11 @@ public class CountAggrOperator implements AbstractOperator {
 	@Override
 	public void setOutputSchema(Fields _output_schema) {
 		output_schema = _output_schema;
+	}
+
+	@Override
+	public void setStateSchema(Fields stateSchema) {
+		this.stateSchema = new Fields(stateSchema.toList());
 	}
 
 }

@@ -3,7 +3,7 @@ package gr.katsip.synefo.storm.api;
 import java.io.IOException;
 import java.util.StringTokenizer;
 
-import org.apache.log4j.Logger;
+//import org.apache.log4j.Logger;
 import org.apache.zookeeper.AsyncCallback.DataCallback;
 import org.apache.zookeeper.AsyncCallback.VoidCallback;
 import org.apache.zookeeper.CreateMode;
@@ -18,7 +18,7 @@ import org.apache.zookeeper.data.Stat;
 
 public class ZooPet {
 	
-	private final static Logger LOG = Logger.getLogger(ZooPet.class.getName());
+//	private final static Logger LOG = Logger.getLogger(ZooPet.class.getName());
 
 	enum BoltState { INIT, SYNEFO_READY, REGISTERED, ACTIVE };
 
@@ -60,6 +60,10 @@ public class ZooPet {
 		scaleInZnodeName = "";
 		pendingCommand = null;
 		this.task_ip = task_ip;
+		cpu = new Pair<Double, Double>();
+		mem = new Pair<Double, Double>();
+		latency = new Pair<Integer, Integer>();
+		throughput = new Pair<Integer, Integer>();
 	}
 
 	Watcher boltWatcher = new Watcher() {
@@ -69,7 +73,8 @@ public class ZooPet {
 					/**
 					 * Get scale command, and clean up the directory
 					 */
-					LOG.info("boltWatcher.process(): Children of node " + e.getPath() + " have changed. Time to check the scale-command.");
+//					LOG.info("boltWatcher.process(): Children of node " + e.getPath() + " have changed. Time to check the scale-command.");
+					System.out.println("boltWatcher.process(): Children of node " + e.getPath() + " have changed. Time to check the scale-command.");
 					getScaleCommand();
 					setBoltNodeWatch();
 				}
@@ -83,7 +88,8 @@ public class ZooPet {
 			pendingCommand = new String(zk.getData("/synefo/bolt-tasks/" + task_name + ":" + task_id + "@" + task_ip, 
 					boltWatcher, 
 					stat));
-			LOG.info("getScaleCommand(): Received scale command \"" + pendingCommand + "\" (" + task_name + ":" + task_id + "@" + task_ip + ")");
+//			LOG.info("getScaleCommand(): Received scale command \"" + pendingCommand + "\" (" + task_name + ":" + task_id + "@" + task_ip + ")");
+			System.out.println("getScaleCommand(): Received scale command \"" + pendingCommand + "\" (" + task_name + ":" + task_id + "@" + task_ip + ")");
 		} catch (KeeperException e) {
 			e.printStackTrace();
 		} catch (InterruptedException e) {
@@ -111,20 +117,21 @@ public class ZooPet {
 						CreateMode.PERSISTENT);
 				Stat stat = new Stat();
 				String thresholds = new String(zk.getData("/synefo/scale-out-event", false, stat));
-				StringTokenizer strTok = new StringTokenizer(new String(thresholds), ",");
+				StringTokenizer strTok = new StringTokenizer(thresholds, ",");
 				cpu.upperBound = Double.parseDouble(strTok.nextToken());
 				mem.upperBound = Double.parseDouble(strTok.nextToken());
 				latency.upperBound = Integer.parseInt(strTok.nextToken());
 				throughput.upperBound = Integer.parseInt(strTok.nextToken());
 				
 				thresholds = new String(zk.getData("/synefo/scale-in-event", false, stat));
-				strTok = new StringTokenizer(new String(thresholds), ",");
+				strTok = new StringTokenizer(thresholds, ",");
 				cpu.lowerBound = Double.parseDouble(strTok.nextToken());
 				mem.lowerBound = Double.parseDouble(strTok.nextToken());
 				latency.lowerBound = Integer.parseInt(strTok.nextToken());
 				throughput.lowerBound = Integer.parseInt(strTok.nextToken());
 				state = BoltState.ACTIVE;
-				LOG.info("start(): Initialization successful (" + task_name + ":" + task_id + "@" + task_ip + ")");
+//				LOG.info("start(): Initialization successful (" + task_name + ":" + task_id + "@" + task_ip + ")");
+				System.out.println("start(): Initialization successful (" + task_name + ":" + task_id + "@" + task_ip + ")");
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -138,7 +145,8 @@ public class ZooPet {
 	public void stop() {
 		try {
 			zk.close();
-			LOG.info("stop(): Closing connection (" + task_name + ":" + task_id + "@" + task_ip + ")");
+//			LOG.info("stop(): Closing connection (" + task_name + ":" + task_id + "@" + task_ip + ")");
+			System.out.println("stop(): Closing connection (" + task_name + ":" + task_id + "@" + task_ip + ")");
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -156,14 +164,18 @@ public class ZooPet {
 				Stat stat) {
 			switch(Code.get(rc)) {
 			case CONNECTIONLOSS:
-				LOG.info("boltNodeDataCallback(): CONNECTIONLOSS");
+//				LOG.info("boltNodeDataCallback(): CONNECTIONLOSS");
+				System.out.println("boltNodeDataCallback(): CONNECTIONLOSS");
 				setBoltNodeWatch();
 				break;
 			case OK:
-				LOG.info("boltNodeDataCallback(): OK");
+//				LOG.info("boltNodeDataCallback(): OK");
+				System.out.println("boltNodeDataCallback(): OK");
 				break;
 			default:
-				LOG.error("boltNodeDataCallback(): Unexpected scenario: " + 
+//				LOG.error("boltNodeDataCallback(): Unexpected scenario: " + 
+//						KeeperException.create(Code.get(rc), path));
+				System.out.println("boltNodeDataCallback(): Unexpected scenario: " + 
 						KeeperException.create(Code.get(rc), path));
 				break;
 
@@ -179,7 +191,8 @@ public class ZooPet {
 				 * This way, the SynEFO coordination thread will understand that the bolt 
 				 * is overloaded and that it needs to scale-out.
 				 */
-				LOG.info("setStatisticData(): Over-utilization detected. Generating scale out command (" + task_name + ":" + task_id + "@" + task_ip + ")...");
+//				LOG.info("setStatisticData(): Over-utilization detected. Generating scale out command (" + task_name + ":" + task_id + "@" + task_ip + ")...");
+				System.out.println("setStatisticData(): Over-utilization detected. Generating scale out command (" + task_name + ":" + task_id + "@" + task_ip + ")...");
 				createScaleOutTask();
 			}else if(this.cpu.lowerBound > cpu || this.mem.lowerBound > memory) {
 				/**
@@ -187,7 +200,8 @@ public class ZooPet {
 				 * This way, the SynEFO coordination thread will understand that the bolt 
 				 * is overloaded and that it needs to scale-out.
 				 */
-				LOG.info("setStatisticData(): Under-utilization detected. Generating scale out command (" + task_name + ":" + task_id + "@" + task_ip + ")...");
+//				LOG.info("setStatisticData(): Under-utilization detected. Generating scale out command (" + task_name + ":" + task_id + "@" + task_ip + ")...");
+				System.out.println("setStatisticData(): Under-utilization detected. Generating scale out command (" + task_name + ":" + task_id + "@" + task_ip + ")...");
 				createScaleInTask();
 			}
 		}
@@ -207,21 +221,27 @@ public class ZooPet {
 				String name) {
 			switch(Code.get(rc)) {
 			case CONNECTIONLOSS:
-				LOG.info("createScaleOutEventCallback(): CONNECTIONLOSS for scale-event-creation");
+//				LOG.info("createScaleOutEventCallback(): CONNECTIONLOSS for scale-event-creation");
+				System.out.println("createScaleOutEventCallback(): CONNECTIONLOSS for scale-event-creation");
 				createScaleOutTask();
 				break;
 			case NONODE:
-				LOG.info("createScaleOutEventCallback(): NONODE for scale-event-creation");
+//				LOG.info("createScaleOutEventCallback(): NONODE for scale-event-creation");
+				System.out.println("createScaleOutEventCallback(): NONODE for scale-event-creation");
 				break;
 			case NODEEXISTS:
-				LOG.info("createScaleOutEventCallback(): NODEEXISTS for scale-event-creation");
+//				LOG.info("createScaleOutEventCallback(): NODEEXISTS for scale-event-creation");
+				System.out.println("createScaleOutEventCallback(): NODEEXISTS for scale-event-creation");
 				break;
 			case OK:
 				scaleOutZnodeName = name;
-				LOG.info("createScaleOutEventCallback(): OK for scale-event-creation");
+//				LOG.info("createScaleOutEventCallback(): OK for scale-event-creation");
+				System.out.println("createScaleOutEventCallback(): OK for scale-event-creation");
 				break;
 			default:
-				LOG.error("createScaleOutEventCallback(): Unexpected scenario: " + 
+//				LOG.error("createScaleOutEventCallback(): Unexpected scenario: " + 
+//						KeeperException.create(Code.get(rc), path));
+				System.out.println("createScaleOutEventCallback(): Unexpected scenario: " + 
 						KeeperException.create(Code.get(rc), path));
 				break;
 
@@ -243,21 +263,27 @@ public class ZooPet {
 				String name) {
 			switch(Code.get(rc)) {
 			case CONNECTIONLOSS:
-				LOG.info("createScaleInEventCallback(): CONNECTIONLOSS for scale-event-creation");
+//				LOG.info("createScaleInEventCallback(): CONNECTIONLOSS for scale-event-creation");
+				System.out.println("createScaleInEventCallback(): CONNECTIONLOSS for scale-event-creation");
 				createScaleOutTask();
 				break;
 			case NONODE:
-				LOG.info("createScaleInEventCallback(): NONODE for scale-event-creation");
+//				LOG.info("createScaleInEventCallback(): NONODE for scale-event-creation");
+				System.out.println("createScaleInEventCallback(): NONODE for scale-event-creation");
 				break;
 			case NODEEXISTS:
-				LOG.info("createScaleInEventCallback(): NODEEXISTS for scale-event-creation");
+//				LOG.info("createScaleInEventCallback(): NODEEXISTS for scale-event-creation");
+				System.out.println("createScaleInEventCallback(): NODEEXISTS for scale-event-creation");
 				break;
 			case OK:
 				scaleInZnodeName = name;
-				LOG.info("createScaleInEventCallback(): OK for scale-event-creation");
+//				LOG.info("createScaleInEventCallback(): OK for scale-event-creation");
+				System.out.println("createScaleInEventCallback(): OK for scale-event-creation");
 				break;
 			default:
-				LOG.error("createScaleInEventCallback(): Unexpected scenario: " + 
+//				LOG.error("createScaleInEventCallback(): Unexpected scenario: " + 
+//						KeeperException.create(Code.get(rc), path));
+				System.out.println("createScaleInEventCallback(): Unexpected scenario: " + 
 						KeeperException.create(Code.get(rc), path));
 				break;
 

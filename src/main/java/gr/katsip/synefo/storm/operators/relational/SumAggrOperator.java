@@ -22,8 +22,7 @@ public class SumAggrOperator implements AbstractOperator {
 		summation_attribute = _summation_attribute;
 	}
 	
-	public void init(Fields stateSchema, List<Values> stateValues) {
-		this.stateSchema = new Fields(stateSchema.toList());
+	public void init(List<Values> stateValues) {
 		this.stateValues = stateValues;
 	}
 
@@ -61,6 +60,11 @@ public class SumAggrOperator implements AbstractOperator {
 			List<Values> receivedStateValues) {
 		int sum = (int) receivedStateValues.get(0).get(receivedStateSchema.fieldIndex(summation_attribute));
 		this.sum += sum;
+	}
+
+	@Override
+	public void setStateSchema(Fields stateSchema) {
+		this.stateSchema = new Fields(stateSchema.toList());
 	}
 
 }

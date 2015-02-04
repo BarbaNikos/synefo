@@ -70,8 +70,6 @@ public class SynEFOBolt extends BaseRichBolt {
 
 	private SynEFOMetric metricObject;
 	
-	private Fields stateSchema;
-	
 	private List<Values> stateValues;
 
 	private ZooPet pet;
@@ -88,8 +86,7 @@ public class SynEFOBolt extends BaseRichBolt {
 		_operator = operator;
 		_tuple_counter = 0;
 		stateValues = new ArrayList<Values>();
-		stateSchema = new Fields(operator.getOutputSchema().toList());
-		operator.init(stateSchema, stateValues);
+		operator.init(stateValues);
 	}
 
 	/**
@@ -182,6 +179,11 @@ public class SynEFOBolt extends BaseRichBolt {
 	public void prepare(@SuppressWarnings("rawtypes") Map conf, TopologyContext context, OutputCollector collector) {
 		_collector = collector;
 		_task_id = context.getThisTaskId();
+		try {
+			_task_ip = InetAddress.getLocalHost().getHostAddress();
+		} catch (UnknownHostException e1) {
+			e1.printStackTrace();
+		}
 		pet = new ZooPet("127.0.0.1", 2181, _task_name, _task_id, _task_ip);
 		if(_downstream_tasks == null && _active_downstream_tasks == null) {
 			registerToSynEFO();
@@ -196,24 +198,29 @@ public class SynEFOBolt extends BaseRichBolt {
 		 * If punctuation tuple is received:
 		 * Perform Share of state and return execution
 		 */
-		StringTokenizer txt = new StringTokenizer(tuple.getStringByField("SYNEFO_HEADER"), "/");
-		String prefix = txt.nextToken();
-		if(prefix.equals(SynEFOConstant.PUNCT_TUPLE_TAG)) {
-			handlePunctuationTuple(tuple);
-			return;
+		String synefoHeader = tuple.getString(tuple.getFields().fieldIndex("SYNEFO_HEADER"));
+		if(synefoHeader != null && synefoHeader.equals("") == false) {
+			StringTokenizer txt = new StringTokenizer(synefoHeader, "/");
+			String prefix = txt.nextToken();
+			if(prefix.equals(SynEFOConstant.PUNCT_TUPLE_TAG)) {
+				handlePunctuationTuple(tuple);
+				return;
+			}
 		}
 		Values produced_values = null;
-		Values values = new Values(tuple.getValues());
+		Values values = new Values(tuple.getValues().toArray());
+		values.remove(tuple.getFields().fieldIndex("SYNEFO_HEADER"));
 		List<String> fieldList = tuple.getFields().toList();
 		fieldList.remove(0);
 		Fields fields = new Fields(fieldList);
-		values.remove(0);
 		if(_int_active_downstream_tasks != null && _int_active_downstream_tasks.size() > 0) {
 			List<Values> returnedTuples = _operator.execute(fields, values);
 			for(Values v : returnedTuples) {
 				produced_values = new Values();
-				produced_values.add("");
-				produced_values.addAll(v);
+				produced_values.add("SYNEFO_HEADER");
+				for(int i = 0; i < v.size(); i++) {
+					produced_values.add(v.get(i));
+				}
 				_collector.emitDirect(_int_active_downstream_tasks.get(idx), produced_values);
 			}
 			_collector.ack(tuple);
@@ -226,8 +233,10 @@ public class SynEFOBolt extends BaseRichBolt {
 			List<Values> returnedTuples = _operator.execute(fields, values);
 			for(Values v : returnedTuples) {
 				produced_values = new Values();
-				produced_values.add("");
-				produced_values.addAll(v);
+				produced_values.add("SYNEFO_HEADER");
+				for(int i = 0; i < v.size(); i++) {
+					produced_values.add(v.get(i));
+				}
 				_collector.emit(produced_values);
 			}
 			_collector.ack(tuple);
@@ -271,103 +280,14 @@ public class SynEFOBolt extends BaseRichBolt {
 			strBuild.append(SynEFOConstant.COMP_TAG + ":" + task + "/");
 			strBuild.append(SynEFOConstant.COMP_NUM_TAG + ":" + _downstream_tasks.size() + "/");
 			strBuild.append(SynEFOConstant.COMP_IP_TAG + ":" + taskIp + "/");
+			/**
+			 * TODO: Check whether I have to populate other fields 
+			 * after SYNEFO_HEADER
+			 */
 			for(Integer d_task : _int_downstream_tasks) {
 				_collector.emitDirect(d_task, new Values(strBuild.toString()));
 			}
 		}
-		//		_stat_tuple_counter += 1;
-		/*
-		if(_stat_tuple_counter == this._stat_report_timestamp) {
-			try {
-				_output.writeObject(_stats);
-				_output.flush();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			//			printState();
-			// Check incoming control messages 
-
-			SynEFOMessage command = null;
-			try {
-				command = (SynEFOMessage) _input.readObject();
-			} catch (ClassNotFoundException | IOException e) {
-				e.printStackTrace();
-			}
-			if(command != null && command._type.equals(SynEFOMessage.Type.SCLOUT)) {
-				if(command._values.containsKey("ACTION")) {
-					String newTask = null;
-					String newTaskIp = null;
-					if(command._values.get("ACTION").equals("ADD")) {
-						if(command._values.containsKey("NEW_TASK")) {
-							newTask = command._values.get("NEW_TASK");
-							newTaskIp = command._values.get("NEW_TASK_IP");
-							System.out.println("***************BOLT-TASK-IP: " + newTaskIp + "******************");
-							if(_downstream_tasks.lastIndexOf(newTask) != -1 && _active_downstream_tasks.lastIndexOf(newTask) == -1) {
-								_active_downstream_tasks.add(newTask);
-								StringTokenizer strTok = new StringTokenizer(newTask, ":");
-								strTok.nextToken();
-								Integer intTask = Integer.parseInt(strTok.nextToken());
-								_int_active_downstream_tasks.add(intTask);
-								idx = 0;
-								// Populate values for punctuation tuple
-								StringBuilder strBuild = new StringBuilder();
-								strBuild.append(SynEFOConstant.PUNCT_TUPLE_TAG + "/");
-								strBuild.append(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.ADD_ACTION + "/");
-								strBuild.append(SynEFOConstant.COMP_TAG + ":" + newTask + "/");
-								strBuild.append(SynEFOConstant.COMP_NUM_TAG + ":" + _downstream_tasks.size() + "/");
-								strBuild.append(SynEFOConstant.COMP_IP_TAG + ":" + newTaskIp + "/");
-								for(String d_task : _downstream_tasks) {
-									strTok = new StringTokenizer(d_task, ":");
-									strTok.nextToken();
-									String _t_id = strTok.nextToken();
-									Integer task = Integer.parseInt(_t_id);
-									_collector.emitDirect(task, new Values(strBuild.toString()));
-								}
-							}
-						}
-					}else if(command._values.get("ACTION").equals("REMOVE")) {
-						if(command._values.containsKey("NEW_TASK")) {
-							newTask = command._values.get("NEW_TASK");
-							newTaskIp = command._values.get("NEW_TASK_IP");
-							System.out.println("***************BOLT-TASK-IP: " + newTaskIp + "******************");
-							if(_downstream_tasks.lastIndexOf(newTask) != -1 && _active_downstream_tasks.lastIndexOf(newTask) != -1) {
-								_active_downstream_tasks.remove(_active_downstream_tasks.indexOf(newTask));
-								StringTokenizer strTok = new StringTokenizer(newTask, ":");
-								strTok.nextToken();
-								Integer intTask = Integer.parseInt(strTok.nextToken());
-								_int_active_downstream_tasks.remove(_int_active_downstream_tasks.indexOf(intTask));
-								idx = 0;
-								// Populate values for punctuation tuple
-								StringBuilder strBuild = new StringBuilder();
-								strBuild.append(SynEFOConstant.PUNCT_TUPLE_TAG + "/");
-								strBuild.append(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.REMOVE_ACTION + "/");
-								strBuild.append(SynEFOConstant.COMP_TAG + ":" + newTask + "/");
-								strBuild.append(SynEFOConstant.COMP_NUM_TAG + ":" + _downstream_tasks.size() + "/");
-								strBuild.append(SynEFOConstant.COMP_IP_TAG + ":" + newTaskIp + "/");
-								for(String d_task : _downstream_tasks) {
-									strTok = new StringTokenizer(d_task, ":");
-									strTok.nextToken();
-									String _t_id = strTok.nextToken();
-									Integer task = Integer.parseInt(_t_id);
-									_collector.emitDirect(task, new Values(strBuild.toString()));
-								}
-							}
-						}
-					}else {
-						System.out.println("+EFO-BOLT: Received a SCLOUT command with unrecognizable ACTION (" + 
-								command._values.get("ACTION") + ")");
-					}
-				}else {
-					System.out.println("+EFO-BOLT: Received a SCLOUT command with no ACTION value");
-				}
-			}else if(command != null && command._type.equals(SynEFOMessage.Type.DUMMY)) {
-				System.out.println("+EFO-BOLT: Received a DUMMY command");
-			}else {
-				System.out.println("+EFO-BOLT: Received an unrecognized message type");
-			}
-			_stat_tuple_counter = 0;
-		}
-		 */
 	}
 
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
@@ -386,7 +306,7 @@ public class SynEFOBolt extends BaseRichBolt {
 		String component_id = null;
 		Integer comp_num = -1;
 		String ip = null;
-		StringTokenizer str_tok = new StringTokenizer(tuple.getString(0), "/");
+		StringTokenizer str_tok = new StringTokenizer((String) tuple.getValues().get(tuple.getFields().fieldIndex("SYNEFO_HEADER")), "/");
 		while(str_tok.hasMoreTokens()) {
 			String s = str_tok.nextToken();
 			if((s.equals(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.ADD_ACTION) || 

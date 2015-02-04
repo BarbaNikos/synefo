@@ -68,6 +68,23 @@ public class SynEFOCoordinatorThread implements Runnable {
 		 * the physicalTopology is updated with the 
 		 * task-ids
 		 */
+		/**
+		 * Update ZooKeeper entries and Nodes
+		 */
+		tamer = new ZooMaster(zooHost, zooPort, new ScaleFunction(_physicalTopology._topology, _runningTopology._topology));
+		
+		tamer.start();
+		tamer.set_scaleout_thresholds((double) resource_thresholds.get("cpu").upperBound, 
+				(double) resource_thresholds.get("memory").upperBound, 
+				(int) resource_thresholds.get("latency").upperBound, 
+				(int) resource_thresholds.get("throughput").upperBound);
+		tamer.set_scalein_thresholds((double) resource_thresholds.get("cpu").lowerBound, 
+				(double) resource_thresholds.get("memory").lowerBound, 
+				(int) resource_thresholds.get("latency").lowerBound, 
+				(int) resource_thresholds.get("throughput").lowerBound);
+		tamer.setScaleOutEventWatch();
+		tamer.setScaleInEventWatch();
+		
 		System.out.println("+EFO coordinator thread: received tast name allocation from Storm cluster. Updating internal structures...");
 		Topology updatedTopology = new Topology();
 		Topology activeUpdatedTopology = new Topology();
@@ -94,21 +111,6 @@ public class SynEFOCoordinatorThread implements Runnable {
 							_task_ips.get(taskName + ":" + Integer.toString(_nameToIdMap.get(taskName))), activeDownStreamIds);
 				}
 			}
-			tamer = new ZooMaster(zooHost, zooPort, new ScaleFunction(updatedTopology._topology, activeUpdatedTopology._topology));
-			/**
-			 * Update ZooKeeper entries and Nodes
-			 */
-			tamer.start();
-			tamer.set_scaleout_thresholds((double) resource_thresholds.get("cpu").upperBound, 
-					(double) resource_thresholds.get("memory").upperBound, 
-					(int) resource_thresholds.get("latency").upperBound, 
-					(int) resource_thresholds.get("throughput").upperBound);
-			tamer.set_scaleout_thresholds((double) resource_thresholds.get("cpu").lowerBound, 
-					(double) resource_thresholds.get("memory").lowerBound, 
-					(int) resource_thresholds.get("latency").lowerBound, 
-					(int) resource_thresholds.get("throughput").lowerBound);
-			tamer.setScaleOutEventWatch();
-			tamer.setScaleInEventWatch();
 			tamer.set_physical_top(_physicalTopology._topology);
 			tamer.set_active_top(_runningTopology._topology);
 

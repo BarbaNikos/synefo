@@ -131,7 +131,6 @@ public class ZooMaster {
 	public void set_active_top(HashMap<String, ArrayList<String>> topology) {
 		active_topology = new HashMap<String, ArrayList<String>>(topology);
 		scaleFunction.active_topology = active_topology;
-//		zk.setData("/synefo/active-top", serializeTopology(topology).getBytes(), -1, setTopologyCallback, topology);
 		try {
 			zk.setData("/synefo/active-top", serializeTopology(topology).getBytes(), -1);
 		} catch (KeeperException e) {
@@ -140,39 +139,6 @@ public class ZooMaster {
 			e.printStackTrace();
 		}
 	}
-
-//	StatCallback setTopologyCallback = new StatCallback() {
-//		public void processResult(int rc, String path, Object ctx, Stat stat) {
-//			switch(Code.get(rc)) {
-//			case CONNECTIONLOSS:
-//				System.out.println("SynEFO.setTopologyCallback(): CONNECTIONLOSS (" + path + ")");
-//				if(path.equals("/synefo/physical-top")) {
-//					set_physical_top((HashMap<String, ArrayList<String>>) ctx);
-//				}else {
-//					set_active_top((HashMap<String, ArrayList<String>>) ctx);
-//				}
-//				break;
-//			case NONODE:
-//				System.out.println("SynEFO.setTopologyCallback(): NONODE (" + path + ")");
-//				if(path.equals("/synefo/physical-top")) {
-//					createChildNodePhysicalTop();
-//					set_physical_top((HashMap<String, ArrayList<String>>) ctx);
-//				}else {
-//					createChildNodeActiveTop();
-//					set_active_top((HashMap<String, ArrayList<String>>) ctx);
-//				}
-//				break;
-//			case OK:
-//				System.out.println("SynEFO.setTopologyCallback(): OK (" + path + ")");
-//				break;
-//			default:
-//				System.out.println("SynEFO.setTopologyCallback(): default case (" + path + "). Reason: " + 
-//						KeeperException.create(Code.get(rc), path));
-//				break;
-//
-//			}
-//		}
-//	};
 
 	public void set_scaleout_thresholds(double cpu, double memory, int latency, int throughput) {
 		String thresholds = cpu + "," + memory + "," + latency + "," + throughput;
@@ -195,37 +161,6 @@ public class ZooMaster {
 			e.printStackTrace();
 		}
 	}
-//
-//	StatCallback setThresholdsCallback = new StatCallback() {
-//		public void processResult(int rc, String path, Object ctx, Stat stat) {
-//			StringTokenizer strTok = new StringTokenizer(new String((String) ctx), ",");
-//			double cpu = Double.parseDouble(strTok.nextToken());
-//			double mem = Double.parseDouble(strTok.nextToken());
-//			int latency = Integer.parseInt(strTok.nextToken());
-//			int throughput = Integer.parseInt(strTok.nextToken());
-//			switch(Code.get(rc)) {
-//			case CONNECTIONLOSS:
-//				System.out.println("SynEFO.setThresholdsCallback(): CONNECTIONLOSS (path: " + path + ").");
-//				set_scaleout_thresholds(cpu, mem, latency, throughput);
-//				break;
-//			case NODEEXISTS:
-//				System.out.println("SynEFO.setThresholdsCallback(): NODEEXISTS (path: " + path + ").");
-//				break;
-//			case NONODE:
-//				System.out.println("SynEFO.setThresholdsCallback(): NONODE (path: " + path + ").");
-//				set_scaleout_thresholds(cpu, mem, latency, throughput);
-//				break;
-//			case OK:
-//				System.out.println("SynEFO.setThresholdsCallback(): OK (path: " + path + ").");
-//				break;
-//			default:
-//				System.out.println("SynEFO.setThresholdsCallback(): default case (" + path + "). Reason: " + 
-//						KeeperException.create(Code.get(rc), path));
-//				break;
-//
-//			}
-//		}
-//	};
 
 	public void setScaleOutEventWatch() {
 		zk.getChildren("/synefo/scale-out-event", 
@@ -281,9 +216,6 @@ public class ZooMaster {
 				null);
 	}
 
-	/**
-	 * TODO: Recheck this one! It is not complete
-	 */
 	ChildrenCallback scaleInEventChildrenCallback = new ChildrenCallback() {
 		public void processResult(int rc, String path, Object ctx,
 				List<String> children) {

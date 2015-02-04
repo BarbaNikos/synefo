@@ -87,7 +87,6 @@ public class SynEFOthread implements Runnable {
 		synchronized(_task_ips) {
 			_task_ips.put(_taskName + ":" + _taskId, _componentIp);
 		}
-		//_componentPort = Integer.parseInt(values.get("TASK_PORT"));
 		synchronized(_nameToIdMap) {
 			_nameToIdMap.put(_taskName, _taskId);
 			_nameToIdMap.notifyAll();

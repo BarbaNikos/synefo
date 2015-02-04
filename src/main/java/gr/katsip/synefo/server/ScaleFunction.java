@@ -23,7 +23,7 @@ public class ScaleFunction {
 			return "";
 		String upstream_task = getParentNode(overloadedWorker.substring(0, overloadedWorker.lastIndexOf(':')),
 				overloadedWorker.substring(overloadedWorker.lastIndexOf(':') + 1, overloadedWorker.lastIndexOf('@')));
-		if(upstream_task.equals("") || upstream_task == null)
+		if(upstream_task == null || upstream_task.equals(""))
 			return "";
 		ArrayList<String> available_nodes = getInActiveNodes(upstream_task);
 		if(available_nodes == null || available_nodes.size() == 0)

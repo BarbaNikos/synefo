@@ -36,8 +36,7 @@ public class EquiJoinOperator<T extends Object> implements AbstractOperator, Ser
 	}
 
 	@Override
-	public void init(Fields stateSchema, List<Values> stateValues) {
-		this.stateSchema = stateSchema;
+	public void init(List<Values> stateValues) {
 		this.stateValues = stateValues;
 	}
 
@@ -47,10 +46,10 @@ public class EquiJoinOperator<T extends Object> implements AbstractOperator, Ser
 		Iterator<Values> itr = stateValues.iterator();
 		while(itr.hasNext()) {
 			Values stateTuple = (Values) itr.next();
-			List<Values> resultValues = equiJoin(stateTuple, values, fields, field);
+			Values resultValues = equiJoin(stateTuple, values, fields, field);
 			if(resultValues != null && resultValues.size() > 0) {
 				System.out.println("EQUI-JOINED: " + values);
-				result.addAll(resultValues);
+				result.add(resultValues);
 			}
 		}
 		if(stateValues.size() < window) {
@@ -66,6 +65,8 @@ public class EquiJoinOperator<T extends Object> implements AbstractOperator, Ser
 				}
 			}
 			stateValues.remove(idx);
+			values.add(System.currentTimeMillis());
+			stateValues.add(values);
 		}
 		return result;
 	}
@@ -80,8 +81,8 @@ public class EquiJoinOperator<T extends Object> implements AbstractOperator, Ser
 	}
 	
 	@SuppressWarnings("unchecked")
-	private List<Values> equiJoin(Values stateTuple, Values values, Fields fields, String field) {
-		List<Values> attributes = new ArrayList<Values>();
+	private Values equiJoin(Values stateTuple, Values values, Fields fields, String field) {
+		Values attributes = new Values();
 		T val_1 = (T) stateTuple.get(stateSchema.fieldIndex(field));
 		T val_2 = (T) values.get(fields.fieldIndex(field));
 		if(comparator.compare(val_1, val_2) == 0) {
@@ -90,10 +91,10 @@ public class EquiJoinOperator<T extends Object> implements AbstractOperator, Ser
 			 * the result produced
 			 */
 			for(int i = 0; i < stateTuple.size() - 1; i++) {
-				attributes.add((Values) stateTuple.get(stateSchema.fieldIndex(field)));
+				attributes.add(stateTuple.get(stateSchema.fieldIndex(field)));
 			}
 			for(int i = 0; i < values.size(); i++) {
-				attributes.add((Values) values.get(fields.fieldIndex(field)));
+				attributes.add(values.get(fields.fieldIndex(field)));
 			}
 		}
 		return attributes;
@@ -138,6 +139,11 @@ public class EquiJoinOperator<T extends Object> implements AbstractOperator, Ser
 	@Override
 	public void setOutputSchema(Fields _output_schema) {
 		output_schema = _output_schema;
+	}
+
+	@Override
+	public void setStateSchema(Fields stateSchema) {
+		this.stateSchema = new Fields(stateSchema.toList());
 	}
 
 }

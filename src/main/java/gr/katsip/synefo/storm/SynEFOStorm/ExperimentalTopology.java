@@ -38,6 +38,8 @@ public class ExperimentalTopology {
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
 		SampleTupleProducer tuple_producer = new SampleTupleProducer();
+		String[] spoutSchema = { "name" };
+		tuple_producer.setSchema(new Fields(spoutSchema));
 		builder.setSpout("spout_1", new SynEFOSpout("spout_1", synEFO_ip, synEFO_port, tuple_producer), 1);
 		_tmp = new ArrayList<String>();
 		_tmp.add("select_bolt_1");
@@ -47,8 +49,11 @@ public class ExperimentalTopology {
 		 * Stage 1: Select operators
 		 */
 		FilterOperator<String> filterOperator = new FilterOperator<String>(new StringComparator(), "name", "nathan");
+		String[] filterOutSchema = { "name" };
+		filterOperator.setOutputSchema(new Fields(filterOutSchema));
 		builder.setBolt("select_bolt_1", new SynEFOBolt("select_bolt_1", synEFO_ip, synEFO_port, filterOperator), 1).directGrouping("spout_1");
 		filterOperator = new FilterOperator<String>(new StringComparator(), "name", "nathan");
+		filterOperator.setOutputSchema(new Fields(filterOutSchema));
 		builder.setBolt("select_bolt_2", new SynEFOBolt("select_bolt_2", synEFO_ip, synEFO_port, filterOperator), 1).directGrouping("spout_1");
 		_tmp = new ArrayList<String>();
 		_tmp.add("join_bolt_1");
@@ -61,13 +66,16 @@ public class ExperimentalTopology {
 		 */
 		EquiJoinOperator<String> equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 5, "name");
 		String[] join_schema = { "name-a", "name-b" };
+		String[] state_schema = { "name", "time" };
 		equi_join_op.setOutputSchema(new Fields(join_schema));
+		equi_join_op.setStateSchema(new Fields(state_schema));
 		builder.setBolt("join_bolt_1", new SynEFOBolt("join_bolt_1", synEFO_ip, synEFO_port, equi_join_op), 1).directGrouping("select_bolt_1").directGrouping("select_bolt_2");
 		equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 5, "name");
 		equi_join_op.setOutputSchema(new Fields(join_schema));
+		equi_join_op.setStateSchema(new Fields(state_schema));
 		builder.setBolt("join_bolt_2", new SynEFOBolt("join_bolt_2", synEFO_ip, synEFO_port, equi_join_op), 1).directGrouping("select_bolt_1").directGrouping("select_bolt_2");
 		_tmp = new ArrayList<String>();
-		_tmp.add("aggr_bolt_1");
+		_tmp.add("count_group_by_bolt_1");
 		_topology._topology.put("join_bolt_1", new ArrayList<String>(_tmp));
 		_topology._topology.put("join_bolt_2", new ArrayList<String>(_tmp));
 		_tmp = null;
@@ -75,7 +83,11 @@ public class ExperimentalTopology {
 		 * Stage 3: Aggregate operator
 		 */
 		CountGroupByAggrOperator countGroupByAggrOperator = new CountGroupByAggrOperator(10, join_schema);
-		builder.setBolt("count_group_bolt_1", new SynEFOBolt("count_group_bolt_1", synEFO_ip, synEFO_port, countGroupByAggrOperator), 1)
+		String[] countGroupBySchema = { "key", "count" };
+		String[] countGroupByStateSchema = { "key", "count", "time" };
+		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
+		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
+		builder.setBolt("count_group_by_bolt_1", new SynEFOBolt("count_group_by_bolt_1", synEFO_ip, synEFO_port, countGroupByAggrOperator), 1)
 		.directGrouping("join_bolt_1").directGrouping("join_bolt_2");
 		_topology._topology.put("count_group_bolt_1", new ArrayList<String>());
 		/**

@@ -6,7 +6,9 @@ import backtype.storm.tuple.Values;
 
 public interface AbstractOperator {
 	
-	public void init(Fields stateSchema, List<Values> stateValues);
+	public void init(List<Values> stateValues);
+	
+	public void setStateSchema(Fields stateSchema);
 	
 	public void setOutputSchema(Fields output_schema);
 

@@ -46,8 +46,7 @@ public class ProjectOperator implements AbstractOperator {
 	}
 
 	@Override
-	public void init(Fields stateSchema, List<Values> stateValues) {
-		this.stateSchema = new Fields(stateSchema.toList());
+	public void init(List<Values> stateValues) {
 		this.stateValues = stateValues;
 	}
 
@@ -65,6 +64,11 @@ public class ProjectOperator implements AbstractOperator {
 	public void mergeState(Fields receivedStateSchema,
 			List<Values> receivedStateValues) {
 		//Nothing to be done since no state is kept
+	}
+
+	@Override
+	public void setStateSchema(Fields stateSchema) {
+		this.stateSchema = new Fields(stateSchema.toList());
 	}
 
 }

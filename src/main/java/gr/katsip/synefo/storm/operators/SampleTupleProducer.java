@@ -41,7 +41,6 @@ public class SampleTupleProducer implements AbstractTupleProducer, Serializable 
 			word_idx = 0;
 		System.out.println("SampleTupleProducer emits!!!");
 		return new Values(word);
-//		collector.emitDirect(task_id, new Values(word));
 	}
 
 	@Override
