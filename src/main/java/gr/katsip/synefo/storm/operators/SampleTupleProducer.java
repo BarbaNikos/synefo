@@ -31,7 +31,7 @@ public class SampleTupleProducer implements AbstractTupleProducer, Serializable 
 		/**
 		 * Sample execution
 		 */
-		Utils.sleep(1000);
+//		Utils.sleep(1000);
 		String word = "";
 		if(word_idx < words.length) {
 			word = words[word_idx];

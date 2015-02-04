@@ -118,7 +118,6 @@ public class ZooMaster {
 	public void set_physical_top(HashMap<String, ArrayList<String>> topology) {
 		physical_topology = new HashMap<String, ArrayList<String>>(topology);
 		scaleFunction.physical_topology = physical_topology;
-//		zk.setData("/synefo/physical-top", serializeTopology(topology).getBytes(), -1, setTopologyCallback, topology);
 		try {
 			zk.setData("/synefo/physical-top", serializeTopology(topology).getBytes(), -1);
 		} catch (KeeperException e) {
@@ -181,17 +180,19 @@ public class ZooMaster {
 				System.out.println("SynEFO.scaleOutEventChildrenCallback(): OK children received: " + 
 						children);
 				for(String child : children) {
-					if(scale_event_children.lastIndexOf(child) < 0 && state == SynefoState.BOOTSTRAPPED) {
+					if(scale_event_children.lastIndexOf(child) < 0) {
 						/**
 						 * New child located: Time to set the scale-out 
 						 * command for that child
 						 */
+						System.out.println("SynEFO.scaleOutEventChildrenCallback(): Identified new scale-out request.");
 						StringTokenizer strTok = new StringTokenizer(child, "-");
 						String childWorker = strTok.nextToken();
 						String upstream_task = scaleFunction.getParentNode(
 								childWorker.substring(0, childWorker.lastIndexOf(':')),
 								childWorker.substring(childWorker.lastIndexOf(':') + 1, childWorker.length()));
 						String command = scaleFunction.produceScaleOutCommand(childWorker);
+						System.out.println("SynEFO.scaleOutEventChildrenCallback(): produced command: " + command);
 						if(command.equals("") == false)
 							setScaleCommand(upstream_task, command);
 					}
@@ -233,12 +234,14 @@ public class ZooMaster {
 						 * New child located: Time to set the scale-out 
 						 * command for that child
 						 */
+						System.out.println("SynEFO.scaleInEventChildrenCallback(): Identified new scale-in request.");
 						StringTokenizer strTok = new StringTokenizer(child, "-");
 						String childWorker = strTok.nextToken();
 						String upstream_task = scaleFunction.getParentNode(
 								childWorker.substring(0, childWorker.lastIndexOf(':')),
 								childWorker.substring(childWorker.lastIndexOf(':') + 1, childWorker.length()));
 						String command = scaleFunction.produceScaleInCommand(childWorker);
+						System.out.println("SynEFO.scaleInEventChildrenCallback(): produced command: " + command);
 						if(command.equals("") == false)
 							setScaleCommand(upstream_task, command);
 					}

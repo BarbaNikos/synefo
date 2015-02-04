@@ -6,7 +6,7 @@
 	</resource>
 	<resource>
 		<key>cpu-max</key>
-		<value>1</value>
+		<value>0.7</value>
 	</resource>
 	<resource>
 		<key>memory-min</key>
@@ -14,7 +14,7 @@
 	</resource>
 	<resource>
 		<key>memory-max</key>
-		<value>1</value>
+		<value>0.7</value>
 	</resource>
 	<resource>
 		<key>latency-min</key>
