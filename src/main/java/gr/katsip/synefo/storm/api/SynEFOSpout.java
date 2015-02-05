@@ -156,7 +156,7 @@ public class SynEFOSpout extends BaseRichSpout {
 		 * Handshake with ZooKeeper
 		 */
 		pet.start();
-
+		pet.setBoltNodeWatch();
 		System.out.println("+EFO-SPOUT (" + 
 				_task_name + ":" + _task_id + 
 				") registered to +EFO successfully.");
@@ -215,18 +215,31 @@ public class SynEFOSpout extends BaseRichSpout {
 				_int_active_downstream_tasks.add(task_id);
 				strBuild.append(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.ADD_ACTION + "/");
 			}else if(action.toLowerCase().contains("remove")) {
-				_active_downstream_tasks.remove(_active_downstream_tasks.indexOf(task));
-				_int_active_downstream_tasks.remove(_int_active_downstream_tasks.indexOf(task_id));
 				strBuild.append(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.REMOVE_ACTION + "/");
 			}
 			strBuild.append(SynEFOConstant.COMP_TAG + ":" + task + "/");
-			strBuild.append(SynEFOConstant.COMP_NUM_TAG + ":" + _downstream_tasks.size() + "/");
+			strBuild.append(SynEFOConstant.COMP_NUM_TAG + ":" + _int_active_downstream_tasks.size() + "/");
 			strBuild.append(SynEFOConstant.COMP_IP_TAG + ":" + taskIp + "/");
-			for(Integer d_task : _int_downstream_tasks) {
-				/**
-				 * TODO: Check whether there are problems with not populating the rest of the fields
-				 */
-				_collector.emitDirect(d_task, new Values(strBuild.toString()));
+			/**
+			 * Populate other schema fields with null values, 
+			 * after SYNEFO_HEADER
+			 */
+			Values punctValue = new Values();
+			punctValue.add(strBuild.toString());
+			for(int i = 0; i < _tuple_producer.getSchema().size(); i++) {
+				punctValue.add(null);
+			}
+			for(Integer d_task : _int_active_downstream_tasks) {
+				_collector.emitDirect(d_task, punctValue);
+			}
+			/**
+			 * In the case of removing a downstream task 
+			 * we remove it after sending the punctuation tuples, so 
+			 * that the removed task is notified to share state
+			 */
+			if(action.toLowerCase().contains("remove")) {
+				_active_downstream_tasks.remove(_active_downstream_tasks.indexOf(task));
+				_int_active_downstream_tasks.remove(_int_active_downstream_tasks.indexOf(task_id));
 			}
 		}
 	}

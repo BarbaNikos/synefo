@@ -53,7 +53,7 @@ public class SynEFOBolt extends BaseRichBolt {
 	private String _synEFO_ip = null;
 
 	private int _task_id = -1;
-	
+
 	private String _task_ip;
 
 	private Integer _synEFO_port = -1;
@@ -69,11 +69,11 @@ public class SynEFOBolt extends BaseRichBolt {
 	private AbstractOperator _operator;
 
 	private SynEFOMetric metricObject;
-	
+
 	private List<Values> stateValues;
 
 	private ZooPet pet;
-	
+
 	public SynEFOBolt(String task_name, String synEFO_ip, Integer synEFO_port, AbstractOperator operator) {
 		_task_name = task_name;
 		_synEFO_ip = synEFO_ip;
@@ -170,7 +170,7 @@ public class SynEFOBolt extends BaseRichBolt {
 		 * Handshake with ZooKeeper
 		 */
 		pet.start();
-
+		pet.setBoltNodeWatch();
 		System.out.println("+EFO-BOLT (" + 
 				_task_name + ":" + _task_id + 
 				") registered to synEFO successfully.");
@@ -273,19 +273,31 @@ public class SynEFOBolt extends BaseRichBolt {
 				_int_active_downstream_tasks.add(task_id);
 				strBuild.append(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.ADD_ACTION + "/");
 			}else if(action.toLowerCase().contains("remove")) {
-				_active_downstream_tasks.remove(_active_downstream_tasks.indexOf(task));
-				_int_active_downstream_tasks.remove(_int_active_downstream_tasks.indexOf(task_id));
 				strBuild.append(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.REMOVE_ACTION + "/");
 			}
-			strBuild.append(SynEFOConstant.COMP_TAG + ":" + task + "/");
-			strBuild.append(SynEFOConstant.COMP_NUM_TAG + ":" + _downstream_tasks.size() + "/");
+			strBuild.append(SynEFOConstant.COMP_TAG + ":" + task + ":" + task_id + "/");
+			strBuild.append(SynEFOConstant.COMP_NUM_TAG + ":" + _int_active_downstream_tasks.size() + "/");
 			strBuild.append(SynEFOConstant.COMP_IP_TAG + ":" + taskIp + "/");
 			/**
-			 * TODO: Check whether I have to populate other fields 
+			 * Populate other schema fields with null values, 
 			 * after SYNEFO_HEADER
 			 */
-			for(Integer d_task : _int_downstream_tasks) {
-				_collector.emitDirect(d_task, new Values(strBuild.toString()));
+			Values punctValue = new Values();
+			punctValue.add(strBuild.toString());
+			for(int i = 0; i < _operator.getOutputSchema().size(); i++) {
+				punctValue.add(null);
+			}
+			for(Integer d_task : _int_active_downstream_tasks) {
+				_collector.emitDirect(d_task, punctValue);
+			}
+			/**
+			 * In the case of removing a downstream task 
+			 * we remove it after sending the punctuation tuples, so 
+			 * that the removed task is notified to share state
+			 */
+			if(action.toLowerCase().contains("remove")) {
+				_active_downstream_tasks.remove(_active_downstream_tasks.indexOf(task));
+				_int_active_downstream_tasks.remove(_int_active_downstream_tasks.indexOf(task_id));
 			}
 		}
 	}

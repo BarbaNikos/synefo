@@ -18,11 +18,9 @@ public class ScaleFunction {
 		this.active_topology = new HashMap<String, ArrayList<String>>(active_topology);
 	}
 
-	public String produceScaleOutCommand(String overloadedWorker) {
+	public String produceScaleOutCommand(String upstream_task, String overloadedWorker) {
 		if(overloadedWorker.toLowerCase().contains("spout"))
 			return "";
-		String upstream_task = getParentNode(overloadedWorker.substring(0, overloadedWorker.lastIndexOf(':')),
-				overloadedWorker.substring(overloadedWorker.lastIndexOf(':') + 1, overloadedWorker.lastIndexOf('@')));
 		if(upstream_task == null || upstream_task.equals(""))
 			return "";
 		ArrayList<String> available_nodes = getInActiveNodes(upstream_task);

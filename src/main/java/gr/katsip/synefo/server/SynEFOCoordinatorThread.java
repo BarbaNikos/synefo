@@ -111,8 +111,8 @@ public class SynEFOCoordinatorThread implements Runnable {
 							_task_ips.get(taskName + ":" + Integer.toString(_nameToIdMap.get(taskName))), activeDownStreamIds);
 				}
 			}
-			tamer.set_physical_top(_physicalTopology._topology);
-			tamer.set_active_top(_runningTopology._topology);
+			tamer.set_physical_top(updatedTopology._topology);
+			tamer.set_active_top(activeUpdatedTopology._topology);
 
 			_physicalTopology._topology.clear();
 			_physicalTopology._topology = new HashMap<String, ArrayList<String>>(updatedTopology._topology);

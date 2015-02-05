@@ -191,7 +191,7 @@ public class ZooMaster {
 						String upstream_task = scaleFunction.getParentNode(
 								childWorker.substring(0, childWorker.lastIndexOf(':')),
 								childWorker.substring(childWorker.lastIndexOf(':') + 1, childWorker.length()));
-						String command = scaleFunction.produceScaleOutCommand(childWorker);
+						String command = scaleFunction.produceScaleOutCommand(upstream_task, childWorker);
 						System.out.println("SynEFO.scaleOutEventChildrenCallback(): produced command: " + command);
 						if(command.equals("") == false)
 							setScaleCommand(upstream_task, command);
