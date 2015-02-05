@@ -12,7 +12,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
-
 import gr.katsip.synefo.metric.SynEFOMetric;
 import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.lib.SynEFOMessage;
@@ -330,7 +329,6 @@ public class SynEFOBolt extends BaseRichBolt {
 					s.equals(SynEFOConstant.PUNCT_TUPLE_TAG) == false && s.startsWith(SynEFOConstant.COMP_TAG) 
 					&& s.startsWith(SynEFOConstant.COMP_NUM_TAG) == false && s.startsWith(SynEFOConstant.COMP_IP_TAG) == false) {
 				StringTokenizer strTok = new StringTokenizer(s, ":");
-				//Dummy token parse (get rid of +EFO_comp prefix)
 				component_id = strTok.nextToken();
 				component_name = strTok.nextToken();
 				component_id = strTok.nextToken();

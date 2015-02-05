@@ -3,11 +3,11 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>edu.pitt.cs.nick.synefo.storm</groupId>
-	<artifactId>SynEFOStorm</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<artifactId>synefo</artifactId>
+	<version>0.0.1</version>
 	<packaging>jar</packaging>
 
-	<name>SynEFOStorm</name>
+	<name>synefo</name>
 	<url>http://maven.apache.org</url>
 
 	<properties>
@@ -15,12 +15,6 @@
 	</properties>
 
 	<dependencies>
-		<dependency>
-			<groupId>io.netty</groupId>
-			<artifactId>netty</artifactId>
-			<version>3.9.4.Final</version>
-			<scope>compile</scope>
-		</dependency>
 		<dependency>
 			<groupId>org.apache.storm</groupId>
 			<artifactId>storm-core</artifactId>
@@ -43,4 +37,8 @@
 			<version>2.1</version>
 		</dependency>
 	</dependencies>
+	<organization>
+		<name>Nick R. Katsipoulakis</name>
+		<url>http://people.cs.pitt.edu/~katsip</url>
+	</organization>
 </project>
