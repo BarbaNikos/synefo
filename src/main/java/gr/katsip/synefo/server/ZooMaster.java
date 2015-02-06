@@ -7,12 +7,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.StringTokenizer;
-
 import org.apache.zookeeper.AsyncCallback.ChildrenCallback;
-import org.apache.zookeeper.AsyncCallback.DataCallback;
 import org.apache.zookeeper.AsyncCallback.StatCallback;
-import org.apache.zookeeper.AsyncCallback.StringCallback;
-import org.apache.zookeeper.AsyncCallback.VoidCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -34,13 +30,15 @@ public class ZooMaster {
 
 	private SynefoState state;
 
-	private List<String> scale_event_children;
+	private List<String> scaleOutEventChildren;
+	
+	private List<String> scaleInEventChildren;
 
-	private HashMap<String, ArrayList<String>> physical_topology;
+	public HashMap<String, ArrayList<String>> physical_topology;
 
-	private HashMap<String, ArrayList<String>> active_topology;
+	public HashMap<String, ArrayList<String>> active_topology;
 
-	private ScaleFunction scaleFunction;
+	public ScaleFunction scaleFunction;
 
 	Watcher synefoWatcher = new Watcher() {
 		public void process(WatchedEvent e) {
@@ -71,7 +69,8 @@ public class ZooMaster {
 		this.zoo_port = zoo_port;
 		state = SynefoState.INIT;
 		this.scaleFunction = scaleFunction;
-		scale_event_children = new ArrayList<String>();
+		scaleOutEventChildren = new ArrayList<String>();
+		scaleInEventChildren = new ArrayList<String>();
 	}
 
 	public void start() {
@@ -115,8 +114,8 @@ public class ZooMaster {
 		}
 	}
 
-	public void set_physical_top(HashMap<String, ArrayList<String>> topology) {
-		physical_topology = new HashMap<String, ArrayList<String>>(topology);
+	public void setPhysicalTopology(HashMap<String, ArrayList<String>> topology) {
+		physical_topology = topology;
 		scaleFunction.physical_topology = physical_topology;
 		try {
 			zk.setData("/synefo/physical-top", serializeTopology(topology).getBytes(), -1);
@@ -127,8 +126,8 @@ public class ZooMaster {
 		}
 	}
 
-	public void set_active_top(HashMap<String, ArrayList<String>> topology) {
-		active_topology = new HashMap<String, ArrayList<String>>(topology);
+	public void setActiveTopology(HashMap<String, ArrayList<String>> topology) {
+		active_topology = topology;
 		scaleFunction.active_topology = active_topology;
 		try {
 			zk.setData("/synefo/active-top", serializeTopology(topology).getBytes(), -1);
@@ -139,7 +138,7 @@ public class ZooMaster {
 		}
 	}
 
-	public void set_scaleout_thresholds(double cpu, double memory, int latency, int throughput) {
+	public void setScaleOutThresholds(double cpu, double memory, int latency, int throughput) {
 		String thresholds = cpu + "," + memory + "," + latency + "," + throughput;
 		try {
 			zk.setData("/synefo/scale-out-event", thresholds.getBytes(), -1);
@@ -150,7 +149,7 @@ public class ZooMaster {
 		}
 	}
 
-	public void set_scalein_thresholds(double cpu, double memory, int latency, int throughput) {
+	public void setScaleInThresholds(double cpu, double memory, int latency, int throughput) {
 		String thresholds = cpu + "," + memory + "," + latency + "," + throughput;
 		try {
 			zk.setData("/synefo/scale-in-event", thresholds.getBytes(), -1);
@@ -180,7 +179,7 @@ public class ZooMaster {
 				System.out.println("SynEFO.scaleOutEventChildrenCallback(): OK children received: " + 
 						children);
 				for(String child : children) {
-					if(scale_event_children.lastIndexOf(child) < 0) {
+					if(scaleOutEventChildren.lastIndexOf(child) < 0) {
 						/**
 						 * New child located: Time to set the scale-out 
 						 * command for that child
@@ -197,7 +196,7 @@ public class ZooMaster {
 							setScaleCommand(upstream_task, command);
 					}
 				}
-				scale_event_children = new ArrayList<String>(children);
+				scaleOutEventChildren = new ArrayList<String>(children);
 				break;
 			case NONODE:
 				setScaleOutEventWatch();
@@ -223,13 +222,13 @@ public class ZooMaster {
 			switch(Code.get(rc)) {
 			case CONNECTIONLOSS:
 				System.out.println("SynEFO.setScaleInEventWatch(): CONNECTIONLOSS");
-				setScaleOutEventWatch();
+				setScaleInEventWatch();
 				break;
 			case OK:
 				System.out.println("SynEFO.scaleInEventChildrenCallback(): OK children received: " + 
 						children);
 				for(String child : children) {
-					if(scale_event_children.lastIndexOf(child) < 0 && state == SynefoState.BOOTSTRAPPED) {
+					if(scaleInEventChildren.lastIndexOf(child) < 0 && state == SynefoState.BOOTSTRAPPED) {
 						/**
 						 * New child located: Time to set the scale-out 
 						 * command for that child
@@ -246,10 +245,10 @@ public class ZooMaster {
 							setScaleCommand(upstream_task, command);
 					}
 				}
-				scale_event_children = new ArrayList<String>(children);
+				scaleInEventChildren = new ArrayList<String>(children);
 				break;
 			case NONODE:
-				setScaleOutEventWatch();
+				setScaleInEventWatch();
 				break;
 			default:
 				System.out.println("SynEFO.scaleInEventChildrenCallback() unexpected error: " + KeeperException.create(Code.get(rc)));
@@ -259,8 +258,8 @@ public class ZooMaster {
 		}
 	};
 
-	public void setScaleCommand(String child, String command) {
-		zk.setData("/synefo/bolt-tasks/" + child, 
+	public void setScaleCommand(String upstreamTask, String command) {
+		zk.setData("/synefo/bolt-tasks/" + upstreamTask, 
 				(command).getBytes(), 
 				-1, 
 				setScaleCommandCallback, 
@@ -289,155 +288,6 @@ public class ZooMaster {
 			e.printStackTrace();
 		}
 	}
-
-	public void initSynefo() {
-		zk.getData("/synefo", false, synefoCheckCallback, null);
-	}
-
-	private DataCallback synefoCheckCallback = new DataCallback() {
-		public void processResult(int rc, String path, Object ctx,
-				byte[] data, Stat stat) {
-			switch(Code.get(rc)) {
-			case CONNECTIONLOSS:
-				initSynefo();
-				break;
-			case NODEEXISTS:
-				deleteSynefo();
-			case NONODE:
-				createSynefo();
-				return;
-			case OK:
-				deleteSynefo();
-			default:
-				break;
-			}
-		}
-	};
-
-	private void deleteSynefo() {
-		zk.delete("/synefo", -1, deleteSynefoCallback, null);
-	}
-
-	private VoidCallback deleteSynefoCallback = new VoidCallback() {
-		public void processResult(int rc, String path, Object ctx) {
-			switch(Code.get(rc)) {
-			case CONNECTIONLOSS:
-				deleteSynefo();
-				break;
-			case NONODE:
-				createSynefo();
-				break;
-			case OK:
-				createSynefo();
-				break;
-			default:
-			}
-		}
-
-	};
-
-	private void createSynefo() {
-		zk.create("/synefo", 
-				"/synefo".getBytes(), 
-				Ids.OPEN_ACL_UNSAFE, 
-				CreateMode.PERSISTENT, 
-				createSynefoNodeCallback, 
-				null);
-	}
-
-	StringCallback createSynefoNodeCallback = new StringCallback() {
-		public void processResult(int rc, String path, Object ctx,
-				String name) {
-			switch(Code.get(rc)) {
-			case CONNECTIONLOSS:
-				System.out.println("SynEFO.createSynefoNodeCallback(): CONNECTIONLOSS (for path: " + path + ").");
-				createSynefo();
-				break;
-			case NONODE:
-				System.out.println("SynEFO.createSynefoNodeCallback(): NONODE (for path: " + path + ").");
-				createSynefo();
-				break;
-			case OK:
-				System.out.println("SynEFO.createSynefoNodeCallback(): OK (for path: " + path + ").");
-				if(state != SynefoState.BOOTSTRAPPED) {
-					createChildNodeScaleEvent();
-					createChildNodeActiveTop();
-					createChildNodePhysicalTop();
-					createChildNodeTasks();
-				}
-				break;
-			case NODEEXISTS:
-				System.out.println("SynEFO.createSynefoNodeCallback(): NODEEXISTS (for path: " + path + ").");
-				if(state != SynefoState.BOOTSTRAPPED) {
-					createChildNodeScaleEvent();
-					createChildNodeActiveTop();
-					createChildNodePhysicalTop();
-					createChildNodeTasks();
-				}
-				break;
-			default:
-				System.out.println("SynEFO.createSynefoNodeCallback(): default case (" + path + "). Reason: " + 
-						KeeperException.create(Code.get(rc), path));
-			}
-		}
-	};
-
-	private void createChildNodeScaleEvent() {
-		if(state != SynefoState.BOOTSTRAPPED)
-			createSynefoNode("/synefo/scale-out-event", "/synefo/scale-out-event".getBytes());
-	}
-
-	private void createChildNodeActiveTop() {
-		if(state != SynefoState.BOOTSTRAPPED)
-			createSynefoNode("/synefo/physical-top", "/synefo/physical-top".getBytes());
-	}
-
-	private void createChildNodePhysicalTop() {
-		if(state != SynefoState.BOOTSTRAPPED)
-			createSynefoNode("/synefo/active-top", "/synefo/active-top".getBytes());
-	}
-
-	private void createChildNodeTasks() {
-		if(state != SynefoState.BOOTSTRAPPED)
-			createSynefoNode("/synefo/bolt-tasks", "/synefo/bolt-tasks".getBytes());
-	}
-
-	private void createSynefoNode(String path, byte[] data) {
-		if(state != SynefoState.BOOTSTRAPPED)
-			zk.create(path, data, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT, createSynefoChildNodeCallback, data);
-	}
-
-	StringCallback createSynefoChildNodeCallback = new StringCallback() {
-		public void processResult(int rc, String path, Object ctx,
-				String name) {
-			switch(Code.get(rc)) {
-			case CONNECTIONLOSS:
-				createSynefoNode(path, path.getBytes());
-				break;
-			case NODEEXISTS:
-				System.out.println("SynEFO.createSynefoChildNodeCallback(): NODEEXISTS (" + path + ")");
-				if(path.equals("/synefo/bolt-tasks")) {
-					state = SynefoState.BOOTSTRAPPED;
-				}
-				break;
-			case NONODE:
-				System.out.println("SynEFO.createSynefoChildNodeCallback(): NONODE (" + path + ")");
-				break;
-			case OK:
-				System.out.println("SynEFO.createSynefoChildNodeCallback(): OK (" + path + ")");
-				if(path.equals("/synefo/bolt-tasks")) {
-					System.out.println("SynEFO.createSynefoChildNodeCallback(): BOOTSTRAPPED");
-					state = SynefoState.BOOTSTRAPPED;
-				}
-				return;
-			default:
-				System.out.println("SynEFO.createSynefoChildNodeCallback(): default case (" + path + "). Reason: " + 
-						KeeperException.create(Code.get(rc), path));
-				break;
-			}
-		}
-
-	};
 
 	public String serializeTopology(HashMap<String, ArrayList<String>> topology) {
 		StringBuilder strBuild = new StringBuilder();

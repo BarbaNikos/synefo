@@ -3,7 +3,6 @@ package gr.katsip.synefo.storm.operators;
 import java.io.Serializable;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
-import backtype.storm.utils.Utils;
 
 public class SampleTupleProducer implements AbstractTupleProducer, Serializable {
 
@@ -18,7 +17,6 @@ public class SampleTupleProducer implements AbstractTupleProducer, Serializable 
 	
 	private final String[] words = new String[] { "nathan", "mike", "jackson", "golda", "bertels", "nick", "romanos", "alexandros", "cory" };
 	
-//	private final String[] words = new String[] { "nathan" };
 	
 	public SampleTupleProducer() {
 		word_idx = 0;

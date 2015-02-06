@@ -1,6 +1,6 @@
 package gr.katsip.synefo.TopologyXMLParser;
 
-import gr.katsip.synefo.storm.api.SynEFOBolt;
+//import gr.katsip.synefo.storm.api.SynEFOBolt;
 import gr.katsip.synefo.storm.api.SynEFOSpout;
 import gr.katsip.synefo.storm.lib.SynEFOMessage;
 import gr.katsip.synefo.storm.lib.Topology;
@@ -16,7 +16,7 @@ import java.util.List;
 
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
-import backtype.storm.topology.BoltDeclarer;
+//import backtype.storm.topology.BoltDeclarer;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.utils.Utils;
 

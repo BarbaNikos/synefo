@@ -6,7 +6,6 @@ import java.lang.management.MemoryUsage;
 
 import com.sun.management.OperatingSystemMXBean;
 
-@SuppressWarnings("restriction")
 public class TaskStatistics implements Serializable {
 	
 	/**

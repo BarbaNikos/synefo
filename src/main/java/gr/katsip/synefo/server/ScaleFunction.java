@@ -14,11 +14,11 @@ public class ScaleFunction {
 
 	public ScaleFunction(HashMap<String, ArrayList<String>> physical_topology, 
 			HashMap<String, ArrayList<String>> active_topology) {
-		this.physical_topology = new HashMap<String, ArrayList<String>>(physical_topology);
-		this.active_topology = new HashMap<String, ArrayList<String>>(active_topology);
+		this.physical_topology = physical_topology;
+		this.active_topology = active_topology;
 	}
 
-	public String produceScaleOutCommand(String upstream_task, String overloadedWorker) {
+	public synchronized String produceScaleOutCommand(String upstream_task, String overloadedWorker) {
 		if(overloadedWorker.toLowerCase().contains("spout"))
 			return "";
 		if(upstream_task == null || upstream_task.equals(""))
@@ -33,7 +33,7 @@ public class ScaleFunction {
 		return "ADD~" + selectedTask;
 	}
 
-	public String produceScaleInCommand(String underloadedWorker) {
+	public synchronized String produceScaleInCommand(String underloadedWorker) {
 		String upstream_task = getParentNode(underloadedWorker.substring(0, underloadedWorker.lastIndexOf(':')),
 				underloadedWorker.substring(underloadedWorker.lastIndexOf(':') + 1, underloadedWorker.lastIndexOf('@')));
 		ArrayList<String> active_nodes = getActiveNodes(upstream_task, underloadedWorker);
@@ -41,7 +41,7 @@ public class ScaleFunction {
 			String selectedTask = randomChoice(active_nodes);
 			active_nodes.remove(active_nodes.lastIndexOf(selectedTask));
 			active_topology.put(upstream_task, active_nodes);
-			return "REMOVE-" + upstream_task;
+			return "REMOVE~" + upstream_task;
 		}else {
 			return "";
 		}
@@ -83,7 +83,7 @@ public class ScaleFunction {
 		return null;
 	}
 
-	public String randomChoice(ArrayList<String> available_nodes) {
+	private String randomChoice(ArrayList<String> available_nodes) {
 		Random random = new Random();
 		return available_nodes.get(random.nextInt(available_nodes.size()));
 	}

@@ -28,6 +28,8 @@ public class SynEFOCoordinatorThread implements Runnable {
 	private String zooHost;
 
 	private Integer zooPort;
+	
+	Thread userInterfaceThread;
 
 	public SynEFOCoordinatorThread(String zooHost, Integer zooPort, HashMap<String, Pair<Number, Number>> _resource_thresholds, Topology physicalTopology, Topology runningTopology, 
 			HashMap<String, Integer> nameToIdMap, HashMap<String, String> task_ips) {
@@ -74,11 +76,11 @@ public class SynEFOCoordinatorThread implements Runnable {
 		tamer = new ZooMaster(zooHost, zooPort, new ScaleFunction(_physicalTopology._topology, _runningTopology._topology));
 		
 		tamer.start();
-		tamer.set_scaleout_thresholds((double) resource_thresholds.get("cpu").upperBound, 
+		tamer.setScaleOutThresholds((double) resource_thresholds.get("cpu").upperBound, 
 				(double) resource_thresholds.get("memory").upperBound, 
 				(int) resource_thresholds.get("latency").upperBound, 
 				(int) resource_thresholds.get("throughput").upperBound);
-		tamer.set_scalein_thresholds((double) resource_thresholds.get("cpu").lowerBound, 
+		tamer.setScaleInThresholds((double) resource_thresholds.get("cpu").lowerBound, 
 				(double) resource_thresholds.get("memory").lowerBound, 
 				(int) resource_thresholds.get("latency").lowerBound, 
 				(int) resource_thresholds.get("throughput").lowerBound);
@@ -111,13 +113,11 @@ public class SynEFOCoordinatorThread implements Runnable {
 							_task_ips.get(taskName + ":" + Integer.toString(_nameToIdMap.get(taskName))), activeDownStreamIds);
 				}
 			}
-			tamer.set_physical_top(updatedTopology._topology);
-			tamer.set_active_top(activeUpdatedTopology._topology);
-
-			_physicalTopology._topology.clear();
-			_physicalTopology._topology = new HashMap<String, ArrayList<String>>(updatedTopology._topology);
-			_runningTopology._topology.clear();
-			_runningTopology._topology = new HashMap<String, ArrayList<String>>(activeUpdatedTopology._topology);
+			_physicalTopology._topology = updatedTopology._topology;
+			_runningTopology._topology = activeUpdatedTopology._topology;
+			tamer.setPhysicalTopology(updatedTopology._topology);
+			tamer.setActiveTopology(activeUpdatedTopology._topology);
+			
 			_nameToIdMap.clear();
 			_nameToIdMap.notifyAll();
 		}
@@ -131,11 +131,8 @@ public class SynEFOCoordinatorThread implements Runnable {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		//		(new Thread(new SynEFOUserInterface(_physicalTopology, _runningTopology, _taskUsage, _control_map, _task_ips))).start();
-	}
-
-	public Topology getTopology() {
-		return this._runningTopology;
+		userInterfaceThread = new Thread(new SynEFOUserInterface(tamer));
+		userInterfaceThread.start();
 	}
 
 	public int getTaskId(String taskName) {

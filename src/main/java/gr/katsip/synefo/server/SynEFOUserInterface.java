@@ -9,43 +9,24 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.StringTokenizer;
 
-import gr.katsip.synefo.metric.TaskStatistics;
-import gr.katsip.synefo.storm.lib.SynEFOMessage;
-import gr.katsip.synefo.storm.lib.Topology;
-
 public class SynEFOUserInterface implements Runnable {
-	
+
 	private boolean _exit;
-	
-	private Topology _topology;
-	
-	private Topology _runningTopology;
-	
-	private HashMap<String, TaskStatistics> _taskUsage;
-	
-	private HashMap<String, SynEFOMessage> _control_map;
-	
-	private HashMap<String, String> _task_ips;
-	
-	public SynEFOUserInterface(Topology physicalTopology, Topology runningTopology, 
-			HashMap<String, TaskStatistics> taskUsage, 
-			HashMap<String, SynEFOMessage> control_map, 
-			HashMap<String, String> task_ips) {
-		_topology = physicalTopology;
-		_runningTopology = runningTopology;
-		_taskUsage = taskUsage;
-		_control_map = control_map;
-		_task_ips = task_ips;
+
+	private ZooMaster beastMaster;
+
+	public SynEFOUserInterface(ZooMaster beastMaster) {
+		this.beastMaster = beastMaster;
 	}
 
 	public void run() {
 		_exit = false;
 		BufferedReader _input = new BufferedReader(new InputStreamReader(System.in));
 		String command = null;
-		System.out.println("+EFO Server started (UI). Type help for the list of commands");
+		System.out.println("+efo Server started (UI). Type help for the list of commands");
 		while(_exit == false) {
 			try {
-				System.out.print("+EFO>");
+				System.out.print("+efo>");
 				command = _input.readLine();
 				if(command != null && command.length() > 0) {
 					StringTokenizer strTok = new StringTokenizer(command, " ");
@@ -56,126 +37,112 @@ public class SynEFOUserInterface implements Runnable {
 				e.printStackTrace();
 			}
 		}
-		
+
 	}
-	
+
 	public void parseCommand(String command, StringTokenizer strTok) {
-		if(command.equals("util")) {
-			HashMap<String, TaskStatistics> _taskUsageCopy = null;
-			synchronized(_taskUsage) {
-				_taskUsageCopy = new HashMap<String, TaskStatistics>(_taskUsage);
-			}
-			Iterator<Entry<String, TaskStatistics>> it = _taskUsageCopy.entrySet().iterator();
-			while(it.hasNext()) {
-				Entry<String, TaskStatistics> pair = (Entry<String, TaskStatistics>) it.next();
-				String taskId = (String) pair.getKey();
-				TaskStatistics stats = (TaskStatistics) pair.getValue();
-				System.out.println("\t" + taskId + ": (" + "cpu: " + stats.get_cpu_load() + 
-						", mem:" + stats.get_memory() + ", avg. latency:" + stats.get_latency() +
-						", throughput:" + stats.get_throughput() + ")");
-			}
-		}else if(command.equals("scale-out")) {
-			String action = null;
-			if(strTok.hasMoreTokens()) {
-				action = strTok.nextToken();
-			}else {
-				System.out.println("+EFO error: Need to define action {add|remove} when \"scale-out\" is issued.");
-				return;
-			}
+		if(command.equals("scale-out")) {
 			String compOne = null;
 			if(strTok.hasMoreTokens()) {
 				compOne = strTok.nextToken();
-				if(_topology._topology.containsKey(compOne) == false) {
-					System.out.println("+EFO error: Need to define an existing component-A when \"scale-out\" is issued.");
+				if(beastMaster.physical_topology.containsKey(compOne) == false) {
+					System.out.println("+efo error: Need to define an existing component-A when \"scale-out\" is issued.");
 					return;
 				}
 			}else {
-				System.out.println("+EFO error: Need to define component-A (will {remove|add} task from/to downstream) when \"scale-out\" is issued.");
+				System.out.println("+efo error: Need to define component-A (will {remove|add} task from/to downstream) when \"scale-out\" is issued.");
 				return;
 			}
 			String compTwo = null;
 			if(strTok.hasMoreTokens()) {
 				compTwo = strTok.nextToken();
-				if(_topology._topology.containsKey(compTwo) == false) {
+				if(beastMaster.physical_topology.containsKey(compTwo) == false) {
 					System.out.println("+EFO error: Need to define an existing component-B when \"scale-out\" is issued.");
 					return;
 				}
 			}else {
-				System.out.println("+EFO error: Need to define component-B (will be {remove|add}-ed from/to component-A downstream) when \"scale-out\" is issued.");
+				System.out.println("+efo error: Need to define component-B (will be {remove|add}-ed from/to component-A downstream) when \"scale-out\" is issued.");
 				return;
 			}
 			/**
 			 * Issue the command for scaling out
 			 */
-			if(action.equals("add")) {
-				if(_topology._topology.get(compOne).lastIndexOf(compTwo) == -1) {
-					System.out.println("+EFO error: " + compTwo + " is not an available downstream task of " + compOne + ".");
+			if(beastMaster.physical_topology.get(compOne).lastIndexOf(compTwo) == -1) {
+				System.out.println("+efo error: " + compTwo + " is not an available downstream task of " + compOne + ".");
+				return;
+			}
+			synchronized(beastMaster) {
+				/**
+				 * If the node is not active.
+				 */
+				if(beastMaster.active_topology.get(compOne).lastIndexOf(compTwo) < 0) {
+					ArrayList<String> downstreamActiveTasks = beastMaster.active_topology.get(compOne);
+					downstreamActiveTasks.add(compTwo);
+					beastMaster.active_topology.put(compOne, downstreamActiveTasks);
+				}
+				String scaleOutCommand = "ADD~" + compTwo;
+				beastMaster.setScaleCommand(compOne, scaleOutCommand);
+			}
+		}else if(command.equals("scale-in")) {
+			String compOne = null;
+			if(strTok.hasMoreTokens()) {
+				compOne = strTok.nextToken();
+				if(beastMaster.physical_topology.containsKey(compOne) == false) {
+					System.out.println("+efo error: Need to define an existing component-A when \"scale-out\" is issued.");
 					return;
 				}
-				synchronized(_runningTopology) {
-					_runningTopology._topology.get(compOne).add(compTwo);
-					_runningTopology.notifyAll();
-				}
-
-				String ip = "";
-				synchronized(_task_ips) {
-					ip = _task_ips.get(compTwo);
-				}
-				synchronized(_control_map) {
-					SynEFOMessage msg = new SynEFOMessage();
-					msg._type = SynEFOMessage.Type.SCLOUT;
-					msg._values.put("ACTION", "ADD");
-					msg._values.put("NEW_TASK", compTwo);
-					msg._values.put("NEW_TASK_IP", ip);
-					_control_map.put(compOne, msg);
-					_control_map.notifyAll();
-				}
-			}else if(action.equals("remove")) {
-				synchronized(_runningTopology) {
-					ArrayList<String> _top = _runningTopology._topology.get(compOne);
-					if(_top.lastIndexOf(compTwo) == -1) {
-						System.out.println("+EFO error: " + compTwo + " is not in the active downstream of " + compOne + ".");
-						return;
-					}
-					for(int i = 0; i < _top.size(); i++) {
-						if(_top.get(i).equals(compTwo)) {
-							_top.remove(i);
-							break;
-						}
-					}
-					_runningTopology._topology.put(compOne, _top);
-					_runningTopology.notifyAll();
-				}
-
-				String ip = "";
-				synchronized(_task_ips) {
-					ip = _task_ips.get(compTwo);
-				}
-				
-				synchronized(_control_map) {
-					SynEFOMessage msg = new SynEFOMessage();
-					msg._type = SynEFOMessage.Type.SCLOUT;
-					msg._values.put("ACTION", "REMOVE");
-					msg._values.put("NEW_TASK", compTwo);
-					msg._values.put("NEW_TASK_IP", ip);
-					_control_map.put(compOne, msg);
-					_control_map.notifyAll();
-				}
+			}else {
+				System.out.println("+efo error: Need to define component-A (will {remove|add} task from/to downstream) when \"scale-out\" is issued.");
+				return;
 			}
-		}else if(command.equals("running-top")) {
-			Iterator<Entry<String, ArrayList<String>>> itr = _runningTopology._topology.entrySet().iterator();
+			String compTwo = null;
+			if(strTok.hasMoreTokens()) {
+				compTwo = strTok.nextToken();
+				if(beastMaster.physical_topology.containsKey(compTwo) == false) {
+					System.out.println("+EFO error: Need to define an existing component-B when \"scale-out\" is issued.");
+					return;
+				}
+			}else {
+				System.out.println("+efo error: Need to define component-B (will be {remove|add}-ed from/to component-A downstream) when \"scale-out\" is issued.");
+				return;
+			}
+			/**
+			 * Issue the command for scaling out
+			 */
+			if(beastMaster.physical_topology.get(compOne).lastIndexOf(compTwo) == -1) {
+				System.out.println("+efo error: " + compTwo + " is not an available downstream task of " + compOne + ".");
+				return;
+			}else if(beastMaster.active_topology.get(compOne).lastIndexOf(compTwo) == -1) {
+				System.out.println("+efo error: " + compTwo + " is not an active downstream task of " + compOne + ".");
+				return;
+			}
+			synchronized(beastMaster) {
+				/**
+				 * If the node is active.
+				 */
+				if(beastMaster.active_topology.get(compOne).lastIndexOf(compTwo) >= 0) {
+					ArrayList<String> downstreamActiveTasks = beastMaster.active_topology.get(compOne);
+					downstreamActiveTasks.remove(downstreamActiveTasks.lastIndexOf(compTwo));
+					beastMaster.active_topology.put(compOne, downstreamActiveTasks);
+				}
+				String scaleInCommand = "REMOVE~" + compTwo;
+				beastMaster.setScaleCommand(compOne, scaleInCommand);
+			}
+		}else if(command.equals("active-top")) {
+			HashMap<String, ArrayList<String>> activeTopologyCopy = new HashMap<String, ArrayList<String>>(beastMaster.active_topology);
+			Iterator<Entry<String, ArrayList<String>>> itr = activeTopologyCopy.entrySet().iterator();
 			while(itr.hasNext()) {
 				Entry<String, ArrayList<String>> entry = itr.next();
 				String task = entry.getKey();
-				String task_ip = _task_ips.get(entry.getKey());
 				ArrayList<String> downStream = entry.getValue();
-				System.out.println("\tTask: " + task + " (IP: " + task_ip + ") down stream: ");
+				System.out.println("\tTask: " + task + " down stream: ");
 				for(String t : downStream) {
 					System.out.println("\t\t" + t);
 				}
 			}
 		}else if(command.equals("physical-top")) {
-			Iterator<Entry<String, ArrayList<String>>> itr = _topology._topology.entrySet().iterator();
+			HashMap<String, ArrayList<String>> physicalTopologyCopy = new HashMap<String, ArrayList<String>>(beastMaster.physical_topology);
+			Iterator<Entry<String, ArrayList<String>>> itr = physicalTopologyCopy.entrySet().iterator();
 			while(itr.hasNext()) {
 				Entry<String, ArrayList<String>> entry = itr.next();
 				String task = entry.getKey();
@@ -190,11 +157,13 @@ public class SynEFOUserInterface implements Runnable {
 			 * Print help instructions
 			 */
 			System.out.println("Available commands:");
-			System.out.println("\t util: Show current utilization levels of each task");
-			System.out.println("\t scale-out <action> <component-one> <component-two>: action:{add,remove}");
+			System.out.println("\t scale-out <component-one> <component-two>: action:{add,remove}");
 			System.out.println("\t\t component-one: task that will have downstream modified");
-			System.out.println("\t\t component-two: task that will either be added or removed");
-			System.out.println("\t running-top: Prints out the current working topology");
+			System.out.println("\t\t component-two: task that will either be added");
+			System.out.println("\t scale-in <component-one> <component-two>: action:{add,remove}");
+			System.out.println("\t\t component-one: task that will have downstream modified");
+			System.out.println("\t\t component-two: task that will be removed");
+			System.out.println("\t active-top: Prints out the current working topology");
 			System.out.println("\t physical-top: Prints out the physical topology");
 			System.out.println("\t quit: self-explanatory");
 		}else if(command.equals("quit")) {
