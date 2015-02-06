@@ -211,13 +211,13 @@ public class SynEFOSpout extends BaseRichSpout {
 			strBuild.append(SynEFOConstant.PUNCT_TUPLE_TAG + "/");
 			idx = 0;
 			if(action.toLowerCase().contains("add")) {
-				_active_downstream_tasks.add(task);
+				_active_downstream_tasks.add(taskWithIp);
 				_int_active_downstream_tasks.add(task_id);
 				strBuild.append(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.ADD_ACTION + "/");
 			}else if(action.toLowerCase().contains("remove")) {
 				strBuild.append(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.REMOVE_ACTION + "/");
 			}
-			strBuild.append(SynEFOConstant.COMP_TAG + ":" + task + "/");
+			strBuild.append(SynEFOConstant.COMP_TAG + ":" + task + ":" + task_id + "/");
 			strBuild.append(SynEFOConstant.COMP_NUM_TAG + ":" + _int_active_downstream_tasks.size() + "/");
 			strBuild.append(SynEFOConstant.COMP_IP_TAG + ":" + taskIp + "/");
 			/**
@@ -237,8 +237,8 @@ public class SynEFOSpout extends BaseRichSpout {
 			 * we remove it after sending the punctuation tuples, so 
 			 * that the removed task is notified to share state
 			 */
-			if(action.toLowerCase().contains("remove")) {
-				_active_downstream_tasks.remove(_active_downstream_tasks.indexOf(task));
+			if(action.toLowerCase().contains("remove") && _active_downstream_tasks.indexOf(taskWithIp) >= 0) {
+				_active_downstream_tasks.remove(_active_downstream_tasks.indexOf(taskWithIp));
 				_int_active_downstream_tasks.remove(_int_active_downstream_tasks.indexOf(task_id));
 			}
 		}

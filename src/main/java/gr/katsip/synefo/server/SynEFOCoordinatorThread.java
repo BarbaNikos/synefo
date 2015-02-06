@@ -122,15 +122,6 @@ public class SynEFOCoordinatorThread implements Runnable {
 			_nameToIdMap.notifyAll();
 		}
 
-		/**
-		 * At this point Usage of tasks is monitored
-		 */
-		System.out.println("+EFO coordinator thread: concluded naming resolution.");
-		try {
-			Thread.sleep(100000);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
 		userInterfaceThread = new Thread(new SynEFOUserInterface(tamer));
 		userInterfaceThread.start();
 	}

@@ -43,7 +43,7 @@ public class ExperimentalTopology {
 		builder.setSpout("spout_1", new SynEFOSpout("spout_1", synEFO_ip, synEFO_port, tuple_producer), 1);
 		_tmp = new ArrayList<String>();
 		_tmp.add("select_bolt_1");
-		_tmp.add("select_bolt_1");
+		_tmp.add("select_bolt_2");
 		_topology._topology.put("spout_1", new ArrayList<String>(_tmp));
 		/**
 		 * Stage 1: Select operators
@@ -89,7 +89,7 @@ public class ExperimentalTopology {
 		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
 		builder.setBolt("count_group_by_bolt_1", new SynEFOBolt("count_group_by_bolt_1", synEFO_ip, synEFO_port, countGroupByAggrOperator), 1)
 		.directGrouping("join_bolt_1").directGrouping("join_bolt_2");
-		_topology._topology.put("count_group_bolt_1", new ArrayList<String>());
+		_topology._topology.put("count_group_by_bolt_1", new ArrayList<String>());
 		/**
 		 * Notify SynEFO server about the 
 		 * Topology

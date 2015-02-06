@@ -76,12 +76,13 @@ public class SynEFOUserInterface implements Runnable {
 				 * If the node is not active.
 				 */
 				if(beastMaster.active_topology.get(compOne).lastIndexOf(compTwo) < 0) {
-					ArrayList<String> downstreamActiveTasks = beastMaster.active_topology.get(compOne);
-					downstreamActiveTasks.add(compTwo);
-					beastMaster.active_topology.put(compOne, downstreamActiveTasks);
+//					ArrayList<String> downstreamActiveTasks = beastMaster.active_topology.get(compOne);
+//					downstreamActiveTasks.add(compTwo);
+//					beastMaster.active_topology.put(compOne, downstreamActiveTasks);
+					beastMaster.scaleFunction.addActiveNodeTopology(compTwo);
+					String scaleOutCommand = "ADD~" + compTwo;
+					beastMaster.setScaleCommand(compOne, scaleOutCommand);
 				}
-				String scaleOutCommand = "ADD~" + compTwo;
-				beastMaster.setScaleCommand(compOne, scaleOutCommand);
 			}
 		}else if(command.equals("scale-in")) {
 			String compOne = null;
@@ -121,12 +122,14 @@ public class SynEFOUserInterface implements Runnable {
 				 * If the node is active.
 				 */
 				if(beastMaster.active_topology.get(compOne).lastIndexOf(compTwo) >= 0) {
-					ArrayList<String> downstreamActiveTasks = beastMaster.active_topology.get(compOne);
-					downstreamActiveTasks.remove(downstreamActiveTasks.lastIndexOf(compTwo));
-					beastMaster.active_topology.put(compOne, downstreamActiveTasks);
+//					ArrayList<String> downstreamActiveTasks = beastMaster.active_topology.get(compOne);
+//					downstreamActiveTasks.remove(downstreamActiveTasks.lastIndexOf(compTwo));
+//					beastMaster.active_topology.put(compOne, downstreamActiveTasks);
+					beastMaster.scaleFunction.removeActiveNodeGc(compTwo);
+					String scaleInCommand = "REMOVE~" + compTwo;
+					beastMaster.setScaleCommand(compOne, scaleInCommand);
 				}
-				String scaleInCommand = "REMOVE~" + compTwo;
-				beastMaster.setScaleCommand(compOne, scaleInCommand);
+				
 			}
 		}else if(command.equals("active-top")) {
 			HashMap<String, ArrayList<String>> activeTopologyCopy = new HashMap<String, ArrayList<String>>(beastMaster.active_topology);
