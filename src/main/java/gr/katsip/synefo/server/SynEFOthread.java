@@ -8,56 +8,55 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import gr.katsip.synefo.storm.lib.SynEFOMessage;
-import gr.katsip.synefo.storm.lib.Topology;
 
 
 public class SynEFOthread implements Runnable {
 
-	private InputStream _in;
+	private InputStream in;
 
-	private OutputStream _out;
+	private OutputStream out;
 
-	private ObjectInputStream _input;
+	private ObjectInputStream input;
 
-	private ObjectOutputStream _output;
+	private ObjectOutputStream output;
 
-	private Topology _physicalTopology;
+	private HashMap<String, ArrayList<String>> physicalTopology;
 
-	private Topology _runningTopology;
+	private HashMap<String, ArrayList<String>> runningTopology;
 
-	private HashMap<String, Integer> _nameToIdMap;
+	private HashMap<String, Integer> taskNameToIdMap;
 
-	private Integer _taskId;
+	private Integer taskId;
 
-	private String _taskName;
+	private String taskName;
 
-	private String _componentIp;
+	private String taskIP;
 	
-	private HashMap<String, String> _task_ips;
+	private HashMap<String, String> taskIPs;
 
-	public SynEFOthread(Topology physicalTopology, Topology runningTopology, 
-			HashMap<String, Integer> nameToIdMap, 
+	public SynEFOthread(HashMap<String, ArrayList<String>> physicalTopology, HashMap<String, ArrayList<String>> runningTopology, 
+			HashMap<String, Integer> taskNameToIdMap, 
 			InputStream in, OutputStream out,  
-			HashMap<String, String> task_ips) {
-		_in = in;
-		_out = out;
-		_nameToIdMap = nameToIdMap;
-		_task_ips = task_ips;
+			HashMap<String, String> taskIPs) {
+		this.in = in;
+		this.out = out;
+		this.taskNameToIdMap = taskNameToIdMap;
+		this.taskIPs = taskIPs;
 		try {
-			_output = new ObjectOutputStream(_out);
-			_input = new ObjectInputStream(_in);
+			output = new ObjectOutputStream(this.out);
+			input = new ObjectInputStream(this.in);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		_physicalTopology = physicalTopology;
-		_runningTopology = runningTopology;
+		this.physicalTopology = physicalTopology;
+		this.runningTopology = runningTopology;
 	}
 
 	public void run() {
 		SynEFOMessage msg = null;
-		System.out.println("+EFO worker: Accepted connection. Initiating handler thread...");
+		System.out.println("+efo worker: Accepted connection. Initiating handler thread...");
 		try {
-			msg = (SynEFOMessage) _input.readObject();
+			msg = (SynEFOMessage) input.readObject();
 		} catch (ClassNotFoundException | IOException e) {
 			e.printStackTrace();
 		}
@@ -74,24 +73,24 @@ public class SynEFOthread implements Runnable {
 				topologyProcess();
 				break;
 			default:
-				System.err.println("+EFO worker: unrecognized connection (" +
+				System.err.println("+efo worker: unrecognized connection (" +
 						_componentType + "). Terminating operation...");
 			}
 		}
 	}
 
 	public void spoutProcess(HashMap<String, String> values) {
-		_taskId = Integer.parseInt(values.get("TASK_ID"));
-		_taskName = values.get("TASK_NAME");
-		_componentIp = values.get("TASK_IP");
-		synchronized(_task_ips) {
-			_task_ips.put(_taskName + ":" + _taskId, _componentIp);
+		taskId = Integer.parseInt(values.get("TASK_ID"));
+		taskName = values.get("TASK_NAME");
+		taskIP = values.get("TASK_IP");
+		synchronized(taskIPs) {
+			taskIPs.put(taskName + ":" + taskId, taskIP);
 		}
-		synchronized(_nameToIdMap) {
-			_nameToIdMap.put(_taskName, _taskId);
-			_nameToIdMap.notifyAll();
+		synchronized(taskNameToIdMap) {
+			taskNameToIdMap.put(taskName, taskId);
+			taskNameToIdMap.notifyAll();
 		}
-		System.out.println("+EFO worker-SPOUT: " + _taskName + "(" + _taskId + "@" + _componentIp + 
+		System.out.println("+efo worker-SPOUT: " + taskName + "(" + taskId + "@" + taskIP + 
 				") connected.");
 		/**
 		 * Wait until the Coordinator thread 
@@ -99,10 +98,10 @@ public class SynEFOthread implements Runnable {
 		 * the Task IDs. This is done by 
 		 * emptying the _nameToIdMap
 		 */
-		synchronized(_nameToIdMap) {
-			while(_nameToIdMap.size() > 0) {
+		synchronized(taskNameToIdMap) {
+			while(taskNameToIdMap.size() > 0) {
 				try {
-					_nameToIdMap.wait();
+					taskNameToIdMap.wait();
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -110,9 +109,9 @@ public class SynEFOthread implements Runnable {
 		}
 		ArrayList<String> _downStream = null;
 		ArrayList<String> _activeDownStream = null;
-		if(_physicalTopology._topology.containsKey(_taskName + ":" + _taskId + "@" + _componentIp)) {
-			_downStream = new ArrayList<String>(_physicalTopology._topology.get(_taskName + ":" + _taskId + "@" + _componentIp));
-			_activeDownStream = new ArrayList<String>(_runningTopology._topology.get(_taskName + ":" + _taskId + "@" + _componentIp));
+		if(physicalTopology.containsKey(taskName + ":" + taskId + "@" + taskIP)) {
+			_downStream = new ArrayList<String>(physicalTopology.get(taskName + ":" + taskId + "@" + taskIP));
+			_activeDownStream = new ArrayList<String>(runningTopology.get(taskName + ":" + taskId + "@" + taskIP));
 		}else {
 			_downStream = new ArrayList<String>();
 			_activeDownStream = new ArrayList<String>();
@@ -121,36 +120,36 @@ public class SynEFOthread implements Runnable {
 		 * Send back the downstream topology info
 		 */
 		try {
-			_output.writeObject(_downStream);
-			_output.flush();
-			_output.writeObject(_activeDownStream);
-			_output.flush();
+			output.writeObject(_downStream);
+			output.flush();
+			output.writeObject(_activeDownStream);
+			output.flush();
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
-		System.out.println("SPOUT: " + _taskName + "(" + _taskId + "@" + _componentIp + 
+		System.out.println("+efo SPOUT: " + taskName + "(" + taskId + "@" + taskIP + 
 				") registered successfully.");
 		try {
-			_output.flush();
-			_output.close();
-			_input.close();
+			output.flush();
+			output.close();
+			input.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 
 	public void boltProcess(HashMap<String, String> values) {
-		_taskId = Integer.parseInt(values.get("TASK_ID"));
-		_taskName = values.get("TASK_NAME");
-		_componentIp = values.get("TASK_IP");
-		synchronized(_task_ips) {
-			_task_ips.put(_taskName + ":" + _taskId, _componentIp);
+		taskId = Integer.parseInt(values.get("TASK_ID"));
+		taskName = values.get("TASK_NAME");
+		taskIP = values.get("TASK_IP");
+		synchronized(taskIPs) {
+			taskIPs.put(taskName + ":" + taskId, taskIP);
 		}
-		synchronized(_nameToIdMap) {
-			_nameToIdMap.put(_taskName, _taskId);
-			_nameToIdMap.notifyAll();
+		synchronized(taskNameToIdMap) {
+			taskNameToIdMap.put(taskName, taskId);
+			taskNameToIdMap.notifyAll();
 		}
-		System.out.println("+EFO worker-BOLT: " + _taskName + "(" + _taskId + "@" + _componentIp + 
+		System.out.println("+efo worker-BOLT: " + taskName + "(" + taskId + "@" + taskIP + 
 				") connected.");
 		/**
 		 * Wait until the Coordinator thread 
@@ -158,10 +157,10 @@ public class SynEFOthread implements Runnable {
 		 * the Task IDs. This is done by 
 		 * emptying the _nameToIdMap
 		 */
-		synchronized(_nameToIdMap) {
-			while(_nameToIdMap.size() > 0) {
+		synchronized(taskNameToIdMap) {
+			while(taskNameToIdMap.size() > 0) {
 				try {
-					_nameToIdMap.wait();
+					taskNameToIdMap.wait();
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -169,9 +168,9 @@ public class SynEFOthread implements Runnable {
 		}
 		ArrayList<String> _downStream = null;
 		ArrayList<String> _activeDownStream = null;
-		if(_physicalTopology._topology.containsKey(_taskName + ":" + _taskId + "@" + _componentIp)) {
-			_downStream = new ArrayList<String>(_physicalTopology._topology.get(_taskName + ":" + _taskId + "@" + _componentIp));
-			_activeDownStream = new ArrayList<String>(_runningTopology._topology.get(_taskName + ":" + _taskId + "@" + _componentIp));
+		if(physicalTopology.containsKey(taskName + ":" + taskId + "@" + taskIP)) {
+			_downStream = new ArrayList<String>(physicalTopology.get(taskName + ":" + taskId + "@" + taskIP));
+			_activeDownStream = new ArrayList<String>(runningTopology.get(taskName + ":" + taskId + "@" + taskIP));
 		}else {
 			_downStream = new ArrayList<String>();
 			_activeDownStream = new ArrayList<String>();
@@ -180,10 +179,10 @@ public class SynEFOthread implements Runnable {
 		 * Send back the downstream topology info
 		 */
 		try {
-			_output.writeObject(_downStream);
-			_output.flush();
-			_output.writeObject(_activeDownStream);
-			_output.flush();
+			output.writeObject(_downStream);
+			output.flush();
+			output.writeObject(_activeDownStream);
+			output.flush();
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
@@ -191,42 +190,44 @@ public class SynEFOthread implements Runnable {
 		 * After coordination, keep listening 
 		 * for received task statistics messages
 		 */
-		System.out.println("+EFO worker-BOLT: " + _taskName + "@" + _componentIp + 
-				"(" + _taskId + ") registered successfully.");
+		System.out.println("+efo worker-BOLT: " + taskName + "@" + taskIP + 
+				"(" + taskId + ") registered successfully.");
 		try {
-			_output.flush();
-			_output.close();
-			_input.close();
+			output.flush();
+			output.close();
+			input.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	public void topologyProcess() {
-		Topology _topology = null;
-		System.out.println("+EFO worker-TOPOLOGY: connected.");
+		HashMap<String, ArrayList<String>> topology = null;
+		System.out.println("+efo worker-TOPOLOGY: connected.");
 		try {
-			_topology = (Topology) _input.readObject();
+			topology = (HashMap<String, ArrayList<String>>) input.readObject();
 		} catch (ClassNotFoundException | IOException e1) {
 			e1.printStackTrace();
 		}
-		if(_topology._topology == null) {
-			System.err.println("+EFO worker-TOPOLOGY: received empty topology object.");
+		if(topology == null) {
+			System.err.println("+efo worker-TOPOLOGY: received empty topology object.");
 			return;
 		}
-		System.out.println("+EFO worker-TOPOLOGY: received topology information.");
-		synchronized(_physicalTopology) {
-			if(_physicalTopology._topology.size() == 0 && _topology._topology != null) {
-				_physicalTopology._topology = _topology._topology;
-				_physicalTopology.notifyAll();
+		System.out.println("+efo worker-TOPOLOGY: received topology information.");
+		synchronized(physicalTopology) {
+			if(physicalTopology.size() == 0 && topology != null) {
+				physicalTopology.clear();
+				physicalTopology.putAll(topology);
+				physicalTopology.notifyAll();
 			}
 		}
 		String _ack = "+EFO_ACK";
 		try {
-			_output.writeObject(_ack);
-			_output.flush();
-			_output.close();
-			_input.close();
+			output.writeObject(_ack);
+			output.flush();
+			output.close();
+			input.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

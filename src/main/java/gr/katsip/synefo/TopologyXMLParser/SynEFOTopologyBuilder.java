@@ -3,9 +3,7 @@ package gr.katsip.synefo.TopologyXMLParser;
 //import gr.katsip.synefo.storm.api.SynEFOBolt;
 import gr.katsip.synefo.storm.api.SynEFOSpout;
 import gr.katsip.synefo.storm.lib.SynEFOMessage;
-import gr.katsip.synefo.storm.lib.Topology;
 import gr.katsip.synefo.storm.operators.SampleTupleProducer;
-
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
@@ -13,7 +11,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 //import backtype.storm.topology.BoltDeclarer;
@@ -22,7 +19,7 @@ import backtype.storm.utils.Utils;
 
 public class SynEFOTopologyBuilder {
 	
-	private Topology _topology;
+	private HashMap<String, ArrayList<String>> topology;
 	
 	private List<Component> components;
 	
@@ -35,7 +32,7 @@ public class SynEFOTopologyBuilder {
 	private TopologyBuilder builder;
 	
     public void build(String topology_xml_file) {
-    	_topology = new Topology();
+    	topology = new HashMap<String, ArrayList<String>>();
     	TopologyParser parser = new TopologyParser();
     	parser.parseTopology(topology_xml_file);
     	components = parser.getComponents();
@@ -51,25 +48,25 @@ public class SynEFOTopologyBuilder {
     		if(comp.getType().equals("Spout")) {
     			builder.setSpout(comp.getName(), new SynEFOSpout(comp.getName(), synEFOhost, Integer.parseInt(synEFOport), 
     					new SampleTupleProducer()), comp.getExecutors());
-    			_topology._topology.put(comp.getName(), new ArrayList<String>());
+    			topology.put(comp.getName(), new ArrayList<String>());
     		}else if(comp.getType().equals("Bolt")) {
     			//TODO: Need to fix the following
 //    			BoltDeclarer declarer = 
 //    					builder.setBolt(comp.getName(), new SynEFOBolt(comp.getName(), synEFOhost, Integer.parseInt(synEFOport), 
 //    							new SampleOperator(), comp.getStat_report_timestamp()), comp.getExecutors());
-    			_topology._topology.put(comp.getName(), new ArrayList<String>());
+    			topology.put(comp.getName(), new ArrayList<String>());
     			if(comp.getUpstreamTasks() != null && comp.getUpstreamTasks().size() > 0) {
     				for(String upstream_task : comp.getUpstreamTasks()) {
     					//TODO: Fix the following
 //    					declarer.directGrouping(upstream_task);
-    					if(_topology._topology.containsKey(upstream_task)) {
-    						ArrayList<String> down_tasks = _topology._topology.get(upstream_task);
+    					if(topology.containsKey(upstream_task)) {
+    						ArrayList<String> down_tasks = topology.get(upstream_task);
     						down_tasks.add(comp.getName());
-    						_topology._topology.put(upstream_task, down_tasks);
+    						topology.put(upstream_task, down_tasks);
     					}else {
     						ArrayList<String> down_tasks = new ArrayList<String>();
     						down_tasks.add(comp.getName());
-    						_topology._topology.put(upstream_task, down_tasks);
+    						topology.put(upstream_task, down_tasks);
     					}
     				}
     				
@@ -78,8 +75,8 @@ public class SynEFOTopologyBuilder {
     	}
     	ArrayList<String> tmp = new ArrayList<String>();
     	tmp.add(Integer.toString(components.size()));
-    	_topology._topology.put("TASK_NUM", tmp);
-    	System.out.println("Topology parsed" + _topology.toString());
+    	topology.put("TASK_NUM", tmp);
+    	System.out.println("Topology parsed" + topology.toString());
 //    	Iterator<ScaleOutEvent> itr2 = events.iterator();
 //    	System.out.println("Events:");
 //    	while(itr2.hasNext()) {
@@ -102,7 +99,7 @@ public class SynEFOTopologyBuilder {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		_out.writeObject(_topology);
+		_out.writeObject(topology);
 		_out.flush();
 		String _ack = null;
 		try {

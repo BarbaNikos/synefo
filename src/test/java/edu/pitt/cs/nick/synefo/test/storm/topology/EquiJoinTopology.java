@@ -3,7 +3,6 @@ package edu.pitt.cs.nick.synefo.test.storm.topology;
 import gr.katsip.synefo.storm.api.SynEFOBolt;
 import gr.katsip.synefo.storm.api.SynEFOSpout;
 import gr.katsip.synefo.storm.lib.SynEFOMessage;
-import gr.katsip.synefo.storm.lib.Topology;
 import gr.katsip.synefo.storm.operators.SampleTupleProducer;
 import gr.katsip.synefo.storm.operators.relational.EquiJoinOperator;
 import gr.katsip.synefo.storm.operators.relational.StringComparator;
@@ -24,7 +23,7 @@ public class EquiJoinTopology {
 	public static void main(String[] args) throws Exception {
 		String synEFO_ip = "";
 		Integer synEFO_port = -1;
-		Topology _topology = new Topology();
+		HashMap<String, ArrayList<String>> _topology = new HashMap<String, ArrayList<String>>();
 		ArrayList<String> _tmp = new ArrayList<String>();
 		if(args.length < 2) {
 			System.err.println("Arguments: <synEFO_ip> <synEFO_port>");
@@ -38,7 +37,7 @@ public class EquiJoinTopology {
 		SampleTupleProducer tuple_producer = new SampleTupleProducer();
 		builder.setSpout("spout_1", new SynEFOSpout("spout_1", synEFO_ip, synEFO_port, tuple_producer), 1);
 		_tmp.add("join_bolt");
-		_topology._topology.put("spout_1", new ArrayList<String>(_tmp));
+		_topology.put("spout_1", new ArrayList<String>(_tmp));
 		_tmp = null;
 		_tmp = new ArrayList<String>();
 		/**
@@ -48,7 +47,7 @@ public class EquiJoinTopology {
 		String[] join_schema = { "name-a", "name-b" };
 		equi_join_op.setOutputSchema(new Fields(join_schema));
 		builder.setBolt("join_bolt", new SynEFOBolt("join_bolt", synEFO_ip, synEFO_port, equi_join_op), 1).directGrouping("spout_1");
-		_topology._topology.put("join_bolt", new ArrayList<String>());
+		_topology.put("join_bolt", new ArrayList<String>());
 		_tmp = null;
 		_tmp = new ArrayList<String>();
 		/**

@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 
-import gr.katsip.synefo.metric.SynEFOMetric;
+import gr.katsip.synefo.metric.SynefoMetric;
 import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.lib.SynEFOMessage;
 import gr.katsip.synefo.storm.lib.SynEFOMessage.Type;
@@ -65,7 +65,7 @@ public class SynEFOSpout extends BaseRichSpout {
 
 	private long _tuple_counter;
 
-	private SynEFOMetric metricObject;
+	private SynefoMetric metricObject;
 
 	transient private ZooPet pet;
 
@@ -187,10 +187,10 @@ public class SynEFOSpout extends BaseRichSpout {
 		}
 		_tuple_counter += 1;
 		metricObject.updateMetrics(_tuple_counter);
-		_stats.update_memory();
-		_stats.update_cpu_load();
-		_stats.update_latency();
-		_stats.update_throughput(_tuple_counter);
+		_stats.updateMemory();
+		_stats.updateCpuLoad();
+		_stats.updateLatency();
+		_stats.updateThroughput(_tuple_counter);
 		String scaleCommand = "";
 		synchronized(pet) {
 			if(pet.pendingCommand != null) {
@@ -257,7 +257,7 @@ public class SynEFOSpout extends BaseRichSpout {
 		}
 		_collector = collector;
 		_task_id = context.getThisTaskId();
-		metricObject = new SynEFOMetric();
+		metricObject = new SynefoMetric();
 		metricObject.initMetrics(context, _task_name, Integer.toString(_task_id));
 	}
 

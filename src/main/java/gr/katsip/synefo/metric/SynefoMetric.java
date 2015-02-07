@@ -3,7 +3,7 @@ package gr.katsip.synefo.metric;
 import backtype.storm.metric.api.AssignableMetric;
 import backtype.storm.task.TopologyContext;
 
-public class SynEFOMetric {
+public class SynefoMetric {
 
 	private TaskStatistics usage;
 	
@@ -15,15 +15,15 @@ public class SynEFOMetric {
 	
 	private transient AssignableMetric memoryMetric;
 	
-	public SynEFOMetric() {
+	public SynefoMetric() {
 		usage = new TaskStatistics();
 	}
 	
 	public void initMetrics(TopologyContext context, String taskName, String taskId) {
-		latencyMetric = new AssignableMetric(usage.get_latency());
-		throughputMetric = new AssignableMetric(usage.get_throughput());
-		cpuMetric = new AssignableMetric(usage.get_cpu_load());
-		memoryMetric = new AssignableMetric(usage.get_memory());
+		latencyMetric = new AssignableMetric(usage.getLatency());
+		throughputMetric = new AssignableMetric(usage.getThroughput());
+		cpuMetric = new AssignableMetric(usage.getCpuLoad());
+		memoryMetric = new AssignableMetric(usage.getMemory());
 		
 		context.registerMetric("latency_metric_" + taskName + ":" + taskId, latencyMetric, 1);
 		context.registerMetric("throughput_" + taskName + ":" + taskId, throughputMetric, 1);
@@ -39,23 +39,23 @@ public class SynEFOMetric {
 	}
 	
 	public void updateCPU() {
-		usage.update_cpu_load();
-		cpuMetric.setValue(usage.get_cpu_load());
+		usage.updateCpuLoad();
+		cpuMetric.setValue(usage.getCpuLoad());
 	}
 	
 	public void updateMemory() {
-		usage.update_memory();
-		memoryMetric.setValue(usage.get_memory());
+		usage.updateMemory();
+		memoryMetric.setValue(usage.getMemory());
 	}
 	
 	public void updateThroughput(long _thrpt_current_tuple_num) {
-		usage.update_throughput(_thrpt_current_tuple_num);
-		throughputMetric.setValue(usage.get_throughput());
+		usage.updateThroughput(_thrpt_current_tuple_num);
+		throughputMetric.setValue(usage.getThroughput());
 	}
 	
 	public void updateLatency() {
-		usage.update_latency();
-		latencyMetric.setValue(usage.get_latency());
+		usage.updateLatency();
+		latencyMetric.setValue(usage.getLatency());
 	}
 	
 	public TaskStatistics getStats() {

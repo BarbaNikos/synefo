@@ -2,10 +2,11 @@ package gr.katsip.synefo.metric;
 
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryUsage;
 
+//import java.lang.management.MemoryUsage;
 import com.sun.management.OperatingSystemMXBean;
 
+@SuppressWarnings("restriction")
 public class TaskStatistics implements Serializable {
 	
 	/**
@@ -13,182 +14,183 @@ public class TaskStatistics implements Serializable {
 	 */
 	private static final long serialVersionUID = 2552450405227774625L;
 
-	private double _selectivity;
+	private double selectivity;
 	
-	private long _sel_samples;
+	private long selectivitySamples;
 	
-	private long _latency;
+	private long latency;
 	
-	private long _prev_latency;
+	private long previousLatency;
 	
-	private long _lat_samples;
+	private long latencySamples;
 	
-	private double _throughput;
+	private double throughput;
 	
-	private long _thrpt_samples;
+	private long throughputSamples;
 	
-	private long _thrpt_prev_timestamp;
+	private long throughputPreviousTimestamp;
 	
-	private long _thrpt_prev_tuple_num;
+	private long throughputPreviousTupleNumber;
 	
-	private double _memory;
+	private double memory;
 	
-	private long _mem_samples;
+	private long memorySamples;
 	
-	private double _input_rate;
+	private double inputRate;
 	
-	private long _inrt_samples;
+	private long inputRateSamples;
 
-	private double _cpu_load;
+	private double cpuLoad;
 	
-	private long _cpu_samples;
+	private long cpuSamples;
 	
 	public TaskStatistics() {
-		_selectivity = 0.0;
-		_sel_samples = 0;
-		_latency = 0;
-		_lat_samples = 0;
-		_throughput = 0;
-		_thrpt_samples = 0;
-		_memory = 0.0;
-		_mem_samples = 0;
-		_input_rate = 0.0;
-		_inrt_samples = 0;
-		_cpu_load = 0.0;
-		_cpu_samples = 0;
+		selectivity = 0.0;
+		selectivitySamples = 0;
+		latency = 0;
+		latencySamples = 0;
+		throughput = 0;
+		throughputSamples = 0;
+		memory = 0.0;
+		memorySamples = 0;
+		inputRate = 0.0;
+		inputRateSamples = 0;
+		cpuLoad = 0.0;
+		cpuSamples = 0;
 	}
 	
-	public void update_selectivity(double selectivity) {
-		if(_sel_samples == 0) {
-			_selectivity = selectivity;
-			_sel_samples += 1;
+	public void updateSelectivity(double selectivity) {
+		if(selectivitySamples == 0) {
+			this.selectivity = selectivity;
+			selectivitySamples += 1;
 		}else {
-			_selectivity = _selectivity + (selectivity - _selectivity)/(_sel_samples + 1);
-			_sel_samples += 1;
+			this.selectivity = this.selectivity + (selectivity - this.selectivity)/(selectivitySamples + 1);
+			selectivitySamples += 1;
 		}
 	}
 
-	public double get_selectivity() {
-		return _selectivity;
+	public double getSelectivity() {
+		return selectivity;
 	}
 	
-	public void update_latency() {
-		if(_lat_samples == 0) {
-			_latency = 0;
-			_prev_latency = System.currentTimeMillis();
-			_lat_samples +=1;
+	public void updateLatency() {
+		if(latencySamples == 0) {
+			this.latency = 0;
+			previousLatency = System.currentTimeMillis();
+			latencySamples +=1;
 		}else {
 			long _curr_timestamp = System.currentTimeMillis();
-			long latency = _curr_timestamp - _prev_latency;
-			_latency = _latency + (latency - _latency)/(_lat_samples + 1);
-			_lat_samples += 1;
-			_prev_latency = _curr_timestamp;
+			long latency = _curr_timestamp - previousLatency;
+			this.latency = this.latency + (latency - this.latency)/(latencySamples + 1);
+			latencySamples += 1;
+			previousLatency = _curr_timestamp;
 		}
 	}
 
-	public long get_latency() {
-		return _latency;
+	public long getLatency() {
+		return latency;
 	}
 	
-	public void update_throughput(long _thrpt_current_tuple_num) {
-		if(_thrpt_samples == 0) {
-			_throughput = 0;
-			_thrpt_prev_tuple_num = _thrpt_current_tuple_num;
-			_thrpt_prev_timestamp = System.currentTimeMillis();
-			_thrpt_samples += 1;
+	public void updateThroughput(long _thrpt_current_tuple_num) {
+		if(throughputSamples == 0) {
+			this.throughput = 0;
+			throughputPreviousTupleNumber = _thrpt_current_tuple_num;
+			throughputPreviousTimestamp = System.currentTimeMillis();
+			throughputSamples += 1;
 		}else {
-			long _thrpt_delta = Math.abs(_thrpt_prev_tuple_num - _thrpt_current_tuple_num);
+			long _thrpt_delta = Math.abs(throughputPreviousTupleNumber - _thrpt_current_tuple_num);
 			long _curr_timestamp = System.currentTimeMillis();
-			long _thrpt_time_delta = Math.abs(_curr_timestamp - _thrpt_prev_timestamp) / 1000;
+			long _thrpt_time_delta = Math.abs(_curr_timestamp - throughputPreviousTimestamp) / 1000;
 			if(_thrpt_time_delta == 0)
 				_thrpt_time_delta = 1;
 			double throughput = _thrpt_delta / _thrpt_time_delta;
-			_throughput = _throughput + (throughput - _throughput)/(_thrpt_samples + 1);
-			_thrpt_samples += 1;
-			_thrpt_prev_tuple_num = _thrpt_current_tuple_num;
-			_thrpt_prev_timestamp = _curr_timestamp;
+			this.throughput = this.throughput + (throughput - this.throughput)/(throughputSamples + 1);
+			throughputSamples += 1;
+			throughputPreviousTupleNumber = _thrpt_current_tuple_num;
+			throughputPreviousTimestamp = _curr_timestamp;
 		}
 	}
 
-	public double get_throughput() {
-		return _throughput;
+	public double getThroughput() {
+		return throughput;
 	}
 	
-	public void update_memory() {
-		MemoryUsage heapMemUsage = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage();
-		MemoryUsage nonHeapMemUsage = ManagementFactory.getMemoryMXBean().getNonHeapMemoryUsage();
-		long memory = heapMemUsage.getUsed() + nonHeapMemUsage.getUsed();
-		if(_mem_samples == 0) {
-			_memory = memory;
-			_mem_samples += 1;
+	public void updateMemory() {
+//		MemoryUsage heapMemUsage = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage();
+//		MemoryUsage nonHeapMemUsage = ManagementFactory.getMemoryMXBean().getNonHeapMemoryUsage();
+//		long memory = heapMemUsage.getUsed() + nonHeapMemUsage.getUsed();
+		Runtime runtime = Runtime.getRuntime();
+		double memory = (runtime.totalMemory() - runtime.freeMemory()) / runtime.totalMemory();
+		if(memorySamples == 0) {
+//			this.memory = memory;
+			this.memory = memory;
+			memorySamples += 1;
 		}else {
-			_memory = _memory + (memory - _memory)/(_mem_samples + 1);
-			_mem_samples += 1;
+			this.memory = this.memory + (memory - this.memory)/(memorySamples + 1);
+			memorySamples += 1;
 		}
 	}
 	
-	public double get_memory() {
-		return _memory;
+	public double getMemory() {
+		return memory;
 	}
 	
-	public void update_input_rate(double input_rate) {
-		if(_inrt_samples == 0) {
-			_input_rate = input_rate;
-			_inrt_samples += 1;
+	public void updateInputRate(double input_rate) {
+		if(inputRateSamples == 0) {
+			this.inputRate = input_rate;
+			inputRateSamples += 1;
 		}else {
-			_input_rate = _input_rate + (input_rate - _input_rate)/(_inrt_samples + 1);
-			_inrt_samples += 1;
+			this.inputRate = this.inputRate + (input_rate - this.inputRate)/(inputRateSamples + 1);
+			inputRateSamples += 1;
 		}
 	}
 	
-	public double get_input_rate() {
-		return _input_rate;
+	public double getInputRate() {
+		return inputRate;
 	}
 	
-	public void update_cpu_load() {
+	public void updateCpuLoad() {
 		double cpu_load = 0.0;
 		OperatingSystemMXBean bean = (com.sun.management.OperatingSystemMXBean) ManagementFactory
 	            .getOperatingSystemMXBean();
 		cpu_load = bean.getProcessCpuLoad();
-		if(_cpu_samples == 0) {
-			_cpu_load = cpu_load;
-			_cpu_samples += 1;
+		if(cpuSamples == 0) {
+			this.cpuLoad = cpu_load;
+			cpuSamples += 1;
 		}else {
-			_cpu_load = Math.abs(_cpu_load + (cpu_load - _cpu_load)/(_cpu_samples + 1));
-			_cpu_samples += 1;
+			this.cpuLoad = Math.abs(this.cpuLoad + (cpu_load - this.cpuLoad)/(cpuSamples + 1));
+			cpuSamples += 1;
 		}
 	}
 	
-	public double get_cpu_load() {
-		return _cpu_load;
+	public double getCpuLoad() {
+		return cpuLoad;
 	}
 	
-	public void reset_statistics() {
-		_selectivity = 0.0;
-		_sel_samples = 0;
-		_latency = 0;
-		_lat_samples = 0;
-		_throughput = 0;
-		_thrpt_samples = 0;
-		_memory = 0.0;
-		_mem_samples = 0;
-		_input_rate = 0.0;
-		_inrt_samples = 0;
-		_cpu_load = 0.0;
-		_cpu_samples = 0;
+	public void resetStatistics() {
+		selectivity = 0.0;
+		selectivitySamples = 0;
+		latency = 0;
+		latencySamples = 0;
+		throughput = 0;
+		throughputSamples = 0;
+		memory = 0.0;
+		memorySamples = 0;
+		inputRate = 0.0;
+		inputRateSamples = 0;
+		cpuLoad = 0.0;
+		cpuSamples = 0;
 	}
 
 	@Override
 	public String toString() {
-		return "TaskStatistics [_selectivity=" + _selectivity 
-				+ ", _latency=" + _latency
+		return "TaskStatistics [_selectivity=" + selectivity 
+				+ ", _latency=" + latency
 				+ ", _throughput="
-				+ _throughput 
-				+ ", _memory=" + _memory 
-				+ ", _input_rate=" + _input_rate 
-				+ ", _cpu_load=" + _cpu_load + "]";
+				+ throughput 
+				+ ", _memory=" + memory 
+				+ ", _input_rate=" + inputRate 
+				+ ", _cpu_load=" + cpuLoad + "]";
 	}
-	
-	
 	
 }

@@ -3,7 +3,6 @@ package gr.katsip.synefo.storm.SynEFOStorm;
 import gr.katsip.synefo.storm.api.SynEFOBolt;
 import gr.katsip.synefo.storm.api.SynEFOSpout;
 import gr.katsip.synefo.storm.lib.SynEFOMessage;
-import gr.katsip.synefo.storm.lib.Topology;
 import gr.katsip.synefo.storm.operators.SampleTupleProducer;
 import gr.katsip.synefo.storm.operators.relational.CountGroupByAggrOperator;
 import gr.katsip.synefo.storm.operators.relational.EquiJoinOperator;
@@ -26,7 +25,7 @@ public class ExperimentalTopology {
 	public static void main(String[] args) throws Exception {
 		String synEFO_ip = "";
 		Integer synEFO_port = -1;
-		Topology _topology = new Topology();
+		HashMap<String, ArrayList<String>> topology = new HashMap<String, ArrayList<String>>();
 		ArrayList<String> _tmp;
 		if(args.length < 2) {
 			System.err.println("Arguments: <synEFO_ip> <synEFO_port>");
@@ -44,7 +43,7 @@ public class ExperimentalTopology {
 		_tmp = new ArrayList<String>();
 		_tmp.add("select_bolt_1");
 		_tmp.add("select_bolt_2");
-		_topology._topology.put("spout_1", new ArrayList<String>(_tmp));
+		topology.put("spout_1", new ArrayList<String>(_tmp));
 		/**
 		 * Stage 1: Select operators
 		 */
@@ -58,8 +57,8 @@ public class ExperimentalTopology {
 		_tmp = new ArrayList<String>();
 		_tmp.add("join_bolt_1");
 		_tmp.add("join_bolt_2");
-		_topology._topology.put("select_bolt_1", new ArrayList<String>(_tmp));
-		_topology._topology.put("select_bolt_2", new ArrayList<String>(_tmp));
+		topology.put("select_bolt_1", new ArrayList<String>(_tmp));
+		topology.put("select_bolt_2", new ArrayList<String>(_tmp));
 		_tmp = null;
 		/**
 		 * Stage 2: Join operators
@@ -76,8 +75,8 @@ public class ExperimentalTopology {
 		builder.setBolt("join_bolt_2", new SynEFOBolt("join_bolt_2", synEFO_ip, synEFO_port, equi_join_op), 1).directGrouping("select_bolt_1").directGrouping("select_bolt_2");
 		_tmp = new ArrayList<String>();
 		_tmp.add("count_group_by_bolt_1");
-		_topology._topology.put("join_bolt_1", new ArrayList<String>(_tmp));
-		_topology._topology.put("join_bolt_2", new ArrayList<String>(_tmp));
+		topology.put("join_bolt_1", new ArrayList<String>(_tmp));
+		topology.put("join_bolt_2", new ArrayList<String>(_tmp));
 		_tmp = null;
 		/**
 		 * Stage 3: Aggregate operator
@@ -89,7 +88,7 @@ public class ExperimentalTopology {
 		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
 		builder.setBolt("count_group_by_bolt_1", new SynEFOBolt("count_group_by_bolt_1", synEFO_ip, synEFO_port, countGroupByAggrOperator), 1)
 		.directGrouping("join_bolt_1").directGrouping("join_bolt_2");
-		_topology._topology.put("count_group_by_bolt_1", new ArrayList<String>());
+		topology.put("count_group_by_bolt_1", new ArrayList<String>());
 		/**
 		 * Notify SynEFO server about the 
 		 * Topology
@@ -104,7 +103,7 @@ public class ExperimentalTopology {
 		_out.writeObject(msg);
 		_out.flush();
 		Thread.sleep(100);
-		_out.writeObject(_topology);
+		_out.writeObject(topology);
 		_out.flush();
 		String _ack = null;
 		_ack = (String) _in.readObject();

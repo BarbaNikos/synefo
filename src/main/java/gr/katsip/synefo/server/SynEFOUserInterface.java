@@ -45,7 +45,7 @@ public class SynEFOUserInterface implements Runnable {
 			String compOne = null;
 			if(strTok.hasMoreTokens()) {
 				compOne = strTok.nextToken();
-				if(beastMaster.physical_topology.containsKey(compOne) == false) {
+				if(beastMaster.physicalTopology.containsKey(compOne) == false) {
 					System.out.println("+efo error: Need to define an existing component-A when \"scale-out\" is issued.");
 					return;
 				}
@@ -56,7 +56,7 @@ public class SynEFOUserInterface implements Runnable {
 			String compTwo = null;
 			if(strTok.hasMoreTokens()) {
 				compTwo = strTok.nextToken();
-				if(beastMaster.physical_topology.containsKey(compTwo) == false) {
+				if(beastMaster.physicalTopology.containsKey(compTwo) == false) {
 					System.out.println("+EFO error: Need to define an existing component-B when \"scale-out\" is issued.");
 					return;
 				}
@@ -67,7 +67,7 @@ public class SynEFOUserInterface implements Runnable {
 			/**
 			 * Issue the command for scaling out
 			 */
-			if(beastMaster.physical_topology.get(compOne).lastIndexOf(compTwo) == -1) {
+			if(beastMaster.physicalTopology.get(compOne).lastIndexOf(compTwo) == -1) {
 				System.out.println("+efo error: " + compTwo + " is not an available downstream task of " + compOne + ".");
 				return;
 			}
@@ -75,8 +75,8 @@ public class SynEFOUserInterface implements Runnable {
 				/**
 				 * If the node is not active.
 				 */
-				if(beastMaster.active_topology.get(compOne).lastIndexOf(compTwo) < 0 && 
-						beastMaster.active_topology.containsKey(compTwo) == false) {
+				if(beastMaster.activeTopology.get(compOne).lastIndexOf(compTwo) < 0 && 
+						beastMaster.activeTopology.containsKey(compTwo) == false) {
 					beastMaster.scaleFunction.addActiveNodeTopology(compTwo);
 					String scaleOutCommand = "ADD~" + compTwo;
 					beastMaster.setScaleCommand(compOne, scaleOutCommand);
@@ -86,7 +86,7 @@ public class SynEFOUserInterface implements Runnable {
 			String compOne = null;
 			if(strTok.hasMoreTokens()) {
 				compOne = strTok.nextToken();
-				if(beastMaster.physical_topology.containsKey(compOne) == false) {
+				if(beastMaster.physicalTopology.containsKey(compOne) == false) {
 					System.out.println("+efo error: Need to define an existing component-A when \"scale-out\" is issued.");
 					return;
 				}
@@ -97,7 +97,7 @@ public class SynEFOUserInterface implements Runnable {
 			String compTwo = null;
 			if(strTok.hasMoreTokens()) {
 				compTwo = strTok.nextToken();
-				if(beastMaster.physical_topology.containsKey(compTwo) == false) {
+				if(beastMaster.physicalTopology.containsKey(compTwo) == false) {
 					System.out.println("+EFO error: Need to define an existing component-B when \"scale-out\" is issued.");
 					return;
 				}
@@ -108,10 +108,10 @@ public class SynEFOUserInterface implements Runnable {
 			/**
 			 * Issue the command for scaling out
 			 */
-			if(beastMaster.physical_topology.get(compOne).lastIndexOf(compTwo) == -1) {
+			if(beastMaster.physicalTopology.get(compOne).lastIndexOf(compTwo) == -1) {
 				System.out.println("+efo error: " + compTwo + " is not an available downstream task of " + compOne + ".");
 				return;
-			}else if(beastMaster.active_topology.get(compOne).lastIndexOf(compTwo) == -1) {
+			}else if(beastMaster.activeTopology.get(compOne).lastIndexOf(compTwo) == -1) {
 				System.out.println("+efo error: " + compTwo + " is not an active downstream task of " + compOne + ".");
 				return;
 			}
@@ -119,8 +119,8 @@ public class SynEFOUserInterface implements Runnable {
 				/**
 				 * If the node is active.
 				 */
-				if(beastMaster.active_topology.get(compOne).lastIndexOf(compTwo) >= 0 && 
-						beastMaster.active_topology.containsKey(compTwo) == true) {
+				if(beastMaster.activeTopology.get(compOne).lastIndexOf(compTwo) >= 0 && 
+						beastMaster.activeTopology.containsKey(compTwo) == true) {
 					beastMaster.scaleFunction.removeActiveNodeGc(compTwo);
 					String scaleInCommand = "REMOVE~" + compTwo;
 					beastMaster.setScaleCommand(compOne, scaleInCommand);
@@ -128,7 +128,7 @@ public class SynEFOUserInterface implements Runnable {
 				
 			}
 		}else if(command.equals("active-top")) {
-			HashMap<String, ArrayList<String>> activeTopologyCopy = new HashMap<String, ArrayList<String>>(beastMaster.active_topology);
+			HashMap<String, ArrayList<String>> activeTopologyCopy = new HashMap<String, ArrayList<String>>(beastMaster.activeTopology);
 			Iterator<Entry<String, ArrayList<String>>> itr = activeTopologyCopy.entrySet().iterator();
 			while(itr.hasNext()) {
 				Entry<String, ArrayList<String>> entry = itr.next();
@@ -140,7 +140,7 @@ public class SynEFOUserInterface implements Runnable {
 				}
 			}
 		}else if(command.equals("physical-top")) {
-			HashMap<String, ArrayList<String>> physicalTopologyCopy = new HashMap<String, ArrayList<String>>(beastMaster.physical_topology);
+			HashMap<String, ArrayList<String>> physicalTopologyCopy = new HashMap<String, ArrayList<String>>(beastMaster.physicalTopology);
 			Iterator<Entry<String, ArrayList<String>>> itr = physicalTopologyCopy.entrySet().iterator();
 			while(itr.hasNext()) {
 				Entry<String, ArrayList<String>> entry = itr.next();

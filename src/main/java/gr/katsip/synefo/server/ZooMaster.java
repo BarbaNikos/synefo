@@ -35,9 +35,9 @@ public class ZooMaster {
 	
 	private List<String> scaleInEventChildren;
 
-	public HashMap<String, ArrayList<String>> physical_topology;
+	public HashMap<String, ArrayList<String>> physicalTopology;
 
-	public HashMap<String, ArrayList<String>> active_topology;
+	public HashMap<String, ArrayList<String>> activeTopology;
 
 	public ScaleFunction scaleFunction;
 
@@ -115,11 +115,9 @@ public class ZooMaster {
 		}
 	}
 
-	public void setPhysicalTopology(HashMap<String, ArrayList<String>> topology) {
-		physical_topology = topology;
-		scaleFunction.physicalTopology = physical_topology;
+	public void setPhysicalTopology() {
 		try {
-			zk.setData("/synefo/physical-top", serializeTopology(topology).getBytes(), -1);
+			zk.setData("/synefo/physical-top", serializeTopology(scaleFunction.physicalTopology).getBytes(), -1);
 		} catch (KeeperException e) {
 			e.printStackTrace();
 		} catch (InterruptedException e) {
@@ -127,11 +125,9 @@ public class ZooMaster {
 		}
 	}
 
-	public void setActiveTopology(HashMap<String, ArrayList<String>> topology) {
-		active_topology = topology;
-		scaleFunction.activeTopology = active_topology;
+	public void setActiveTopology() {
 		try {
-			zk.setData("/synefo/active-top", serializeTopology(topology).getBytes(), -1);
+			zk.setData("/synefo/active-top", serializeTopology(scaleFunction.activeTopology).getBytes(), -1);
 		} catch (KeeperException e) {
 			e.printStackTrace();
 		} catch (InterruptedException e) {

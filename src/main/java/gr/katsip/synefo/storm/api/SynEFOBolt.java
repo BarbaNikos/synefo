@@ -12,7 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
-import gr.katsip.synefo.metric.SynEFOMetric;
+import gr.katsip.synefo.metric.SynefoMetric;
 import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.lib.SynEFOMessage;
 import gr.katsip.synefo.storm.lib.SynEFOMessage.Type;
@@ -67,7 +67,7 @@ public class SynEFOBolt extends BaseRichBolt {
 
 	private AbstractOperator _operator;
 
-	private SynEFOMetric metricObject;
+	private SynefoMetric metricObject;
 
 	private List<Values> stateValues;
 
@@ -187,7 +187,7 @@ public class SynEFOBolt extends BaseRichBolt {
 		if(_downstream_tasks == null && _active_downstream_tasks == null) {
 			registerToSynEFO();
 		}
-		this.metricObject = new SynEFOMetric();
+		this.metricObject = new SynefoMetric();
 		metricObject.initMetrics(context, _task_name, Integer.toString(_task_id));
 	}
 
@@ -242,12 +242,12 @@ public class SynEFOBolt extends BaseRichBolt {
 		}
 		_tuple_counter += 1;
 		metricObject.updateMetrics(_tuple_counter);
-		_stats.update_memory();
-		_stats.update_cpu_load();
-		_stats.update_latency();
-		_stats.update_throughput(_tuple_counter);
+		_stats.updateMemory();
+		_stats.updateCpuLoad();
+		_stats.updateLatency();
+		_stats.updateThroughput(_tuple_counter);
 
-		pet.setStatisticData(_stats.get_cpu_load(), _stats.get_memory(), (int) _stats.get_latency(), (int) _stats.get_throughput());
+		pet.setStatisticData(_stats.getCpuLoad(), _stats.getMemory(), (int) _stats.getLatency(), (int) _stats.getThroughput());
 		String scaleCommand = "";
 		synchronized(pet) {
 			if(pet.pendingCommand != null) {
