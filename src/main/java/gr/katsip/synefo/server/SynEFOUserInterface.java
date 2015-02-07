@@ -11,7 +11,7 @@ import java.util.StringTokenizer;
 
 public class SynEFOUserInterface implements Runnable {
 
-	private boolean _exit;
+	private boolean exitFlag;
 
 	private ZooMaster beastMaster;
 
@@ -20,11 +20,11 @@ public class SynEFOUserInterface implements Runnable {
 	}
 
 	public void run() {
-		_exit = false;
+		exitFlag = false;
 		BufferedReader _input = new BufferedReader(new InputStreamReader(System.in));
 		String command = null;
 		System.out.println("+efo Server started (UI). Type help for the list of commands");
-		while(_exit == false) {
+		while(exitFlag == false) {
 			try {
 				System.out.print("+efo>");
 				command = _input.readLine();
@@ -166,7 +166,7 @@ public class SynEFOUserInterface implements Runnable {
 			System.out.println("\t physical-top: Prints out the physical topology");
 			System.out.println("\t quit: self-explanatory");
 		}else if(command.equals("quit")) {
-			_exit = true;
+			exitFlag = true;
 		}else {
 			System.out.println("Unrecognized command. Type help to see list of commands");
 		}

@@ -74,7 +74,7 @@ public class SynefoCoordinatorThread implements Runnable {
 		/**
 		 * Update ZooKeeper entries and Nodes
 		 */
-		tamer = new ZooMaster(zooHost, zooPort, new ScaleFunction(physicalTopology, activeTopology));
+		tamer = new ZooMaster(zooHost, zooPort, physicalTopology, activeTopology);
 
 		tamer.start();
 		tamer.setScaleOutThresholds((double) resourceThresholds.get("cpu").upperBound, 
@@ -91,29 +91,41 @@ public class SynefoCoordinatorThread implements Runnable {
 		System.out.println("+efo coordinator thread: received tast name allocation from Storm cluster. Updating internal structures...");
 		HashMap<String, ArrayList<String>> updatedTopology = new HashMap<String, ArrayList<String>>();
 		HashMap<String, ArrayList<String>> activeUpdatedTopology = new HashMap<String, ArrayList<String>>();
+		HashMap<String, ArrayList<String>> inverseTopology = new HashMap<String, ArrayList<String>>();
 		synchronized(taskNameToIdMap) {
 			Iterator<Entry<String, ArrayList<String>>> itr = physicalTopology.entrySet().iterator();
 			while(itr.hasNext()) {
 				Map.Entry<String, ArrayList<String>> pair = itr.next();
 				String taskName = pair.getKey();
 				ArrayList<String> downStreamNames = pair.getValue();
+				String parentTask = taskName + ":" + Integer.toString(taskNameToIdMap.get(taskName)) + "@" + 
+						taskIPs.get(taskName + ":" + Integer.toString(taskNameToIdMap.get(taskName)));
 				if(downStreamNames != null && downStreamNames.size() > 0) {
 					ArrayList<String> downStreamIds = new ArrayList<String>();
-					ArrayList<String> activeDownStreamIds = new ArrayList<String>();
 					for(String name : downStreamNames) {
-						downStreamIds.add(name + ":" + Integer.toString(taskNameToIdMap.get(name)) + "@" + 
-								taskIPs.get(name + ":" + Integer.toString(taskNameToIdMap.get(name))));
-						if(activeDownStreamIds.size() == 0) {
-							activeDownStreamIds.add(name + ":" + Integer.toString(taskNameToIdMap.get(name)) + "@" + 
-									taskIPs.get(name + ":" + Integer.toString(taskNameToIdMap.get(name))));
+						String childTask = name + ":" + Integer.toString(taskNameToIdMap.get(name)) + "@" + 
+								taskIPs.get(name + ":" + Integer.toString(taskNameToIdMap.get(name)));
+						downStreamIds.add(childTask);
+						if(inverseTopology.containsKey(childTask)) {
+							ArrayList<String> parentList = inverseTopology.get(childTask);
+							if(parentList.indexOf(parentTask) < 0) {
+								parentList.add(parentTask);
+								inverseTopology.put(childTask, parentList);
+							}
+						}else {
+							ArrayList<String> parentList = new ArrayList<String>();
+							parentList.add(parentTask);
+							inverseTopology.put(childTask, parentList);
 						}
 					}
-					updatedTopology.put(taskName + ":" + Integer.toString(taskNameToIdMap.get(taskName)) + "@" + 
-							taskIPs.get(taskName + ":" + Integer.toString(taskNameToIdMap.get(taskName))), downStreamIds);
-					activeUpdatedTopology.put(taskName + ":" + Integer.toString(taskNameToIdMap.get(taskName)) + "@" + 
-							taskIPs.get(taskName + ":" + Integer.toString(taskNameToIdMap.get(taskName))), activeDownStreamIds);
+					updatedTopology.put(parentTask, downStreamIds);
+				}else {
+					updatedTopology.put(parentTask, new ArrayList<String>());
 				}
 			}
+			/**
+			 * TODO: I have the parents of each node in the inverseTopology
+			 */
 			physicalTopology.clear();
 			physicalTopology.putAll(updatedTopology);
 			activeTopology.clear();

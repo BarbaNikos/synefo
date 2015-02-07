@@ -65,11 +65,15 @@ public class ZooMaster {
 
 	};
 
-	public ZooMaster(String zoo_ip, Integer zoo_port, ScaleFunction scaleFunction) {
+	public ZooMaster(String zoo_ip, Integer zoo_port, 
+			HashMap<String, ArrayList<String>> physicalTopology, 
+			HashMap<String, ArrayList<String>> activeTopology) {
 		this.zoo_ip = zoo_ip;
 		this.zoo_port = zoo_port;
 		state = SynefoState.INIT;
-		this.scaleFunction = scaleFunction;
+		this.physicalTopology = physicalTopology;
+		this.activeTopology = activeTopology;
+		this.scaleFunction = new ScaleFunction(physicalTopology, activeTopology);
 		scaleOutEventChildren = new ArrayList<String>();
 		scaleInEventChildren = new ArrayList<String>();
 	}

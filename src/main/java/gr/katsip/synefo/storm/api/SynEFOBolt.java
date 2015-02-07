@@ -33,21 +33,21 @@ public class SynEFOBolt extends BaseRichBolt {
 	 */
 	private static final long serialVersionUID = 4011052074675303959L;
 
-	private String _task_name;
+	private String taskName;
 
 	private int idx;
 
-	private long _tuple_counter;
+	private long tupleCounter;
 
 	private OutputCollector _collector;
 
-	private ArrayList<String> _downstream_tasks;
+	private ArrayList<String> downstreamTasks;
 
-	private ArrayList<Integer> _int_downstream_tasks;
+	private ArrayList<Integer> intDownstreamTasks;
 
-	private ArrayList<String> _active_downstream_tasks;
+	private ArrayList<String> activeDownstreamTasks;
 
-	private ArrayList<Integer> _int_active_downstream_tasks;
+	private ArrayList<Integer> intActiveDownstreamTasks;
 
 	private String _synEFO_ip = null;
 
@@ -74,16 +74,16 @@ public class SynEFOBolt extends BaseRichBolt {
 	private ZooPet pet;
 
 	public SynEFOBolt(String task_name, String synEFO_ip, Integer synEFO_port, AbstractOperator operator) {
-		_task_name = task_name;
+		taskName = task_name;
 		_synEFO_ip = synEFO_ip;
 		_synEFO_port = synEFO_port;
-		_downstream_tasks = null;
-		_int_downstream_tasks = null;
-		_active_downstream_tasks = null;
-		_int_active_downstream_tasks = null;
+		downstreamTasks = null;
+		intDownstreamTasks = null;
+		activeDownstreamTasks = null;
+		intActiveDownstreamTasks = null;
 		_stats = new TaskStatistics();
 		_operator = operator;
-		_tuple_counter = 0;
+		tupleCounter = 0;
 		stateValues = new ArrayList<Values>();
 		operator.init(stateValues);
 	}
@@ -103,7 +103,7 @@ public class SynEFOBolt extends BaseRichBolt {
 			e1.printStackTrace();
 		}
 		msg._values.put("TASK_TYPE", "BOLT");
-		msg._values.put("TASK_NAME", _task_name);
+		msg._values.put("TASK_NAME", taskName);
 		msg._values.put("TASK_ID", Integer.toString(_task_id));
 		try {
 			socket = new Socket(_synEFO_ip, _synEFO_port);
@@ -115,39 +115,39 @@ public class SynEFOBolt extends BaseRichBolt {
 			ArrayList<String> _downstream = null;
 			_downstream = (ArrayList<String>) _input.readObject();
 			if(_downstream != null && _downstream.size() > 0) {
-				_downstream_tasks = new ArrayList<String>(_downstream);
-				_int_downstream_tasks = new ArrayList<Integer>();
-				Iterator<String> itr = _downstream_tasks.iterator();
+				downstreamTasks = new ArrayList<String>(_downstream);
+				intDownstreamTasks = new ArrayList<Integer>();
+				Iterator<String> itr = downstreamTasks.iterator();
 				while(itr.hasNext()) {
 					StringTokenizer strTok = new StringTokenizer(itr.next(), ":");
 					strTok.nextToken();
 					String taskWithIp = strTok.nextToken();
 					strTok = new StringTokenizer(taskWithIp, "@");
 					Integer task = Integer.parseInt(strTok.nextToken());
-					_int_downstream_tasks.add(task);
+					intDownstreamTasks.add(task);
 				}
 			}else {
-				_downstream_tasks = new ArrayList<String>();
-				_int_downstream_tasks = new ArrayList<Integer>();
+				downstreamTasks = new ArrayList<String>();
+				intDownstreamTasks = new ArrayList<Integer>();
 			}
 			ArrayList<String> _active_downstream = null;
 			_active_downstream = (ArrayList<String>) _input.readObject();
 			if(_active_downstream != null && _active_downstream.size() > 0) {
-				_active_downstream_tasks = new ArrayList<String>(_active_downstream);
-				_int_active_downstream_tasks = new ArrayList<Integer>();
-				Iterator<String> itr = _active_downstream_tasks.iterator();
+				activeDownstreamTasks = new ArrayList<String>(_active_downstream);
+				intActiveDownstreamTasks = new ArrayList<Integer>();
+				Iterator<String> itr = activeDownstreamTasks.iterator();
 				while(itr.hasNext()) {
 					StringTokenizer strTok = new StringTokenizer(itr.next(), ":");
 					strTok.nextToken();
 					String taskWithIp = strTok.nextToken();
 					strTok = new StringTokenizer(taskWithIp, "@");
 					Integer task = Integer.parseInt(strTok.nextToken());
-					_int_active_downstream_tasks.add(task);
+					intActiveDownstreamTasks.add(task);
 				}
 				idx = 0;
 			}else {
-				_active_downstream_tasks = new ArrayList<String>();
-				_int_active_downstream_tasks = new ArrayList<Integer>();
+				activeDownstreamTasks = new ArrayList<String>();
+				intActiveDownstreamTasks = new ArrayList<Integer>();
 				idx = 0;
 			}
 			/**
@@ -171,7 +171,7 @@ public class SynEFOBolt extends BaseRichBolt {
 		pet.start();
 		pet.setBoltNodeWatch();
 		System.out.println("+EFO-BOLT (" + 
-				_task_name + ":" + _task_id + 
+				taskName + ":" + _task_id + 
 				") registered to synEFO successfully.");
 	}
 
@@ -183,12 +183,12 @@ public class SynEFOBolt extends BaseRichBolt {
 		} catch (UnknownHostException e1) {
 			e1.printStackTrace();
 		}
-		pet = new ZooPet("127.0.0.1", 2181, _task_name, _task_id, _task_ip);
-		if(_downstream_tasks == null && _active_downstream_tasks == null) {
+		pet = new ZooPet("127.0.0.1", 2181, taskName, _task_id, _task_ip);
+		if(downstreamTasks == null && activeDownstreamTasks == null) {
 			registerToSynEFO();
 		}
 		this.metricObject = new SynefoMetric();
-		metricObject.initMetrics(context, _task_name, Integer.toString(_task_id));
+		metricObject.initMetrics(context, taskName, Integer.toString(_task_id));
 	}
 
 
@@ -212,7 +212,7 @@ public class SynEFOBolt extends BaseRichBolt {
 		List<String> fieldList = tuple.getFields().toList();
 		fieldList.remove(0);
 		Fields fields = new Fields(fieldList);
-		if(_int_active_downstream_tasks != null && _int_active_downstream_tasks.size() > 0) {
+		if(intActiveDownstreamTasks != null && intActiveDownstreamTasks.size() > 0) {
 			List<Values> returnedTuples = _operator.execute(fields, values);
 			for(Values v : returnedTuples) {
 				produced_values = new Values();
@@ -220,10 +220,10 @@ public class SynEFOBolt extends BaseRichBolt {
 				for(int i = 0; i < v.size(); i++) {
 					produced_values.add(v.get(i));
 				}
-				_collector.emitDirect(_int_active_downstream_tasks.get(idx), produced_values);
+				_collector.emitDirect(intActiveDownstreamTasks.get(idx), produced_values);
 			}
 			_collector.ack(tuple);
-			if(idx >= (_int_active_downstream_tasks.size() - 1)) {
+			if(idx >= (intActiveDownstreamTasks.size() - 1)) {
 				idx = 0;
 			}else {
 				idx += 1;
@@ -240,12 +240,12 @@ public class SynEFOBolt extends BaseRichBolt {
 			}
 			_collector.ack(tuple);
 		}
-		_tuple_counter += 1;
-		metricObject.updateMetrics(_tuple_counter);
+		tupleCounter += 1;
+		metricObject.updateMetrics(tupleCounter);
 		_stats.updateMemory();
 		_stats.updateCpuLoad();
 		_stats.updateLatency();
-		_stats.updateThroughput(_tuple_counter);
+		_stats.updateThroughput(tupleCounter);
 
 		pet.setStatisticData(_stats.getCpuLoad(), _stats.getMemory(), (int) _stats.getLatency(), (int) _stats.getThroughput());
 		String scaleCommand = "";
@@ -268,14 +268,14 @@ public class SynEFOBolt extends BaseRichBolt {
 			strBuild.append(SynEFOConstant.PUNCT_TUPLE_TAG + "/");
 			idx = 0;
 			if(action.toLowerCase().contains("add")) {
-				_active_downstream_tasks.add(taskWithIp);
-				_int_active_downstream_tasks.add(task_id);
+				activeDownstreamTasks.add(taskWithIp);
+				intActiveDownstreamTasks.add(task_id);
 				strBuild.append(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.ADD_ACTION + "/");
 			}else if(action.toLowerCase().contains("remove")) {
 				strBuild.append(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.REMOVE_ACTION + "/");
 			}
 			strBuild.append(SynEFOConstant.COMP_TAG + ":" + task + ":" + task_id + "/");
-			strBuild.append(SynEFOConstant.COMP_NUM_TAG + ":" + _int_active_downstream_tasks.size() + "/");
+			strBuild.append(SynEFOConstant.COMP_NUM_TAG + ":" + intActiveDownstreamTasks.size() + "/");
 			strBuild.append(SynEFOConstant.COMP_IP_TAG + ":" + taskIp + "/");
 			/**
 			 * Populate other schema fields with null values, 
@@ -286,7 +286,7 @@ public class SynEFOBolt extends BaseRichBolt {
 			for(int i = 0; i < _operator.getOutputSchema().size(); i++) {
 				punctValue.add(null);
 			}
-			for(Integer d_task : _int_active_downstream_tasks) {
+			for(Integer d_task : intActiveDownstreamTasks) {
 				_collector.emitDirect(d_task, punctValue);
 			}
 			/**
@@ -294,9 +294,9 @@ public class SynEFOBolt extends BaseRichBolt {
 			 * we remove it after sending the punctuation tuples, so 
 			 * that the removed task is notified to share state
 			 */
-			if(action.toLowerCase().contains("remove") && _active_downstream_tasks.indexOf(taskWithIp) >= 0) {
-				_active_downstream_tasks.remove(_active_downstream_tasks.indexOf(taskWithIp));
-				_int_active_downstream_tasks.remove(_int_active_downstream_tasks.indexOf(task_id));
+			if(action.toLowerCase().contains("remove") && activeDownstreamTasks.indexOf(taskWithIp) >= 0) {
+				activeDownstreamTasks.remove(activeDownstreamTasks.indexOf(taskWithIp));
+				intActiveDownstreamTasks.remove(intActiveDownstreamTasks.indexOf(task_id));
 			}
 		}
 	}
@@ -352,7 +352,7 @@ public class SynEFOBolt extends BaseRichBolt {
 		 * 
 		 */
 		if(action != null && action.equals(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.ADD_ACTION)) {
-			String selfComp = this._task_name + ":" + this._task_id;
+			String selfComp = this.taskName + ":" + this._task_id;
 			if(selfComp.equals(component_name + ":" + component_id)) {
 				/**
 				 * If this component is added, open a ServerSocket
@@ -414,7 +414,7 @@ public class SynEFOBolt extends BaseRichBolt {
 				}
 			}
 		}else if(action != null && action.equals(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.REMOVE_ACTION)) {
-			String selfComp = this._task_name + ":" + this._task_id;
+			String selfComp = this.taskName + ":" + this._task_id;
 			if(selfComp.equals(component_name + ":" + component_id)) {
 				try {
 					ServerSocket _socket = new ServerSocket(6000 + _task_id);
@@ -483,7 +483,7 @@ public class SynEFOBolt extends BaseRichBolt {
 
 	public void printState() {
 		List<Values> state = _operator.getStateValues();
-		System.out.println("+EFO_BOLT(" + this._task_name + ":" + this._task_id + ") printState() :");
+		System.out.println("+EFO_BOLT(" + this.taskName + ":" + this._task_id + ") printState() :");
 		Iterator<Values> itr = state.iterator();
 		while(itr.hasNext()) {
 			Values val = itr.next();
