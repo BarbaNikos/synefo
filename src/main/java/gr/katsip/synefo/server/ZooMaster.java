@@ -117,7 +117,7 @@ public class ZooMaster {
 
 	public void setPhysicalTopology(HashMap<String, ArrayList<String>> topology) {
 		physical_topology = topology;
-		scaleFunction.physical_topology = physical_topology;
+		scaleFunction.physicalTopology = physical_topology;
 		try {
 			zk.setData("/synefo/physical-top", serializeTopology(topology).getBytes(), -1);
 		} catch (KeeperException e) {
@@ -129,7 +129,7 @@ public class ZooMaster {
 
 	public void setActiveTopology(HashMap<String, ArrayList<String>> topology) {
 		active_topology = topology;
-		scaleFunction.active_topology = active_topology;
+		scaleFunction.activeTopology = active_topology;
 		try {
 			zk.setData("/synefo/active-top", serializeTopology(topology).getBytes(), -1);
 		} catch (KeeperException e) {
