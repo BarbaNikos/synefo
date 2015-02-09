@@ -120,12 +120,13 @@ public class SynefoCoordinatorThread implements Runnable {
 						}
 					}
 					updatedTopology.put(parentTask, downStreamIds);
+					if(inverseTopology.containsKey(parentTask) == false)
+						inverseTopology.put(parentTask, new ArrayList<String>());
 				}else {
 					updatedTopology.put(parentTask, new ArrayList<String>());
 				}
 			}
 			activeUpdatedTopology = getInitialActiveTopology(updatedTopology, inverseTopology);
-			
 			physicalTopology.clear();
 			physicalTopology.putAll(updatedTopology);
 			activeTopology.clear();
@@ -158,7 +159,7 @@ public class SynefoCoordinatorThread implements Runnable {
 	public ArrayList<String> getDownstreamTasks(String taskName, int task_id, String task_ip) {
 		return physicalTopology.get(taskName + ":" + task_id + "@" + task_ip);
 	}
-	
+
 	public HashMap<String, ArrayList<String>> getInitialActiveTopology(HashMap<String, ArrayList<String>> physicalTopology, HashMap<String, ArrayList<String>> inverseTopology) {
 		HashMap<String, ArrayList<String>> activeTopology = new HashMap<String, ArrayList<String>>();
 		ArrayList<String> activeTasks = new ArrayList<String>();
@@ -219,7 +220,7 @@ public class SynefoCoordinatorThread implements Runnable {
 		}
 		return activeTopology;
 	}
-	
+
 	/**
 	 * This function separates the topology operators into different layers (stages) of computation. In those layers, the source operators (nodes with no upstream operators) and the drain operators (operators with no downstream operators) are not included.
 	 * @param physicalTopology The physical topology of operators in synefo
