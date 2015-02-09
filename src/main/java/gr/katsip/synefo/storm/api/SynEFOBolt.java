@@ -318,6 +318,7 @@ public class SynEFOBolt extends BaseRichBolt {
 		String component_id = null;
 		Integer comp_num = -1;
 		String ip = null;
+		System.out.println("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") received punctuation tuple: " + tuple.toString());
 		StringTokenizer str_tok = new StringTokenizer((String) tuple.getValues().get(tuple.getFields().fieldIndex("SYNEFO_HEADER")), "/");
 		while(str_tok.hasMoreTokens()) {
 			String s = str_tok.nextToken();
@@ -353,6 +354,7 @@ public class SynEFOBolt extends BaseRichBolt {
 		 * 
 		 */
 		if(action != null && action.equals(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.ADD_ACTION)) {
+			System.out.println("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") received an ADD action");
 			String selfComp = this.taskName + ":" + this._task_id;
 			if(selfComp.equals(component_name + ":" + component_id)) {
 				/**
@@ -361,6 +363,7 @@ public class SynEFOBolt extends BaseRichBolt {
 				try {
 					ServerSocket _socket = new ServerSocket(6000 + _task_id);
 					int numOfStatesReceived = 0;
+					System.out.println("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") accepting connections to receive state...");
 					while(numOfStatesReceived < (comp_num - 1)) {
 						Socket client = _socket.accept();
 						ObjectOutputStream _stateOutput = new ObjectOutputStream(client.getOutputStream());
@@ -379,7 +382,9 @@ public class SynEFOBolt extends BaseRichBolt {
 				} catch (IOException | ClassNotFoundException e) {
 					e.printStackTrace();
 				}
+				System.out.println("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") Finished accepting connections to receive state.");
 			}else {
+				System.out.println("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") about to send state to newly added operator...");
 				Socket client = new Socket();
 				Integer comp_task_id = Integer.parseInt(component_id);
 				boolean attempt_flag = true;
@@ -398,6 +403,7 @@ public class SynEFOBolt extends BaseRichBolt {
 						}
 					}
 				}
+				System.out.println("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") Connection established...");
 				try {
 					ObjectOutputStream _stateOutput = new ObjectOutputStream(client.getOutputStream());
 					ObjectInputStream _stateInput = new ObjectInputStream(client.getInputStream());
@@ -413,11 +419,14 @@ public class SynEFOBolt extends BaseRichBolt {
 				} catch (IOException | ClassNotFoundException e) {
 					e.printStackTrace();
 				}
+				System.out.println("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") sent state to newly added node successfully...");
 			}
 		}else if(action != null && action.equals(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.REMOVE_ACTION)) {
+			System.out.println("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") received a REMOVE action");
 			String selfComp = this.taskName + ":" + this._task_id;
 			if(selfComp.equals(component_name + ":" + component_id)) {
 				try {
+					System.out.println("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") accepting connections to send state...");
 					ServerSocket _socket = new ServerSocket(6000 + _task_id);
 					int numOfStatesReceived = 0;
 					while(numOfStatesReceived < (comp_num - 1)) {
@@ -439,7 +448,9 @@ public class SynEFOBolt extends BaseRichBolt {
 				} catch (IOException | ClassNotFoundException e) {
 					e.printStackTrace();
 				}
+				System.out.println("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") Finished accepting connections to send state.");
 			}else {
+				System.out.println("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") about to receive state from about-to-be-removed operator...");
 				Socket client = new Socket();
 				Integer comp_task_id = Integer.parseInt(component_id);
 				boolean attempt_flag = true;
@@ -458,6 +469,7 @@ public class SynEFOBolt extends BaseRichBolt {
 						}
 					}
 				}
+				System.out.println("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") Connection established...");
 				try {
 					ObjectOutputStream _stateOutput = new ObjectOutputStream(client.getOutputStream());
 					ObjectInputStream _stateInput = new ObjectInputStream(client.getInputStream());
@@ -472,6 +484,7 @@ public class SynEFOBolt extends BaseRichBolt {
 				} catch (IOException | ClassNotFoundException e) {
 					e.printStackTrace();
 				}
+				System.out.println("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") received state from about-to-be-removed node successfully...");
 			}
 		}
 		pet.resetSubmittedScaleFlag();
