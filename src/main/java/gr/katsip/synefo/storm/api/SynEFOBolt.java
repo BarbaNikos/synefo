@@ -236,7 +236,8 @@ public class SynEFOBolt extends BaseRichBolt {
 				for(int i = 0; i < v.size(); i++) {
 					produced_values.add(v.get(i));
 				}
-				_collector.emit(produced_values);
+//				_collector.emit(produced_values);
+//				System.out.println("synefo-bolt(" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") emits: " + produced_values);
 			}
 			_collector.ack(tuple);
 		}

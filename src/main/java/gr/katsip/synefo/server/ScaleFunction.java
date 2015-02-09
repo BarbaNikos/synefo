@@ -36,7 +36,7 @@ public class ScaleFunction {
 		String upstreamTask = getParentNode(underloadedWorker.substring(0, underloadedWorker.lastIndexOf(':')),
 				underloadedWorker.substring(underloadedWorker.lastIndexOf(':') + 1, underloadedWorker.lastIndexOf('@')));
 		ArrayList<String> activeNodes = getActiveNodes(upstreamTask, underloadedWorker);
-		if(activeNodes.size() > 1) {
+		if(activeNodes != null && activeNodes.size() > 1) {
 			removeActiveNodeGc(underloadedWorker);
 			return "REMOVE~" + underloadedWorker;
 		}else {
@@ -72,15 +72,14 @@ public class ScaleFunction {
 		 * Add addedNode to the active topology downstream-lists of 
 		 * all of addedNode's upstream nodes.
 		 */
-		Iterator<Entry<String, ArrayList<String>>> itr = physicalTopology.entrySet().iterator();
+		Iterator<Entry<String, ArrayList<String>>> itr = activeTopology.entrySet().iterator();
 		while(itr.hasNext()) {
 			Entry<String, ArrayList<String>> pair = itr.next();
 			String upstreamNode = pair.getKey();
-			ArrayList<String> physicalDownStreamNodes = pair.getValue();
-			if(physicalDownStreamNodes.indexOf(addedNode) >= 0) {
-				ArrayList<String> activeDownStreamNodes = activeTopology.get(upstreamNode);
-				if(activeDownStreamNodes.indexOf(addedNode) < 0)
-					activeDownStreamNodes.add(addedNode);
+			ArrayList<String> activeDownStreamNodes = pair.getValue();
+			ArrayList<String> physicalDownStreamNodes = physicalTopology.get(upstreamNode);
+			if(physicalDownStreamNodes.indexOf(addedNode) >= 0 && activeDownStreamNodes.indexOf(addedNode) < 0) {
+				activeDownStreamNodes.add(addedNode);
 				activeTopology.put(upstreamNode, activeDownStreamNodes);
 			}
 		}
@@ -125,7 +124,11 @@ public class ScaleFunction {
 	}
 
 	public ArrayList<String> getActiveNodes(String upstream_task, String underloadedNode) {
+		if(activeTopology.containsKey(upstream_task) == false)
+			return null;
 		ArrayList<String> activeNodes = new ArrayList<String>(activeTopology.get(upstream_task));
+		if(activeNodes == null || activeNodes.size() == 0)
+			return null;
 		for(String task : activeNodes) {
 			if(task.equals(underloadedNode)) {
 				activeNodes.remove(activeNodes.lastIndexOf(task));

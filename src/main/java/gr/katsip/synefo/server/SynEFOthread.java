@@ -31,7 +31,7 @@ public class SynEFOthread implements Runnable {
 	private String taskName;
 
 	private String taskIP;
-	
+
 	private HashMap<String, String> taskIPs;
 
 	public SynEFOthread(HashMap<String, ArrayList<String>> physicalTopology, HashMap<String, ArrayList<String>> runningTopology, 
@@ -111,7 +111,10 @@ public class SynEFOthread implements Runnable {
 		ArrayList<String> _activeDownStream = null;
 		if(physicalTopology.containsKey(taskName + ":" + taskId + "@" + taskIP)) {
 			_downStream = new ArrayList<String>(physicalTopology.get(taskName + ":" + taskId + "@" + taskIP));
-			_activeDownStream = new ArrayList<String>(runningTopology.get(taskName + ":" + taskId + "@" + taskIP));
+			if(runningTopology.containsKey(taskName + ":" + taskId + "@" + taskIP))
+				_activeDownStream = new ArrayList<String>(runningTopology.get(taskName + ":" + taskId + "@" + taskIP));
+			else 
+				_activeDownStream = new ArrayList<String>();
 		}else {
 			_downStream = new ArrayList<String>();
 			_activeDownStream = new ArrayList<String>();
@@ -170,7 +173,10 @@ public class SynEFOthread implements Runnable {
 		ArrayList<String> _activeDownStream = null;
 		if(physicalTopology.containsKey(taskName + ":" + taskId + "@" + taskIP)) {
 			_downStream = new ArrayList<String>(physicalTopology.get(taskName + ":" + taskId + "@" + taskIP));
-			_activeDownStream = new ArrayList<String>(runningTopology.get(taskName + ":" + taskId + "@" + taskIP));
+			if(runningTopology.containsKey(taskName + ":" + taskId + "@" + taskIP))
+				_activeDownStream = new ArrayList<String>(runningTopology.get(taskName + ":" + taskId + "@" + taskIP));
+			else 
+				_activeDownStream = new ArrayList<String>();
 		}else {
 			_downStream = new ArrayList<String>();
 			_activeDownStream = new ArrayList<String>();

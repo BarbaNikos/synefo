@@ -2,31 +2,31 @@
 <thresholds>
 	<resource>
 		<key>cpu-min</key>
-		<value>0</value>
+		<value>0.2</value>
 	</resource>
 	<resource>
 		<key>cpu-max</key>
-		<value>0.7</value>
+		<value>0.6</value>
 	</resource>
 	<resource>
 		<key>memory-min</key>
-		<value>0</value>
+		<value>0.2</value>
 	</resource>
 	<resource>
 		<key>memory-max</key>
-		<value>0.7</value>
+		<value>0.4</value>
 	</resource>
 	<resource>
 		<key>latency-min</key>
-		<value>1</value>
+		<value>100</value>
 	</resource>
 	<resource>
 		<key>latency-max</key>
-		<value>1000</value>
+		<value>10000</value>
 	</resource>
 	<resource>
 		<key>throughput-min</key>
-		<value>0</value>
+		<value>100</value>
 	</resource>
 	<resource>
 		<key>throughput-max</key>

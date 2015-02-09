@@ -63,13 +63,13 @@ public class ExperimentalTopology {
 		/**
 		 * Stage 2: Join operators
 		 */
-		EquiJoinOperator<String> equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 5, "name");
+		EquiJoinOperator<String> equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "name");
 		String[] join_schema = { "name-a", "name-b" };
 		String[] state_schema = { "name", "time" };
 		equi_join_op.setOutputSchema(new Fields(join_schema));
 		equi_join_op.setStateSchema(new Fields(state_schema));
 		builder.setBolt("join_bolt_1", new SynEFOBolt("join_bolt_1", synEFO_ip, synEFO_port, equi_join_op), 1).directGrouping("select_bolt_1").directGrouping("select_bolt_2");
-		equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 5, "name");
+		equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "name");
 		equi_join_op.setOutputSchema(new Fields(join_schema));
 		equi_join_op.setStateSchema(new Fields(state_schema));
 		builder.setBolt("join_bolt_2", new SynEFOBolt("join_bolt_2", synEFO_ip, synEFO_port, equi_join_op), 1).directGrouping("select_bolt_1").directGrouping("select_bolt_2");
@@ -81,7 +81,7 @@ public class ExperimentalTopology {
 		/**
 		 * Stage 3: Aggregate operator
 		 */
-		CountGroupByAggrOperator countGroupByAggrOperator = new CountGroupByAggrOperator(10, join_schema);
+		CountGroupByAggrOperator countGroupByAggrOperator = new CountGroupByAggrOperator(1000, join_schema);
 		String[] countGroupBySchema = { "key", "count" };
 		String[] countGroupByStateSchema = { "key", "count", "time" };
 		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
@@ -116,7 +116,7 @@ public class ExperimentalTopology {
 		synEFOSocket.close();
 
 
-		conf.setDebug(true);
+		conf.setDebug(false);
 		LocalCluster cluster = new LocalCluster();
 		cluster.submitTopology("scale-out-test", conf, builder.createTopology());
 		Utils.sleep(100000);

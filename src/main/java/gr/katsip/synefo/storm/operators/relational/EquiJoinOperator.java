@@ -48,7 +48,7 @@ public class EquiJoinOperator<T extends Object> implements AbstractOperator, Ser
 			Values stateTuple = (Values) itr.next();
 			Values resultValues = equiJoin(stateTuple, values, fields, field);
 			if(resultValues != null && resultValues.size() > 0) {
-				System.out.println("EQUI-JOINED: " + values);
+//				System.out.println("EQUI-JOINED: " + values);
 				result.add(resultValues);
 			}
 		}

@@ -37,7 +37,7 @@ public class SampleTupleProducer implements AbstractTupleProducer, Serializable 
 		}
 		if(word_idx > (words.length - 1))
 			word_idx = 0;
-		System.out.println("SampleTupleProducer emits!!!");
+//		System.out.println("SampleTupleProducer emits!!!");
 		return new Values(word);
 	}
 
