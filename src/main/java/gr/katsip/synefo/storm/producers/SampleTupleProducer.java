@@ -1,4 +1,4 @@
-package gr.katsip.synefo.storm.operators;
+package gr.katsip.synefo.storm.producers;
 
 import java.io.Serializable;
 import backtype.storm.tuple.Fields;
@@ -25,7 +25,7 @@ public class SampleTupleProducer implements AbstractTupleProducer, Serializable 
 	}
 
 	@Override
-	public Values nextTuple(int task_id) {
+	public Values nextTuple() {
 		/**
 		 * Sample execution
 		 */

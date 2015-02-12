@@ -5,13 +5,14 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
+
 import gr.katsip.synefo.storm.api.SynEFOBolt;
 import gr.katsip.synefo.storm.api.SynEFOSpout;
 import gr.katsip.synefo.storm.lib.SynEFOMessage;
-import gr.katsip.synefo.storm.operators.SampleTupleProducer;
 import gr.katsip.synefo.storm.operators.relational.EquiJoinOperator;
 import gr.katsip.synefo.storm.operators.relational.FilterOperator;
 import gr.katsip.synefo.storm.operators.relational.StringComparator;
+import gr.katsip.synefo.storm.producers.SampleTupleProducer;
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 import backtype.storm.topology.TopologyBuilder;

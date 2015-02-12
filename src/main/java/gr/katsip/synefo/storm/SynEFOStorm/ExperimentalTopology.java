@@ -3,11 +3,11 @@ package gr.katsip.synefo.storm.SynEFOStorm;
 import gr.katsip.synefo.storm.api.SynEFOBolt;
 import gr.katsip.synefo.storm.api.SynEFOSpout;
 import gr.katsip.synefo.storm.lib.SynEFOMessage;
-import gr.katsip.synefo.storm.operators.SampleTupleProducer;
 import gr.katsip.synefo.storm.operators.relational.CountGroupByAggrOperator;
 import gr.katsip.synefo.storm.operators.relational.EquiJoinOperator;
 import gr.katsip.synefo.storm.operators.relational.FilterOperator;
 import gr.katsip.synefo.storm.operators.relational.StringComparator;
+import gr.katsip.synefo.storm.producers.SampleTupleProducer;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;

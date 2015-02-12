@@ -15,7 +15,7 @@ import gr.katsip.synefo.metric.SynefoMetric;
 import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.lib.SynEFOMessage;
 import gr.katsip.synefo.storm.lib.SynEFOMessage.Type;
-import gr.katsip.synefo.storm.operators.AbstractTupleProducer;
+import gr.katsip.synefo.storm.producers.AbstractTupleProducer;
 import gr.katsip.synefo.utils.SynEFOConstant;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -174,7 +174,7 @@ public class SynEFOSpout extends BaseRichSpout {
 			 * Add SYNEFO_HEADER in the beginning
 			 */
 			values.add("SYNEFO_HEADER");
-			Values returnedValues = _tuple_producer.nextTuple(_int_active_downstream_tasks.get(idx));
+			Values returnedValues = _tuple_producer.nextTuple();
 			for(int i = 0; i < returnedValues.size(); i++) {
 				values.add(returnedValues.get(i));
 			}

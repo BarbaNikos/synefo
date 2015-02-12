@@ -3,7 +3,8 @@ package gr.katsip.synefo.TopologyXMLParser;
 //import gr.katsip.synefo.storm.api.SynEFOBolt;
 import gr.katsip.synefo.storm.api.SynEFOSpout;
 import gr.katsip.synefo.storm.lib.SynEFOMessage;
-import gr.katsip.synefo.storm.operators.SampleTupleProducer;
+import gr.katsip.synefo.storm.producers.SampleTupleProducer;
+
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
@@ -11,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 //import backtype.storm.topology.BoltDeclarer;

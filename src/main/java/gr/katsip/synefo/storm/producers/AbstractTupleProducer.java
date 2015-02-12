@@ -1,11 +1,11 @@
-package gr.katsip.synefo.storm.operators;
+package gr.katsip.synefo.storm.producers;
 
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
 public interface AbstractTupleProducer {
 
-	public Values nextTuple(int task_id);
+	public Values nextTuple();
 	
 	public void setSchema(Fields fields);
 	
