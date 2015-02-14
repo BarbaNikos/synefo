@@ -13,15 +13,25 @@ import backtype.storm.tuple.Values;
 
 public class StreamgenTupleProducer implements AbstractTupleProducer {
 
-	private Socket dataProvider;
+	private transient Socket dataProvider;
 
-	private BufferedReader input;
+	private transient BufferedReader input;
 
-	private PrintWriter output;
+	private transient PrintWriter output;
 
 	private Fields fields;
+	
+	private String dataProviderIP;
+	
+	private Integer dataProviderPort;
 
 	public StreamgenTupleProducer(String dataProviderIP, Integer dataProviderPort) {
+		dataProvider = null;
+		this.dataProviderIP = dataProviderIP;
+		this.dataProviderPort = dataProviderPort;
+	}
+	
+	public void connect() {
 		try {
 			dataProvider = new Socket(dataProviderIP, dataProviderPort);
 			output = new PrintWriter(dataProvider.getOutputStream(), true);
@@ -35,6 +45,8 @@ public class StreamgenTupleProducer implements AbstractTupleProducer {
 
 	@Override
 	public Values nextTuple() {
+		if(dataProvider == null)
+			connect();
 		Values val = new Values();
 		try {
 			String tuple = input.readLine();
