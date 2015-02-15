@@ -37,21 +37,21 @@ public class ExperimentalTopology {
 		ArrayList<String> _tmp;
 		Integer numOfWorkers = -1;
 		if(args.length < 4) {
-			System.err.println("Arguments: <synefo-IP> <synefo-port> <stream-IP> <stream-port>");
+			System.err.println("Arguments: <synefo-IP> <synefo-port> <stream-IP> <stream-port> <opt:num-of-workers>");
 			System.exit(1);
 		}else {
 			synefoIP = args[0];
 			synefoPort = Integer.parseInt(args[1]);
 			streamIP = args[2];
 			streamPort = Integer.parseInt(args[3]);
-			if(args.length >= 4) {
+			if(args.length > 4) {
 				numOfWorkers = Integer.parseInt(args[4]);
 			}
 		}
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
 		StreamgenTupleProducer tupleProducer = new StreamgenTupleProducer(streamIP, streamPort);
-		String[] spoutSchema = { "one", "two", "three", "four", "five" };
+		String[] spoutSchema = { "one", "two", "three", "four" };
 		tupleProducer.setSchema(new Fields(spoutSchema));
 		builder.setSpout("spout_1", new SynEFOSpout("spout_1", synefoIP, synefoPort, tupleProducer), 1);
 		_tmp = new ArrayList<String>();
@@ -60,8 +60,8 @@ public class ExperimentalTopology {
 		/**
 		 * Stage 1: Select operators (TODO: Need to update the filter value i.e. "nathan")
 		 */
-		FilterOperator<String> filterOperator = new FilterOperator<String>(new StringComparator(), "one", "nathan");
-		String[] filterOutSchema = { "one", "two", "three", "four", "five" };
+		FilterOperator<String> filterOperator = new FilterOperator<String>(new StringComparator(), "one", "HPibkcVIld");
+		String[] filterOutSchema = { "one", "two", "three", "four" };
 		filterOperator.setOutputSchema(new Fields(filterOutSchema));
 		builder.setBolt("select_bolt_1", 
 				new SynEFOBolt("select_bolt_1", synefoIP, synefoPort, filterOperator), 1)
@@ -74,7 +74,7 @@ public class ExperimentalTopology {
 		 * Stage 2: Join operators
 		 */
 		EquiJoinOperator<String> equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "two");
-		String[] join_schema = { "two", "two" };
+		String[] join_schema = { "two-a", "two-b" };
 		String[] state_schema = { "two", "time" };
 		equi_join_op.setOutputSchema(new Fields(join_schema));
 		equi_join_op.setStateSchema(new Fields(state_schema));

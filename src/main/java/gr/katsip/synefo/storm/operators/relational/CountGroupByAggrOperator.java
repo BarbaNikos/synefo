@@ -133,7 +133,7 @@ public class CountGroupByAggrOperator implements Serializable, AbstractOperator 
 
 	@Override
 	public void setOutputSchema(Fields _output_schema) {
-		output_schema = _output_schema;
+		output_schema = new Fields(_output_schema.toList());
 	}
 
 	@Override

@@ -43,7 +43,7 @@ public class SampleTupleProducer implements AbstractTupleProducer, Serializable 
 
 	@Override
 	public void setSchema(Fields fields) {
-		output_schema = fields;
+		output_schema = new Fields(fields.toList());
 	}
 
 	@Override

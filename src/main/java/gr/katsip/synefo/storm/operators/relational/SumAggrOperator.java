@@ -53,7 +53,7 @@ public class SumAggrOperator implements AbstractOperator {
 
 	public void setOutputSchema(Fields _output_schema) {
 		if(_output_schema.contains(summation_attribute))
-			output_schema = _output_schema;
+			output_schema = new Fields(_output_schema.toList());
 	}
 
 	public void mergeState(Fields receivedStateSchema,

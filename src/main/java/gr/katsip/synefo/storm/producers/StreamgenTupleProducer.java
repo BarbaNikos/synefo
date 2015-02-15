@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.StringTokenizer;
@@ -11,7 +12,12 @@ import java.util.StringTokenizer;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
-public class StreamgenTupleProducer implements AbstractTupleProducer {
+public class StreamgenTupleProducer implements AbstractTupleProducer, Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 7633248381407190059L;
 
 	private transient Socket dataProvider;
 
@@ -52,7 +58,7 @@ public class StreamgenTupleProducer implements AbstractTupleProducer {
 			String tuple = input.readLine();
 			if(tuple != null && tuple.length() > 0) {
 				StringTokenizer strTok = new StringTokenizer(tuple, ",");
-				while(strTok.hasMoreTokens()) {
+				while(strTok.hasMoreTokens() && val.size() < fields.size()) {
 					val.add(strTok.nextToken());
 				}
 				return val;
@@ -65,7 +71,7 @@ public class StreamgenTupleProducer implements AbstractTupleProducer {
 
 	@Override
 	public void setSchema(Fields fields) {
-		this.fields = new Fields(fields.toString());
+		this.fields = new Fields(fields.toList());
 	}
 
 	@Override

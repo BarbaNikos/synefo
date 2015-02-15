@@ -76,7 +76,7 @@ public class FilterOperator<T> implements AbstractOperator, Serializable {
 
 	@Override
 	public void setOutputSchema(Fields _output_schema) {
-		output_schema = _output_schema;
+		output_schema = new Fields(_output_schema.toList());
 	}
 
 	@Override
