@@ -72,8 +72,13 @@ public class SynEFOBolt extends BaseRichBolt {
 	private List<Values> stateValues;
 
 	private ZooPet pet;
+	
+	private String zooIP;
+	
+	private Integer zooPort;
 
-	public SynEFOBolt(String task_name, String synEFO_ip, Integer synEFO_port, AbstractOperator operator) {
+	public SynEFOBolt(String task_name, String synEFO_ip, Integer synEFO_port, 
+			AbstractOperator operator, String zooIP, Integer zooPort) {
 		taskName = task_name;
 		_synEFO_ip = synEFO_ip;
 		_synEFO_port = synEFO_port;
@@ -86,6 +91,8 @@ public class SynEFOBolt extends BaseRichBolt {
 		tupleCounter = 0;
 		stateValues = new ArrayList<Values>();
 		operator.init(stateValues);
+		this.zooIP = zooIP;
+		this.zooPort = zooPort;
 	}
 
 	/**
@@ -183,7 +190,7 @@ public class SynEFOBolt extends BaseRichBolt {
 		} catch (UnknownHostException e1) {
 			e1.printStackTrace();
 		}
-		pet = new ZooPet("127.0.0.1", 2181, taskName, _task_id, _task_ip);
+		pet = new ZooPet(zooIP, zooPort, taskName, _task_id, _task_ip);
 		if(downstreamTasks == null && activeDownstreamTasks == null) {
 			registerToSynEFO();
 		}

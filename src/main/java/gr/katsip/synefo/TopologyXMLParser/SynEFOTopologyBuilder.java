@@ -48,8 +48,8 @@ public class SynEFOTopologyBuilder {
     		Component comp = itr.next();
     		System.out.println(comp.toString());
     		if(comp.getType().equals("Spout")) {
-    			builder.setSpout(comp.getName(), new SynEFOSpout(comp.getName(), synEFOhost, Integer.parseInt(synEFOport), 
-    					new SampleTupleProducer()), comp.getExecutors());
+//    			builder.setSpout(comp.getName(), new SynEFOSpout(comp.getName(), synEFOhost, Integer.parseInt(synEFOport), 
+//    					new SampleTupleProducer()), comp.getExecutors());
     			topology.put(comp.getName(), new ArrayList<String>());
     		}else if(comp.getType().equals("Bolt")) {
     			//TODO: Need to fix the following

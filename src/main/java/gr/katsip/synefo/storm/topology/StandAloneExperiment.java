@@ -11,10 +11,23 @@ import java.util.StringTokenizer;
 public class StandAloneExperiment {
 
 	public static void main(String[] args) {
+		String resourceConfFile = "";
+		String zooIP = "";
+		Integer zooPort = -1;
+		String dataSourceFileName = "";
+		
+		if(args.length < 4) {
+			System.err.println("Expected arguments: <resourceConfFile> <zoo-IP> <zoo-port> <input-data-file>");
+			System.exit(1);
+		}else {
+			resourceConfFile = args[0];
+			zooIP = args[1];
+			zooPort = Integer.parseInt(args[2]);
+			dataSourceFileName = args[3];
+		}
+		
 		String remoteStreamSourceIP = "";
 		Integer remoteStreamSourcePort = -1;
-		//TODO: Parse it from arguments
-		String dataSourceFileName = "";
 		String[] remoteSourceCommand = {
 			RemoteStreamSourceConf.jvm, 
 			RemoteStreamSourceConf.remoteSourceJar,
@@ -50,10 +63,6 @@ public class StandAloneExperiment {
 		System.out.println("INFO: RemoteStreamSource started and listens at " + remoteStreamSourceIP + 
 				":" + remoteStreamSourcePort + ".");
 		
-		//TODO: parse the following three from arguments
-		String resourceConfFile = "";
-		String zooIP = "";
-		Integer zooPort = -1;
 		String synefoIP = "";
 		Integer synefoPort = -1;
 		String[] synefoCommand = {
@@ -100,11 +109,13 @@ public class StandAloneExperiment {
 				synefoIP,
 				synefoPort.toString(),
 				remoteStreamSourceIP,
-				remoteStreamSourcePort.toString()
+				remoteStreamSourcePort.toString(),
+				zooIP,
+				zooPort.toString()
 		};
 		BufferedReader topologyOutput = null;
 		Process topology = null;
-		ProcessBuilder topologyProcessBuilder = new ProcessBuilder(synefoCommand);
+		ProcessBuilder topologyProcessBuilder = new ProcessBuilder(topologyCommand);
 		topologyProcessBuilder.redirectErrorStream(true);
 		try {
 			topology = topologyProcessBuilder.start();
@@ -113,7 +124,18 @@ public class StandAloneExperiment {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
+		/**
+		 * Wait until the remoteSource ends to stop the experiment
+		 * 
+		 */
+		try {
+			remoteStreamSource.waitFor();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		System.out.println("INFO: Remote source depleted the input. Time to end processes...");
+		synefo.destroy();
+		topology.destroy();
 	}
 
 }

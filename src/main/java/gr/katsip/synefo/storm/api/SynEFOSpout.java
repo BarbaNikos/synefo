@@ -36,7 +36,7 @@ public class SynEFOSpout extends BaseRichSpout {
 	private SpoutOutputCollector _collector;
 
 	private int _task_id;
-	
+
 	private String _task_ip;
 
 	private ArrayList<String> _downstream_tasks = null;
@@ -69,7 +69,12 @@ public class SynEFOSpout extends BaseRichSpout {
 
 	transient private ZooPet pet;
 
-	public SynEFOSpout(String task_name, String synEFO_ip, Integer synEFO_port, AbstractTupleProducer tupleProducer) {
+	private String zooIP;
+
+	private Integer zooPort;
+
+	public SynEFOSpout(String task_name, String synEFO_ip, Integer synEFO_port, 
+			AbstractTupleProducer tupleProducer, String zooIP, Integer zooPort) {
 		_task_name = task_name;
 		_downstream_tasks = null;
 		_active_downstream_tasks = null;
@@ -78,6 +83,8 @@ public class SynEFOSpout extends BaseRichSpout {
 		_stats = new TaskStatistics();
 		_tuple_producer = tupleProducer;
 		_tuple_counter = 0;
+		this.zooIP = zooIP;
+		this.zooPort = zooPort;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -251,7 +258,7 @@ public class SynEFOSpout extends BaseRichSpout {
 		} catch (UnknownHostException e1) {
 			e1.printStackTrace();
 		}
-		pet = new ZooPet("127.0.0.1", 2181, _task_name, _task_id, _task_ip);
+		pet = new ZooPet(zooIP, zooPort, _task_name, _task_id, _task_ip);
 		if(_active_downstream_tasks == null && _downstream_tasks == null) {
 			registerToSynEFO();
 		}
