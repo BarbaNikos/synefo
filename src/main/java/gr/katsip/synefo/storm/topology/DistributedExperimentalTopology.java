@@ -1,4 +1,4 @@
-package gr.katsip.synefo.storm.SynEFOStorm;
+package gr.katsip.synefo.storm.topology;
 
 import gr.katsip.synefo.storm.api.SynEFOBolt;
 import gr.katsip.synefo.storm.api.SynEFOSpout;
@@ -7,83 +7,76 @@ import gr.katsip.synefo.storm.operators.relational.CountGroupByAggrOperator;
 import gr.katsip.synefo.storm.operators.relational.EquiJoinOperator;
 import gr.katsip.synefo.storm.operators.relational.FilterOperator;
 import gr.katsip.synefo.storm.operators.relational.StringComparator;
-import gr.katsip.synefo.storm.producers.StreamgenTupleProducer;
+import gr.katsip.synefo.storm.producers.SampleTupleProducer;
 
-import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
-import backtype.storm.StormSubmitter;
-import backtype.storm.generated.AlreadyAliveException;
-import backtype.storm.generated.InvalidTopologyException;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
+import backtype.storm.utils.Utils;
 
-public class ExperimentalTopology {
-
-	public static void main(String[] args) throws UnknownHostException, IOException, InterruptedException, 
-	ClassNotFoundException, AlreadyAliveException, InvalidTopologyException {
-		String synefoIP = "";
-		Integer synefoPort = -1;
-		String streamIP = "";
-		Integer streamPort = -1;
+public class DistributedExperimentalTopology {
+	public static void main(String[] args) throws Exception {
+		String synEFO_ip = "";
+		Integer synEFO_port = -1;
 		HashMap<String, ArrayList<String>> topology = new HashMap<String, ArrayList<String>>();
 		ArrayList<String> _tmp;
-		Integer numOfWorkers = -1;
-		if(args.length < 4) {
-			System.err.println("Arguments: <synefo-IP> <synefo-port> <stream-IP> <stream-port> <opt:num-of-workers>");
+		if(args.length < 2) {
+			System.err.println("Arguments: <synEFO_ip> <synEFO_port>");
 			System.exit(1);
 		}else {
-			synefoIP = args[0];
-			synefoPort = Integer.parseInt(args[1]);
-			streamIP = args[2];
-			streamPort = Integer.parseInt(args[3]);
-			if(args.length > 4) {
-				numOfWorkers = Integer.parseInt(args[4]);
-			}
+			synEFO_ip = args[0];
+			synEFO_port = Integer.parseInt(args[1]);
 		}
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
-		StreamgenTupleProducer tupleProducer = new StreamgenTupleProducer(streamIP, streamPort);
-		String[] spoutSchema = { "one", "two", "three", "four" };
-		tupleProducer.setSchema(new Fields(spoutSchema));
-		builder.setSpout("spout_1", new SynEFOSpout("spout_1", synefoIP, synefoPort, tupleProducer), 1);
+		SampleTupleProducer tuple_producer = new SampleTupleProducer();
+		String[] spoutSchema = { "name" };
+		tuple_producer.setSchema(new Fields(spoutSchema));
+		builder.setSpout("spout_1", new SynEFOSpout("spout_1", synEFO_ip, synEFO_port, tuple_producer), 1);
 		_tmp = new ArrayList<String>();
 		_tmp.add("select_bolt_1");
+		_tmp.add("select_bolt_2");
 		topology.put("spout_1", new ArrayList<String>(_tmp));
 		/**
-		 * Stage 1: Select operators (TODO: Need to update the filter value i.e. "nathan")
+		 * Stage 1: Select operators
 		 */
-		FilterOperator<String> filterOperator = new FilterOperator<String>(new StringComparator(), "one", "HPibkcVIld");
-		String[] filterOutSchema = { "one", "two", "three", "four" };
+		FilterOperator<String> filterOperator = new FilterOperator<String>(new StringComparator(), "name", "nathan");
+		String[] filterOutSchema = { "name" };
 		filterOperator.setOutputSchema(new Fields(filterOutSchema));
-		builder.setBolt("select_bolt_1", 
-				new SynEFOBolt("select_bolt_1", synefoIP, synefoPort, filterOperator), 1)
-				.directGrouping("spout_1");
+		builder.setBolt("select_bolt_1", new SynEFOBolt("select_bolt_1", synEFO_ip, synEFO_port, filterOperator), 1).directGrouping("spout_1");
+		filterOperator = new FilterOperator<String>(new StringComparator(), "name", "nathan");
+		filterOperator.setOutputSchema(new Fields(filterOutSchema));
+		builder.setBolt("select_bolt_2", new SynEFOBolt("select_bolt_2", synEFO_ip, synEFO_port, filterOperator), 1).directGrouping("spout_1");
 		_tmp = new ArrayList<String>();
 		_tmp.add("join_bolt_1");
+		_tmp.add("join_bolt_2");
 		topology.put("select_bolt_1", new ArrayList<String>(_tmp));
+		topology.put("select_bolt_2", new ArrayList<String>(_tmp));
 		_tmp = null;
 		/**
 		 * Stage 2: Join operators
 		 */
-		EquiJoinOperator<String> equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "two");
-		String[] join_schema = { "two-a", "two-b" };
-		String[] state_schema = { "two", "time" };
+		EquiJoinOperator<String> equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "name");
+		String[] join_schema = { "name-a", "name-b" };
+		String[] state_schema = { "name", "time" };
 		equi_join_op.setOutputSchema(new Fields(join_schema));
 		equi_join_op.setStateSchema(new Fields(state_schema));
-		builder.setBolt("join_bolt_1", 
-				new SynEFOBolt("join_bolt_1", synefoIP, synefoPort, equi_join_op), 1)
-				.directGrouping("select_bolt_1");
+		builder.setBolt("join_bolt_1", new SynEFOBolt("join_bolt_1", synEFO_ip, synEFO_port, equi_join_op), 1).directGrouping("select_bolt_1").directGrouping("select_bolt_2");
+		equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "name");
+		equi_join_op.setOutputSchema(new Fields(join_schema));
+		equi_join_op.setStateSchema(new Fields(state_schema));
+		builder.setBolt("join_bolt_2", new SynEFOBolt("join_bolt_2", synEFO_ip, synEFO_port, equi_join_op), 1).directGrouping("select_bolt_1").directGrouping("select_bolt_2");
 		_tmp = new ArrayList<String>();
 		_tmp.add("count_group_by_bolt_1");
 		topology.put("join_bolt_1", new ArrayList<String>(_tmp));
+		topology.put("join_bolt_2", new ArrayList<String>(_tmp));
 		_tmp = null;
 		/**
 		 * Stage 3: Aggregate operator
@@ -93,16 +86,15 @@ public class ExperimentalTopology {
 		String[] countGroupByStateSchema = { "key", "count", "time" };
 		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
 		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
-		builder.setBolt("count_group_by_bolt_1", 
-				new SynEFOBolt("count_group_by_bolt_1", synefoIP, synefoPort, countGroupByAggrOperator), 1)
-				.directGrouping("join_bolt_1");
+		builder.setBolt("count_group_by_bolt_1", new SynEFOBolt("count_group_by_bolt_1", synEFO_ip, synEFO_port, countGroupByAggrOperator), 1)
+		.directGrouping("join_bolt_1").directGrouping("join_bolt_2");
 		topology.put("count_group_by_bolt_1", new ArrayList<String>());
 		/**
 		 * Notify SynEFO server about the 
 		 * Topology
 		 */
-		System.out.println("About to connect to synEFO: " + synefoIP + ":" + synefoPort);
-		Socket synEFOSocket = new Socket(synefoIP, synefoPort);
+		System.out.println("About to connect to synEFO: " + synEFO_ip + ":" + synEFO_port);
+		Socket synEFOSocket = new Socket(synEFO_ip, synEFO_port);
 		ObjectOutputStream _out = new ObjectOutputStream(synEFOSocket.getOutputStream());
 		ObjectInputStream _in = new ObjectInputStream(synEFOSocket.getInputStream());
 		SynEFOMessage msg = new SynEFOMessage();
@@ -123,17 +115,12 @@ public class ExperimentalTopology {
 		_out.close();
 		synEFOSocket.close();
 
-		conf.setDebug(false);
-		if(numOfWorkers != -1) {
-			conf.setNumWorkers(4);
-			StormSubmitter.submitTopology("experimental-top", conf, builder.createTopology());
-		} else {        
-			conf.setMaxTaskParallelism(4);
-			LocalCluster cluster = new LocalCluster();
-			cluster.submitTopology("experimental-top", conf, builder.createTopology());
-			Thread.sleep(100000);
-			cluster.shutdown();
-		}
-	}
 
+		conf.setDebug(false);
+		LocalCluster cluster = new LocalCluster();
+		cluster.submitTopology("scale-out-test", conf, builder.createTopology());
+		Utils.sleep(100000);
+		cluster.killTopology("scale-out-test");
+		cluster.shutdown();
+	}
 }

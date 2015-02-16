@@ -1,4 +1,4 @@
-package gr.katsip.synefo.storm.SynEFOStorm;
+package gr.katsip.synefo.storm.topology;
 
 import gr.katsip.synefo.TopologyXMLParser.SynEFOTopologyBuilder;
 

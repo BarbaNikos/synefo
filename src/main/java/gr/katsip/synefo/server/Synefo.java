@@ -41,7 +41,7 @@ public class Synefo {
 		try {
 			serverSocket = new ServerSocket(0);
 			serverPort = serverSocket.getLocalPort();
-			System.out.println("+efo started on IP: " + serverSocket.getInetAddress().getHostAddress() + ":" + serverPort);
+			System.out.println("+efo-INFO#" + serverSocket.getInetAddress().getHostAddress() + ":" + serverPort);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
