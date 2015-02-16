@@ -34,6 +34,14 @@ public class StandAloneExperiment {
 			RemoteStreamSourceConf.executionClass, 
 			dataSourceFileName
 		};
+//		String[] remoteSourceCommand = {
+//				"java",
+//				"-jar"
+//		};
+//		System.out.print("Command: ");
+//		for(String s : remoteSourceCommand) {
+//			System.out.print(s + " ");
+//		}
 		BufferedReader remoteSourceOutput = null;
 		Process remoteStreamSource = null;
 		ProcessBuilder processBuilder = new ProcessBuilder(remoteSourceCommand);
