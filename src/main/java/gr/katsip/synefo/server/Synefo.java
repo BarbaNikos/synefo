@@ -1,36 +1,40 @@
 package gr.katsip.synefo.server;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
+
 import gr.katsip.synefo.storm.api.Pair;
 
 public class Synefo {
 
 	private ServerSocket serverSocket;
-	
+
 	private Integer serverPort;
-	
+
 	private boolean killCommand;
-	
+
 	private HashMap<String, ArrayList<String>> physicalTopology;
-	
+
 	private HashMap<String, ArrayList<String>> runningTopology;
-	
+
 	private HashMap<String, Integer> nameToIdMap;
-	
+
 	private HashMap<String, String> taskIPs;
-	
+
 	private HashMap<String, Pair<Number, Number>> resourceThresholds;
-	
+
 	private String zooHost;
-	
+
 	private Integer zooIP;
-	
+
 	public Synefo(String zooHost, Integer zooIP, HashMap<String, Pair<Number, Number>> _resource_thresholds) {
 		physicalTopology = new HashMap<String, ArrayList<String>>();
 		runningTopology = new HashMap<String, ArrayList<String>>();
@@ -42,6 +46,19 @@ public class Synefo {
 			serverSocket = new ServerSocket(0);
 			serverPort = serverSocket.getLocalPort();
 			System.out.println("+efo-INFO#" + serverSocket.getInetAddress().getHostAddress() + ":" + serverPort);
+			File f = new File("synefoserver.conf");
+			if(f.exists()) {
+				f.delete();
+			}
+			try {
+				f.createNewFile();
+				PrintWriter writer = new PrintWriter(new FileOutputStream(f));
+				writer.println(serverSocket.getInetAddress().getHostAddress() + ":" + serverSocket.getLocalPort());
+				writer.flush();
+				writer.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -50,7 +67,7 @@ public class Synefo {
 		this.zooHost = zooHost;
 		this.zooIP = zooIP;
 	}
-	
+
 	public void runServer() {
 		Socket _stormComponent = null;
 		OutputStream _out = null;

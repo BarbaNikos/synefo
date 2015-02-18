@@ -23,6 +23,7 @@ public class StreamgenTupleProducer implements AbstractTupleProducer, Serializab
 
 	private transient BufferedReader input;
 
+	@SuppressWarnings("unused")
 	private transient PrintWriter output;
 
 	private Fields fields;

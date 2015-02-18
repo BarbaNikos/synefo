@@ -121,6 +121,7 @@ public class StandAloneExperiment {
 				zooIP,
 				zooPort.toString()
 		};
+		@SuppressWarnings("unused")
 		BufferedReader topologyOutput = null;
 		Process topology = null;
 		ProcessBuilder topologyProcessBuilder = new ProcessBuilder(topologyCommand);

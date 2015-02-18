@@ -61,9 +61,7 @@ public class ExperimentalTopology {
 		_tmp = new ArrayList<String>();
 		_tmp.add("select_bolt_1");
 		topology.put("spout_1", new ArrayList<String>(_tmp));
-		/**
-		 * Stage 1: Select operators (TODO: Need to update the filter value i.e. "nathan")
-		 */
+		
 		FilterOperator<String> filterOperator = new FilterOperator<String>(new StringComparator(), "one", "HPibkcVIld");
 		String[] filterOutSchema = { "one", "two", "three", "four" };
 		filterOperator.setOutputSchema(new Fields(filterOutSchema));
@@ -127,12 +125,12 @@ public class ExperimentalTopology {
 		_out.close();
 		synEFOSocket.close();
 
-		conf.setDebug(false);
+		conf.setDebug(true);
 		if(numOfWorkers != -1) {
 			conf.setNumWorkers(4);
 			StormSubmitter.submitTopology("experimental-top", conf, builder.createTopology());
 		} else {        
-			conf.setMaxTaskParallelism(4);
+			conf.setMaxTaskParallelism(5);
 			LocalCluster cluster = new LocalCluster();
 			cluster.submitTopology("experimental-top", conf, builder.createTopology());
 			Thread.sleep(100000);

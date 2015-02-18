@@ -22,6 +22,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.utils.Utils;
 
 public class DistributedExperimentalTopology {
+	@SuppressWarnings("unused")
 	public static void main(String[] args) throws Exception {
 		String synefoIP = "";
 		Integer synefoPort = -1;
