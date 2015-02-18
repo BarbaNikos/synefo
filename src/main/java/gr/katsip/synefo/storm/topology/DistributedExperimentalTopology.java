@@ -5,9 +5,9 @@ import gr.katsip.synefo.storm.api.SynEFOSpout;
 import gr.katsip.synefo.storm.lib.SynEFOMessage;
 import gr.katsip.synefo.storm.operators.relational.CountGroupByAggrOperator;
 import gr.katsip.synefo.storm.operators.relational.EquiJoinOperator;
-import gr.katsip.synefo.storm.operators.relational.FilterOperator;
+import gr.katsip.synefo.storm.operators.relational.ProjectOperator;
 import gr.katsip.synefo.storm.operators.relational.StringComparator;
-import gr.katsip.synefo.storm.producers.SampleTupleProducer;
+import gr.katsip.synefo.storm.producers.StreamgenTupleProducer;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -17,12 +17,12 @@ import java.util.HashMap;
 
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
+import backtype.storm.StormSubmitter;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
-import backtype.storm.utils.Utils;
 
 public class DistributedExperimentalTopology {
-	@SuppressWarnings("unused")
+	
 	public static void main(String[] args) throws Exception {
 		String synefoIP = "";
 		Integer synefoPort = -1;
@@ -49,43 +49,54 @@ public class DistributedExperimentalTopology {
 		}
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
-		SampleTupleProducer tuple_producer = new SampleTupleProducer();
-		String[] spoutSchema = { "name" };
-		tuple_producer.setSchema(new Fields(spoutSchema));
-		builder.setSpout("spout_1", new SynEFOSpout("spout_1", synefoIP, synefoPort, tuple_producer, zooIP, zooPort), 1);
+		StreamgenTupleProducer tupleProducer = new StreamgenTupleProducer(streamIP, streamPort);
+		String[] spoutSchema = { "one", "two", "three", "four" };
+		tupleProducer.setSchema(new Fields(spoutSchema));
+		tupleProducer.setSchema(new Fields(spoutSchema));
+		builder.setSpout("spout_1", new SynEFOSpout("spout_1", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1);
 		_tmp = new ArrayList<String>();
-		_tmp.add("select_bolt_1");
-		_tmp.add("select_bolt_2");
+		_tmp.add("project_bolt_1");
+		_tmp.add("project_bolt_2");
 		topology.put("spout_1", new ArrayList<String>(_tmp));
 		/**
-		 * Stage 1: Select operators
+		 * Stage 1: Project operators
 		 */
-		FilterOperator<String> filterOperator = new FilterOperator<String>(new StringComparator(), "name", "nathan");
-		String[] filterOutSchema = { "name" };
-		filterOperator.setOutputSchema(new Fields(filterOutSchema));
-		builder.setBolt("select_bolt_1", new SynEFOBolt("select_bolt_1", synefoIP, synefoPort, filterOperator, zooIP, zooPort), 1).directGrouping("spout_1");
-		filterOperator = new FilterOperator<String>(new StringComparator(), "name", "nathan");
-		filterOperator.setOutputSchema(new Fields(filterOutSchema));
-		builder.setBolt("select_bolt_2", new SynEFOBolt("select_bolt_2", synefoIP, synefoPort, filterOperator, zooIP, zooPort), 1).directGrouping("spout_1");
+		String[] projectOutSchema = { "two", "three", "four" };
+		ProjectOperator projectOperator = new ProjectOperator(new Fields(projectOutSchema));
+		projectOperator.setOutputSchema(new Fields(projectOutSchema));
+		builder.setBolt("project_bolt_1", 
+				new SynEFOBolt("project_bolt_1", synefoIP, synefoPort, projectOperator, zooIP, zooPort), 1)
+				.directGrouping("spout_1");
+		projectOperator = new ProjectOperator(new Fields(projectOutSchema));
+		projectOperator.setOutputSchema(new Fields(projectOutSchema));
+		builder.setBolt("project_bolt_2", 
+				new SynEFOBolt("project_bolt_2", synefoIP, synefoPort, projectOperator, zooIP, zooPort), 1)
+				.directGrouping("spout_1");
 		_tmp = new ArrayList<String>();
 		_tmp.add("join_bolt_1");
 		_tmp.add("join_bolt_2");
-		topology.put("select_bolt_1", new ArrayList<String>(_tmp));
-		topology.put("select_bolt_2", new ArrayList<String>(_tmp));
+		topology.put("project_bolt_1", new ArrayList<String>(_tmp));
+		topology.put("project_bolt_2", new ArrayList<String>(_tmp));
 		_tmp = null;
 		/**
 		 * Stage 2: Join operators
 		 */
-		EquiJoinOperator<String> equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "name");
-		String[] join_schema = { "name-a", "name-b" };
-		String[] state_schema = { "name", "time" };
+		EquiJoinOperator<String> equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "three");
+		String[] join_schema = { "three-a", "three-b" };
+		String[] state_schema = { "two", "three", "four", "time" };
 		equi_join_op.setOutputSchema(new Fields(join_schema));
 		equi_join_op.setStateSchema(new Fields(state_schema));
-		builder.setBolt("join_bolt_1", new SynEFOBolt("join_bolt_1", synefoIP, synefoPort, equi_join_op, zooIP, zooPort), 1).directGrouping("select_bolt_1").directGrouping("select_bolt_2");
-		equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "name");
+		builder.setBolt("join_bolt_1", 
+				new SynEFOBolt("join_bolt_1", synefoIP, synefoPort, equi_join_op, zooIP, zooPort), 1)
+				.directGrouping("project_bolt_1")
+				.directGrouping("project_bolt_2");
+		equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "three");
 		equi_join_op.setOutputSchema(new Fields(join_schema));
 		equi_join_op.setStateSchema(new Fields(state_schema));
-		builder.setBolt("join_bolt_2", new SynEFOBolt("join_bolt_2", synefoIP, synefoPort, equi_join_op, zooIP, zooPort), 1).directGrouping("select_bolt_1").directGrouping("select_bolt_2");
+		builder.setBolt("join_bolt_2", 
+				new SynEFOBolt("join_bolt_2", synefoIP, synefoPort, equi_join_op, zooIP, zooPort), 1)
+				.directGrouping("project_bolt_1")
+				.directGrouping("project_bolt_2");
 		_tmp = new ArrayList<String>();
 		_tmp.add("count_group_by_bolt_1");
 		topology.put("join_bolt_1", new ArrayList<String>(_tmp));
@@ -99,8 +110,10 @@ public class DistributedExperimentalTopology {
 		String[] countGroupByStateSchema = { "key", "count", "time" };
 		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
 		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
-		builder.setBolt("count_group_by_bolt_1", new SynEFOBolt("count_group_by_bolt_1", synefoIP, synefoPort, countGroupByAggrOperator, zooIP, zooPort), 1)
-		.directGrouping("join_bolt_1").directGrouping("join_bolt_2");
+		builder.setBolt("count_group_by_bolt_1", 
+				new SynEFOBolt("count_group_by_bolt_1", synefoIP, synefoPort, countGroupByAggrOperator, zooIP, zooPort), 1)
+				.directGrouping("join_bolt_1")
+				.directGrouping("join_bolt_2");
 		topology.put("count_group_by_bolt_1", new ArrayList<String>());
 		/**
 		 * Notify SynEFO server about the 
@@ -129,11 +142,16 @@ public class DistributedExperimentalTopology {
 		synEFOSocket.close();
 
 
-		conf.setDebug(false);
-		LocalCluster cluster = new LocalCluster();
-		cluster.submitTopology("scale-out-test", conf, builder.createTopology());
-		Utils.sleep(100000);
-		cluster.killTopology("scale-out-test");
-		cluster.shutdown();
+		conf.setDebug(true);
+		if(numOfWorkers != -1) {
+			conf.setNumWorkers(6);
+			StormSubmitter.submitTopology("dist-experimental-top", conf, builder.createTopology());
+		} else {        
+			conf.setMaxTaskParallelism(5);
+			LocalCluster cluster = new LocalCluster();
+			cluster.submitTopology("experimental-top", conf, builder.createTopology());
+			Thread.sleep(100000);
+			cluster.shutdown();
+		}
 	}
 }

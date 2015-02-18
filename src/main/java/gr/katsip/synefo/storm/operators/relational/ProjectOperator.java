@@ -19,7 +19,7 @@ public class ProjectOperator implements AbstractOperator {
 	private Fields projected_attributes;
 
 	public ProjectOperator(Fields _projected_attributes) {
-		projected_attributes = _projected_attributes;
+		projected_attributes = new Fields(_projected_attributes.toList());
 	}
 
 	@Override

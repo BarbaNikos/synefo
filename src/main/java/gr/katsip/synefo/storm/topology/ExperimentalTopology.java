@@ -5,7 +5,7 @@ import gr.katsip.synefo.storm.api.SynEFOSpout;
 import gr.katsip.synefo.storm.lib.SynEFOMessage;
 import gr.katsip.synefo.storm.operators.relational.CountGroupByAggrOperator;
 import gr.katsip.synefo.storm.operators.relational.EquiJoinOperator;
-import gr.katsip.synefo.storm.operators.relational.FilterOperator;
+import gr.katsip.synefo.storm.operators.relational.ProjectOperator;
 import gr.katsip.synefo.storm.operators.relational.StringComparator;
 import gr.katsip.synefo.storm.producers.StreamgenTupleProducer;
 
@@ -59,30 +59,32 @@ public class ExperimentalTopology {
 		tupleProducer.setSchema(new Fields(spoutSchema));
 		builder.setSpout("spout_1", new SynEFOSpout("spout_1", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1);
 		_tmp = new ArrayList<String>();
-		_tmp.add("select_bolt_1");
+		_tmp.add("project_bolt_1");
 		topology.put("spout_1", new ArrayList<String>(_tmp));
-		
-		FilterOperator<String> filterOperator = new FilterOperator<String>(new StringComparator(), "one", "HPibkcVIld");
-		String[] filterOutSchema = { "one", "two", "three", "four" };
-		filterOperator.setOutputSchema(new Fields(filterOutSchema));
-		builder.setBolt("select_bolt_1", 
-				new SynEFOBolt("select_bolt_1", synefoIP, synefoPort, filterOperator, zooIP, zooPort), 1)
+		/*
+		 * Stage 1: Project Operators
+		 */
+		String[] projectOutSchema = { "two", "three", "four" };
+		ProjectOperator projectOperator = new ProjectOperator(new Fields(projectOutSchema));
+		projectOperator.setOutputSchema(new Fields(projectOutSchema));
+		builder.setBolt("project_bolt_1", 
+				new SynEFOBolt("project_bolt_1", synefoIP, synefoPort, projectOperator, zooIP, zooPort), 1)
 				.directGrouping("spout_1");
 		_tmp = new ArrayList<String>();
 		_tmp.add("join_bolt_1");
-		topology.put("select_bolt_1", new ArrayList<String>(_tmp));
+		topology.put("project_bolt_1", new ArrayList<String>(_tmp));
 		_tmp = null;
 		/**
 		 * Stage 2: Join operators
 		 */
-		EquiJoinOperator<String> equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "two");
-		String[] join_schema = { "two-a", "two-b" };
-		String[] state_schema = { "two", "time" };
+		EquiJoinOperator<String> equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "three");
+		String[] join_schema = { "three-a", "three-b" };
+		String[] state_schema = { "two", "three", "four", "time" };
 		equi_join_op.setOutputSchema(new Fields(join_schema));
 		equi_join_op.setStateSchema(new Fields(state_schema));
 		builder.setBolt("join_bolt_1", 
 				new SynEFOBolt("join_bolt_1", synefoIP, synefoPort, equi_join_op, zooIP, zooPort), 1)
-				.directGrouping("select_bolt_1");
+				.directGrouping("project_bolt_1");
 		_tmp = new ArrayList<String>();
 		_tmp.add("count_group_by_bolt_1");
 		topology.put("join_bolt_1", new ArrayList<String>(_tmp));
