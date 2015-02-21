@@ -1,13 +1,20 @@
 package gr.katsip.synefo.storm.operators.relational;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 import gr.katsip.synefo.storm.operators.AbstractOperator;
 
-public class CountAggrOperator implements AbstractOperator {
+public class CountAggrOperator implements AbstractOperator, Serializable {
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -6778746225568944495L;
+
 	private List<Values> stateValues;
 	
 	private Fields stateSchema;
