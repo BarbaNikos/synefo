@@ -80,8 +80,13 @@ public class ZooMaster {
 
 	public void start() {
 		try {
-			zk = new ZooKeeper(zoo_ip, zoo_port, synefoWatcher);
+			zk = new ZooKeeper(zoo_ip + ":" + zoo_port, 100000	, synefoWatcher);
+			while(zk.getState() != ZooKeeper.States.CONNECTED) {
+				Thread.sleep(100);
+			}
 		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 		try {

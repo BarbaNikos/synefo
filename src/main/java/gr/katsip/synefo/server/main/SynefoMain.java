@@ -13,6 +13,7 @@ public class SynefoMain {
 		parser.parseThresholds(args[0]);
 		String zooIP = args[1];
 		Integer zooPort = Integer.parseInt(args[2]);
+		System.out.println("zookeeper: " + zooIP + ":" + zooPort);
 		Synefo synEFO = new Synefo(zooIP, zooPort, parser.get_thresholds());
 		synEFO.runServer();
 	}

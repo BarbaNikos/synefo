@@ -3,6 +3,7 @@ package gr.katsip.synefo.storm.api;
 import java.io.IOException;
 import java.util.StringTokenizer;
 
+
 //import org.apache.log4j.Logger;
 import org.apache.zookeeper.AsyncCallback.DataCallback;
 import org.apache.zookeeper.AsyncCallback.VoidCallback;
@@ -107,7 +108,10 @@ public class ZooPet {
 
 	public void start() {
 		try {
-			zk = new ZooKeeper(zoo_ip, zoo_port, boltWatcher);
+			zk = new ZooKeeper(zoo_ip + ":" + zoo_port, 100000, boltWatcher);
+			while(zk.getState() != ZooKeeper.States.CONNECTED) {
+				Thread.sleep(100);
+			}
 			if(zk.exists("/synefo/bolt-tasks", false) != null) {
 				zk.create("/synefo/bolt-tasks/" + task_name + ":" + task_id + "@" + task_ip, 
 						("/synefo/bolt-tasks/" + task_name + ":" + task_id + "@" + task_ip).getBytes(), 
