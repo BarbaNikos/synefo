@@ -87,10 +87,12 @@ public class SynEFOthread implements Runnable {
 			taskIPs.put(taskName + ":" + taskId, taskIP);
 		}
 		synchronized(taskNameToIdMap) {
-			taskNameToIdMap.put(taskName, taskId);
+			if(taskNameToIdMap.containsKey(taskName) == false) {
+				taskNameToIdMap.put(taskName, taskId);
+			}
 			taskNameToIdMap.notifyAll();
 		}
-		System.out.println("+efo worker-SPOUT: " + taskName + "(" + taskId + "@" + taskIP + 
+		System.out.println("+efo SPOUT: " + taskName + "(" + taskId + "@" + taskIP + 
 				") connected.");
 		/**
 		 * Wait until the Coordinator thread 
@@ -149,10 +151,12 @@ public class SynEFOthread implements Runnable {
 			taskIPs.put(taskName + ":" + taskId, taskIP);
 		}
 		synchronized(taskNameToIdMap) {
-			taskNameToIdMap.put(taskName, taskId);
+			if(taskNameToIdMap.containsKey(taskName) == false) {
+				taskNameToIdMap.put(taskName, taskId);
+			}
 			taskNameToIdMap.notifyAll();
 		}
-		System.out.println("+efo worker-BOLT: " + taskName + "(" + taskId + "@" + taskIP + 
+		System.out.println("+efo BOLT: " + taskName + "(" + taskId + "@" + taskIP + 
 				") connected.");
 		/**
 		 * Wait until the Coordinator thread 
@@ -196,7 +200,7 @@ public class SynEFOthread implements Runnable {
 		 * After coordination, keep listening 
 		 * for received task statistics messages
 		 */
-		System.out.println("+efo worker-BOLT: " + taskName + "@" + taskIP + 
+		System.out.println("+efo BOLT: " + taskName + "@" + taskIP + 
 				"(" + taskId + ") registered successfully.");
 		try {
 			output.flush();

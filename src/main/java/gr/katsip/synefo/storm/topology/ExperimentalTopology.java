@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import backtype.storm.Config;
-import backtype.storm.LocalCluster;
+//import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;
 import backtype.storm.generated.AlreadyAliveException;
 import backtype.storm.generated.InvalidTopologyException;
@@ -37,9 +37,9 @@ public class ExperimentalTopology {
 		Integer zooPort = -1;
 		HashMap<String, ArrayList<String>> topology = new HashMap<String, ArrayList<String>>();
 		ArrayList<String> _tmp;
-		Integer numOfWorkers = -1;
+//		Integer numOfWorkers = -1;
 		if(args.length < 6) {
-			System.err.println("Arguments: <synefo-IP> <synefo-port> <stream-IP> <stream-port> <zoo-IP> <zoo-port> <opt:num-of-workers>");
+			System.err.println("Arguments: <synefo-IP> <synefo-port> <stream-IP> <stream-port> <zoo-IP> <zoo-port>");
 			System.exit(1);
 		}else {
 			synefoIP = args[0];
@@ -48,20 +48,22 @@ public class ExperimentalTopology {
 			streamPort = Integer.parseInt(args[3]);
 			zooIP = args[4];
 			zooPort = Integer.parseInt(args[5]);
-			if(args.length > 6) {
-				numOfWorkers = Integer.parseInt(args[6]);
-			}
+//			if(args.length > 6) {
+//				numOfWorkers = Integer.parseInt(args[6]);
+//			}
 		}
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
 		StreamgenTupleProducer tupleProducer = new StreamgenTupleProducer(streamIP, streamPort);
 		String[] spoutSchema = { "one", "two", "three", "four" };
 		tupleProducer.setSchema(new Fields(spoutSchema));
-		builder.setSpout("spout_1", new SynEFOSpout("spout_1", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1);
+		builder.setSpout("spout_1", 
+				new SynEFOSpout("spout_1", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
+				.setNumTasks(1);
 		_tmp = new ArrayList<String>();
 		_tmp.add("project_bolt_1");
 		topology.put("spout_1", new ArrayList<String>(_tmp));
-		/*
+		/**
 		 * Stage 1: Project Operators
 		 */
 		String[] projectOutSchema = { "two", "three", "four" };
@@ -69,6 +71,7 @@ public class ExperimentalTopology {
 		projectOperator.setOutputSchema(new Fields(projectOutSchema));
 		builder.setBolt("project_bolt_1", 
 				new SynEFOBolt("project_bolt_1", synefoIP, synefoPort, projectOperator, zooIP, zooPort), 1)
+				.setNumTasks(1)
 				.directGrouping("spout_1");
 		_tmp = new ArrayList<String>();
 		_tmp.add("join_bolt_1");
@@ -84,6 +87,7 @@ public class ExperimentalTopology {
 		equi_join_op.setStateSchema(new Fields(state_schema));
 		builder.setBolt("join_bolt_1", 
 				new SynEFOBolt("join_bolt_1", synefoIP, synefoPort, equi_join_op, zooIP, zooPort), 1)
+				.setNumTasks(1)
 				.directGrouping("project_bolt_1");
 		_tmp = new ArrayList<String>();
 		_tmp.add("count_group_by_bolt_1");
@@ -99,6 +103,7 @@ public class ExperimentalTopology {
 		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
 		builder.setBolt("count_group_by_bolt_1", 
 				new SynEFOBolt("count_group_by_bolt_1", synefoIP, synefoPort, countGroupByAggrOperator, zooIP, zooPort), 1)
+				.setNumTasks(1)
 				.directGrouping("join_bolt_1");
 		topology.put("count_group_by_bolt_1", new ArrayList<String>());
 		/**
@@ -128,16 +133,16 @@ public class ExperimentalTopology {
 		synEFOSocket.close();
 
 		conf.setDebug(true);
-		if(numOfWorkers != -1) {
-			conf.setNumWorkers(4);
-			StormSubmitter.submitTopology("experimental-top", conf, builder.createTopology());
-		} else {        
-			conf.setMaxTaskParallelism(5);
-			LocalCluster cluster = new LocalCluster();
-			cluster.submitTopology("experimental-top", conf, builder.createTopology());
-			Thread.sleep(100000);
-			cluster.shutdown();
-		}
+		//		if(numOfWorkers != -1) {
+		conf.setNumWorkers(4);
+		StormSubmitter.submitTopology("experimental-top", conf, builder.createTopology());
+		//		} else {        
+		//			conf.setMaxTaskParallelism(5);
+		//			LocalCluster cluster = new LocalCluster();
+		//			cluster.submitTopology("experimental-top", conf, builder.createTopology());
+		//			Thread.sleep(100000);
+		//			cluster.shutdown();
+		//		}
 	}
 
 }

@@ -138,8 +138,8 @@ public class SynefoCoordinatorThread implements Runnable {
 			taskNameToIdMap.notifyAll();
 		}
 
-		userInterfaceThread = new Thread(new SynEFOUserInterface(tamer));
-		userInterfaceThread.start();
+//		userInterfaceThread = new Thread(new SynEFOUserInterface(tamer));
+//		userInterfaceThread.start();
 	}
 
 	public int getTaskId(String taskName) {
