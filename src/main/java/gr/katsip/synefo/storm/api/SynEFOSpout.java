@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import gr.katsip.synefo.metric.SynefoMetric;
 import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.lib.SynEFOMessage;
@@ -30,6 +33,8 @@ public class SynEFOSpout extends BaseRichSpout {
 	 * 
 	 */
 	private static final long serialVersionUID = -7244170192535254357L;
+	
+	Logger logger = LoggerFactory.getLogger(SynEFOSpout.class);
 
 	private String _task_name;
 
@@ -89,6 +94,7 @@ public class SynEFOSpout extends BaseRichSpout {
 
 	@SuppressWarnings("unchecked")
 	public void registerToSynEFO() {
+		logger.info("+EFO-SPOUT " + _task_name + ":" + _task_id + "@" + _task_ip + " in registerToSynEFO().");
 		socket = null;
 		SynEFOMessage msg = new SynEFOMessage();
 		msg._type = Type.REG;
