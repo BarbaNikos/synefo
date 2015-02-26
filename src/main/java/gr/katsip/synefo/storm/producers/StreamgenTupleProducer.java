@@ -62,6 +62,11 @@ public class StreamgenTupleProducer implements AbstractTupleProducer, Serializab
 				while(strTok.hasMoreTokens() && val.size() < fields.size()) {
 					val.add(strTok.nextToken());
 				}
+				if(val.size() < fields.size()) {
+					while(val.size() < fields.size()) {
+						val.add(new String("N/A"));
+					}
+				}
 				return val;
 			}
 		} catch (IOException e) {
