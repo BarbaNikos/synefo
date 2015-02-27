@@ -66,7 +66,7 @@ public class ExperimentalTopology {
 		/**
 		 * Stage 1: Project Operators
 		 */
-		String[] projectOutSchema = { "two", "three", "four" };
+		String[] projectOutSchema = { "one", "two", "three", "four" };
 		ProjectOperator projectOperator = new ProjectOperator(new Fields(projectOutSchema));
 		projectOperator.setOutputSchema(new Fields(projectOutSchema));
 		builder.setBolt("project_bolt_1", 
