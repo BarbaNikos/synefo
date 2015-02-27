@@ -37,7 +37,6 @@ public class ExperimentalTopology {
 		Integer zooPort = -1;
 		HashMap<String, ArrayList<String>> topology = new HashMap<String, ArrayList<String>>();
 		ArrayList<String> _tmp;
-//		Integer numOfWorkers = -1;
 		if(args.length < 6) {
 			System.err.println("Arguments: <synefo-IP> <synefo-port> <stream-IP> <stream-port> <zoo-IP> <zoo-port>");
 			System.exit(1);
@@ -48,9 +47,6 @@ public class ExperimentalTopology {
 			streamPort = Integer.parseInt(args[3]);
 			zooIP = args[4];
 			zooPort = Integer.parseInt(args[5]);
-//			if(args.length > 6) {
-//				numOfWorkers = Integer.parseInt(args[6]);
-//			}
 		}
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
@@ -82,7 +78,7 @@ public class ExperimentalTopology {
 		 */
 		EquiJoinOperator<String> equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "three");
 		String[] join_schema = { "three-a", "three-b" };
-		String[] state_schema = { "two", "three", "four", "time" };
+		String[] state_schema = { "one", "two", "three", "four", "time" };
 		equi_join_op.setOutputSchema(new Fields(join_schema));
 		equi_join_op.setStateSchema(new Fields(state_schema));
 		builder.setBolt("join_bolt_1", 
@@ -133,16 +129,8 @@ public class ExperimentalTopology {
 		synEFOSocket.close();
 
 		conf.setDebug(true);
-		//		if(numOfWorkers != -1) {
 		conf.setNumWorkers(4);
 		StormSubmitter.submitTopology("experimental-top", conf, builder.createTopology());
-		//		} else {        
-//					conf.setMaxTaskParallelism(5);
-//					LocalCluster cluster = new LocalCluster();
-//					cluster.submitTopology("experimental-top", conf, builder.createTopology());
-//					Thread.sleep(100000);
-//					cluster.shutdown();
-		//		}
 	}
 
 }
