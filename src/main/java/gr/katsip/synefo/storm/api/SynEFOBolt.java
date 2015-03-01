@@ -184,9 +184,6 @@ public class SynEFOBolt extends BaseRichBolt {
 		 */
 		pet.start();
 		pet.setBoltNodeWatch();
-//		System.out.println("+EFO-BOLT (" + 
-//				taskName + ":" + _task_id + 
-//				") registered to synEFO successfully.");
 		logger.info("+EFO-BOLT (" + 
 				taskName + ":" + _task_id + 
 				") registered to synEFO successfully.");
