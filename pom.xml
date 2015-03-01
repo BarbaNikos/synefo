@@ -55,6 +55,12 @@
 					<archive>
 						<manifest>
 							<mainClass>gr.katsip.synefo.storm.topology.ExperimentalTopology</mainClass>
+							<!--  
+							<mainClass>gr.katsip.synefo.storm.topology.DistributedExperimentalTopology</mainClass>
+							-->
+							<!--
+							<mainClass>gr.katsip.synefo.server.main.SynefoMain</mainClass> 
+							 -->
 						</manifest>
 					</archive>
 				</configuration>

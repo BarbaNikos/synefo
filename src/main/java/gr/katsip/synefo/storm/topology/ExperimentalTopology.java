@@ -106,7 +106,7 @@ public class ExperimentalTopology {
 		 * Notify SynEFO server about the 
 		 * Topology
 		 */
-		System.out.println("About to connect to synEFO: " + synefoIP + ":" + synefoPort);
+		System.out.println("About to connect to synefo: " + synefoIP + ":" + synefoPort);
 		Socket synEFOSocket = new Socket(synefoIP, synefoPort);
 		ObjectOutputStream _out = new ObjectOutputStream(synEFOSocket.getOutputStream());
 		ObjectInputStream _in = new ObjectInputStream(synEFOSocket.getInputStream());

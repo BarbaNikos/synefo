@@ -30,7 +30,6 @@ public class DistributedExperimentalTopology {
 		Integer streamPort = -1;
 		String zooIP = "";
 		Integer zooPort = -1;
-		//		Integer numOfWorkers = -1;
 		HashMap<String, ArrayList<String>> topology = new HashMap<String, ArrayList<String>>();
 		ArrayList<String> _tmp;
 		if(args.length < 6) {
@@ -43,15 +42,11 @@ public class DistributedExperimentalTopology {
 			streamPort = Integer.parseInt(args[3]);
 			zooIP = args[4];
 			zooPort = Integer.parseInt(args[5]);
-			//			if(args.length > 6) {
-			//				numOfWorkers = Integer.parseInt(args[6]);
-			//			}
 		}
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
 		StreamgenTupleProducer tupleProducer = new StreamgenTupleProducer(streamIP, streamPort);
 		String[] spoutSchema = { "one", "two", "three", "four" };
-		tupleProducer.setSchema(new Fields(spoutSchema));
 		tupleProducer.setSchema(new Fields(spoutSchema));
 		builder.setSpout("spout_1", 
 				new SynEFOSpout("spout_1", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
@@ -63,7 +58,7 @@ public class DistributedExperimentalTopology {
 		/**
 		 * Stage 1: Project operators
 		 */
-		String[] projectOutSchema = { "two", "three", "four" };
+		String[] projectOutSchema = { "one", "two", "three", "four" };
 		ProjectOperator projectOperator = new ProjectOperator(new Fields(projectOutSchema));
 		projectOperator.setOutputSchema(new Fields(projectOutSchema));
 		builder.setBolt("project_bolt_1", 
@@ -87,7 +82,7 @@ public class DistributedExperimentalTopology {
 		 */
 		EquiJoinOperator<String> equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "three");
 		String[] join_schema = { "three-a", "three-b" };
-		String[] state_schema = { "two", "three", "four", "time" };
+		String[] state_schema = { "one", "two", "three", "four", "time" };
 		equi_join_op.setOutputSchema(new Fields(join_schema));
 		equi_join_op.setStateSchema(new Fields(state_schema));
 		builder.setBolt("join_bolt_1", 
@@ -126,7 +121,7 @@ public class DistributedExperimentalTopology {
 		 * Notify SynEFO server about the 
 		 * Topology
 		 */
-		System.out.println("About to connect to synEFO: " + synefoIP + ":" + synefoPort);
+		System.out.println("About to connect to synefo: " + synefoIP + ":" + synefoPort);
 		Socket synEFOSocket = new Socket(synefoIP, synefoPort);
 		ObjectOutputStream _out = new ObjectOutputStream(synEFOSocket.getOutputStream());
 		ObjectInputStream _in = new ObjectInputStream(synEFOSocket.getInputStream());
@@ -150,15 +145,7 @@ public class DistributedExperimentalTopology {
 
 
 		conf.setDebug(true);
-		//		if(numOfWorkers != -1) {
 		conf.setNumWorkers(6);
 		StormSubmitter.submitTopology("dist-experimental-top", conf, builder.createTopology());
-		//		} else {        
-		//			conf.setMaxTaskParallelism(5);
-		//			LocalCluster cluster = new LocalCluster();
-		//			cluster.submitTopology("experimental-top", conf, builder.createTopology());
-		//			Thread.sleep(100000);
-		//			cluster.shutdown();
-		//		}
 	}
 }

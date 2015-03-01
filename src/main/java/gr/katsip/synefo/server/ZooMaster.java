@@ -7,7 +7,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.StringTokenizer;
-
 import org.apache.zookeeper.AsyncCallback.ChildrenCallback;
 import org.apache.zookeeper.AsyncCallback.StatCallback;
 import org.apache.zookeeper.CreateMode;
@@ -18,8 +17,24 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.KeeperException.Code;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+/**
+ * ZooMaster is the class responsible for handling communication with the ZooKeeper ensemble, on 
+ * the synefo side. One of its main responsibilities is to initialize the required z-node structure 
+ * on the ZooKeeper ensemble, so that the synefo cluster can operate. Also, it is responsible to 
+ * track changes of children of the directories /synefo/scale-out-event/ and /synefo/scale-in-event. 
+ * Every time a children is added in the aforementioned directories, the scale function component of 
+ * ZooMaster is responsible for deciding the scale-out or scale-in node accordingly.
+ * 
+ * @author Nick R. Katsipoulakis
+ *
+ */
 public class ZooMaster {
+
+
+	Logger logger = LoggerFactory.getLogger(ZooMaster.class);
 
 	private enum SynefoState { INIT, BOOTSTRAPPED };
 
@@ -32,7 +47,7 @@ public class ZooMaster {
 	private SynefoState state;
 
 	private List<String> scaleOutEventChildren;
-	
+
 	private List<String> scaleInEventChildren;
 
 	public HashMap<String, ArrayList<String>> physicalTopology;
@@ -41,30 +56,41 @@ public class ZooMaster {
 
 	public ScaleFunction scaleFunction;
 
+	/**
+	 * Watcher object responsible for tracking storm components' requests 
+	 * for scale-out/in operations. According to the z-node path of children 
+	 * change, a different process is called.
+	 */
 	Watcher synefoWatcher = new Watcher() {
 		public void process(WatchedEvent e) {
 			if(e.getType() == Event.EventType.NodeChildrenChanged) {
-				System.out.println("synefoWatcher.process(): Children changed");
+				logger.info("synefoWatcher # Children chang detected");
 				if(e.getPath().equals("/synefo/scale-out-event")) {
 					/**
 					 * Somehow decide the action to take 
 					 * and have the scale-out-command as String <ACTION{ADD|REMOVE}>-<TASK_ID>
 					 */
-					System.out.println("synefoWatcher.process(): Scale-out event added");
+					logger.info("synefoWatcher # scale-out event added.");
 					setScaleOutEventWatch();
 				}else if(e.getPath().equals("/synefo/scale-in-event")) {
 					/**
 					 * Somehow decide the action to take 
 					 * and have the scale-out-command as String <ACTION{ADD|REMOVE}>-<TASK_ID>
 					 */
-					System.out.println("synefoWatcher.process(): Scale-in event added");
+					logger.info("synefoWatcher # scale-in event added.");
 					setScaleInEventWatch();
 				}
 			}
 		}
-
 	};
 
+	/**
+	 * default constructor of the ZooMaster component.
+	 * @param zoo_ip the ZooKeeper ensemble IP
+	 * @param zoo_port the ZooKeeper ensemble port
+	 * @param physicalTopology an object reference to the physical-topology submitted to synefo
+	 * @param activeTopology an object reference to the initially active components in the topology submitted to synefo
+	 */
 	public ZooMaster(String zoo_ip, Integer zoo_port, 
 			HashMap<String, ArrayList<String>> physicalTopology, 
 			HashMap<String, ArrayList<String>> activeTopology) {
@@ -78,6 +104,11 @@ public class ZooMaster {
 		scaleInEventChildren = new ArrayList<String>();
 	}
 
+	/**
+	 * the function called to initialize the z-nodes on the ZooKeeper ensemble side. 
+	 * Attention need to be paid to the fact that start() does not handle the setup of 
+	 * usage thresholds for nodes.
+	 */
 	public void start() {
 		try {
 			zk = new ZooKeeper(zoo_ip + ":" + zoo_port, 100000	, synefoWatcher);
@@ -124,6 +155,11 @@ public class ZooMaster {
 		}
 	}
 
+	/**
+	 * This function stores the physical topology of the submitted topology to 
+	 * the ZooKeeper ensemble. This is done mainly for availability purposes, in case 
+	 * a synefo component (bolt or spout) fails.
+	 */
 	public void setPhysicalTopology() {
 		try {
 			zk.setData("/synefo/physical-top", serializeTopology(scaleFunction.physicalTopology).getBytes(), -1);
@@ -134,6 +170,11 @@ public class ZooMaster {
 		}
 	}
 
+	/**
+	 * This function stores the active topology of the submitted topology to 
+	 * the ZooKeeper ensemble. This is done mainly for availability purposes, in case 
+	 * a synefo component (bolt or spout) fails.
+	 */
 	public void setActiveTopology() {
 		try {
 			zk.setData("/synefo/active-top", serializeTopology(scaleFunction.activeTopology).getBytes(), -1);
@@ -144,6 +185,14 @@ public class ZooMaster {
 		}
 	}
 
+	/**
+	 * This function sets the upper usage thresholds in the ZooKeeper ensemble. setScaleOutThresholds() 
+	 * needs to be called after the start() function, in order to achieve successful synefo operation.
+	 * @param cpu the upper limit CPU percentage used
+	 * @param memory the upper limit of memory percentage used
+	 * @param latency the upper limit of latency
+	 * @param throughput the lower limit of throughput
+	 */
 	public void setScaleOutThresholds(double cpu, double memory, int latency, int throughput) {
 		String thresholds = cpu + "," + memory + "," + latency + "," + throughput;
 		try {
@@ -155,6 +204,14 @@ public class ZooMaster {
 		}
 	}
 
+	/**
+	 * This function sets the lowest usage thresholds in the ZooKeeper ensemble. setScaleOutThresholds() 
+	 * needs to be called after the start() function, in order to achieve successful synefo operation.
+	 * @param cpu the lowest limit CPU percentage used
+	 * @param memory the lowest limit of memory percentage used
+	 * @param latency the lowest limit of latency
+	 * @param throughput the upper limit of throughput
+	 */
 	public void setScaleInThresholds(double cpu, double memory, int latency, int throughput) {
 		String thresholds = cpu + "," + memory + "," + latency + "," + throughput;
 		try {
@@ -166,6 +223,9 @@ public class ZooMaster {
 		}
 	}
 
+	/**
+	 * Function for setting a watch on the /synefo/scale-out-event z-node.
+	 */
 	public void setScaleOutEventWatch() {
 		zk.getChildren("/synefo/scale-out-event", 
 				synefoWatcher, 
@@ -173,33 +233,42 @@ public class ZooMaster {
 				null);
 	}
 
+	/**
+	 * The callback object responsible for handling scale-out event callbacks.
+	 */
 	ChildrenCallback scaleOutEventChildrenCallback = new ChildrenCallback() {
 		public void processResult(int rc, String path, Object ctx,
 				List<String> children) {
 			switch(Code.get(rc)) {
 			case CONNECTIONLOSS:
-				System.out.println("SynEFO.setScaleOutEventWatch(): CONNECTIONLOSS");
+				logger.info("ZooMaster.setScaleOutEventWatch() # CONNECTIONLOSS");
 				setScaleOutEventWatch();
 				break;
 			case OK:
-				System.out.println("SynEFO.scaleOutEventChildrenCallback(): OK children received: " + 
+				logger.info("ZooMaster.scaleOutEventChildrenCallback() # OK children received: " + 
 						children);
 				for(String child : children) {
-					if(scaleOutEventChildren.lastIndexOf(child) < 0) {
+					if(scaleOutEventChildren.lastIndexOf(child) < 0 && state == SynefoState.BOOTSTRAPPED) {
 						/**
 						 * New child located: Time to set the scale-out 
 						 * command for that child
 						 */
-						System.out.println("SynEFO.scaleOutEventChildrenCallback(): Identified new scale-out request.");
+						logger.info("ZooMaster.scaleOutEventChildrenCallback() # identified new scale-out request: " + 
+								child);
 						StringTokenizer strTok = new StringTokenizer(child, "-");
 						String childWorker = strTok.nextToken();
 						String upstream_task = scaleFunction.getParentNode(
 								childWorker.substring(0, childWorker.lastIndexOf(':')),
 								childWorker.substring(childWorker.lastIndexOf(':') + 1, childWorker.length()));
 						String command = scaleFunction.produceScaleOutCommand(upstream_task, childWorker);
-						System.out.println("SynEFO.scaleOutEventChildrenCallback(): produced command: " + command);
-						if(command.equals("") == false)
+						logger.info("ZooMaster.scaleOutEventChildrenCallback() # produced command: " + command);
+						if(command.equals("") == false) {
 							setScaleCommand(upstream_task, command);
+						}else {
+							logger.info("ZooMaster.scaleOutEventChildrenCallback() # no scale-out command produced" + 
+									"(synefo-component:" + childWorker + ", upstream-component: " + upstream_task + ")."
+									);
+						}
 					}
 				}
 				scaleOutEventChildren = new ArrayList<String>(children);
@@ -208,13 +277,16 @@ public class ZooMaster {
 				setScaleOutEventWatch();
 				break;
 			default:
-				System.out.println("SynEFO.scaleOutEventChildrenCallback() unexpected error: " + KeeperException.create(Code.get(rc)));
+				logger.info("ZooMaster.scaleOutEventChildrenCallback() unexpected error: " + KeeperException.create(Code.get(rc)));
 				break;
 
 			}
 		}	
 	};
 
+	/**
+	 * Function for setting a watch on the /synefo/scale-in-event z-node.
+	 */
 	public void setScaleInEventWatch() {
 		zk.getChildren("/synefo/scale-in-event", 
 				synefoWatcher, 
@@ -222,16 +294,19 @@ public class ZooMaster {
 				null);
 	}
 
+	/**
+	 * The callback object responsible for handling scale-in event callbacks.
+	 */
 	ChildrenCallback scaleInEventChildrenCallback = new ChildrenCallback() {
 		public void processResult(int rc, String path, Object ctx,
 				List<String> children) {
 			switch(Code.get(rc)) {
 			case CONNECTIONLOSS:
-				System.out.println("SynEFO.setScaleInEventWatch(): CONNECTIONLOSS");
+				logger.info("ZooMaster.setScaleInEventWatch() # CONNECTIONLOSS");
 				setScaleInEventWatch();
 				break;
 			case OK:
-				System.out.println("SynEFO.scaleInEventChildrenCallback(): OK children received: " + 
+				logger.info("ZooMaster.scaleInEventChildrenCallback() # OK children received: " + 
 						children);
 				for(String child : children) {
 					if(scaleInEventChildren.lastIndexOf(child) < 0 && state == SynefoState.BOOTSTRAPPED) {
@@ -239,16 +314,22 @@ public class ZooMaster {
 						 * New child located: Time to set the scale-out 
 						 * command for that child
 						 */
-						System.out.println("SynEFO.scaleInEventChildrenCallback(): Identified new scale-in request.");
+						logger.info("ZooMaster.scaleInEventChildrenCallback() # identified new scale-in request: " + 
+								child);
 						StringTokenizer strTok = new StringTokenizer(child, "-");
 						String childWorker = strTok.nextToken();
 						String upstream_task = scaleFunction.getParentNode(
 								childWorker.substring(0, childWorker.lastIndexOf(':')),
 								childWorker.substring(childWorker.lastIndexOf(':') + 1, childWorker.length()));
 						String command = scaleFunction.produceScaleInCommand(childWorker);
-						System.out.println("SynEFO.scaleInEventChildrenCallback(): produced command: " + command);
-						if(command.equals("") == false)
+						System.out.println("ZooMaster.scaleInEventChildrenCallback() # produced command: " + command);
+						if(command.equals("") == false) {
 							setScaleCommand(upstream_task, command);
+						}else {
+							logger.info("ZooMaster.scaleInEventChildrenCallback() # no scale-in command produced" + 
+									"(synefo-component:" + childWorker + ", upstream-component: " + upstream_task + ")."
+									);
+						}
 					}
 				}
 				scaleInEventChildren = new ArrayList<String>(children);
@@ -257,29 +338,41 @@ public class ZooMaster {
 				setScaleInEventWatch();
 				break;
 			default:
-				System.out.println("SynEFO.scaleInEventChildrenCallback() unexpected error: " + KeeperException.create(Code.get(rc)));
+				logger.info("ZooMaster.scaleInEventChildrenCallback() # unexpected error: " + 
+						KeeperException.create(Code.get(rc)));
 				break;
 
 			}
 		}
 	};
 
+	/**
+	 * this function is called in order to set a scale-out/in command for the synefo 
+	 * components.
+	 * @param upstreamTask the upstream-task component of the about-to-scale-out/in component
+	 * @param command either ADD or REMOVE
+	 */
 	public void setScaleCommand(String upstreamTask, String command) {
 		zk.setData("/synefo/bolt-tasks/" + upstreamTask, 
 				(command).getBytes(), 
 				-1, 
 				setScaleCommandCallback, 
-				null);
+				command);
 	}
 
+	/**
+	 * The callback object responsible for handling the result of a 
+	 * set scale command.
+	 */
 	StatCallback setScaleCommandCallback = new StatCallback() {
 		public void processResult(int rc, String path, Object ctx, Stat stat) {
 			switch(Code.get(rc)) {
 			case OK:
-				System.out.println("SynEFO.setScaleCommandCallback(): Scale Command has been set properly.");
+				logger.info("ZooMaster.setScaleCommandCallback() # scale command has been set properly: " + 
+						stat);
 				break;
 			default:
-				System.out.println("SynEFO.setScaleCommandCallback(): Scale Command has had an unexpected result: " + 
+				logger.info("ZooMaster.setScaleCommandCallback() # scale command has had an unexpected result: " + 
 						KeeperException.create(Code.get(rc)));
 				break;
 			}
@@ -287,6 +380,9 @@ public class ZooMaster {
 
 	};
 
+	/**
+	 * this function is called in order to close communication with the ZooKeeper ensemble.
+	 */
 	public void stop() {
 		try {
 			zk.close();
