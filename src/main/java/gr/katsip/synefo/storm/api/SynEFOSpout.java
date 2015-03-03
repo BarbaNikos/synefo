@@ -40,9 +40,9 @@ public class SynEFOSpout extends BaseRichSpout {
 
 	private SpoutOutputCollector _collector;
 
-	private int _task_id;
+	private int taskId;
 
-	private String _task_ip;
+	private String taskIP;
 
 	private ArrayList<String> _downstream_tasks = null;
 
@@ -54,19 +54,19 @@ public class SynEFOSpout extends BaseRichSpout {
 
 	private int idx;
 
-	private String _synEFO_ip;
+	private String synefoIP;
 
-	private Integer _synEFO_port;
+	private Integer synefoPort;
 
 	private Socket socket;
 
-	private ObjectOutputStream _output = null;
+	private ObjectOutputStream output = null;
 
-	private ObjectInputStream _input = null;
+	private ObjectInputStream input = null;
 
-	private TaskStatistics _stats;
+	private TaskStatistics stats;
 
-	private AbstractTupleProducer _tuple_producer;
+	private AbstractTupleProducer tupleProducer;
 
 	private long _tuple_counter;
 
@@ -83,10 +83,10 @@ public class SynEFOSpout extends BaseRichSpout {
 		_task_name = task_name;
 		_downstream_tasks = null;
 		_active_downstream_tasks = null;
-		_synEFO_ip = synEFO_ip;
-		_synEFO_port = synEFO_port;
-		_stats = new TaskStatistics();
-		_tuple_producer = tupleProducer;
+		synefoIP = synEFO_ip;
+		synefoPort = synEFO_port;
+		stats = new TaskStatistics();
+		this.tupleProducer = tupleProducer;
 		_tuple_counter = 0;
 		this.zooIP = zooIP;
 		this.zooPort = zooPort;
@@ -94,29 +94,29 @@ public class SynEFOSpout extends BaseRichSpout {
 
 	@SuppressWarnings("unchecked")
 	public void registerToSynEFO() {
-		logger.info("+EFO-SPOUT " + _task_name + ":" + _task_id + "@" + _task_ip + " in registerToSynEFO().");
+		logger.info("+EFO-SPOUT " + _task_name + ":" + taskId + "@" + taskIP + " in registerToSynEFO().");
 		socket = null;
 		SynEFOMessage msg = new SynEFOMessage();
 		msg._type = Type.REG;
 		msg._values.put("TASK_TYPE", "SPOUT");
 		msg._values.put("TASK_NAME", _task_name);
 		try {
-			_task_ip = InetAddress.getLocalHost().getHostAddress();
-			msg._values.put("TASK_IP", _task_ip);
+			taskIP = InetAddress.getLocalHost().getHostAddress();
+			msg._values.put("TASK_IP", taskIP);
 		} catch (UnknownHostException e1) {
 			e1.printStackTrace();
 		}
-		msg._values.put("TASK_ID", Integer.toString(_task_id));
+		msg._values.put("TASK_ID", Integer.toString(taskId));
 		try {
-			socket = new Socket(_synEFO_ip, _synEFO_port);
-			_output = new ObjectOutputStream(socket.getOutputStream());
-			_input = new ObjectInputStream(socket.getInputStream());
-			_output.writeObject(msg);
-			_output.flush();
+			socket = new Socket(synefoIP, synefoPort);
+			output = new ObjectOutputStream(socket.getOutputStream());
+			input = new ObjectInputStream(socket.getInputStream());
+			output.writeObject(msg);
+			output.flush();
 			msg = null;
 			System.out.println("SPOUT (" + _task_name + ") wait 1");
 			ArrayList<String> _downstream = null;
-			_downstream = (ArrayList<String>) _input.readObject();
+			_downstream = (ArrayList<String>) input.readObject();
 			if(_downstream != null && _downstream.size() > 0) {
 				_downstream_tasks = new ArrayList<String>(_downstream);
 				_int_downstream_tasks = new ArrayList<Integer>();
@@ -132,7 +132,7 @@ public class SynEFOSpout extends BaseRichSpout {
 				_int_downstream_tasks = new ArrayList<Integer>();
 			}
 			ArrayList<String> _active_downstream = null;
-			_active_downstream = (ArrayList<String>) _input.readObject();
+			_active_downstream = (ArrayList<String>) input.readObject();
 			if(_active_downstream != null && _active_downstream.size() > 0) {
 				_active_downstream_tasks = new ArrayList<String>(_active_downstream);
 				_int_active_downstream_tasks = new ArrayList<Integer>();
@@ -153,9 +153,9 @@ public class SynEFOSpout extends BaseRichSpout {
 			 * Closing channels of communication with 
 			 * SynEFO server
 			 */
-			_output.flush();
-			_output.close();
-			_input.close();
+			output.flush();
+			output.close();
+			input.close();
 			socket.close();
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
@@ -171,7 +171,7 @@ public class SynEFOSpout extends BaseRichSpout {
 		pet.start();
 		pet.setBoltNodeWatch();
 		System.out.println("+EFO-SPOUT (" + 
-				_task_name + ":" + _task_id + 
+				_task_name + ":" + taskId + 
 				") registered to +EFO successfully.");
 	}
 
@@ -187,7 +187,7 @@ public class SynEFOSpout extends BaseRichSpout {
 			 * Add SYNEFO_HEADER in the beginning
 			 */
 			values.add("SYNEFO_HEADER");
-			Values returnedValues = _tuple_producer.nextTuple();
+			Values returnedValues = tupleProducer.nextTuple();
 			for(int i = 0; i < returnedValues.size(); i++) {
 				values.add(returnedValues.get(i));
 			}
@@ -200,10 +200,10 @@ public class SynEFOSpout extends BaseRichSpout {
 		}
 		_tuple_counter += 1;
 		metricObject.updateMetrics(_tuple_counter);
-		_stats.updateMemory();
-		_stats.updateCpuLoad();
-		_stats.updateLatency();
-		_stats.updateThroughput(_tuple_counter);
+		stats.updateMemory();
+		stats.updateCpuLoad();
+		stats.updateLatency();
+		stats.updateThroughput(_tuple_counter);
 		String scaleCommand = "";
 		synchronized(pet) {
 			if(pet.pendingCommand != null) {
@@ -239,7 +239,7 @@ public class SynEFOSpout extends BaseRichSpout {
 			 */
 			Values punctValue = new Values();
 			punctValue.add(strBuild.toString());
-			for(int i = 0; i < _tuple_producer.getSchema().size(); i++) {
+			for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
 				punctValue.add(null);
 			}
 			for(Integer d_task : _int_active_downstream_tasks) {
@@ -260,24 +260,24 @@ public class SynEFOSpout extends BaseRichSpout {
 	public void open(@SuppressWarnings("rawtypes") Map conf, TopologyContext context,
 			SpoutOutputCollector collector) {
 		try {
-			_task_ip = InetAddress.getLocalHost().getHostAddress();
+			taskIP = InetAddress.getLocalHost().getHostAddress();
 		} catch (UnknownHostException e1) {
 			e1.printStackTrace();
 		}
-		pet = new ZooPet(zooIP, zooPort, _task_name, _task_id, _task_ip);
+		pet = new ZooPet(zooIP, zooPort, _task_name, taskId, taskIP);
 		if(_active_downstream_tasks == null && _downstream_tasks == null) {
 			registerToSynEFO();
 		}
 		_collector = collector;
-		_task_id = context.getThisTaskId();
+		taskId = context.getThisTaskId();
 		metricObject = new SynefoMetric();
-		metricObject.initMetrics(context, _task_name, Integer.toString(_task_id));
+		metricObject.initMetrics(context, _task_name, Integer.toString(taskId));
 	}
 
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
 		List<String> producerSchema = new ArrayList<String>();
 		producerSchema.add("SYNEFO_HEADER");
-		producerSchema.addAll(_tuple_producer.getSchema().toList());
+		producerSchema.addAll(tupleProducer.getSchema().toList());
 		declarer.declare(new Fields(producerSchema));
 	}
 

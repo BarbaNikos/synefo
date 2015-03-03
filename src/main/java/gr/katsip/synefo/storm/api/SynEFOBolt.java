@@ -212,6 +212,10 @@ public class SynEFOBolt extends BaseRichBolt {
 		 * If punctuation tuple is received:
 		 * Perform Share of state and return execution
 		 */
+		if(tuple.getFields().contains("SYNEFO_HEADER") == false) {
+			logger.error("+EFO-BOLT " + taskName + ":" + _task_id + "@" + _task_ip + " in execute(): received tuple with fields: " + tuple.getFields().toString() + 
+					" from component: " + tuple.getSourceComponent() + " with task-id: " + tuple.getSourceTask());
+		}
 		String synefoHeader = tuple.getString(tuple.getFields().fieldIndex("SYNEFO_HEADER"));
 		if(synefoHeader != null && synefoHeader.equals("") == false) {
 			StringTokenizer txt = new StringTokenizer(synefoHeader, "/");
