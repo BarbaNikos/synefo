@@ -307,6 +307,9 @@ public class SynEFOBolt extends BaseRichBolt {
 			for(int i = 0; i < _operator.getOutputSchema().size(); i++) {
 				punctValue.add(null);
 			}
+			/**
+			 * TODO: Rethink this part!! Should it be active-downstream tasks or all downstream tasks
+			 */
 			for(Integer d_task : intActiveDownstreamTasks) {
 				_collector.emitDirect(d_task, punctValue);
 			}

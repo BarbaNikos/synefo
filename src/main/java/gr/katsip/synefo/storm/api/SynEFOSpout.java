@@ -242,6 +242,9 @@ public class SynEFOSpout extends BaseRichSpout {
 			for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
 				punctValue.add(null);
 			}
+			/**
+			 * TODO: Rethink this part!! Should it be active-downstream tasks or all downstream tasks
+			 */
 			for(Integer d_task : _int_active_downstream_tasks) {
 				_collector.emitDirect(d_task, punctValue);
 			}
