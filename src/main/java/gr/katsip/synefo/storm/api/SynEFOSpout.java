@@ -211,7 +211,8 @@ public class SynEFOSpout extends BaseRichSpout {
 			}
 		}
 		if(scaleCommand != null && scaleCommand.length() > 0) {
-			logger.info("+EFO-SPOUT(" + this._task_name + ":" + this.taskId + "@" + this.taskIP + ") located scale-command: " + scaleCommand + ", about to produce punctuation tuple");
+			logger.info("+EFO-SPOUT(" + this._task_name + ":" + this.taskId + "@" + this.taskIP + 
+					") located scale-command: " + scaleCommand + ", about to produce punctuation tuple");
 			StringTokenizer strTok = new StringTokenizer(scaleCommand, "~");
 			String action = strTok.nextToken();
 			String taskWithIp = strTok.nextToken();
@@ -243,9 +244,6 @@ public class SynEFOSpout extends BaseRichSpout {
 			for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
 				punctValue.add(null);
 			}
-			/**
-			 * TODO: Rethink this part!! Should it be active-downstream tasks or all downstream tasks
-			 */
 			for(Integer d_task : _int_active_downstream_tasks) {
 				_collector.emitDirect(d_task, punctValue);
 			}

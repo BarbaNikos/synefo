@@ -128,7 +128,7 @@ public class ExperimentalTopology {
 		_out.close();
 		synEFOSocket.close();
 
-		conf.setDebug(true);
+		conf.setDebug(false);
 		conf.setNumWorkers(4);
 		StormSubmitter.submitTopology("experimental-top", conf, builder.createTopology());
 	}

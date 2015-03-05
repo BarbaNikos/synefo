@@ -256,8 +256,7 @@ public class SynEFOBolt extends BaseRichBolt {
 					produced_values.add(v.get(i));
 				}
 //				_collector.emit(produced_values);
-//				System.out.println("synefo-bolt(" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") emits: " + produced_values);
-				logger.info("+EFO-BOLT(" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") emits: " + produced_values);
+//				logger.info("+EFO-BOLT(" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") emits: " + produced_values);
 			}
 			_collector.ack(tuple);
 		}
@@ -267,8 +266,14 @@ public class SynEFOBolt extends BaseRichBolt {
 		_stats.updateCpuLoad();
 		_stats.updateLatency();
 		_stats.updateThroughput(tupleCounter);
+		
+		logger.info("+EFO-BOLT(" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") statistics: " + 
+				"cpu: " + _stats.getCpuLoad() + 
+				",memory: " + _stats.getMemory() + 
+				", latency: " + _stats.getLatency() + 
+				", throughput: " + _stats.getThroughput());
 
-//		pet.setStatisticData(_stats.getCpuLoad(), _stats.getMemory(), (int) _stats.getLatency(), (int) _stats.getThroughput());
+		pet.setStatisticData(_stats.getCpuLoad(), _stats.getMemory(), (int) _stats.getLatency(), (int) _stats.getThroughput());
 		String scaleCommand = "";
 		synchronized(pet) {
 			if(pet.pendingCommand != null) {
@@ -308,9 +313,6 @@ public class SynEFOBolt extends BaseRichBolt {
 			for(int i = 0; i < _operator.getOutputSchema().size(); i++) {
 				punctValue.add(null);
 			}
-			/**
-			 * TODO: Rethink this part!! Should it be active-downstream tasks or all downstream tasks
-			 */
 			for(Integer d_task : intActiveDownstreamTasks) {
 				_collector.emitDirect(d_task, punctValue);
 			}
@@ -368,7 +370,6 @@ public class SynEFOBolt extends BaseRichBolt {
 			}else if((s.equals(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.ADD_ACTION) == false && 
 					s.equals(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.REMOVE_ACTION) == false) && 
 					s.equals(SynEFOConstant.PUNCT_TUPLE_TAG) == false && 
-//					s.startsWith(SynEFOConstant.COMP_TAG) && 
 					s.startsWith(SynEFOConstant.COMP_NUM_TAG) == false && 
 					s.startsWith(SynEFOConstant.COMP_TAG) == false && 
 					s.startsWith(SynEFOConstant.COMP_IP_TAG)) {
