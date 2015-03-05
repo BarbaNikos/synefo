@@ -268,7 +268,7 @@ public class SynEFOBolt extends BaseRichBolt {
 		_stats.updateLatency();
 		_stats.updateThroughput(tupleCounter);
 
-		pet.setStatisticData(_stats.getCpuLoad(), _stats.getMemory(), (int) _stats.getLatency(), (int) _stats.getThroughput());
+//		pet.setStatisticData(_stats.getCpuLoad(), _stats.getMemory(), (int) _stats.getLatency(), (int) _stats.getThroughput());
 		String scaleCommand = "";
 		synchronized(pet) {
 			if(pet.pendingCommand != null) {
@@ -387,7 +387,8 @@ public class SynEFOBolt extends BaseRichBolt {
 				try {
 					ServerSocket _socket = new ServerSocket(6000 + _task_id);
 					int numOfStatesReceived = 0;
-					System.out.println("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") accepting connections to receive state...");
+					logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + 
+							") accepting connections to receive state... (IP:" + _socket.getInetAddress().getHostAddress() + ", port: " + _socket.getLocalPort());
 					while(numOfStatesReceived < (comp_num - 1)) {
 						Socket client = _socket.accept();
 						ObjectOutputStream _stateOutput = new ObjectOutputStream(client.getOutputStream());
@@ -408,16 +409,18 @@ public class SynEFOBolt extends BaseRichBolt {
 				}
 				logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") Finished accepting connections to receive state.");
 			}else {
-				logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") about to send state to newly added operator...");
 				Socket client = new Socket();
 				Integer comp_task_id = Integer.parseInt(component_id);
+				logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + 
+						") about to send state to about-to-be-added operator (IP: " + ip + ", port: " + (6000 + comp_task_id) + ").");
 				boolean attempt_flag = true;
 				while (attempt_flag == true) {
 					try {
 						client = new Socket(ip, 6000 + comp_task_id);
 						attempt_flag = false;
 					} catch (IOException e) {
-						System.out.println("+EFO:BOLT(" + _task_id + "): Connect failed (1), waiting and trying again");
+						logger.info("+EFO:BOLT(" + _task_id + "): Connect failed (1), waiting and trying again");
+						logger.info("+EFO:BOLT(" + _task_id + "): " + e.getMessage());
 						try
 						{
 							Thread.sleep(500);
@@ -450,8 +453,9 @@ public class SynEFOBolt extends BaseRichBolt {
 			String selfComp = this.taskName + ":" + this._task_id;
 			if(selfComp.equals(component_name + ":" + component_id)) {
 				try {
-					System.out.println("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") accepting connections to send state...");
 					ServerSocket _socket = new ServerSocket(6000 + _task_id);
+					logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + 
+							") accepting connections to receive state... (IP:" + _socket.getInetAddress().getHostAddress() + ", port: " + _socket.getLocalPort());
 					int numOfStatesReceived = 0;
 					while(numOfStatesReceived < (comp_num - 1)) {
 						Socket client = _socket.accept();
@@ -474,9 +478,10 @@ public class SynEFOBolt extends BaseRichBolt {
 				}
 				logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") Finished accepting connections to send state.");
 			}else {
-				logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") about to receive state from about-to-be-removed operator...");
 				Socket client = new Socket();
 				Integer comp_task_id = Integer.parseInt(component_id);
+				logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + 
+						") about to receive state from about-to-be-removed operator (IP: " + ip + ", port: " + (6000 + comp_task_id) + ").");
 				boolean attempt_flag = true;
 				while (attempt_flag == true) {
 					try {
@@ -484,6 +489,7 @@ public class SynEFOBolt extends BaseRichBolt {
 						attempt_flag = false;
 					} catch (IOException e) {
 						logger.info("+EFO:BOLT(" + _task_id + "): Connect failed (2), waiting and trying again");
+						logger.info("+EFO:BOLT(" + _task_id + "): " + e.getMessage());
 						try
 						{
 							Thread.sleep(500);
