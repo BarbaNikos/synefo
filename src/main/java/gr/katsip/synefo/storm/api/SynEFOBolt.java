@@ -367,11 +367,15 @@ public class SynEFOBolt extends BaseRichBolt {
 				comp_num = Integer.parseInt(strTok.nextToken());
 			}else if((s.equals(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.ADD_ACTION) == false && 
 					s.equals(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.REMOVE_ACTION) == false) && 
-					s.equals(SynEFOConstant.PUNCT_TUPLE_TAG) == false && s.startsWith(SynEFOConstant.COMP_TAG) && 
+					s.equals(SynEFOConstant.PUNCT_TUPLE_TAG) == false && 
+//					s.startsWith(SynEFOConstant.COMP_TAG) && 
+					s.startsWith(SynEFOConstant.COMP_NUM_TAG) == false && 
+					s.startsWith(SynEFOConstant.COMP_TAG) == false && 
 					s.startsWith(SynEFOConstant.COMP_IP_TAG)) {
 				StringTokenizer strTok = new StringTokenizer(s, ":");
 				strTok.nextToken();
 				ip = strTok.nextToken();
+				logger.info("+EFO-BOLT (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") located peer's IP: " + ip);
 			}
 		}
 		/**
@@ -455,7 +459,7 @@ public class SynEFOBolt extends BaseRichBolt {
 				try {
 					ServerSocket _socket = new ServerSocket(6000 + _task_id);
 					logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + 
-							") accepting connections to receive state... (IP:" + _socket.getInetAddress().getHostAddress() + ", port: " + _socket.getLocalPort());
+							") accepting connections to receive state... (IP:" + _socket.getInetAddress() + ", port: " + _socket.getLocalPort());
 					int numOfStatesReceived = 0;
 					while(numOfStatesReceived < (comp_num - 1)) {
 						Socket client = _socket.accept();
