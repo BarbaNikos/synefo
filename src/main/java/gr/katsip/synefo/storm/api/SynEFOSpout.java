@@ -211,6 +211,7 @@ public class SynEFOSpout extends BaseRichSpout {
 			}
 		}
 		if(scaleCommand != null && scaleCommand.length() > 0) {
+			logger.info("+EFO-SPOUT(" + this._task_name + ":" + this.taskId + "@" + this.taskIP + ") located scale-command: " + scaleCommand + ", about to produce punctuation tuple");
 			StringTokenizer strTok = new StringTokenizer(scaleCommand, "~");
 			String action = strTok.nextToken();
 			String taskWithIp = strTok.nextToken();

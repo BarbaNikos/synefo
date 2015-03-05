@@ -276,6 +276,7 @@ public class SynEFOBolt extends BaseRichBolt {
 			}
 		}
 		if(scaleCommand != null && scaleCommand.length() > 0) {
+			logger.info("+EFO-BOLT(" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") located scale-command: " + scaleCommand + ", about to produce punctuation tuple");
 			StringTokenizer strTok = new StringTokenizer(scaleCommand, "~");
 			String action = strTok.nextToken();
 			String taskWithIp = strTok.nextToken();
