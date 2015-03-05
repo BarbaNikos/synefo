@@ -192,6 +192,10 @@ public class SynEFOBolt extends BaseRichBolt {
 	public void prepare(@SuppressWarnings("rawtypes") Map conf, TopologyContext context, OutputCollector collector) {
 		_collector = collector;
 		_task_id = context.getThisTaskId();
+		
+		if(conf.containsKey("TOPOLOGY_DEBUG") || conf.containsKey("topology_debug")) {
+			String debug = (String) conf.get("TOPOLOGY_DEBUG");
+		}
 		try {
 			_task_ip = InetAddress.getLocalHost().getHostAddress();
 		} catch (UnknownHostException e1) {
@@ -267,9 +271,9 @@ public class SynEFOBolt extends BaseRichBolt {
 		_stats.updateLatency();
 		_stats.updateThroughput(tupleCounter);
 		
-		logger.info("+EFO-BOLT(" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") statistics: " + 
+		logger.info("+EFO-BOLT(" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") timestamp: " + System.currentTimeMillis() + ", " + 
 				"cpu: " + _stats.getCpuLoad() + 
-				",memory: " + _stats.getMemory() + 
+				", memory: " + _stats.getMemory() + 
 				", latency: " + _stats.getLatency() + 
 				", throughput: " + _stats.getThroughput());
 
