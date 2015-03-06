@@ -58,7 +58,7 @@
 							 -->
 							<mainClass>gr.katsip.synefo.storm.topology.MinimalTopology</mainClass>
 							<!--  
-							<mainClass>gr.katsip.synefo.storm.topology.DistributedExperimentalTopology</mainClass>
+							<mainClass>gr.katsip.synefo.storm.topology.DistributedTopology</mainClass>
 							-->
 							<!--
 							<mainClass>gr.katsip.synefo.server.main.SynefoMain</mainClass> 

@@ -21,7 +21,7 @@ import backtype.storm.StormSubmitter;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 
-public class DistributedExperimentalTopology {
+public class DistributedTopology {
 
 	public static void main(String[] args) throws Exception {
 		String synefoIP = "";
@@ -54,6 +54,7 @@ public class DistributedExperimentalTopology {
 		_tmp = new ArrayList<String>();
 		_tmp.add("project_bolt_1");
 		_tmp.add("project_bolt_2");
+		_tmp.add("project_bolt_3");
 		topology.put("spout_1", new ArrayList<String>(_tmp));
 		/**
 		 * Stage 1: Project operators
@@ -71,11 +72,19 @@ public class DistributedExperimentalTopology {
 				new SynEFOBolt("project_bolt_2", synefoIP, synefoPort, projectOperator, zooIP, zooPort), 1)
 				.setNumTasks(1)
 				.directGrouping("spout_1");
+		projectOperator = new ProjectOperator(new Fields(projectOutSchema));
+		projectOperator.setOutputSchema(new Fields(projectOutSchema));
+		builder.setBolt("project_bolt_3", 
+				new SynEFOBolt("project_bolt_3", synefoIP, synefoPort, projectOperator, zooIP, zooPort), 1)
+				.setNumTasks(1)
+				.directGrouping("spout_1");
 		_tmp = new ArrayList<String>();
 		_tmp.add("join_bolt_1");
 		_tmp.add("join_bolt_2");
+		_tmp.add("join_bolt_3");
 		topology.put("project_bolt_1", new ArrayList<String>(_tmp));
 		topology.put("project_bolt_2", new ArrayList<String>(_tmp));
+		topology.put("project_bolt_3", new ArrayList<String>(_tmp));
 		_tmp = null;
 		/**
 		 * Stage 2: Join operators
@@ -89,7 +98,8 @@ public class DistributedExperimentalTopology {
 				new SynEFOBolt("join_bolt_1", synefoIP, synefoPort, equi_join_op, zooIP, zooPort), 1)
 				.setNumTasks(1)
 				.directGrouping("project_bolt_1")
-				.directGrouping("project_bolt_2");
+				.directGrouping("project_bolt_2")
+				.directGrouping("project_bolt_3");
 		equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "three");
 		equi_join_op.setOutputSchema(new Fields(join_schema));
 		equi_join_op.setStateSchema(new Fields(state_schema));
@@ -97,11 +107,24 @@ public class DistributedExperimentalTopology {
 				new SynEFOBolt("join_bolt_2", synefoIP, synefoPort, equi_join_op, zooIP, zooPort), 1)
 				.setNumTasks(1)
 				.directGrouping("project_bolt_1")
-				.directGrouping("project_bolt_2");
+				.directGrouping("project_bolt_2")
+				.directGrouping("project_bolt_3");
+		equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "three");
+		equi_join_op.setOutputSchema(new Fields(join_schema));
+		equi_join_op.setStateSchema(new Fields(state_schema));
+		builder.setBolt("join_bolt_3", 
+				new SynEFOBolt("join_bolt_3", synefoIP, synefoPort, equi_join_op, zooIP, zooPort), 1)
+				.setNumTasks(1)
+				.directGrouping("project_bolt_1")
+				.directGrouping("project_bolt_2")
+				.directGrouping("project_bolt_3");
 		_tmp = new ArrayList<String>();
 		_tmp.add("count_group_by_bolt_1");
+		_tmp.add("count_group_by_bolt_2");
+		_tmp.add("count_group_by_bolt_3");
 		topology.put("join_bolt_1", new ArrayList<String>(_tmp));
 		topology.put("join_bolt_2", new ArrayList<String>(_tmp));
+		topology.put("join_bolt_3", new ArrayList<String>(_tmp));
 		_tmp = null;
 		/**
 		 * Stage 3: Aggregate operator
@@ -115,8 +138,19 @@ public class DistributedExperimentalTopology {
 				new SynEFOBolt("count_group_by_bolt_1", synefoIP, synefoPort, countGroupByAggrOperator, zooIP, zooPort), 1)
 				.setNumTasks(1)
 				.directGrouping("join_bolt_1")
-				.directGrouping("join_bolt_2");
+				.directGrouping("join_bolt_2")
+				.directGrouping("join_bolt_3");
+		countGroupByAggrOperator = new CountGroupByAggrOperator(1000, join_schema);
+		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
+		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
+		builder.setBolt("count_group_by_bolt_2", 
+				new SynEFOBolt("count_group_by_bolt_2", synefoIP, synefoPort, countGroupByAggrOperator, zooIP, zooPort), 1)
+				.setNumTasks(1)
+				.directGrouping("join_bolt_1")
+				.directGrouping("join_bolt_2")
+				.directGrouping("join_bolt_3");
 		topology.put("count_group_by_bolt_1", new ArrayList<String>());
+		topology.put("count_group_by_bolt_2", new ArrayList<String>());
 		/**
 		 * Notify SynEFO server about the 
 		 * Topology
@@ -145,7 +179,7 @@ public class DistributedExperimentalTopology {
 
 
 		conf.setDebug(false);
-		conf.setNumWorkers(6);
-		StormSubmitter.submitTopology("dist-experimental-top", conf, builder.createTopology());
+		conf.setNumWorkers(9);
+		StormSubmitter.submitTopology("dist-top", conf, builder.createTopology());
 	}
 }

@@ -195,6 +195,7 @@ public class SynEFOBolt extends BaseRichBolt {
 		
 		if(conf.containsKey("TOPOLOGY_DEBUG") || conf.containsKey("topology_debug")) {
 			String debug = (String) conf.get("TOPOLOGY_DEBUG");
+			logger.info("+EFO-BOLT " + taskName + ":" + _task_id + "@" + _task_ip + " topology debug flag: " + debug);
 		}
 		try {
 			_task_ip = InetAddress.getLocalHost().getHostAddress();
@@ -277,7 +278,7 @@ public class SynEFOBolt extends BaseRichBolt {
 				", latency: " + _stats.getLatency() + 
 				", throughput: " + _stats.getThroughput());
 
-		pet.setStatisticData(_stats.getCpuLoad(), _stats.getMemory(), (int) _stats.getLatency(), (int) _stats.getThroughput());
+//		pet.setStatisticData(_stats.getCpuLoad(), _stats.getMemory(), (int) _stats.getLatency(), (int) _stats.getThroughput());
 		String scaleCommand = "";
 		synchronized(pet) {
 			if(pet.pendingCommand != null) {
