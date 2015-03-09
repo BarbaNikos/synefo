@@ -7,7 +7,7 @@ import gr.katsip.synefo.storm.operators.relational.CountGroupByAggrOperator;
 import gr.katsip.synefo.storm.operators.relational.EquiJoinOperator;
 import gr.katsip.synefo.storm.operators.relational.ProjectOperator;
 import gr.katsip.synefo.storm.operators.relational.StringComparator;
-import gr.katsip.synefo.storm.producers.StreamgenTupleProducer;
+import gr.katsip.synefo.storm.producers.SampleTupleProducer;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -16,37 +16,31 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import backtype.storm.Config;
-//import backtype.storm.LocalCluster;
-import backtype.storm.StormSubmitter;
+import backtype.storm.LocalCluster;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 
-public class DistributedTopology {
-
+public class DebugTopology {
 	public static void main(String[] args) throws Exception {
 		String synefoIP = "";
 		Integer synefoPort = -1;
-		String streamIP = "";
-		Integer streamPort = -1;
 		String zooIP = "";
 		Integer zooPort = -1;
 		HashMap<String, ArrayList<String>> topology = new HashMap<String, ArrayList<String>>();
 		ArrayList<String> _tmp;
-		if(args.length < 6) {
-			System.err.println("Arguments: <synefo-IP> <synefo-port> <stream-IP> <stream-port> <zoo-IP> <zoo-port>");
+		if(args.length < 4) {
+			System.err.println("Arguments: <synefo-IP> <synefo-port> <zoo-IP> <zoo-port>");
 			System.exit(1);
 		}else {
 			synefoIP = args[0];
 			synefoPort = Integer.parseInt(args[1]);
-			streamIP = args[2];
-			streamPort = Integer.parseInt(args[3]);
-			zooIP = args[4];
-			zooPort = Integer.parseInt(args[5]);
+			zooIP = args[2];
+			zooPort = Integer.parseInt(args[3]);
 		}
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
-		StreamgenTupleProducer tupleProducer = new StreamgenTupleProducer(streamIP, streamPort);
-		String[] spoutSchema = { "one", "two", "three", "four" };
+		SampleTupleProducer tupleProducer = new SampleTupleProducer();
+		String[] spoutSchema = { "name" };
 		tupleProducer.setSchema(new Fields(spoutSchema));
 		builder.setSpout("spout_1", 
 				new SynEFOSpout("spout_1", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
@@ -59,7 +53,7 @@ public class DistributedTopology {
 		/**
 		 * Stage 1: Project operators
 		 */
-		String[] projectOutSchema = { "one", "two", "three", "four" };
+		String[] projectOutSchema = { "name" };
 		ProjectOperator projectOperator = new ProjectOperator(new Fields(projectOutSchema));
 		projectOperator.setOutputSchema(new Fields(projectOutSchema));
 		builder.setBolt("project_bolt_1", 
@@ -89,9 +83,9 @@ public class DistributedTopology {
 		/**
 		 * Stage 2: Join operators
 		 */
-		EquiJoinOperator<String> equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "three");
-		String[] join_schema = { "three-a", "three-b" };
-		String[] state_schema = { "one", "two", "three", "four", "time" };
+		EquiJoinOperator<String> equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "name");
+		String[] join_schema = { "name-a", "name-b" };
+		String[] state_schema = { "name", "time" };
 		equi_join_op.setOutputSchema(new Fields(join_schema));
 		equi_join_op.setStateSchema(new Fields(state_schema));
 		builder.setBolt("join_bolt_1", 
@@ -100,7 +94,7 @@ public class DistributedTopology {
 				.directGrouping("project_bolt_1")
 				.directGrouping("project_bolt_2")
 				.directGrouping("project_bolt_3");
-		equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "three");
+		equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "name");
 		equi_join_op.setOutputSchema(new Fields(join_schema));
 		equi_join_op.setStateSchema(new Fields(state_schema));
 		builder.setBolt("join_bolt_2", 
@@ -109,7 +103,7 @@ public class DistributedTopology {
 				.directGrouping("project_bolt_1")
 				.directGrouping("project_bolt_2")
 				.directGrouping("project_bolt_3");
-		equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "three");
+		equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "name");
 		equi_join_op.setOutputSchema(new Fields(join_schema));
 		equi_join_op.setStateSchema(new Fields(state_schema));
 		builder.setBolt("join_bolt_3", 
@@ -179,6 +173,12 @@ public class DistributedTopology {
 
 		conf.setDebug(false);
 		conf.setNumWorkers(9);
-		StormSubmitter.submitTopology("dist-top", conf, builder.createTopology());
+//		StormSubmitter.submitTopology("dist-top", conf, builder.createTopology());
+		LocalCluster cluster = new LocalCluster();
+		cluster.submitTopology("debug-topology", conf, builder.createTopology());
+		
+		Thread.sleep(20000);
+		
+		cluster.shutdown();
 	}
 }

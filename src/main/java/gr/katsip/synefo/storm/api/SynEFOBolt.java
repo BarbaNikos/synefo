@@ -270,7 +270,8 @@ public class SynEFOBolt extends BaseRichBolt {
 		_stats.updateMemory();
 		_stats.updateCpuLoad();
 		_stats.updateLatency();
-		_stats.updateThroughput(tupleCounter);
+//		_stats.updateThroughput(tupleCounter);
+		_stats.updateThroughput(1);
 		
 		logger.info("+EFO-BOLT(" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") timestamp: " + System.currentTimeMillis() + ", " + 
 				"cpu: " + _stats.getCpuLoad() + 
@@ -278,7 +279,7 @@ public class SynEFOBolt extends BaseRichBolt {
 				", latency: " + _stats.getLatency() + 
 				", throughput: " + _stats.getThroughput());
 
-//		pet.setStatisticData(_stats.getCpuLoad(), _stats.getMemory(), (int) _stats.getLatency(), (int) _stats.getThroughput());
+		pet.setStatisticData(_stats.getCpuLoad(), _stats.getMemory(), (int) _stats.getLatency(), (int) _stats.getThroughput());
 		String scaleCommand = "";
 		synchronized(pet) {
 			if(pet.pendingCommand != null) {

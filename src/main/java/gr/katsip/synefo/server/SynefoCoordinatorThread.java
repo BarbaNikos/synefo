@@ -104,6 +104,9 @@ public class SynefoCoordinatorThread implements Runnable {
 				if(downStreamNames != null && downStreamNames.size() > 0) {
 					ArrayList<String> downStreamIds = new ArrayList<String>();
 					for(String name : downStreamNames) {
+						if(taskNameToIdMap.containsKey(name) == false) {
+							assert taskNameToIdMap.containsKey(name) == true;
+						}
 						String childTask = name + ":" + Integer.toString(taskNameToIdMap.get(name)) + "@" + 
 								taskIPs.get(name + ":" + Integer.toString(taskNameToIdMap.get(name)));
 						downStreamIds.add(childTask);
