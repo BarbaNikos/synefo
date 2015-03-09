@@ -17,7 +17,6 @@ public class SampleTupleProducer implements AbstractTupleProducer, Serializable 
 	
 	private final String[] words = new String[] { "nathan", "mike", "jackson", "golda", "bertels", "nick", "romanos", "alexandros", "cory" };
 	
-	
 	public SampleTupleProducer() {
 		word_idx = 0;
 		String[] fields = { "name" };

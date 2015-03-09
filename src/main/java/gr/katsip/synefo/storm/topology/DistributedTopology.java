@@ -46,7 +46,7 @@ public class DistributedTopology {
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
 		StreamgenTupleProducer tupleProducer = new StreamgenTupleProducer(streamIP, streamPort);
-		String[] spoutSchema = { "one", "two", "three", "four" };
+		String[] spoutSchema = { "num", "one", "two", "three", "four" };
 		tupleProducer.setSchema(new Fields(spoutSchema));
 		builder.setSpout("spout_1", 
 				new SynEFOSpout("spout_1", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
@@ -59,7 +59,7 @@ public class DistributedTopology {
 		/**
 		 * Stage 1: Project operators
 		 */
-		String[] projectOutSchema = { "one", "two", "three", "four" };
+		String[] projectOutSchema = { "num", "one", "two", "three", "four" };
 		ProjectOperator projectOperator = new ProjectOperator(new Fields(projectOutSchema));
 		projectOperator.setOutputSchema(new Fields(projectOutSchema));
 		builder.setBolt("project_bolt_1", 
@@ -91,7 +91,7 @@ public class DistributedTopology {
 		 */
 		EquiJoinOperator<String> equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "three");
 		String[] join_schema = { "three-a", "three-b" };
-		String[] state_schema = { "one", "two", "three", "four", "time" };
+		String[] state_schema = { "num", "one", "two", "three", "four", "time" };
 		equi_join_op.setOutputSchema(new Fields(join_schema));
 		equi_join_op.setStateSchema(new Fields(state_schema));
 		builder.setBolt("join_bolt_1", 
@@ -177,7 +177,7 @@ public class DistributedTopology {
 		synEFOSocket.close();
 
 
-		conf.setDebug(false);
+		conf.setDebug(true);
 		conf.setNumWorkers(9);
 		StormSubmitter.submitTopology("dist-top", conf, builder.createTopology());
 	}
