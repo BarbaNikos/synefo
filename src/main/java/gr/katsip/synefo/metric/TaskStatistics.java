@@ -90,26 +90,6 @@ public class TaskStatistics implements Serializable {
 		return latency;
 	}
 	
-//	public void updateThroughput(long _thrpt_current_tuple_num) {
-//		if(throughputSamples == 0) {
-//			this.throughput = 0;
-//			throughputPreviousTupleNumber = _thrpt_current_tuple_num;
-//			throughputPreviousTimestamp = System.currentTimeMillis();
-//			throughputSamples += 1;
-//		}else {
-//			long _thrpt_delta = Math.abs(throughputPreviousTupleNumber - _thrpt_current_tuple_num);
-//			long _curr_timestamp = System.currentTimeMillis();
-//			long _thrpt_time_delta = Math.abs(_curr_timestamp - throughputPreviousTimestamp) / 1000;
-//			if(_thrpt_time_delta == 0)
-//				_thrpt_time_delta = 1;
-//			double throughput = _thrpt_delta / _thrpt_time_delta;
-//			this.throughput = this.throughput + (throughput - this.throughput)/(throughputSamples + 1);
-//			throughputSamples += 1;
-//			throughputPreviousTupleNumber = _thrpt_current_tuple_num;
-//			throughputPreviousTimestamp = _curr_timestamp;
-//		}
-//	}
-	
 	public void updateThroughput(long _thrpt_current_tuple_num) {
 		if(throughputSamples == 0) {
 			this.throughput = 0;
