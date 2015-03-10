@@ -36,7 +36,7 @@ public class SynEFOBolt extends BaseRichBolt {
 	 * 
 	 */
 	private static final long serialVersionUID = 4011052074675303959L;
-	
+
 	Logger logger = LoggerFactory.getLogger(SynEFOBolt.class);
 
 	private String taskName;
@@ -78,9 +78,9 @@ public class SynEFOBolt extends BaseRichBolt {
 	private List<Values> stateValues;
 
 	private ZooPet pet;
-	
+
 	private String zooIP;
-	
+
 	private Integer zooPort;
 
 	public SynEFOBolt(String task_name, String synEFO_ip, Integer synEFO_port, 
@@ -183,7 +183,7 @@ public class SynEFOBolt extends BaseRichBolt {
 		 * Handshake with ZooKeeper
 		 */
 		pet.start();
-		pet.setBoltNodeWatch();
+		pet.getScaleCommand();
 		logger.info("+EFO-BOLT (" + 
 				taskName + ":" + _task_id + 
 				") registered to synEFO successfully.");
@@ -192,7 +192,7 @@ public class SynEFOBolt extends BaseRichBolt {
 	public void prepare(@SuppressWarnings("rawtypes") Map conf, TopologyContext context, OutputCollector collector) {
 		_collector = collector;
 		_task_id = context.getThisTaskId();
-		
+
 		if(conf.containsKey("TOPOLOGY_DEBUG") || conf.containsKey("topology_debug")) {
 			String debug = (String) conf.get("TOPOLOGY_DEBUG");
 			logger.info("+EFO-BOLT " + taskName + ":" + _task_id + "@" + _task_ip + " topology debug flag: " + debug);
@@ -260,8 +260,8 @@ public class SynEFOBolt extends BaseRichBolt {
 				for(int i = 0; i < v.size(); i++) {
 					produced_values.add(v.get(i));
 				}
-//				_collector.emit(produced_values);
-//				logger.info("+EFO-BOLT(" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") emits: " + produced_values);
+				//				_collector.emit(produced_values);
+				//				logger.info("+EFO-BOLT(" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") emits: " + produced_values);
 			}
 			_collector.ack(tuple);
 		}
@@ -271,14 +271,14 @@ public class SynEFOBolt extends BaseRichBolt {
 		_stats.updateCpuLoad();
 		_stats.updateLatency();
 		_stats.updateThroughput(1);
-		
-//		logger.info("+EFO-BOLT(" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") timestamp: " + System.currentTimeMillis() + ", " + 
-//				"cpu: " + _stats.getCpuLoad() + 
-//				", memory: " + _stats.getMemory() + 
-//				", latency: " + _stats.getLatency() + 
-//				", throughput: " + _stats.getThroughput());
 
-//		pet.setStatisticData(_stats.getCpuLoad(), _stats.getMemory(), (int) _stats.getLatency(), (int) _stats.getThroughput());
+		//		logger.info("+EFO-BOLT(" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") timestamp: " + System.currentTimeMillis() + ", " + 
+		//				"cpu: " + _stats.getCpuLoad() + 
+		//				", memory: " + _stats.getMemory() + 
+		//				", latency: " + _stats.getLatency() + 
+		//				", throughput: " + _stats.getThroughput());
+
+		//		pet.setStatisticData(_stats.getCpuLoad(), _stats.getMemory(), (int) _stats.getLatency(), (int) _stats.getThroughput());
 		String scaleCommand = "";
 		synchronized(pet) {
 			if(pet.pendingCommand != null) {
@@ -286,7 +286,8 @@ public class SynEFOBolt extends BaseRichBolt {
 			}
 		}
 		if(scaleCommand != null && scaleCommand.length() > 0) {
-			logger.info("+EFO-BOLT(" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") located scale-command: " + scaleCommand + ", about to produce punctuation tuple");
+			logger.info("+EFO-BOLT(" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") located scale-command: " + 
+					scaleCommand + ", about to produce punctuation tuple");
 			StringTokenizer strTok = new StringTokenizer(scaleCommand, "~");
 			String action = strTok.nextToken();
 			String taskWithIp = strTok.nextToken();

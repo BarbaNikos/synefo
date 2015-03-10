@@ -169,7 +169,7 @@ public class SynEFOSpout extends BaseRichSpout {
 		 * Handshake with ZooKeeper
 		 */
 		pet.start();
-		pet.setBoltNodeWatch();
+		pet.getScaleCommand();
 		System.out.println("+EFO-SPOUT (" + 
 				_task_name + ":" + taskId + 
 				") registered to +EFO successfully.");
