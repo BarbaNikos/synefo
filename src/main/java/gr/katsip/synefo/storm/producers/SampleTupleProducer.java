@@ -1,6 +1,7 @@
 package gr.katsip.synefo.storm.producers;
 
 import java.io.Serializable;
+
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
@@ -17,10 +18,13 @@ public class SampleTupleProducer implements AbstractTupleProducer, Serializable 
 	
 	private final String[] words = new String[] { "nathan", "mike", "jackson", "golda", "bertels", "nick", "romanos", "alexandros", "cory" };
 	
+	private long num;
+	
 	public SampleTupleProducer() {
 		word_idx = 0;
 		String[] fields = { "name" };
 		output_schema = new Fields(fields);
+		num = 0;
 	}
 
 	@Override
@@ -37,7 +41,10 @@ public class SampleTupleProducer implements AbstractTupleProducer, Serializable 
 		if(word_idx > (words.length - 1))
 			word_idx = 0;
 //		System.out.println("SampleTupleProducer emits!!!");
-		return new Values(word);
+		Values val = new Values();
+		val.add(new Long(num));
+		val.add(word);
+		return val;
 	}
 
 	@Override

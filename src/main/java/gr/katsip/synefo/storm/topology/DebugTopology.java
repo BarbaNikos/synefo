@@ -40,7 +40,7 @@ public class DebugTopology {
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
 		SampleTupleProducer tupleProducer = new SampleTupleProducer();
-		String[] spoutSchema = { "name" };
+		String[] spoutSchema = { "num", "name" };
 		tupleProducer.setSchema(new Fields(spoutSchema));
 		builder.setSpout("spout_1", 
 				new SynEFOSpout("spout_1", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
@@ -53,7 +53,7 @@ public class DebugTopology {
 		/**
 		 * Stage 1: Project operators
 		 */
-		String[] projectOutSchema = { "name" };
+		String[] projectOutSchema = { "num", "name" };
 		ProjectOperator projectOperator = new ProjectOperator(new Fields(projectOutSchema));
 		projectOperator.setOutputSchema(new Fields(projectOutSchema));
 		builder.setBolt("project_bolt_1", 
@@ -85,7 +85,7 @@ public class DebugTopology {
 		 */
 		EquiJoinOperator<String> equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "name");
 		String[] join_schema = { "name-a", "name-b" };
-		String[] state_schema = { "name", "time" };
+		String[] state_schema = { "num", "name", "time" };
 		equi_join_op.setOutputSchema(new Fields(join_schema));
 		equi_join_op.setStateSchema(new Fields(state_schema));
 		builder.setBolt("join_bolt_1", 
@@ -171,7 +171,7 @@ public class DebugTopology {
 		synEFOSocket.close();
 
 
-		conf.setDebug(false);
+		conf.setDebug(true);
 		conf.setNumWorkers(9);
 //		StormSubmitter.submitTopology("dist-top", conf, builder.createTopology());
 		LocalCluster cluster = new LocalCluster();

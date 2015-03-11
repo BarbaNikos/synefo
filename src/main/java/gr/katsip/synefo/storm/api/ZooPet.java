@@ -54,9 +54,9 @@ public class ZooPet {
 
 		public Pair<Integer, Integer> throughput;
 
-//		public String scaleOutZnodeName;
-//
-//		public String scaleInZnodeName;
+		//		public String scaleOutZnodeName;
+		//
+		//		public String scaleInZnodeName;
 
 		public volatile String pendingCommand;
 
@@ -78,8 +78,8 @@ public class ZooPet {
 			this.taskID = task_id;
 			this.taskName = task_name;
 			state = BoltState.INIT;
-//			scaleOutZnodeName = "";
-//			scaleInZnodeName = "";
+			//			scaleOutZnodeName = "";
+			//			scaleInZnodeName = "";
 			pendingCommand = null;
 			this.taskIP = task_ip;
 			cpu = new Pair<Double, Double>();
@@ -104,7 +104,7 @@ public class ZooPet {
 						logger.info("boltWatcher.process(): Children of node " + e.getPath() + 
 								" have changed. Time to check the scale-command.");
 						getScaleCommand();
-//						setBoltNodeWatch();
+						//						setBoltNodeWatch();
 					}
 				}
 			}
@@ -135,9 +135,13 @@ public class ZooPet {
 		 * @return the pendingCommand retrieved from a newly added z-node
 		 */
 		public synchronized String returnScaleCommand() {
-			String returnCommand = pendingCommand;
-			pendingCommand = null;
-			return returnCommand;
+			if(pendingCommand.toUpperCase().contains("ADD") || pendingCommand.toUpperCase().contains("REMOVE")) {
+				String returnCommand = pendingCommand;
+				pendingCommand = null;
+				return returnCommand;
+			}else {
+				return null;
+			}
 		}
 
 		/**
@@ -201,35 +205,35 @@ public class ZooPet {
 		/**
 		 * Function that sets an asynchronous watch on the z-node for the component
 		 */
-//		public void setBoltNodeWatch() {
-//			zk.getData("/synefo/bolt-tasks/" + task_name + ":" + task_id + "@" + task_ip, 
-//					boltWatcher, 
-//					boltNodeDataCallback, 
-//					null);
-//		}
+		//		public void setBoltNodeWatch() {
+		//			zk.getData("/synefo/bolt-tasks/" + task_name + ":" + task_id + "@" + task_ip, 
+		//					boltWatcher, 
+		//					boltNodeDataCallback, 
+		//					null);
+		//		}
 
 		/**
 		 * Callback object for @setBoltNodeWatch() function
 		 */
-//		private DataCallback boltNodeDataCallback = new DataCallback() {
-//			public void processResult(int rc, String path, Object ctx, byte[] data,
-//					Stat stat) {
-//				switch(Code.get(rc)) {
-//				case CONNECTIONLOSS:
-//					logger.info("boltNodeDataCallback(): CONNECTIONLOSS");
-//					setBoltNodeWatch();
-//					break;
-//				case OK:
-//					logger.info("boltNodeDataCallback(): OK");
-//					break;
-//				default:
-//					logger.info("boltNodeDataCallback(): Unexpected scenario: " + 
-//							KeeperException.create(Code.get(rc), path));
-//					break;
-//
-//				}
-//			}
-//		};
+		//		private DataCallback boltNodeDataCallback = new DataCallback() {
+		//			public void processResult(int rc, String path, Object ctx, byte[] data,
+		//					Stat stat) {
+		//				switch(Code.get(rc)) {
+		//				case CONNECTIONLOSS:
+		//					logger.info("boltNodeDataCallback(): CONNECTIONLOSS");
+		//					setBoltNodeWatch();
+		//					break;
+		//				case OK:
+		//					logger.info("boltNodeDataCallback(): OK");
+		//					break;
+		//				default:
+		//					logger.info("boltNodeDataCallback(): Unexpected scenario: " + 
+		//							KeeperException.create(Code.get(rc), path));
+		//					break;
+		//
+		//				}
+		//			}
+		//		};
 
 		/**
 		 * This function checks the usage statistics of the component, and if they 
@@ -242,7 +246,7 @@ public class ZooPet {
 		 * @param throughput
 		 */
 		public void setStatisticData(double cpu, double memory, Integer latency, Integer throughput) {
-//			if(state == BoltState.ACTIVE && scaleOutZnodeName.equals("") && scaleInZnodeName.equals("") && submittedScaleTask == false) {
+			//			if(state == BoltState.ACTIVE && scaleOutZnodeName.equals("") && scaleInZnodeName.equals("") && submittedScaleTask == false) {
 			if(state == BoltState.ACTIVE && submittedScaleTask == false) {
 				if(this.cpu.upperBound < cpu || this.mem.upperBound < memory) {
 					/**
@@ -301,7 +305,7 @@ public class ZooPet {
 					System.out.println("createScaleOutEventCallback(): NODEEXISTS for scale-event-creation");
 					break;
 				case OK:
-//					scaleOutZnodeName = name;
+					//					scaleOutZnodeName = name;
 					logger.info("createScaleOutEventCallback(): OK for scale-event-creation");
 					break;
 				default:
@@ -337,7 +341,7 @@ public class ZooPet {
 					logger.info("createScaleInEventCallback(): NODEEXISTS for scale-event-creation");
 					break;
 				case OK:
-//					scaleInZnodeName = name;
+					//					scaleInZnodeName = name;
 					logger.info("createScaleInEventCallback(): OK for scale-event-creation");
 					break;
 				default:
@@ -349,55 +353,55 @@ public class ZooPet {
 			}
 		};
 
-//		public void scaleTaskGC() {
-//			if(scaleOutZnodeName.equals("") == false) {
-//				zk.delete("/synefo/scale-out-event/" + scaleOutZnodeName, 
-//						-1, scaleOutTaskGCcallback, null);
-//			}
-//			if(scaleInZnodeName.equals("") == false) {
-//				zk.delete("/synefo/scale-in-event/" + scaleInZnodeName, 
-//						-1, scaleInTaskGCcallback, null);
-//			}
-//		}
-//
-//		private VoidCallback scaleOutTaskGCcallback = new VoidCallback() {
-//			public void processResult(int rc, String path, Object ctx) {
-//				switch(Code.get(rc)) {
-//				case CONNECTIONLOSS:
-//					scaleTaskGC();
-//					break;
-//				case NONODE:
-//					scaleOutZnodeName = "";
-//					break;
-//				case OK:
-//					scaleOutZnodeName = "";
-//					break;
-//				default:
-//					logger.info("scaleOutTaskGCcallback(): Unexpected scenario: " + 
-//							KeeperException.create(Code.get(rc), path));
-//					break;
-//				}
-//			}
-//		};
-//
-//		private VoidCallback scaleInTaskGCcallback = new VoidCallback() {
-//			public void processResult(int rc, String path, Object ctx) {
-//				switch(Code.get(rc)) {
-//				case CONNECTIONLOSS:
-//					scaleTaskGC();
-//					break;
-//				case NONODE:
-//					scaleInZnodeName = "";
-//					break;
-//				case OK:
-//					scaleInZnodeName = "";
-//					break;
-//				default:
-//					logger.info("scaleInTaskGCcallback(): Unexpected scenario: " + 
-//							KeeperException.create(Code.get(rc), path));
-//					break;
-//				}
-//			}
-//		};
+		//		public void scaleTaskGC() {
+		//			if(scaleOutZnodeName.equals("") == false) {
+		//				zk.delete("/synefo/scale-out-event/" + scaleOutZnodeName, 
+		//						-1, scaleOutTaskGCcallback, null);
+		//			}
+		//			if(scaleInZnodeName.equals("") == false) {
+		//				zk.delete("/synefo/scale-in-event/" + scaleInZnodeName, 
+		//						-1, scaleInTaskGCcallback, null);
+		//			}
+		//		}
+		//
+		//		private VoidCallback scaleOutTaskGCcallback = new VoidCallback() {
+		//			public void processResult(int rc, String path, Object ctx) {
+		//				switch(Code.get(rc)) {
+		//				case CONNECTIONLOSS:
+		//					scaleTaskGC();
+		//					break;
+		//				case NONODE:
+		//					scaleOutZnodeName = "";
+		//					break;
+		//				case OK:
+		//					scaleOutZnodeName = "";
+		//					break;
+		//				default:
+		//					logger.info("scaleOutTaskGCcallback(): Unexpected scenario: " + 
+		//							KeeperException.create(Code.get(rc), path));
+		//					break;
+		//				}
+		//			}
+		//		};
+		//
+		//		private VoidCallback scaleInTaskGCcallback = new VoidCallback() {
+		//			public void processResult(int rc, String path, Object ctx) {
+		//				switch(Code.get(rc)) {
+		//				case CONNECTIONLOSS:
+		//					scaleTaskGC();
+		//					break;
+		//				case NONODE:
+		//					scaleInZnodeName = "";
+		//					break;
+		//				case OK:
+		//					scaleInZnodeName = "";
+		//					break;
+		//				default:
+		//					logger.info("scaleInTaskGCcallback(): Unexpected scenario: " + 
+		//							KeeperException.create(Code.get(rc), path));
+		//					break;
+		//				}
+		//			}
+		//		};
 
 }
