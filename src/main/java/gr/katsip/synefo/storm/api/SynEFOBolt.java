@@ -431,6 +431,7 @@ public class SynEFOBolt extends BaseRichBolt {
 					e.printStackTrace();
 				}
 				logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") Finished accepting connections to receive state.");
+				logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") routing table:" + this.activeDownstreamTasks);
 			}else {
 				Socket client = new Socket();
 				Integer comp_task_id = Integer.parseInt(component_id);
@@ -500,6 +501,7 @@ public class SynEFOBolt extends BaseRichBolt {
 					e.printStackTrace();
 				}
 				logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") Finished accepting connections to send state.");
+				logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") routing table:" + this.activeDownstreamTasks);
 			}else {
 				Socket client = new Socket();
 				Integer comp_task_id = Integer.parseInt(component_id);

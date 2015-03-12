@@ -135,7 +135,8 @@ public class ZooPet {
 		 * @return the pendingCommand retrieved from a newly added z-node
 		 */
 		public synchronized String returnScaleCommand() {
-			if(pendingCommand.toUpperCase().contains("ADD") || pendingCommand.toUpperCase().contains("REMOVE")) {
+			if(pendingCommand.toUpperCase().contains("ADD") || pendingCommand.toUpperCase().contains("REMOVE") || 
+					pendingCommand.toUpperCase().contains("ACTIVATE") || pendingCommand.toUpperCase().contains("DEACTIVATE")) {
 				String returnCommand = pendingCommand;
 				pendingCommand = null;
 				return returnCommand;
