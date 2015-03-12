@@ -177,7 +177,7 @@ public class DebugTopology {
 		LocalCluster cluster = new LocalCluster();
 		cluster.submitTopology("debug-topology", conf, builder.createTopology());
 		
-		Thread.sleep(20000);
+		Thread.sleep(200000);
 		
 		cluster.shutdown();
 	}
