@@ -15,6 +15,8 @@ public class SynefoCoordinatorThread implements Runnable {
 
 	private HashMap<String, ArrayList<String>> activeTopology;
 
+	private HashMap<String, ArrayList<String>> inverseTopology;
+
 	private HashMap<String, Integer> taskNameToIdMap;
 
 	private Integer totalTaskNum = -1;
@@ -37,6 +39,7 @@ public class SynefoCoordinatorThread implements Runnable {
 			HashMap<String, String> taskIPs) {
 		this.physicalTopology = physicalTopology;
 		this.activeTopology = runningTopology;
+		inverseTopology = new HashMap<String, ArrayList<String>>();
 		this.taskNameToIdMap = taskNameToIdMap;
 		this.taskIPs = taskIPs;
 		this.resourceThresholds = resourceThresholds;
@@ -75,7 +78,7 @@ public class SynefoCoordinatorThread implements Runnable {
 		/**
 		 * Update ZooKeeper entries and Nodes
 		 */
-		tamer = new ZooMaster(zooHost, zooPort, physicalTopology, activeTopology);
+		tamer = new ZooMaster(zooHost, zooPort, physicalTopology, activeTopology, inverseTopology);
 
 		tamer.start();
 		tamer.setScaleOutThresholds((double) resourceThresholds.get("cpu").upperBound, 
@@ -92,7 +95,6 @@ public class SynefoCoordinatorThread implements Runnable {
 		System.out.println("+efo coordinator thread: received tast name allocation from Storm cluster. Updating internal structures...");
 		HashMap<String, ArrayList<String>> updatedTopology = new HashMap<String, ArrayList<String>>();
 		HashMap<String, ArrayList<String>> activeUpdatedTopology = new HashMap<String, ArrayList<String>>();
-		HashMap<String, ArrayList<String>> inverseTopology = new HashMap<String, ArrayList<String>>();
 		synchronized(taskNameToIdMap) {
 			Iterator<Entry<String, ArrayList<String>>> itr = physicalTopology.entrySet().iterator();
 			while(itr.hasNext()) {
@@ -160,10 +162,34 @@ public class SynefoCoordinatorThread implements Runnable {
 	}
 
 	public ArrayList<String> getDownstreamTasks(String taskName, int task_id, String task_ip) {
-		return physicalTopology.get(taskName + ":" + task_id + "@" + task_ip);
+		if(physicalTopology.containsKey(taskName + ":" + task_id + "@" + task_ip))
+			return physicalTopology.get(taskName + ":" + task_id + "@" + task_ip);
+		else
+			return null;
 	}
 
-	public HashMap<String, ArrayList<String>> getInitialActiveTopology(HashMap<String, ArrayList<String>> physicalTopology, HashMap<String, ArrayList<String>> inverseTopology) {
+	public HashMap<String, ArrayList<String>> getInverseTopology() {
+		return inverseTopology;
+	}
+
+	public ArrayList<String> getUpstreamTasks(String taskName, int task_id, String task_ip) {
+		if(inverseTopology.containsKey(taskName + ":" + task_id + "@" + task_ip))
+			return inverseTopology.get(taskName + ":" + task_id + "@" + task_ip);
+		else 
+			return null;
+	}
+
+	/**
+	 * Function to randomly select the initially active topology of operators. This function includes 
+	 * all source operators (spouts) and all drain operators (bolts in the end of the topology) in the 
+	 * initial topology. The rest of the operators are divided into different layers (stages of computation), 
+	 * and from each layer, one operator is picked randomly to be active in the beginning.
+	 * @param physicalTopology the physical topology of operators
+	 * @param inverseTopology a representation of the physical topology in which each key (operator) points to the list with its parent nodes
+	 * @return a HashMap with the initially active topology of operators
+	 */
+	public HashMap<String, ArrayList<String>> getInitialActiveTopology(HashMap<String, ArrayList<String>> physicalTopology, 
+			HashMap<String, ArrayList<String>> inverseTopology) {
 		HashMap<String, ArrayList<String>> activeTopology = new HashMap<String, ArrayList<String>>();
 		ArrayList<String> activeTasks = new ArrayList<String>();
 		HashMap<String, ArrayList<String>> layerTopology = produceTopologyLayers(physicalTopology, inverseTopology);
@@ -225,12 +251,19 @@ public class SynefoCoordinatorThread implements Runnable {
 	}
 
 	/**
-	 * This function separates the topology operators into different layers (stages) of computation. In those layers, the source operators (nodes with no upstream operators) and the drain operators (operators with no downstream operators) are not included.
+	 * This function separates the topology operators into different layers (stages) of computation. In each layer, 
+	 * the source operators (nodes with no upstream operators) and the drain operators (operators with no downstream operators) are 
+	 * not included. For each operator, a signature-key is created by appending all parent operators of that node, followed by 
+	 * all child operators. For instance, if operator X has operators {A, B} as parents, and operators {Z, Y} as children, the 
+	 * signature-key is created as : "A,B,Z,Y". After a signature-key is created, the operator is stored in a HashMap with key 
+	 * its own signature and its name is added in a list. If two or more operators have the same signature-key they are added 
+	 * in the same bucket in the HashMap.
 	 * @param physicalTopology The physical topology of operators in synefo
 	 * @param inverseTopology The map that contains the parent operators (upstream) of each operator
-	 * @return
+	 * @return a HashMap with the the operators separated in different buckets, according to their parent-operators list and children-operator lists.
 	 */
-	public HashMap<String, ArrayList<String>> produceTopologyLayers(HashMap<String, ArrayList<String>> physicalTopology, HashMap<String, ArrayList<String>> inverseTopology) {
+	public HashMap<String, ArrayList<String>> produceTopologyLayers(HashMap<String, ArrayList<String>> physicalTopology, 
+			HashMap<String, ArrayList<String>> inverseTopology) {
 		HashMap<String, ArrayList<String>> operatorLayers = new HashMap<String, ArrayList<String>>();
 		Iterator<Entry<String, ArrayList<String>>> itr = physicalTopology.entrySet().iterator();
 		while(itr.hasNext()) {

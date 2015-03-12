@@ -79,7 +79,10 @@ public class SynEFOUserInterface implements Runnable {
 						beastMaster.activeTopology.containsKey(compTwo) == false) {
 					beastMaster.scaleFunction.addActiveNodeTopology(compTwo);
 					String scaleOutCommand = "ADD~" + compTwo;
-					beastMaster.setScaleCommand(compOne, scaleOutCommand);
+					String activateCommand = "ACTIVATE~" + compTwo;
+					ArrayList<String> peerParents = new ArrayList<String>(beastMaster.inverseTopology.get(compTwo));
+					peerParents.remove(peerParents.indexOf(compOne));
+					beastMaster.setScaleCommand(compOne, scaleOutCommand, peerParents, activateCommand);
 				}
 			}
 		}else if(command.equals("scale-in")) {
@@ -123,7 +126,10 @@ public class SynEFOUserInterface implements Runnable {
 						beastMaster.activeTopology.containsKey(compTwo) == true) {
 					beastMaster.scaleFunction.removeActiveNodeGc(compTwo);
 					String scaleInCommand = "REMOVE~" + compTwo;
-					beastMaster.setScaleCommand(compOne, scaleInCommand);
+					String deActivateCommand = "DEACTIVATE~" + compTwo;
+					ArrayList<String> peerParents = new ArrayList<String>(beastMaster.inverseTopology.get(compTwo));
+					peerParents.remove(peerParents.indexOf(compOne));
+					beastMaster.setScaleCommand(compOne, scaleInCommand, peerParents, deActivateCommand);
 				}
 				
 			}

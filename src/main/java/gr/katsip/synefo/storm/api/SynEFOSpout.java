@@ -19,7 +19,7 @@ import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.lib.SynEFOMessage;
 import gr.katsip.synefo.storm.lib.SynEFOMessage.Type;
 import gr.katsip.synefo.storm.producers.AbstractTupleProducer;
-import gr.katsip.synefo.utils.SynEFOConstant;
+import gr.katsip.synefo.utils.SynefoConstant;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
@@ -44,13 +44,13 @@ public class SynEFOSpout extends BaseRichSpout {
 
 	private String taskIP;
 
-	private ArrayList<String> _downstream_tasks = null;
+	private ArrayList<String> downstreamTasks = null;
 
-	private ArrayList<Integer> _int_downstream_tasks = null;
+	private ArrayList<Integer> intDownstreamTasks = null;
 
-	private ArrayList<String> _active_downstream_tasks = null;
+	private ArrayList<String> activeDownstreamTasks = null;
 
-	private ArrayList<Integer> _int_active_downstream_tasks = null;
+	private ArrayList<Integer> intActiveDownstreamTasks = null;
 
 	private int idx;
 
@@ -81,8 +81,8 @@ public class SynEFOSpout extends BaseRichSpout {
 	public SynEFOSpout(String task_name, String synEFO_ip, Integer synEFO_port, 
 			AbstractTupleProducer tupleProducer, String zooIP, Integer zooPort) {
 		_task_name = task_name;
-		_downstream_tasks = null;
-		_active_downstream_tasks = null;
+		downstreamTasks = null;
+		activeDownstreamTasks = null;
 		synefoIP = synEFO_ip;
 		synefoPort = synEFO_port;
 		stats = new TaskStatistics();
@@ -118,35 +118,35 @@ public class SynEFOSpout extends BaseRichSpout {
 			ArrayList<String> _downstream = null;
 			_downstream = (ArrayList<String>) input.readObject();
 			if(_downstream != null && _downstream.size() > 0) {
-				_downstream_tasks = new ArrayList<String>(_downstream);
-				_int_downstream_tasks = new ArrayList<Integer>();
-				for(String task : _downstream_tasks) {
+				downstreamTasks = new ArrayList<String>(_downstream);
+				intDownstreamTasks = new ArrayList<Integer>();
+				for(String task : downstreamTasks) {
 					StringTokenizer strTok = new StringTokenizer(task, ":");
 					strTok.nextToken();
 					String taskWithIp = strTok.nextToken();
 					strTok = new StringTokenizer(taskWithIp, "@");
-					_int_downstream_tasks.add(Integer.parseInt(strTok.nextToken()));
+					intDownstreamTasks.add(Integer.parseInt(strTok.nextToken()));
 				}
 			}else {
-				_downstream_tasks = new ArrayList<String>();
-				_int_downstream_tasks = new ArrayList<Integer>();
+				downstreamTasks = new ArrayList<String>();
+				intDownstreamTasks = new ArrayList<Integer>();
 			}
 			ArrayList<String> _active_downstream = null;
 			_active_downstream = (ArrayList<String>) input.readObject();
 			if(_active_downstream != null && _active_downstream.size() > 0) {
-				_active_downstream_tasks = new ArrayList<String>(_active_downstream);
-				_int_active_downstream_tasks = new ArrayList<Integer>();
-				for(String task : _active_downstream_tasks) {
+				activeDownstreamTasks = new ArrayList<String>(_active_downstream);
+				intActiveDownstreamTasks = new ArrayList<Integer>();
+				for(String task : activeDownstreamTasks) {
 					StringTokenizer strTok = new StringTokenizer(task, ":");
 					strTok.nextToken();
 					String taskWithIp = strTok.nextToken();
 					strTok = new StringTokenizer(taskWithIp, "@");
-					_int_active_downstream_tasks.add(Integer.parseInt(strTok.nextToken()));
+					intActiveDownstreamTasks.add(Integer.parseInt(strTok.nextToken()));
 				}
 				idx = 0;
 			}else {
-				_active_downstream_tasks = new ArrayList<String>();
-				_int_active_downstream_tasks = new ArrayList<Integer>();
+				activeDownstreamTasks = new ArrayList<String>();
+				intActiveDownstreamTasks = new ArrayList<Integer>();
 				idx = 0;
 			}
 			/**
@@ -181,7 +181,7 @@ public class SynEFOSpout extends BaseRichSpout {
 		 * fashion to all downstream tasks. The words array is 
 		 * iterated from start to beginning.
 		 */
-		if(_int_active_downstream_tasks != null && _int_active_downstream_tasks.size() > 0) {
+		if(intActiveDownstreamTasks != null && intActiveDownstreamTasks.size() > 0) {
 			Values values = new Values();
 			/**
 			 * Add SYNEFO_HEADER in the beginning
@@ -191,8 +191,8 @@ public class SynEFOSpout extends BaseRichSpout {
 			for(int i = 0; i < returnedValues.size(); i++) {
 				values.add(returnedValues.get(i));
 			}
-			_collector.emitDirect(_int_active_downstream_tasks.get(idx), values);
-			if(idx >= (_int_active_downstream_tasks.size() - 1)) {
+			_collector.emitDirect(intActiveDownstreamTasks.get(idx), values);
+			if(idx >= (intActiveDownstreamTasks.size() - 1)) {
 				idx = 0;
 			}else {
 				idx += 1;
@@ -223,38 +223,48 @@ public class SynEFOSpout extends BaseRichSpout {
 			String task = strTok.nextToken();
 			Integer task_id = Integer.parseInt(strTok.nextToken());
 			StringBuilder strBuild = new StringBuilder();
-			strBuild.append(SynEFOConstant.PUNCT_TUPLE_TAG + "/");
+			strBuild.append(SynefoConstant.PUNCT_TUPLE_TAG + "/");
 			idx = 0;
-			if(action.toLowerCase().contains("add")) {
-				_active_downstream_tasks.add(taskWithIp);
-				_int_active_downstream_tasks.add(task_id);
-				strBuild.append(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.ADD_ACTION + "/");
-			}else if(action.toLowerCase().contains("remove")) {
-				strBuild.append(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.REMOVE_ACTION + "/");
-			}
-			strBuild.append(SynEFOConstant.COMP_TAG + ":" + task + ":" + task_id + "/");
-			strBuild.append(SynEFOConstant.COMP_NUM_TAG + ":" + _int_active_downstream_tasks.size() + "/");
-			strBuild.append(SynEFOConstant.COMP_IP_TAG + ":" + taskIp + "/");
-			/**
-			 * Populate other schema fields with null values, 
-			 * after SYNEFO_HEADER
-			 */
-			Values punctValue = new Values();
-			punctValue.add(strBuild.toString());
-			for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
-				punctValue.add(null);
-			}
-			for(Integer d_task : _int_active_downstream_tasks) {
-				_collector.emitDirect(d_task, punctValue);
-			}
-			/**
-			 * In the case of removing a downstream task 
-			 * we remove it after sending the punctuation tuples, so 
-			 * that the removed task is notified to share state
-			 */
-			if(action.toLowerCase().contains("remove") && _active_downstream_tasks.indexOf(taskWithIp) >= 0) {
-				_active_downstream_tasks.remove(_active_downstream_tasks.indexOf(taskWithIp));
-				_int_active_downstream_tasks.remove(_int_active_downstream_tasks.indexOf(task_id));
+			if(action.toLowerCase().contains("activate") || action.toLowerCase().contains("deactivate")) {
+				if(action.toLowerCase().equals("activate")) {
+					activeDownstreamTasks.add(taskWithIp);
+					intActiveDownstreamTasks.add(task_id);
+				}else if(action.toLowerCase().equals("deactivate")) {
+					activeDownstreamTasks.remove(activeDownstreamTasks.indexOf(taskWithIp));
+					intActiveDownstreamTasks.remove(intActiveDownstreamTasks.indexOf(task_id));
+				}
+			}else {
+				if(action.toLowerCase().contains("add")) {
+					activeDownstreamTasks.add(taskWithIp);
+					intActiveDownstreamTasks.add(task_id);
+					strBuild.append(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.ADD_ACTION + "/");
+				}else if(action.toLowerCase().contains("remove")) {
+					strBuild.append(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.REMOVE_ACTION + "/");
+				}
+				strBuild.append(SynefoConstant.COMP_TAG + ":" + task + ":" + task_id + "/");
+				strBuild.append(SynefoConstant.COMP_NUM_TAG + ":" + intActiveDownstreamTasks.size() + "/");
+				strBuild.append(SynefoConstant.COMP_IP_TAG + ":" + taskIp + "/");
+				/**
+				 * Populate other schema fields with null values, 
+				 * after SYNEFO_HEADER
+				 */
+				Values punctValue = new Values();
+				punctValue.add(strBuild.toString());
+				for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
+					punctValue.add(null);
+				}
+				for(Integer d_task : intActiveDownstreamTasks) {
+					_collector.emitDirect(d_task, punctValue);
+				}
+				/**
+				 * In the case of removing a downstream task 
+				 * we remove it after sending the punctuation tuples, so 
+				 * that the removed task is notified to share state
+				 */
+				if(action.toLowerCase().contains("remove") && activeDownstreamTasks.indexOf(taskWithIp) >= 0) {
+					activeDownstreamTasks.remove(activeDownstreamTasks.indexOf(taskWithIp));
+					intActiveDownstreamTasks.remove(intActiveDownstreamTasks.indexOf(task_id));
+				}
 			}
 		}
 	}
@@ -267,7 +277,7 @@ public class SynEFOSpout extends BaseRichSpout {
 			e1.printStackTrace();
 		}
 		pet = new ZooPet(zooIP, zooPort, _task_name, taskId, taskIP);
-		if(_active_downstream_tasks == null && _downstream_tasks == null) {
+		if(activeDownstreamTasks == null && downstreamTasks == null) {
 			registerToSynEFO();
 		}
 		_collector = collector;

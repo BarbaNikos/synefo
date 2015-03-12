@@ -1,6 +1,6 @@
 package gr.katsip.synefo.utils;
 
-public class SynEFOConstant {
+public class SynefoConstant {
 
 	public static final String ACTION_PREFIX = "ACTION";
 	

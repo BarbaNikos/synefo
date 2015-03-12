@@ -21,7 +21,7 @@ import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.lib.SynEFOMessage;
 import gr.katsip.synefo.storm.lib.SynEFOMessage.Type;
 import gr.katsip.synefo.storm.operators.AbstractOperator;
-import gr.katsip.synefo.utils.SynEFOConstant;
+import gr.katsip.synefo.utils.SynefoConstant;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
@@ -225,7 +225,7 @@ public class SynEFOBolt extends BaseRichBolt {
 		if(synefoHeader != null && synefoHeader.equals("") == false) {
 			StringTokenizer txt = new StringTokenizer(synefoHeader, "/");
 			String prefix = txt.nextToken();
-			if(prefix.equals(SynEFOConstant.PUNCT_TUPLE_TAG)) {
+			if(prefix.equals(SynefoConstant.PUNCT_TUPLE_TAG)) {
 				handlePunctuationTuple(tuple);
 				return;
 			}
@@ -298,38 +298,48 @@ public class SynEFOBolt extends BaseRichBolt {
 			String task = strTok.nextToken();
 			Integer task_id = Integer.parseInt(strTok.nextToken());
 			StringBuilder strBuild = new StringBuilder();
-			strBuild.append(SynEFOConstant.PUNCT_TUPLE_TAG + "/");
+			strBuild.append(SynefoConstant.PUNCT_TUPLE_TAG + "/");
 			idx = 0;
-			if(action.toLowerCase().contains("add")) {
-				activeDownstreamTasks.add(taskWithIp);
-				intActiveDownstreamTasks.add(task_id);
-				strBuild.append(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.ADD_ACTION + "/");
-			}else if(action.toLowerCase().contains("remove")) {
-				strBuild.append(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.REMOVE_ACTION + "/");
-			}
-			strBuild.append(SynEFOConstant.COMP_TAG + ":" + task + ":" + task_id + "/");
-			strBuild.append(SynEFOConstant.COMP_NUM_TAG + ":" + intActiveDownstreamTasks.size() + "/");
-			strBuild.append(SynEFOConstant.COMP_IP_TAG + ":" + taskIp + "/");
-			/**
-			 * Populate other schema fields with null values, 
-			 * after SYNEFO_HEADER
-			 */
-			Values punctValue = new Values();
-			punctValue.add(strBuild.toString());
-			for(int i = 0; i < _operator.getOutputSchema().size(); i++) {
-				punctValue.add(null);
-			}
-			for(Integer d_task : intActiveDownstreamTasks) {
-				_collector.emitDirect(d_task, punctValue);
-			}
-			/**
-			 * In the case of removing a downstream task 
-			 * we remove it after sending the punctuation tuples, so 
-			 * that the removed task is notified to share state
-			 */
-			if(action.toLowerCase().contains("remove") && activeDownstreamTasks.indexOf(taskWithIp) >= 0) {
-				activeDownstreamTasks.remove(activeDownstreamTasks.indexOf(taskWithIp));
-				intActiveDownstreamTasks.remove(intActiveDownstreamTasks.indexOf(task_id));
+			if(action.toLowerCase().contains("activate") || action.toLowerCase().contains("deactivate")) {
+				if(action.toLowerCase().equals("activate")) {
+					activeDownstreamTasks.add(taskWithIp);
+					intActiveDownstreamTasks.add(task_id);
+				}else if(action.toLowerCase().equals("deactivate")) {
+					activeDownstreamTasks.remove(activeDownstreamTasks.indexOf(taskWithIp));
+					intActiveDownstreamTasks.remove(intActiveDownstreamTasks.indexOf(task_id));
+				}
+			}else {
+				if(action.toLowerCase().contains("add")) {
+					activeDownstreamTasks.add(taskWithIp);
+					intActiveDownstreamTasks.add(task_id);
+					strBuild.append(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.ADD_ACTION + "/");
+				}else if(action.toLowerCase().contains("remove")) {
+					strBuild.append(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.REMOVE_ACTION + "/");
+				}
+				strBuild.append(SynefoConstant.COMP_TAG + ":" + task + ":" + task_id + "/");
+				strBuild.append(SynefoConstant.COMP_NUM_TAG + ":" + intActiveDownstreamTasks.size() + "/");
+				strBuild.append(SynefoConstant.COMP_IP_TAG + ":" + taskIp + "/");
+				/**
+				 * Populate other schema fields with null values, 
+				 * after SYNEFO_HEADER
+				 */
+				Values punctValue = new Values();
+				punctValue.add(strBuild.toString());
+				for(int i = 0; i < _operator.getOutputSchema().size(); i++) {
+					punctValue.add(null);
+				}
+				for(Integer d_task : intActiveDownstreamTasks) {
+					_collector.emitDirect(d_task, punctValue);
+				}
+				/**
+				 * In the case of removing a downstream task 
+				 * we remove it after sending the punctuation tuples, so 
+				 * that the removed task is notified to share state
+				 */
+				if(action.toLowerCase().contains("remove") && activeDownstreamTasks.indexOf(taskWithIp) >= 0) {
+					activeDownstreamTasks.remove(activeDownstreamTasks.indexOf(taskWithIp));
+					intActiveDownstreamTasks.remove(intActiveDownstreamTasks.indexOf(task_id));
+				}
 			}
 		}
 	}
@@ -354,31 +364,31 @@ public class SynEFOBolt extends BaseRichBolt {
 		StringTokenizer str_tok = new StringTokenizer((String) tuple.getValues().get(tuple.getFields().fieldIndex("SYNEFO_HEADER")), "/");
 		while(str_tok.hasMoreTokens()) {
 			String s = str_tok.nextToken();
-			if((s.equals(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.ADD_ACTION) || 
-					s.equals(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.REMOVE_ACTION)) && 
-					s.equals(SynEFOConstant.PUNCT_TUPLE_TAG) == false) {
+			if((s.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.ADD_ACTION) || 
+					s.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.REMOVE_ACTION)) && 
+					s.equals(SynefoConstant.PUNCT_TUPLE_TAG) == false) {
 				action = s;
-			}else if((s.equals(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.ADD_ACTION) == false && 
-					s.equals(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.REMOVE_ACTION) == false) && 
-					s.equals(SynEFOConstant.PUNCT_TUPLE_TAG) == false && s.startsWith(SynEFOConstant.COMP_TAG) 
-					&& s.startsWith(SynEFOConstant.COMP_NUM_TAG) == false && s.startsWith(SynEFOConstant.COMP_IP_TAG) == false) {
+			}else if((s.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.ADD_ACTION) == false && 
+					s.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.REMOVE_ACTION) == false) && 
+					s.equals(SynefoConstant.PUNCT_TUPLE_TAG) == false && s.startsWith(SynefoConstant.COMP_TAG) 
+					&& s.startsWith(SynefoConstant.COMP_NUM_TAG) == false && s.startsWith(SynefoConstant.COMP_IP_TAG) == false) {
 				StringTokenizer strTok = new StringTokenizer(s, ":");
 				component_id = strTok.nextToken();
 				component_name = strTok.nextToken();
 				component_id = strTok.nextToken();
-			}else if((s.equals(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.ADD_ACTION) == false && 
-					s.equals(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.REMOVE_ACTION) == false) && 
-					s.equals(SynEFOConstant.PUNCT_TUPLE_TAG) == false && s.startsWith(SynEFOConstant.COMP_TAG) && 
-					s.startsWith(SynEFOConstant.COMP_NUM_TAG) && s.startsWith(SynEFOConstant.COMP_IP_TAG) == false) {
+			}else if((s.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.ADD_ACTION) == false && 
+					s.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.REMOVE_ACTION) == false) && 
+					s.equals(SynefoConstant.PUNCT_TUPLE_TAG) == false && s.startsWith(SynefoConstant.COMP_TAG) && 
+					s.startsWith(SynefoConstant.COMP_NUM_TAG) && s.startsWith(SynefoConstant.COMP_IP_TAG) == false) {
 				StringTokenizer strTok = new StringTokenizer(s, ":");
 				strTok.nextToken();
 				comp_num = Integer.parseInt(strTok.nextToken());
-			}else if((s.equals(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.ADD_ACTION) == false && 
-					s.equals(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.REMOVE_ACTION) == false) && 
-					s.equals(SynEFOConstant.PUNCT_TUPLE_TAG) == false && 
-					s.startsWith(SynEFOConstant.COMP_NUM_TAG) == false && 
-					s.startsWith(SynEFOConstant.COMP_TAG) == false && 
-					s.startsWith(SynEFOConstant.COMP_IP_TAG)) {
+			}else if((s.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.ADD_ACTION) == false && 
+					s.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.REMOVE_ACTION) == false) && 
+					s.equals(SynefoConstant.PUNCT_TUPLE_TAG) == false && 
+					s.startsWith(SynefoConstant.COMP_NUM_TAG) == false && 
+					s.startsWith(SynefoConstant.COMP_TAG) == false && 
+					s.startsWith(SynefoConstant.COMP_IP_TAG)) {
 				StringTokenizer strTok = new StringTokenizer(s, ":");
 				strTok.nextToken();
 				ip = strTok.nextToken();
@@ -388,7 +398,7 @@ public class SynEFOBolt extends BaseRichBolt {
 		/**
 		 * 
 		 */
-		if(action != null && action.equals(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.ADD_ACTION)) {
+		if(action != null && action.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.ADD_ACTION)) {
 			System.out.println("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") received an ADD action");
 			String selfComp = this.taskName + ":" + this._task_id;
 			if(selfComp.equals(component_name + ":" + component_id)) {
@@ -459,7 +469,7 @@ public class SynEFOBolt extends BaseRichBolt {
 				}
 				logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") sent state to newly added node successfully...");
 			}
-		}else if(action != null && action.equals(SynEFOConstant.ACTION_PREFIX + ":" + SynEFOConstant.REMOVE_ACTION)) {
+		}else if(action != null && action.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.REMOVE_ACTION)) {
 			logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") received a REMOVE action");
 			String selfComp = this.taskName + ":" + this._task_id;
 			if(selfComp.equals(component_name + ":" + component_id)) {

@@ -53,6 +53,8 @@ public class ZooMaster {
 	public HashMap<String, ArrayList<String>> physicalTopology;
 
 	public HashMap<String, ArrayList<String>> activeTopology;
+	
+	public HashMap<String, ArrayList<String>> inverseTopology;
 
 	public ScaleFunction scaleFunction;
 
@@ -93,13 +95,15 @@ public class ZooMaster {
 	 */
 	public ZooMaster(String zoo_ip, Integer zoo_port, 
 			HashMap<String, ArrayList<String>> physicalTopology, 
-			HashMap<String, ArrayList<String>> activeTopology) {
+			HashMap<String, ArrayList<String>> activeTopology, 
+			HashMap<String, ArrayList<String>> inverseTopology) {
 		this.zoo_ip = zoo_ip;
 		this.zoo_port = zoo_port;
 		state = SynefoState.INIT;
 		this.physicalTopology = physicalTopology;
 		this.activeTopology = activeTopology;
-		this.scaleFunction = new ScaleFunction(physicalTopology, activeTopology);
+		this.inverseTopology = inverseTopology;
+		this.scaleFunction = new ScaleFunction(physicalTopology, activeTopology, inverseTopology);
 		scaleOutEventChildren = new ArrayList<String>();
 		scaleInEventChildren = new ArrayList<String>();
 	}
@@ -261,9 +265,13 @@ public class ZooMaster {
 								childWorker.substring(0, childWorker.lastIndexOf(':')),
 								childWorker.substring(childWorker.lastIndexOf(':') + 1, childWorker.length()));
 						String command = scaleFunction.produceScaleOutCommand(upstream_task, childWorker);
+						String activateCommand = "ACTIVATE~" + command.substring(command.lastIndexOf("~") + 1, command.length());
 						logger.info("ZooMaster.scaleOutEventChildrenCallback() # produced command: " + command);
 						if(command.equals("") == false) {
-							setScaleCommand(upstream_task, command);
+							//TODO: Add the activate command for the rest of the parents
+							ArrayList<String> peerParents = inverseTopology.get(command.substring(command.lastIndexOf("~") + 1, command.length()));
+							peerParents.remove(peerParents.indexOf(upstream_task));
+							setScaleCommand(upstream_task, command, peerParents, activateCommand);
 						}else {
 							logger.info("ZooMaster.scaleOutEventChildrenCallback() # no scale-out command produced" + 
 									"(synefo-component:" + childWorker + ", upstream-component: " + upstream_task + ")."
@@ -322,9 +330,13 @@ public class ZooMaster {
 								childWorker.substring(0, childWorker.lastIndexOf(':')),
 								childWorker.substring(childWorker.lastIndexOf(':') + 1, childWorker.length()));
 						String command = scaleFunction.produceScaleInCommand(childWorker);
+						String activateCommand = "DEACTIVATE~" + command.substring(command.lastIndexOf("~") + 1, command.length());
 						System.out.println("ZooMaster.scaleInEventChildrenCallback() # produced command: " + command);
 						if(command.equals("") == false) {
-							setScaleCommand(upstream_task, command);
+							//TODO: Add the activate command for the rest of the parents
+							ArrayList<String> peerParents = inverseTopology.get(command.substring(command.lastIndexOf("~") + 1, command.length()));
+							peerParents.remove(peerParents.indexOf(upstream_task));
+							setScaleCommand(upstream_task, command, peerParents, activateCommand);
 						}else {
 							logger.info("ZooMaster.scaleInEventChildrenCallback() # no scale-in command produced" + 
 									"(synefo-component:" + childWorker + ", upstream-component: " + upstream_task + ")."
@@ -352,12 +364,19 @@ public class ZooMaster {
 	 * @param upstreamTask the upstream-task component of the about-to-scale-out/in component
 	 * @param command either ADD or REMOVE
 	 */
-	public void setScaleCommand(String upstreamTask, String command) {
+	public void setScaleCommand(String upstreamTask, String command, List<String> peerParents, String activateCommand) {
 		zk.setData("/synefo/bolt-tasks/" + upstreamTask, 
 				(command).getBytes(), 
 				-1, 
 				setScaleCommandCallback, 
 				command);
+		for(String parent : peerParents) {
+			zk.setData("/synefo/bolt-tasks/" + parent, 
+					(activateCommand).getBytes(), 
+					-1, 
+					setScaleCommandCallback, 
+					activateCommand);
+		}
 	}
 
 	/**

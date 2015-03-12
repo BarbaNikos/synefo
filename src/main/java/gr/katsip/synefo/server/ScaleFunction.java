@@ -11,11 +11,15 @@ public class ScaleFunction {
 	public HashMap<String, ArrayList<String>> physicalTopology;
 
 	public HashMap<String, ArrayList<String>> activeTopology;
+	
+	public HashMap<String, ArrayList<String>> inverseTopology;
 
 	public ScaleFunction(HashMap<String, ArrayList<String>> physicalTopology, 
-			HashMap<String, ArrayList<String>> activeTopology) {
+			HashMap<String, ArrayList<String>> activeTopology,
+			HashMap<String, ArrayList<String>> inverseTopology) {
 		this.physicalTopology = physicalTopology;
 		this.activeTopology = activeTopology;
+		this.inverseTopology = inverseTopology;
 	}
 
 	public synchronized String produceScaleOutCommand(String upstreamTask, String overloadedWorker) {
