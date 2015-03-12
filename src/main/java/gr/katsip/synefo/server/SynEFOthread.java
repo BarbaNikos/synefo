@@ -22,7 +22,7 @@ public class SynEFOthread implements Runnable {
 
 	private HashMap<String, ArrayList<String>> physicalTopology;
 
-	private HashMap<String, ArrayList<String>> runningTopology;
+	private HashMap<String, ArrayList<String>> activeTopology;
 
 	private HashMap<String, Integer> taskNameToIdMap;
 
@@ -34,7 +34,7 @@ public class SynEFOthread implements Runnable {
 
 	private HashMap<String, String> taskIPs;
 
-	public SynEFOthread(HashMap<String, ArrayList<String>> physicalTopology, HashMap<String, ArrayList<String>> runningTopology, 
+	public SynEFOthread(HashMap<String, ArrayList<String>> physicalTopology, HashMap<String, ArrayList<String>> activeTopology, 
 			HashMap<String, Integer> taskNameToIdMap, 
 			InputStream in, OutputStream out,  
 			HashMap<String, String> taskIPs) {
@@ -49,7 +49,7 @@ public class SynEFOthread implements Runnable {
 			e.printStackTrace();
 		}
 		this.physicalTopology = physicalTopology;
-		this.runningTopology = runningTopology;
+		this.activeTopology = activeTopology;
 	}
 
 	public void run() {
@@ -113,10 +113,13 @@ public class SynEFOthread implements Runnable {
 		ArrayList<String> _activeDownStream = null;
 		if(physicalTopology.containsKey(taskName + ":" + taskId + "@" + taskIP)) {
 			_downStream = new ArrayList<String>(physicalTopology.get(taskName + ":" + taskId + "@" + taskIP));
-			if(runningTopology.containsKey(taskName + ":" + taskId + "@" + taskIP))
-				_activeDownStream = new ArrayList<String>(runningTopology.get(taskName + ":" + taskId + "@" + taskIP));
-			else 
+			if(activeTopology.containsKey(taskName + ":" + taskId + "@" + taskIP)) {
+				System.out.println("+efo SPOUT: " + taskName + "(" + taskId + "@" + taskIP + 
+						") retrieving active topology");
+				_activeDownStream = new ArrayList<String>(activeTopology.get(taskName + ":" + taskId + "@" + taskIP));
+			}else { 
 				_activeDownStream = new ArrayList<String>();
+			}
 		}else {
 			_downStream = new ArrayList<String>();
 			_activeDownStream = new ArrayList<String>();
@@ -177,10 +180,13 @@ public class SynEFOthread implements Runnable {
 		ArrayList<String> _activeDownStream = null;
 		if(physicalTopology.containsKey(taskName + ":" + taskId + "@" + taskIP)) {
 			_downStream = new ArrayList<String>(physicalTopology.get(taskName + ":" + taskId + "@" + taskIP));
-			if(runningTopology.containsKey(taskName + ":" + taskId + "@" + taskIP))
-				_activeDownStream = new ArrayList<String>(runningTopology.get(taskName + ":" + taskId + "@" + taskIP));
-			else 
+			if(activeTopology.containsKey(taskName + ":" + taskId + "@" + taskIP)) {
+				System.out.println("+efo BOLT: " + taskName + "(" + taskId + "@" + taskIP + 
+						") retrieving active topology.");
+				_activeDownStream = new ArrayList<String>(activeTopology.get(taskName + ":" + taskId + "@" + taskIP));
+			}else { 
 				_activeDownStream = new ArrayList<String>();
+			}
 		}else {
 			_downStream = new ArrayList<String>();
 			_activeDownStream = new ArrayList<String>();
