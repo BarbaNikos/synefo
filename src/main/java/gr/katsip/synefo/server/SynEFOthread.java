@@ -7,6 +7,8 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import gr.katsip.synefo.storm.lib.SynEFOMessage;
 
 
@@ -33,11 +35,14 @@ public class SynEFOthread implements Runnable {
 	private String taskIP;
 
 	private HashMap<String, String> taskIPs;
+	
+	private AtomicBoolean operationFlag;
 
 	public SynEFOthread(HashMap<String, ArrayList<String>> physicalTopology, HashMap<String, ArrayList<String>> activeTopology, 
 			HashMap<String, Integer> taskNameToIdMap, 
 			InputStream in, OutputStream out,  
-			HashMap<String, String> taskIPs) {
+			HashMap<String, String> taskIPs, 
+			AtomicBoolean operationFlag) {
 		this.in = in;
 		this.out = out;
 		this.taskNameToIdMap = taskNameToIdMap;
@@ -50,6 +55,7 @@ public class SynEFOthread implements Runnable {
 		}
 		this.physicalTopology = physicalTopology;
 		this.activeTopology = activeTopology;
+		this.operationFlag = operationFlag;
 	}
 
 	public void run() {
@@ -83,6 +89,62 @@ public class SynEFOthread implements Runnable {
 		taskId = Integer.parseInt(values.get("TASK_ID"));
 		taskName = values.get("TASK_NAME");
 		taskIP = values.get("TASK_IP");
+		/**
+		 * This node has previously died so it is going to come back-up
+		 */
+		/**
+		 * This node has previously died so it is going to come back-up
+		 */
+		if(operationFlag.get() == true) {
+			/**
+			 * Send physical-topology and active-topology.
+			 * TODO: Check if task-id and task-ip have changed
+			 */
+			System.out.println("+EFO-SPOUT: " + taskName + "(" + taskId + "@" + taskIP + 
+					") has RE-connected.");
+			ArrayList<String> _downStream = null;
+			ArrayList<String> _activeDownStream = null;
+			if(physicalTopology.containsKey(taskName + ":" + taskId + "@" + taskIP)) {
+				_downStream = new ArrayList<String>(physicalTopology.get(taskName + ":" + taskId + "@" + taskIP));
+				if(activeTopology.containsKey(taskName + ":" + taskId + "@" + taskIP)) {
+					System.out.println("+efo SPOUT: " + taskName + "(" + taskId + "@" + taskIP + 
+							") retrieved active topology after RE-CONNECTION");
+					_activeDownStream = new ArrayList<String>(activeTopology.get(taskName + ":" + taskId + "@" + taskIP));
+				}else { 
+					System.out.println("+efo SPOUT: " + taskName + "(" + taskId + "@" + taskIP + 
+							") no active-topology record has been found for RE-CONNECTED bolt.");
+					_activeDownStream = new ArrayList<String>();
+				}
+			}else {
+				System.out.println("+efo SPOUT: " + taskName + "(" + taskId + "@" + taskIP + 
+						") no physical-topology record has been found for RE-CONNECTED bolt.");
+			}
+			/**
+			 * Send back the downstream topology info
+			 */
+			try {
+				output.writeObject(_downStream);
+				output.flush();
+				output.writeObject(_activeDownStream);
+				output.flush();
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+			/**
+			 * After coordination, keep listening 
+			 * for received task statistics messages
+			 */
+			System.out.println("+efo SPOUT: " + taskName + "@" + taskIP + 
+					"(" + taskId + ") RE-CONNECTED successfully.");
+			try {
+				output.flush();
+				output.close();
+				input.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			return;
+		}
 		synchronized(taskIPs) {
 			taskIPs.put(taskName + ":" + taskId, taskIP);
 		}
@@ -150,6 +212,59 @@ public class SynEFOthread implements Runnable {
 		taskId = Integer.parseInt(values.get("TASK_ID"));
 		taskName = values.get("TASK_NAME");
 		taskIP = values.get("TASK_IP");
+		/**
+		 * This node has previously died so it is going to come back-up
+		 */
+		if(operationFlag.get() == true) {
+			/**
+			 * Send physical-topology and active-topology.
+			 * TODO: Check if task-id and task-ip have changed
+			 */
+			System.out.println("+efo BOLT: " + taskName + "(" + taskId + "@" + taskIP + 
+					") has RE-connected.");
+			ArrayList<String> _downStream = null;
+			ArrayList<String> _activeDownStream = null;
+			if(physicalTopology.containsKey(taskName + ":" + taskId + "@" + taskIP)) {
+				_downStream = new ArrayList<String>(physicalTopology.get(taskName + ":" + taskId + "@" + taskIP));
+				if(activeTopology.containsKey(taskName + ":" + taskId + "@" + taskIP)) {
+					System.out.println("+efo BOLT: " + taskName + "(" + taskId + "@" + taskIP + 
+							") retrieved active topology after RE-CONNECTION");
+					_activeDownStream = new ArrayList<String>(activeTopology.get(taskName + ":" + taskId + "@" + taskIP));
+				}else { 
+					System.out.println("+efo BOLT: " + taskName + "(" + taskId + "@" + taskIP + 
+							") no active-topology record has been found for RE-CONNECTED bolt.");
+					_activeDownStream = new ArrayList<String>();
+				}
+			}else {
+				System.out.println("+efo BOLT: " + taskName + "(" + taskId + "@" + taskIP + 
+						") no physical-topology record has been found for RE-CONNECTED bolt.");
+			}
+			/**
+			 * Send back the downstream topology info
+			 */
+			try {
+				output.writeObject(_downStream);
+				output.flush();
+				output.writeObject(_activeDownStream);
+				output.flush();
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+			/**
+			 * After coordination, keep listening 
+			 * for received task statistics messages
+			 */
+			System.out.println("+efo BOLT: " + taskName + "@" + taskIP + 
+					"(" + taskId + ") RE-CONNECTED successfully.");
+			try {
+				output.flush();
+				output.close();
+				input.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			return;
+		}
 		synchronized(taskIPs) {
 			taskIPs.put(taskName + ":" + taskId, taskIP);
 		}

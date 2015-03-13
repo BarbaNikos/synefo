@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.StringTokenizer;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import gr.katsip.synefo.storm.api.Pair;
 
@@ -32,11 +33,14 @@ public class SynefoCoordinatorThread implements Runnable {
 	private Integer zooPort;
 
 	Thread userInterfaceThread;
+	
+	private AtomicBoolean operationFlag;
 
 	public SynefoCoordinatorThread(String zooHost, Integer zooPort, HashMap<String, Pair<Number, Number>> resourceThresholds, 
 			HashMap<String, ArrayList<String>> physicalTopology, HashMap<String, ArrayList<String>> runningTopology, 
 			HashMap<String, Integer> taskNameToIdMap, 
-			HashMap<String, String> taskIPs) {
+			HashMap<String, String> taskIPs,
+			AtomicBoolean operationFlag) {
 		this.physicalTopology = physicalTopology;
 		this.activeTopology = runningTopology;
 		inverseTopology = new HashMap<String, ArrayList<String>>();
@@ -45,6 +49,7 @@ public class SynefoCoordinatorThread implements Runnable {
 		this.resourceThresholds = resourceThresholds;
 		this.zooHost = zooHost;
 		this.zooPort = zooPort;
+		this.operationFlag = operationFlag;
 	}
 
 	public void run() {
@@ -138,6 +143,7 @@ public class SynefoCoordinatorThread implements Runnable {
 			activeTopology.putAll(activeUpdatedTopology);
 			tamer.setPhysicalTopology();
 			tamer.setActiveTopology();
+			operationFlag.set(true);
 
 			taskNameToIdMap.clear();
 			taskNameToIdMap.notifyAll();

@@ -10,6 +10,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import gr.katsip.synefo.storm.api.Pair;
 
@@ -34,6 +35,8 @@ public class Synefo {
 	private String zooHost;
 
 	private Integer zooIP;
+	
+	private AtomicBoolean operationFlag;
 
 	public Synefo(String zooHost, Integer zooIP, HashMap<String, Pair<Number, Number>> _resource_thresholds) {
 		physicalTopology = new HashMap<String, ArrayList<String>>();
@@ -66,19 +69,20 @@ public class Synefo {
 		resourceThresholds = _resource_thresholds;
 		this.zooHost = zooHost;
 		this.zooIP = zooIP;
+		operationFlag = new AtomicBoolean(false);
 	}
 
 	public void runServer() {
 		Socket _stormComponent = null;
 		OutputStream _out = null;
 		InputStream _in = null;
-		(new Thread(new SynefoCoordinatorThread(zooHost, zooIP, resourceThresholds, physicalTopology, runningTopology, nameToIdMap, taskIPs))).start();
+		(new Thread(new SynefoCoordinatorThread(zooHost, zooIP, resourceThresholds, physicalTopology, runningTopology, nameToIdMap, taskIPs, operationFlag))).start();
 		while(killCommand == false) {
 			try {
 				_stormComponent = serverSocket.accept();
 				_out = _stormComponent.getOutputStream();
 				_in = _stormComponent.getInputStream();
-				(new Thread(new SynEFOthread(physicalTopology, runningTopology, nameToIdMap, _in, _out, taskIPs))).start();
+				(new Thread(new SynEFOthread(physicalTopology, runningTopology, nameToIdMap, _in, _out, taskIPs, operationFlag))).start();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
