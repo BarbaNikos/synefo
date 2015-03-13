@@ -315,6 +315,8 @@ public class SynEFOBolt extends BaseRichBolt {
 					activeDownstreamTasks.remove(activeDownstreamTasks.indexOf(taskWithIp));
 					intActiveDownstreamTasks.remove(intActiveDownstreamTasks.indexOf(task_id));
 				}
+				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + ") located scale-command: " + 
+						scaleCommand + ", updated routing tables: " + intActiveDownstreamTasks);
 			}else {
 				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + ") located scale-command: " + 
 						scaleCommand + ", about to produce punctuation tuple");
