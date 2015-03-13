@@ -27,6 +27,11 @@ import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
+/**
+ * 
+ * @author Nick R. Katsipoulakis
+ *
+ */
 public class SynEFOSpout extends BaseRichSpout {
 
 	/**
@@ -36,7 +41,7 @@ public class SynEFOSpout extends BaseRichSpout {
 	
 	Logger logger = LoggerFactory.getLogger(SynEFOSpout.class);
 
-	private String _task_name;
+	private String taskName;
 
 	private SpoutOutputCollector _collector;
 
@@ -80,7 +85,7 @@ public class SynEFOSpout extends BaseRichSpout {
 
 	public SynEFOSpout(String task_name, String synEFO_ip, Integer synEFO_port, 
 			AbstractTupleProducer tupleProducer, String zooIP, Integer zooPort) {
-		_task_name = task_name;
+		taskName = task_name;
 		downstreamTasks = null;
 		activeDownstreamTasks = null;
 		synefoIP = synEFO_ip;
@@ -94,12 +99,12 @@ public class SynEFOSpout extends BaseRichSpout {
 
 	@SuppressWarnings("unchecked")
 	public void registerToSynEFO() {
-		logger.info("+EFO-SPOUT " + _task_name + ":" + taskId + "@" + taskIP + " in registerToSynEFO().");
+		logger.info("+EFO-SPOUT (" + taskName + ":" + taskId + "@" + taskIP + ") in registerToSynEFO().");
 		socket = null;
 		SynEFOMessage msg = new SynEFOMessage();
 		msg._type = Type.REG;
 		msg._values.put("TASK_TYPE", "SPOUT");
-		msg._values.put("TASK_NAME", _task_name);
+		msg._values.put("TASK_NAME", taskName);
 		try {
 			taskIP = InetAddress.getLocalHost().getHostAddress();
 			msg._values.put("TASK_IP", taskIP);
@@ -114,7 +119,7 @@ public class SynEFOSpout extends BaseRichSpout {
 			output.writeObject(msg);
 			output.flush();
 			msg = null;
-			System.out.println("SPOUT (" + _task_name + ") wait 1");
+//			logger.info("+EFO-SPOUT (" + taskName + ") wait 1");
 			ArrayList<String> _downstream = null;
 			_downstream = (ArrayList<String>) input.readObject();
 			if(_downstream != null && _downstream.size() > 0) {
@@ -171,7 +176,7 @@ public class SynEFOSpout extends BaseRichSpout {
 		pet.start();
 		pet.getScaleCommand();
 		System.out.println("+EFO-SPOUT (" + 
-				_task_name + ":" + taskId + 
+				taskName + ":" + taskId + "@" + taskIP + 
 				") registered to +EFO successfully.");
 	}
 
@@ -224,7 +229,7 @@ public class SynEFOSpout extends BaseRichSpout {
 			strBuild.append(SynefoConstant.PUNCT_TUPLE_TAG + "/");
 			idx = 0;
 			if(action.toLowerCase().contains("activate") || action.toLowerCase().contains("deactivate")) {
-				logger.info("+EFO-SPOUT(" + this._task_name + ":" + this.taskId + "@" + this.taskIP + 
+				logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
 						") located scale-command: " + scaleCommand + ", about to update routing tables.");
 				if(action.toLowerCase().equals("activate")) {
 					activeDownstreamTasks.add(taskWithIp);
@@ -234,7 +239,7 @@ public class SynEFOSpout extends BaseRichSpout {
 					intActiveDownstreamTasks.remove(intActiveDownstreamTasks.indexOf(task_id));
 				}
 			}else {
-				logger.info("+EFO-SPOUT(" + this._task_name + ":" + this.taskId + "@" + this.taskIP + 
+				logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
 						") located scale-command: " + scaleCommand + ", about to produce punctuation tuple");
 				if(action.toLowerCase().contains("add")) {
 					activeDownstreamTasks.add(taskWithIp);
@@ -278,14 +283,14 @@ public class SynEFOSpout extends BaseRichSpout {
 		} catch (UnknownHostException e1) {
 			e1.printStackTrace();
 		}
-		pet = new ZooPet(zooIP, zooPort, _task_name, taskId, taskIP);
+		pet = new ZooPet(zooIP, zooPort, taskName, taskId, taskIP);
 		if(activeDownstreamTasks == null && downstreamTasks == null) {
 			registerToSynEFO();
 		}
 		_collector = collector;
 		taskId = context.getThisTaskId();
 		metricObject = new SynefoMetric();
-		metricObject.initMetrics(context, _task_name, Integer.toString(taskId));
+		metricObject.initMetrics(context, taskName, Integer.toString(taskId));
 	}
 
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {

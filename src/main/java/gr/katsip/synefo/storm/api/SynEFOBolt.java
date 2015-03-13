@@ -30,6 +30,11 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 
+/**
+ * 
+ * @author Nick R. Katsipoulakis
+ *
+ */
 public class SynEFOBolt extends BaseRichBolt {
 
 	/**
@@ -41,11 +46,11 @@ public class SynEFOBolt extends BaseRichBolt {
 
 	private String taskName;
 
-	private int idx;
+	private int downStreamIndex;
 
 	private long tupleCounter;
 
-	private OutputCollector _collector;
+	private OutputCollector collector;
 
 	private ArrayList<String> downstreamTasks;
 
@@ -55,13 +60,13 @@ public class SynEFOBolt extends BaseRichBolt {
 
 	private ArrayList<Integer> intActiveDownstreamTasks;
 
-	private String _synEFO_ip = null;
+	private String synefoServerIP = null;
 
-	private int _task_id = -1;
+	private int taskID = -1;
 
-	private String _task_ip;
+	private String taskIP;
 
-	private Integer _synEFO_port = -1;
+	private Integer synefoServerPort = -1;
 
 	private Socket socket;
 
@@ -69,15 +74,15 @@ public class SynEFOBolt extends BaseRichBolt {
 
 	private ObjectInputStream _input;
 
-	private TaskStatistics _stats;
+	private TaskStatistics statistics;
 
-	private AbstractOperator _operator;
+	private AbstractOperator operator;
 
 	private SynefoMetric metricObject;
 
 	private List<Values> stateValues;
 
-	private ZooPet pet;
+	private ZooPet zooPet;
 
 	private String zooIP;
 
@@ -86,14 +91,14 @@ public class SynEFOBolt extends BaseRichBolt {
 	public SynEFOBolt(String task_name, String synEFO_ip, Integer synEFO_port, 
 			AbstractOperator operator, String zooIP, Integer zooPort) {
 		taskName = task_name;
-		_synEFO_ip = synEFO_ip;
-		_synEFO_port = synEFO_port;
+		synefoServerIP = synEFO_ip;
+		synefoServerPort = synEFO_port;
 		downstreamTasks = null;
 		intDownstreamTasks = null;
 		activeDownstreamTasks = null;
 		intActiveDownstreamTasks = null;
-		_stats = new TaskStatistics();
-		_operator = operator;
+		statistics = new TaskStatistics();
+		this.operator = operator;
 		tupleCounter = 0;
 		stateValues = new ArrayList<Values>();
 		operator.init(stateValues);
@@ -106,21 +111,21 @@ public class SynEFOBolt extends BaseRichBolt {
 	 */
 	@SuppressWarnings("unchecked")
 	public void registerToSynEFO() {
-		logger.info("+EFO-BOLT " + taskName + ":" + _task_id + "@" + _task_ip + " in registerToSynEFO().");
+		logger.info("+EFO-BOLT (" + taskName + ":" + taskID + "@" + taskIP + ") in registerToSynEFO().");
 		socket = null;
 		SynEFOMessage msg = new SynEFOMessage();
 		msg._type = Type.REG;
 		try {
-			_task_ip = InetAddress.getLocalHost().getHostAddress();
-			msg._values.put("TASK_IP", _task_ip);
+			taskIP = InetAddress.getLocalHost().getHostAddress();
+			msg._values.put("TASK_IP", taskIP);
 		} catch (UnknownHostException e1) {
 			e1.printStackTrace();
 		}
 		msg._values.put("TASK_TYPE", "BOLT");
 		msg._values.put("TASK_NAME", taskName);
-		msg._values.put("TASK_ID", Integer.toString(_task_id));
+		msg._values.put("TASK_ID", Integer.toString(taskID));
 		try {
-			socket = new Socket(_synEFO_ip, _synEFO_port);
+			socket = new Socket(synefoServerIP, synefoServerPort);
 			_output = new ObjectOutputStream(socket.getOutputStream());
 			_input = new ObjectInputStream(socket.getInputStream());
 			_output.writeObject(msg);
@@ -158,11 +163,11 @@ public class SynEFOBolt extends BaseRichBolt {
 					Integer task = Integer.parseInt(strTok.nextToken());
 					intActiveDownstreamTasks.add(task);
 				}
-				idx = 0;
+				downStreamIndex = 0;
 			}else {
 				activeDownstreamTasks = new ArrayList<String>();
 				intActiveDownstreamTasks = new ArrayList<Integer>();
-				idx = 0;
+				downStreamIndex = 0;
 			}
 			/**
 			 * Closing channels of communication with 
@@ -182,33 +187,33 @@ public class SynEFOBolt extends BaseRichBolt {
 		/**
 		 * Handshake with ZooKeeper
 		 */
-		pet.start();
-		pet.getScaleCommand();
+		zooPet.start();
+		zooPet.getScaleCommand();
 		logger.info("+EFO-BOLT (" + 
-				taskName + ":" + _task_id + 
+				taskName + ":" + taskID + 
 				") registered to synEFO successfully.");
 	}
 
 	public void prepare(@SuppressWarnings("rawtypes") Map conf, TopologyContext context, OutputCollector collector) {
-		_collector = collector;
-		_task_id = context.getThisTaskId();
+		this.collector = collector;
+		taskID = context.getThisTaskId();
 
 		if(conf.containsKey("TOPOLOGY_DEBUG") || conf.containsKey("topology_debug")) {
 			String debug = (String) conf.get("TOPOLOGY_DEBUG");
-			logger.info("+EFO-BOLT " + taskName + ":" + _task_id + "@" + _task_ip + " topology debug flag: " + debug);
+			logger.info("+EFO-BOLT (" + taskName + ":" + taskID + "@" + taskIP + ") topology debug flag: " + debug);
 		}
 		try {
-			_task_ip = InetAddress.getLocalHost().getHostAddress();
+			taskIP = InetAddress.getLocalHost().getHostAddress();
 		} catch (UnknownHostException e1) {
 			e1.printStackTrace();
 		}
-		pet = new ZooPet(zooIP, zooPort, taskName, _task_id, _task_ip);
+		zooPet = new ZooPet(zooIP, zooPort, taskName, taskID, taskIP);
 		if(downstreamTasks == null && activeDownstreamTasks == null) {
 			registerToSynEFO();
 		}
 		this.metricObject = new SynefoMetric();
-		metricObject.initMetrics(context, taskName, Integer.toString(_task_id));
-		logger.info("+EFO-BOLT " + taskName + ":" + _task_id + "@" + _task_ip + " in prepare().");
+		metricObject.initMetrics(context, taskName, Integer.toString(taskID));
+		logger.info("+EFO-BOLT (" + taskName + ":" + taskID + "@" + taskIP + ") in prepare().");
 	}
 
 
@@ -218,7 +223,8 @@ public class SynEFOBolt extends BaseRichBolt {
 		 * Perform Share of state and return execution
 		 */
 		if(tuple.getFields().contains("SYNEFO_HEADER") == false) {
-			logger.error("+EFO-BOLT " + taskName + ":" + _task_id + "@" + _task_ip + " in execute(): received tuple with fields: " + tuple.getFields().toString() + 
+			logger.error("+EFO-BOLT (" + taskName + ":" + taskID + "@" + taskIP + 
+					") in execute(): received tuple with fields: " + tuple.getFields().toString() + 
 					" from component: " + tuple.getSourceComponent() + " with task-id: " + tuple.getSourceTask());
 		}
 		String synefoHeader = tuple.getString(tuple.getFields().fieldIndex("SYNEFO_HEADER"));
@@ -237,52 +243,53 @@ public class SynEFOBolt extends BaseRichBolt {
 		fieldList.remove(0);
 		Fields fields = new Fields(fieldList);
 		if(intActiveDownstreamTasks != null && intActiveDownstreamTasks.size() > 0) {
-			List<Values> returnedTuples = _operator.execute(fields, values);
+			List<Values> returnedTuples = operator.execute(fields, values);
 			for(Values v : returnedTuples) {
 				produced_values = new Values();
 				produced_values.add("SYNEFO_HEADER");
 				for(int i = 0; i < v.size(); i++) {
 					produced_values.add(v.get(i));
 				}
-				_collector.emitDirect(intActiveDownstreamTasks.get(idx), produced_values);
+				collector.emitDirect(intActiveDownstreamTasks.get(downStreamIndex), produced_values);
 			}
-			_collector.ack(tuple);
-			if(idx >= (intActiveDownstreamTasks.size() - 1)) {
-				idx = 0;
+			collector.ack(tuple);
+			if(downStreamIndex >= (intActiveDownstreamTasks.size() - 1)) {
+				downStreamIndex = 0;
 			}else {
-				idx += 1;
+				downStreamIndex += 1;
 			}
 		}else {
-			List<Values> returnedTuples = _operator.execute(fields, values);
+			List<Values> returnedTuples = operator.execute(fields, values);
 			for(Values v : returnedTuples) {
 				produced_values = new Values();
 				produced_values.add("SYNEFO_HEADER");
 				for(int i = 0; i < v.size(); i++) {
 					produced_values.add(v.get(i));
 				}
-				//				_collector.emit(produced_values);
-				//				logger.info("+EFO-BOLT(" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") emits: " + produced_values);
+				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + 
+						this.taskIP + ") emits: " + produced_values);
 			}
-			_collector.ack(tuple);
+			collector.ack(tuple);
 		}
 		tupleCounter += 1;
 		metricObject.updateMetrics(tupleCounter);
-		_stats.updateMemory();
-		_stats.updateCpuLoad();
-		_stats.updateLatency();
-		_stats.updateThroughput(1);
+		statistics.updateMemory();
+		statistics.updateCpuLoad();
+		statistics.updateLatency();
+		statistics.updateThroughput(1);
 
-		//		logger.info("+EFO-BOLT(" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") timestamp: " + System.currentTimeMillis() + ", " + 
-		//				"cpu: " + _stats.getCpuLoad() + 
-		//				", memory: " + _stats.getMemory() + 
-		//				", latency: " + _stats.getLatency() + 
-		//				", throughput: " + _stats.getThroughput());
+		logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+				") timestamp: " + System.currentTimeMillis() + ", " + 
+				"cpu: " + statistics.getCpuLoad() + 
+				", memory: " + statistics.getMemory() + 
+				", latency: " + statistics.getLatency() + 
+				", throughput: " + statistics.getThroughput());
 
-		//		pet.setStatisticData(_stats.getCpuLoad(), _stats.getMemory(), (int) _stats.getLatency(), (int) _stats.getThroughput());
+		//pet.setStatisticData(_stats.getCpuLoad(), _stats.getMemory(), (int) _stats.getLatency(), (int) _stats.getThroughput());
 		String scaleCommand = "";
-		synchronized(pet) {
-			if(pet.pendingCommand != null) {
-				scaleCommand = pet.returnScaleCommand();
+		synchronized(zooPet) {
+			if(zooPet.pendingCommand != null) {
+				scaleCommand = zooPet.returnScaleCommand();
 			}
 		}
 		if(scaleCommand != null && scaleCommand.length() > 0) {
@@ -297,9 +304,9 @@ public class SynEFOBolt extends BaseRichBolt {
 			Integer task_id = Integer.parseInt(strTok.nextToken());
 			StringBuilder strBuild = new StringBuilder();
 			strBuild.append(SynefoConstant.PUNCT_TUPLE_TAG + "/");
-			idx = 0;
+			downStreamIndex = 0;
 			if(action.toLowerCase().contains("activate") || action.toLowerCase().contains("deactivate")) {
-				logger.info("+EFO-BOLT(" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") located scale-command: " + 
+				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + ") located scale-command: " + 
 						scaleCommand + ", about to update routing tables.");
 				if(action.toLowerCase().equals("activate")) {
 					activeDownstreamTasks.add(taskWithIp);
@@ -309,7 +316,7 @@ public class SynEFOBolt extends BaseRichBolt {
 					intActiveDownstreamTasks.remove(intActiveDownstreamTasks.indexOf(task_id));
 				}
 			}else {
-				logger.info("+EFO-BOLT(" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") located scale-command: " + 
+				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + ") located scale-command: " + 
 						scaleCommand + ", about to produce punctuation tuple");
 				if(action.toLowerCase().contains("add")) {
 					activeDownstreamTasks.add(taskWithIp);
@@ -327,11 +334,11 @@ public class SynEFOBolt extends BaseRichBolt {
 				 */
 				Values punctValue = new Values();
 				punctValue.add(strBuild.toString());
-				for(int i = 0; i < _operator.getOutputSchema().size(); i++) {
+				for(int i = 0; i < operator.getOutputSchema().size(); i++) {
 					punctValue.add(null);
 				}
 				for(Integer d_task : intActiveDownstreamTasks) {
-					_collector.emitDirect(d_task, punctValue);
+					collector.emitDirect(d_task, punctValue);
 				}
 				/**
 				 * In the case of removing a downstream task 
@@ -349,7 +356,7 @@ public class SynEFOBolt extends BaseRichBolt {
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
 		List<String> producerSchema = new ArrayList<String>();
 		producerSchema.add("SYNEFO_HEADER");
-		producerSchema.addAll(_operator.getOutputSchema().toList());
+		producerSchema.addAll(operator.getOutputSchema().toList());
 		declarer.declare(new Fields(producerSchema));
 	}
 
@@ -363,8 +370,10 @@ public class SynEFOBolt extends BaseRichBolt {
 		String component_id = null;
 		Integer comp_num = -1;
 		String ip = null;
-		logger.info("+EFO-BOLT (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") received punctuation tuple: " + tuple.toString());
-		StringTokenizer str_tok = new StringTokenizer((String) tuple.getValues().get(tuple.getFields().fieldIndex("SYNEFO_HEADER")), "/");
+		logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+				") received punctuation tuple: " + tuple.toString());
+		StringTokenizer str_tok = new StringTokenizer((String) tuple.getValues()
+				.get(tuple.getFields().fieldIndex("SYNEFO_HEADER")), "/");
 		while(str_tok.hasMoreTokens()) {
 			String s = str_tok.nextToken();
 			if((s.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.ADD_ACTION) || 
@@ -374,7 +383,8 @@ public class SynEFOBolt extends BaseRichBolt {
 			}else if((s.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.ADD_ACTION) == false && 
 					s.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.REMOVE_ACTION) == false) && 
 					s.equals(SynefoConstant.PUNCT_TUPLE_TAG) == false && s.startsWith(SynefoConstant.COMP_TAG) 
-					&& s.startsWith(SynefoConstant.COMP_NUM_TAG) == false && s.startsWith(SynefoConstant.COMP_IP_TAG) == false) {
+					&& s.startsWith(SynefoConstant.COMP_NUM_TAG) == false && 
+					s.startsWith(SynefoConstant.COMP_IP_TAG) == false) {
 				StringTokenizer strTok = new StringTokenizer(s, ":");
 				component_id = strTok.nextToken();
 				component_name = strTok.nextToken();
@@ -395,31 +405,34 @@ public class SynEFOBolt extends BaseRichBolt {
 				StringTokenizer strTok = new StringTokenizer(s, ":");
 				strTok.nextToken();
 				ip = strTok.nextToken();
-				logger.info("+EFO-BOLT (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") located peer's IP: " + ip);
+				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+						") located peer's IP: " + ip);
 			}
 		}
 		/**
 		 * 
 		 */
 		if(action != null && action.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.ADD_ACTION)) {
-			System.out.println("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") received an ADD action");
-			String selfComp = this.taskName + ":" + this._task_id;
+			System.out.println("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+					") received an ADD action");
+			String selfComp = this.taskName + ":" + this.taskID;
 			if(selfComp.equals(component_name + ":" + component_id)) {
 				/**
 				 * If this component is added, open a ServerSocket
 				 */
 				try {
-					ServerSocket _socket = new ServerSocket(6000 + _task_id);
+					ServerSocket _socket = new ServerSocket(6000 + taskID);
 					int numOfStatesReceived = 0;
-					logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + 
-							") accepting connections to receive state... (IP:" + _socket.getInetAddress().getHostAddress() + ", port: " + _socket.getLocalPort());
+					logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+							") accepting connections to receive state... (IP:" + 
+							_socket.getInetAddress().getHostAddress() + ", port: " + _socket.getLocalPort());
 					boolean activeListFlag = false;
 					while(numOfStatesReceived < (comp_num - 1)) {
 						Socket client = _socket.accept();
 						ObjectOutputStream _stateOutput = new ObjectOutputStream(client.getOutputStream());
 						ObjectInputStream _stateInput = new ObjectInputStream(client.getInputStream());
 						List<Values> newState = (List<Values>) _stateInput.readObject();
-						_operator.mergeState(_operator.getOutputSchema(), newState);
+						operator.mergeState(operator.getOutputSchema(), newState);
 						if(activeListFlag == false) {
 							_stateOutput.writeObject("+EFO_ACT_NODES");
 							_stateOutput.flush();
@@ -434,10 +447,10 @@ public class SynEFOBolt extends BaseRichBolt {
 								Integer task = Integer.parseInt(strTok.nextToken());
 								intActiveDownstreamTasks.add(task);
 							}
-							logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + 
+							logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
 									") received active downstream task list:" + activeDownstreamTasks);
 							activeListFlag = true;
-							idx = 0;
+							downStreamIndex = 0;
 						}else {
 							_stateOutput.writeObject("+EFO_ACK");
 						}
@@ -451,21 +464,22 @@ public class SynEFOBolt extends BaseRichBolt {
 				} catch (IOException | ClassNotFoundException e) {
 					e.printStackTrace();
 				}
-				logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") Finished accepting connections to receive state.");
-				logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") routing table:" + this.activeDownstreamTasks);
+				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + ") Finished accepting connections to receive state.");
+				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + ") routing table:" + this.activeDownstreamTasks);
 			}else {
 				Socket client = new Socket();
 				Integer comp_task_id = Integer.parseInt(component_id);
-				logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + 
-						") about to send state to about-to-be-added operator (IP: " + ip + ", port: " + (6000 + comp_task_id) + ").");
+				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+						") about to send state to about-to-be-added operator (IP: " + 
+						ip + ", port: " + (6000 + comp_task_id) + ").");
 				boolean attempt_flag = true;
 				while (attempt_flag == true) {
 					try {
 						client = new Socket(ip, 6000 + comp_task_id);
 						attempt_flag = false;
 					} catch (IOException e) {
-						logger.info("+EFO:BOLT(" + _task_id + "): Connect failed (1), waiting and trying again");
-						logger.info("+EFO:BOLT(" + _task_id + "): " + e.getMessage());
+						logger.info("+EFO-BOLT (" + taskID + "): Connect failed (1), waiting and trying again");
+						logger.info("+EFO-BOLT (" + taskID + "): " + e.getMessage());
 						try
 						{
 							Thread.sleep(500);
@@ -475,11 +489,12 @@ public class SynEFOBolt extends BaseRichBolt {
 						}
 					}
 				}
-				logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") Connection established...");
+				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+						") Connection established...");
 				try {
 					ObjectOutputStream _stateOutput = new ObjectOutputStream(client.getOutputStream());
 					ObjectInputStream _stateInput = new ObjectInputStream(client.getInputStream());
-					_stateOutput.writeObject(_operator.getStateValues());
+					_stateOutput.writeObject(operator.getStateValues());
 					_stateOutput.flush();
 					String response = (String) _stateInput.readObject();
 					if(response.equals("+EFO_ACT_NODES")) {
@@ -492,22 +507,25 @@ public class SynEFOBolt extends BaseRichBolt {
 				} catch (IOException | ClassNotFoundException e) {
 					e.printStackTrace();
 				}
-				logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") sent state to newly added node successfully...");
+				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+						") sent state to newly added node successfully...");
 			}
 		}else if(action != null && action.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.REMOVE_ACTION)) {
-			logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") received a REMOVE action");
-			String selfComp = this.taskName + ":" + this._task_id;
+			logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+					") received a REMOVE action");
+			String selfComp = this.taskName + ":" + this.taskID;
 			if(selfComp.equals(component_name + ":" + component_id)) {
 				try {
-					ServerSocket _socket = new ServerSocket(6000 + _task_id);
-					logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + 
-							") accepting connections to receive state... (IP:" + _socket.getInetAddress() + ", port: " + _socket.getLocalPort());
+					ServerSocket _socket = new ServerSocket(6000 + taskID);
+					logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+							") accepting connections to receive state... (IP:" + 
+							_socket.getInetAddress() + ", port: " + _socket.getLocalPort());
 					int numOfStatesReceived = 0;
 					while(numOfStatesReceived < (comp_num - 1)) {
 						Socket client = _socket.accept();
 						ObjectOutputStream _stateOutput = new ObjectOutputStream(client.getOutputStream());
 						ObjectInputStream _stateInput = new ObjectInputStream(client.getInputStream());
-						_stateOutput.writeObject(_operator.getStateValues());
+						_stateOutput.writeObject(operator.getStateValues());
 						_stateOutput.flush();
 						String response = (String) _stateInput.readObject();
 						if(response.equals("+EFO_ACK")) {
@@ -522,21 +540,24 @@ public class SynEFOBolt extends BaseRichBolt {
 				} catch (IOException | ClassNotFoundException e) {
 					e.printStackTrace();
 				}
-				logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") Finished accepting connections to send state.");
-				logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") routing table:" + this.activeDownstreamTasks);
+				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+						") Finished accepting connections to send state.");
+				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+						") routing table:" + this.activeDownstreamTasks);
 			}else {
 				Socket client = new Socket();
 				Integer comp_task_id = Integer.parseInt(component_id);
-				logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + 
-						") about to receive state from about-to-be-removed operator (IP: " + ip + ", port: " + (6000 + comp_task_id) + ").");
+				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+						") about to receive state from about-to-be-removed operator (IP: " + ip + 
+						", port: " + (6000 + comp_task_id) + ").");
 				boolean attempt_flag = true;
 				while (attempt_flag == true) {
 					try {
 						client = new Socket(ip, 6000 + comp_task_id);
 						attempt_flag = false;
 					} catch (IOException e) {
-						logger.info("+EFO:BOLT(" + _task_id + "): Connect failed (2), waiting and trying again");
-						logger.info("+EFO:BOLT(" + _task_id + "): " + e.getMessage());
+						logger.info("+EFO:BOLT (" + taskID + "): Connect failed (2), waiting and trying again");
+						logger.info("+EFO:BOLT (" + taskID + "): " + e.getMessage());
 						try
 						{
 							Thread.sleep(500);
@@ -546,12 +567,13 @@ public class SynEFOBolt extends BaseRichBolt {
 						}
 					}
 				}
-				logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") Connection established...");
+				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + 
+						this.taskIP + ") Connection established...");
 				try {
 					ObjectOutputStream _stateOutput = new ObjectOutputStream(client.getOutputStream());
 					ObjectInputStream _stateInput = new ObjectInputStream(client.getInputStream());
 					List<Values> newState = (List<Values>) _stateInput.readObject();
-					_operator.mergeState(_operator.getOutputSchema(), newState);
+					operator.mergeState(operator.getOutputSchema(), newState);
 					_stateOutput.writeObject("+EFO_ACK");
 					_stateOutput.flush();
 					_stateInput.close();
@@ -560,26 +582,27 @@ public class SynEFOBolt extends BaseRichBolt {
 				} catch (IOException | ClassNotFoundException e) {
 					e.printStackTrace();
 				}
-				logger.info("synefo-bolt (" + this.taskName + ":" + this._task_id + "@" + this._task_ip + ") received state from about-to-be-removed node successfully...");
+				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+						") received state from about-to-be-removed node successfully...");
 			}
 		}
-		pet.resetSubmittedScaleFlag();
+		zooPet.resetSubmittedScaleFlag();
 	}
 
 	public List<Values> getStateValue() {
-		_operator.getStateValues();
+		operator.getStateValues();
 		return stateValues;
 	}
 
 	public void printState() {
-		List<Values> state = _operator.getStateValues();
-		System.out.println("+EFO_BOLT(" + this.taskName + ":" + this._task_id + ") printState() :");
+		List<Values> state = operator.getStateValues();
+		logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + ") printState() :");
 		Iterator<Values> itr = state.iterator();
 		while(itr.hasNext()) {
 			Values val = itr.next();
-			System.out.println("<" + val.toString() + ">");
+			logger.info("<" + val.toString() + ">");
 		}
-		System.out.println("+EFO_BOLT CONCLUDED printState()");
+		logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + ") concluded printState() :");
 	}
 
 }
