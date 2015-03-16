@@ -214,6 +214,7 @@ public class SynEFOBolt extends BaseRichBolt {
 		this.metricObject = new SynefoMetric();
 		metricObject.initMetrics(context, taskName, Integer.toString(taskID));
 		logger.info("+EFO-BOLT (" + taskName + ":" + taskID + "@" + taskIP + ") in prepare().");
+		
 	}
 
 

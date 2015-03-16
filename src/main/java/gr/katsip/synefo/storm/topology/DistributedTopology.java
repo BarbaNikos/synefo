@@ -89,7 +89,7 @@ public class DistributedTopology {
 		/**
 		 * Stage 2: Join operators
 		 */
-		EquiJoinOperator<String> equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "three");
+		EquiJoinOperator<String> equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 100, "three");
 		String[] join_schema = { "three-a", "three-b" };
 		String[] state_schema = { "num", "one", "two", "three", "four", "time" };
 		equi_join_op.setOutputSchema(new Fields(join_schema));
@@ -100,7 +100,7 @@ public class DistributedTopology {
 				.directGrouping("project_bolt_1")
 				.directGrouping("project_bolt_2")
 				.directGrouping("project_bolt_3");
-		equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "three");
+		equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 100, "three");
 		equi_join_op.setOutputSchema(new Fields(join_schema));
 		equi_join_op.setStateSchema(new Fields(state_schema));
 		builder.setBolt("join_bolt_2", 
@@ -109,7 +109,7 @@ public class DistributedTopology {
 				.directGrouping("project_bolt_1")
 				.directGrouping("project_bolt_2")
 				.directGrouping("project_bolt_3");
-		equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "three");
+		equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 100, "three");
 		equi_join_op.setOutputSchema(new Fields(join_schema));
 		equi_join_op.setStateSchema(new Fields(state_schema));
 		builder.setBolt("join_bolt_3", 
@@ -128,7 +128,7 @@ public class DistributedTopology {
 		/**
 		 * Stage 3: Aggregate operator
 		 */
-		CountGroupByAggrOperator countGroupByAggrOperator = new CountGroupByAggrOperator(1000, join_schema);
+		CountGroupByAggrOperator countGroupByAggrOperator = new CountGroupByAggrOperator(100, join_schema);
 		String[] countGroupBySchema = { "key", "count" };
 		String[] countGroupByStateSchema = { "key", "count", "time" };
 		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
@@ -139,7 +139,7 @@ public class DistributedTopology {
 				.directGrouping("join_bolt_1")
 				.directGrouping("join_bolt_2")
 				.directGrouping("join_bolt_3");
-		countGroupByAggrOperator = new CountGroupByAggrOperator(1000, join_schema);
+		countGroupByAggrOperator = new CountGroupByAggrOperator(100, join_schema);
 		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
 		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
 		builder.setBolt("count_group_by_bolt_2", 
