@@ -78,11 +78,11 @@ public class TaskStatistics implements Serializable {
 			previousLatency = System.currentTimeMillis();
 			latencySamples +=1;
 		}else {
-			long _curr_timestamp = System.currentTimeMillis();
-			long latency = _curr_timestamp - previousLatency;
+			long currentTimestamp = System.currentTimeMillis();
+			long latency = currentTimestamp - previousLatency;
 			this.latency = this.latency + (latency - this.latency)/(latencySamples + 1);
 			latencySamples += 1;
-			previousLatency = _curr_timestamp;
+			previousLatency = currentTimestamp;
 		}
 	}
 

@@ -18,11 +18,11 @@
 	</resource>
 	<resource>
 		<key>latency-min</key>
-		<value>30</value>
+		<value>1</value>
 	</resource>
 	<resource>
 		<key>latency-max</key>
-		<value>10000</value>
+		<value>15</value>
 	</resource>
 	<resource>
 		<key>throughput-min</key>
@@ -30,6 +30,6 @@
 	</resource>
 	<resource>
 		<key>throughput-max</key>
-		<value>10000</value>
+		<value>1000</value>
 	</resource>
 </thresholds>

@@ -50,7 +50,7 @@ public class ZooPet {
 
 		public Pair<Double, Double> mem;
 
-		public Pair<Integer, Integer> latency;
+		public Pair<Long, Long> latency;
 
 		public Pair<Integer, Integer> throughput;
 
@@ -84,7 +84,7 @@ public class ZooPet {
 			this.taskIP = task_ip;
 			cpu = new Pair<Double, Double>();
 			mem = new Pair<Double, Double>();
-			latency = new Pair<Integer, Integer>();
+			latency = new Pair<Long, Long>();
 			throughput = new Pair<Integer, Integer>();
 		}
 
@@ -104,7 +104,7 @@ public class ZooPet {
 						logger.info("boltWatcher.process(): Children of node " + e.getPath() + 
 								" have changed. Time to check the scale-command.");
 						getScaleCommand();
-						//						setBoltNodeWatch();
+						//setBoltNodeWatch();
 					}
 				}
 			}
@@ -169,14 +169,14 @@ public class ZooPet {
 					StringTokenizer strTok = new StringTokenizer(thresholds, ",");
 					cpu.upperBound = Double.parseDouble(strTok.nextToken());
 					mem.upperBound = Double.parseDouble(strTok.nextToken());
-					latency.upperBound = Integer.parseInt(strTok.nextToken());
+					latency.upperBound = Long.parseLong(strTok.nextToken());
 					throughput.upperBound = Integer.parseInt(strTok.nextToken());
 
 					thresholds = new String(zk.getData("/synefo/scale-in-event", false, stat));
 					strTok = new StringTokenizer(thresholds, ",");
 					cpu.lowerBound = Double.parseDouble(strTok.nextToken());
 					mem.lowerBound = Double.parseDouble(strTok.nextToken());
-					latency.lowerBound = Integer.parseInt(strTok.nextToken());
+					latency.lowerBound = Long.parseLong(strTok.nextToken());
 					throughput.lowerBound = Integer.parseInt(strTok.nextToken());
 					state = BoltState.ACTIVE;
 					logger.info("start(): Initialization successful (" + 
@@ -247,7 +247,6 @@ public class ZooPet {
 		 * @param throughput
 		 */
 		public void setStatisticData(double cpu, double memory, Integer latency, Integer throughput) {
-			//			if(state == BoltState.ACTIVE && scaleOutZnodeName.equals("") && scaleInZnodeName.equals("") && submittedScaleTask == false) {
 			if(state == BoltState.ACTIVE && submittedScaleTask == false) {
 				if(this.cpu.upperBound < cpu || this.mem.upperBound < memory) {
 					/**
@@ -255,7 +254,8 @@ public class ZooPet {
 					 * This way, the SynEFO coordination thread will understand that the bolt 
 					 * is overloaded and that it needs to scale-out.
 					 */
-					logger.info("setStatisticData(): Over-utilization detected. Generating scale out command (" + taskName + ":" + taskID + "@" + taskIP + ")...");
+					logger.info("setStatisticData(): Over-utilization detected. Generating scale out command (" + 
+							taskName + ":" + taskID + "@" + taskIP + ")...");
 					createScaleOutTask();
 					submittedScaleTask = true;
 				}else if(this.cpu.lowerBound > cpu || this.mem.lowerBound > memory) {
@@ -264,7 +264,68 @@ public class ZooPet {
 					 * This way, the SynEFO coordination thread will understand that the bolt 
 					 * is overloaded and that it needs to scale-out.
 					 */
-					logger.info("setStatisticData(): Under-utilization detected. Generating scale out command (" + taskName + ":" + taskID + "@" + taskIP + ")...");
+					logger.info("setStatisticData(): Under-utilization detected. Generating scale out command (" + 
+							taskName + ":" + taskID + "@" + taskIP + ")...");
+					createScaleInTask();
+					submittedScaleTask = true;
+				}
+			}
+		}
+		
+		/**
+		 * Create scale task based on latency
+		 * @param latency
+		 */
+		public void setLatency(long latency) {
+			if(state == BoltState.ACTIVE && submittedScaleTask == false) {
+				if(this.latency.upperBound < latency) {
+					/**
+					 * Create also a node under scale-out-event znode with the name of the bolt.
+					 * This way, the SynEFO coordination thread will understand that the bolt 
+					 * is overloaded and that it needs to scale-out.
+					 */
+					logger.info("setStatisticData(): Over-utilization detected. Generating scale out command (" + 
+							taskName + ":" + taskID + "@" + taskIP + ")...");
+					createScaleOutTask();
+					submittedScaleTask = true;
+				}else if(this.latency.lowerBound > latency) {
+					/**
+					 * Create also a node under scale-in-event znode with the name of the bolt.
+					 * This way, the SynEFO coordination thread will understand that the bolt 
+					 * is overloaded and that it needs to scale-out.
+					 */
+					logger.info("setStatisticData(): Under-utilization detected. Generating scale out command (" + 
+							taskName + ":" + taskID + "@" + taskIP + ")...");
+					createScaleInTask();
+					submittedScaleTask = true;
+				}
+			}
+		}
+		
+		/**
+		 * Create scale task based on throughput
+		 * @param latency
+		 */
+		public void setThroughput(Integer throughput) {
+			if(state == BoltState.ACTIVE && submittedScaleTask == false) {
+				if(this.throughput.lowerBound > throughput) {
+					/**
+					 * Create also a node under scale-out-event znode with the name of the bolt.
+					 * This way, the SynEFO coordination thread will understand that the bolt 
+					 * is overloaded and that it needs to scale-out.
+					 */
+					logger.info("setStatisticData(): Over-utilization detected. Generating scale out command (" + 
+							taskName + ":" + taskID + "@" + taskIP + ")...");
+					createScaleOutTask();
+					submittedScaleTask = true;
+				}else if(this.throughput.upperBound < throughput) {
+					/**
+					 * Create also a node under scale-in-event znode with the name of the bolt.
+					 * This way, the SynEFO coordination thread will understand that the bolt 
+					 * is overloaded and that it needs to scale-out.
+					 */
+					logger.info("setStatisticData(): Under-utilization detected. Generating scale out command (" + 
+							taskName + ":" + taskID + "@" + taskIP + ")...");
 					createScaleInTask();
 					submittedScaleTask = true;
 				}

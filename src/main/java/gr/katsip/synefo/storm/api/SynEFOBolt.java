@@ -285,7 +285,10 @@ public class SynEFOBolt extends BaseRichBolt {
 				", latency: " + statistics.getLatency() + 
 				", throughput: " + statistics.getThroughput());
 
-		//pet.setStatisticData(_stats.getCpuLoad(), _stats.getMemory(), (int) _stats.getLatency(), (int) _stats.getThroughput());
+//		zooPet.setStatisticData(statistics.getCpuLoad(), statistics.getMemory(), 
+//				(int) statistics.getLatency(), 
+//				(int) statistics.getThroughput());
+		zooPet.setLatency(statistics.getLatency());
 		String scaleCommand = "";
 		synchronized(zooPet) {
 			if(zooPet.pendingCommand != null) {
