@@ -312,8 +312,10 @@ public class SynEFOBolt extends BaseRichBolt {
 				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + ") located scale-command: " + 
 						scaleCommand + ", about to update routing tables.");
 				if(action.toLowerCase().equals("activate")) {
-					activeDownstreamTasks.add(taskWithIp);
-					intActiveDownstreamTasks.add(task_id);
+					if(activeDownstreamTasks.contains(taskWithIp) == false && intActiveDownstreamTasks.contains(task_id) == false) {
+						activeDownstreamTasks.add(taskWithIp);
+						intActiveDownstreamTasks.add(task_id);
+					}
 				}else if(action.toLowerCase().equals("deactivate")) {
 					activeDownstreamTasks.remove(activeDownstreamTasks.indexOf(taskWithIp));
 					intActiveDownstreamTasks.remove(intActiveDownstreamTasks.indexOf(task_id));
@@ -324,8 +326,10 @@ public class SynEFOBolt extends BaseRichBolt {
 				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + ") located scale-command: " + 
 						scaleCommand + ", about to produce punctuation tuple");
 				if(action.toLowerCase().contains("add")) {
-					activeDownstreamTasks.add(taskWithIp);
-					intActiveDownstreamTasks.add(task_id);
+					if(activeDownstreamTasks.contains(taskWithIp) == false && intActiveDownstreamTasks.contains(task_id) == false) {
+						activeDownstreamTasks.add(taskWithIp);
+						intActiveDownstreamTasks.add(task_id);
+					}
 					strBuild.append(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.ADD_ACTION + "/");
 				}else if(action.toLowerCase().contains("remove")) {
 					strBuild.append(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.REMOVE_ACTION + "/");
