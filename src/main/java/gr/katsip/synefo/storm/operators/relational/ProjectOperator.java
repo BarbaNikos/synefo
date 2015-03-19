@@ -36,7 +36,11 @@ public class ProjectOperator implements AbstractOperator, Serializable {
 		Values projected_values = new Values();
 		while(itr.hasNext()) {
 			String field = itr.next();
-			projected_values.add(values.get(fields.fieldIndex(field)));
+			if(field.equals("timestamp")) {
+				projected_values.add(new Long(System.currentTimeMillis()));
+			}else {
+				projected_values.add(values.get(fields.fieldIndex(field)));
+			}
 		}
 		returnTuples.add(projected_values);
 		return returnTuples;

@@ -276,7 +276,13 @@ public class SynEFOBolt extends BaseRichBolt {
 		metricObject.updateMetrics(tupleCounter);
 		statistics.updateMemory();
 		statistics.updateCpuLoad();
-		statistics.updateLatency();
+		if(tuple.contains("timestamp")) {
+			long generatedTimestamp = tuple.getLongByField("timestamp");
+			long latency = System.currentTimeMillis() - generatedTimestamp;
+			statistics.updateLatency(latency);
+		}else {
+			statistics.updateLatency();
+		}
 		statistics.updateThroughput(1);
 
 		logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
@@ -289,7 +295,7 @@ public class SynEFOBolt extends BaseRichBolt {
 //		zooPet.setStatisticData(statistics.getCpuLoad(), statistics.getMemory(), 
 //				(int) statistics.getLatency(), 
 //				(int) statistics.getThroughput());
-		zooPet.setLatency(statistics.getLatency());
+//		zooPet.setLatency(statistics.getLatency());
 		String scaleCommand = "";
 		synchronized(zooPet) {
 			if(zooPet.pendingCommand != null) {

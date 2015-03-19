@@ -85,6 +85,16 @@ public class TaskStatistics implements Serializable {
 			previousLatency = currentTimestamp;
 		}
 	}
+	
+	public void updateLatency(long latency) {
+		if(latencySamples == 0) {
+			this.latency = latency;
+			latencySamples +=1;
+		}else {
+			this.latency = this.latency + (latency - this.latency)/(latencySamples + 1);
+			latencySamples += 1;
+		}
+	}
 
 	public long getLatency() {
 		return latency;

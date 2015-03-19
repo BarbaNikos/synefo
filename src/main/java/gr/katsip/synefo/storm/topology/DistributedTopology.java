@@ -46,7 +46,7 @@ public class DistributedTopology {
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
 		StreamgenTupleProducer tupleProducer = new StreamgenTupleProducer(streamIP, streamPort);
-		String[] spoutSchema = { "num", "one", "two", "three", "four" };
+		String[] spoutSchema = { "num", "timestamp", "one", "two", "three", "four" };
 		tupleProducer.setSchema(new Fields(spoutSchema));
 		builder.setSpout("spout_1", 
 				new SynEFOSpout("spout_1", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
@@ -59,7 +59,7 @@ public class DistributedTopology {
 		/**
 		 * Stage 1: Project operators
 		 */
-		String[] projectOutSchema = { "num", "one", "two", "three", "four" };
+		String[] projectOutSchema = { "num", "timestamp", "one", "two", "three", "four" };
 		ProjectOperator projectOperator = new ProjectOperator(new Fields(projectOutSchema));
 		projectOperator.setOutputSchema(new Fields(projectOutSchema));
 		builder.setBolt("project_bolt_1", 
@@ -90,8 +90,8 @@ public class DistributedTopology {
 		 * Stage 2: Join operators
 		 */
 		EquiJoinOperator<String> equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 100, "three");
-		String[] join_schema = { "three-a", "three-b" };
-		String[] state_schema = { "num", "one", "two", "three", "four", "time" };
+		String[] join_schema = { "timestamp", "three-a", "three-b" };
+		String[] state_schema = { "num", "timestamp", "one", "two", "three", "four", "time" };
 		equi_join_op.setOutputSchema(new Fields(join_schema));
 		equi_join_op.setStateSchema(new Fields(state_schema));
 		builder.setBolt("join_bolt_1", 
