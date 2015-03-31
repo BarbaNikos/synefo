@@ -2,6 +2,9 @@ package gr.katsip.synefo.storm.api;
 
 import java.io.IOException;
 import java.util.StringTokenizer;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
+
 //import org.apache.zookeeper.AsyncCallback.DataCallback;
 //import org.apache.zookeeper.AsyncCallback.VoidCallback;
 import org.apache.zookeeper.CreateMode;
@@ -59,6 +62,8 @@ public class ZooPet {
 		//		public String scaleInZnodeName;
 
 		public volatile String pendingCommand;
+		
+		public ConcurrentLinkedQueue<String> pendingCommands;
 
 		private boolean submittedScaleTask = false;
 
@@ -86,6 +91,7 @@ public class ZooPet {
 			mem = new Pair<Double, Double>();
 			latency = new Pair<Long, Long>();
 			throughput = new Pair<Integer, Integer>();
+			pendingCommands = new ConcurrentLinkedQueue<String>();
 		}
 
 		/**
@@ -135,10 +141,17 @@ public class ZooPet {
 		 * @return the pendingCommand retrieved from a newly added z-node
 		 */
 		public synchronized String returnScaleCommand() {
-			if(pendingCommand.toUpperCase().contains("ADD") || pendingCommand.toUpperCase().contains("REMOVE") || 
-					pendingCommand.toUpperCase().contains("ACTIVATE") || pendingCommand.toUpperCase().contains("DEACTIVATE")) {
-				String returnCommand = pendingCommand;
-				pendingCommand = null;
+//			if(pendingCommand.toUpperCase().contains("ADD") || pendingCommand.toUpperCase().contains("REMOVE") || 
+//					pendingCommand.toUpperCase().contains("ACTIVATE") || pendingCommand.toUpperCase().contains("DEACTIVATE")) {
+//				String returnCommand = pendingCommand;
+//				pendingCommand = null;
+//				return returnCommand;
+//			}else {
+//				return null;
+//			}
+			String returnCommand = pendingCommands.poll();
+			if(returnCommand != null && (returnCommand.toUpperCase().contains("ADD") || returnCommand.toUpperCase().contains("REMOVE") || 
+					returnCommand.toUpperCase().contains("ACTIVATE") || returnCommand.toUpperCase().contains("DEACTIVATE"))) {
 				return returnCommand;
 			}else {
 				return null;
