@@ -129,6 +129,7 @@ public class ZooPet {
 						stat));
 				logger.info("getScaleCommand(): Received scale command \"" + pendingCommand + 
 						"\" (" + taskName + ":" + taskID + "@" + taskIP + ")");
+				pendingCommands.offer(pendingCommand);
 			} catch (KeeperException e) {
 				e.printStackTrace();
 			} catch (InterruptedException e) {
