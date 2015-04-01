@@ -128,8 +128,10 @@ public class SynEFOUserInterface implements Runnable {
 					String scaleInCommand = "REMOVE~" + compTwo;
 					String deActivateCommand = "DEACTIVATE~" + compTwo;
 					ArrayList<String> peerParents = new ArrayList<String>(beastMaster.inverseTopology.get(compTwo));
-					peerParents.remove(peerParents.indexOf(compOne));
-					beastMaster.setScaleCommand(compOne, scaleInCommand, peerParents, deActivateCommand);
+					if(peerParents.indexOf(compOne) != -1) {
+						peerParents.remove(peerParents.indexOf(compOne));
+						beastMaster.setScaleCommand(compOne, scaleInCommand, peerParents, deActivateCommand);
+					}
 				}
 				
 			}
