@@ -88,6 +88,8 @@ public class SynEFOBolt extends BaseRichBolt {
 
 	private Integer zooPort;
 
+	private int reportCounter;
+
 	public SynEFOBolt(String task_name, String synEFO_ip, Integer synEFO_port, 
 			AbstractOperator operator, String zooIP, Integer zooPort) {
 		taskName = task_name;
@@ -104,6 +106,7 @@ public class SynEFOBolt extends BaseRichBolt {
 		operator.init(stateValues);
 		this.zooIP = zooIP;
 		this.zooPort = zooPort;
+		reportCounter = 0;
 	}
 
 	/**
@@ -197,7 +200,6 @@ public class SynEFOBolt extends BaseRichBolt {
 	public void prepare(@SuppressWarnings("rawtypes") Map conf, TopologyContext context, OutputCollector collector) {
 		this.collector = collector;
 		taskID = context.getThisTaskId();
-
 		if(conf.containsKey("TOPOLOGY_DEBUG") || conf.containsKey("topology_debug")) {
 			String debug = (String) conf.get("TOPOLOGY_DEBUG");
 			logger.info("+EFO-BOLT (" + taskName + ":" + taskID + "@" + taskIP + ") topology debug flag: " + debug);
@@ -214,7 +216,6 @@ public class SynEFOBolt extends BaseRichBolt {
 		this.metricObject = new SynefoMetric();
 		metricObject.initMetrics(context, taskName, Integer.toString(taskID));
 		logger.info("+EFO-BOLT (" + taskName + ":" + taskID + "@" + taskIP + ") in prepare().");
-		
 	}
 
 
@@ -230,7 +231,7 @@ public class SynEFOBolt extends BaseRichBolt {
 		}
 		String synefoHeader = tuple.getString(tuple.getFields().fieldIndex("SYNEFO_HEADER"));
 		Long synefoTimestamp = tuple.getLong(tuple.getFields().fieldIndex("SYNEFO_TIMESTAMP"));
-		if(synefoHeader != null && synefoHeader.equals("") == false) {
+		if(synefoHeader != null && synefoHeader.equals("") == false && synefoHeader.contains("/") == true) {
 			StringTokenizer txt = new StringTokenizer(synefoHeader, "/");
 			String prefix = txt.nextToken();
 			if(prefix.equals(SynefoConstant.PUNCT_TUPLE_TAG)) {
@@ -292,16 +293,21 @@ public class SynEFOBolt extends BaseRichBolt {
 		}
 		statistics.updateThroughput(1);
 
-		logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
-				") timestamp: " + System.currentTimeMillis() + ", " + 
-				"cpu: " + statistics.getCpuLoad() + 
-				", memory: " + statistics.getMemory() + 
-				", latency: " + statistics.getLatency() + 
-				", throughput: " + statistics.getThroughput());
+		if(reportCounter == 100) {
+			logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+					") timestamp: " + System.currentTimeMillis() + ", " + 
+					"cpu: " + statistics.getCpuLoad() + 
+					", memory: " + statistics.getMemory() + 
+					", latency: " + statistics.getLatency() + 
+					", throughput: " + statistics.getThroughput());
+			reportCounter += 1;
+		}else {
+			reportCounter = 0;
+		}
 
-//		zooPet.setStatisticData(statistics.getCpuLoad(), statistics.getMemory(), 
-//				(int) statistics.getLatency(), 
-//				(int) statistics.getThroughput());
+		//zooPet.setStatisticData(statistics.getCpuLoad(), statistics.getMemory(), 
+		//		(int) statistics.getLatency(), 
+		//		(int) statistics.getThroughput());
 		zooPet.setLatency(statistics.getLatency());
 		String scaleCommand = "";
 		synchronized(zooPet) {

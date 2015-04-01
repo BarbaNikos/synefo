@@ -181,7 +181,8 @@ public class DistributedTopology {
 		synEFOSocket.close();
 
 
-		conf.setDebug(true);
+//		conf.setDebug(true);
+		conf.setDebug(false);
 		conf.setNumWorkers(9);
 		StormSubmitter.submitTopology("dist-top", conf, builder.createTopology());
 	}
