@@ -293,7 +293,7 @@ public class SynEFOBolt extends BaseRichBolt {
 		}
 		statistics.updateThroughput(1);
 
-		if(reportCounter == 100) {
+		if(reportCounter >= 1000) {
 			logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
 					") timestamp: " + System.currentTimeMillis() + ", " + 
 					"cpu: " + statistics.getCpuLoad() + 
