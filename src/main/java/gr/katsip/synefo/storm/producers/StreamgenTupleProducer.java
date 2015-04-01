@@ -63,7 +63,7 @@ public class StreamgenTupleProducer implements AbstractTupleProducer, Serializab
 			if(tuple != null && tuple.length() > 0) {
 				StringTokenizer strTok = new StringTokenizer(tuple, ",");
 				val.add(new Long(num));
-				val.add(new Long(System.currentTimeMillis()));
+//				val.add(new Long(System.currentTimeMillis()));
 				while(strTok.hasMoreTokens() && val.size() < fields.size()) {
 					val.add(strTok.nextToken());
 				}

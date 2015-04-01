@@ -229,6 +229,7 @@ public class SynEFOBolt extends BaseRichBolt {
 					" from component: " + tuple.getSourceComponent() + " with task-id: " + tuple.getSourceTask());
 		}
 		String synefoHeader = tuple.getString(tuple.getFields().fieldIndex("SYNEFO_HEADER"));
+		Long synefoTimestamp = tuple.getLong(tuple.getFields().fieldIndex("SYNEFO_TIMESTAMP"));
 		if(synefoHeader != null && synefoHeader.equals("") == false) {
 			StringTokenizer txt = new StringTokenizer(synefoHeader, "/");
 			String prefix = txt.nextToken();
@@ -237,17 +238,23 @@ public class SynEFOBolt extends BaseRichBolt {
 				return;
 			}
 		}
+		/**
+		 * Remove from both values and fields SYNEFO_HEADER & SYNEFO_TIMESTAMP
+		 */
 		Values produced_values = null;
 		Values values = new Values(tuple.getValues().toArray());
 		values.remove(tuple.getFields().fieldIndex("SYNEFO_HEADER"));
+		values.remove(tuple.getFields().fieldIndex("SYNEFO_TIMESTAMP"));
 		List<String> fieldList = tuple.getFields().toList();
 		fieldList.remove(0);
+		fieldList.remove(1);
 		Fields fields = new Fields(fieldList);
 		if(intActiveDownstreamTasks != null && intActiveDownstreamTasks.size() > 0) {
 			List<Values> returnedTuples = operator.execute(fields, values);
 			for(Values v : returnedTuples) {
 				produced_values = new Values();
 				produced_values.add("SYNEFO_HEADER");
+				produced_values.add(new Long(System.currentTimeMillis()));
 				for(int i = 0; i < v.size(); i++) {
 					produced_values.add(v.get(i));
 				}
@@ -264,6 +271,7 @@ public class SynEFOBolt extends BaseRichBolt {
 			for(Values v : returnedTuples) {
 				produced_values = new Values();
 				produced_values.add("SYNEFO_HEADER");
+				produced_values.add(new Long(System.currentTimeMillis()));
 				for(int i = 0; i < v.size(); i++) {
 					produced_values.add(v.get(i));
 				}
@@ -276,9 +284,8 @@ public class SynEFOBolt extends BaseRichBolt {
 		metricObject.updateMetrics(tupleCounter);
 		statistics.updateMemory();
 		statistics.updateCpuLoad();
-		if(tuple.contains("timestamp")) {
-			long generatedTimestamp = tuple.getLongByField("timestamp");
-			long latency = System.currentTimeMillis() - generatedTimestamp;
+		if(synefoTimestamp != null) {
+			long latency = System.currentTimeMillis() - synefoTimestamp;
 			statistics.updateLatency(latency);
 		}else {
 			statistics.updateLatency();
@@ -350,6 +357,10 @@ public class SynEFOBolt extends BaseRichBolt {
 				 */
 				Values punctValue = new Values();
 				punctValue.add(strBuild.toString());
+				/**
+				 * Add typical SYNEFO_TIMESTAMP value
+				 */
+				punctValue.add(new Long(System.currentTimeMillis()));
 				for(int i = 0; i < operator.getOutputSchema().size(); i++) {
 					punctValue.add(null);
 				}
@@ -372,6 +383,7 @@ public class SynEFOBolt extends BaseRichBolt {
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
 		List<String> producerSchema = new ArrayList<String>();
 		producerSchema.add("SYNEFO_HEADER");
+		producerSchema.add("SYNEFO_TIMESTAMP");
 		producerSchema.addAll(operator.getOutputSchema().toList());
 		declarer.declare(new Fields(producerSchema));
 	}

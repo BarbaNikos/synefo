@@ -189,9 +189,10 @@ public class SynEFOSpout extends BaseRichSpout {
 		if(intActiveDownstreamTasks != null && intActiveDownstreamTasks.size() > 0) {
 			Values values = new Values();
 			/**
-			 * Add SYNEFO_HEADER in the beginning
+			 * Add SYNEFO_HEADER and SYNEFO_TIMESTAMP value in the beginning
 			 */
 			values.add("SYNEFO_HEADER");
+			values.add(new Long(System.currentTimeMillis()));
 			Values returnedValues = tupleProducer.nextTuple();
 			for(int i = 0; i < returnedValues.size(); i++) {
 				values.add(returnedValues.get(i));
@@ -204,14 +205,14 @@ public class SynEFOSpout extends BaseRichSpout {
 			}
 		}
 		_tuple_counter += 1;
-		metricObject.updateMetrics(_tuple_counter);
-		stats.updateMemory();
-		stats.updateCpuLoad();
-		stats.updateLatency();
-		stats.updateThroughput(_tuple_counter);
+//		metricObject.updateMetrics(_tuple_counter);
+//		stats.updateMemory();
+//		stats.updateCpuLoad();
+//		stats.updateLatency();
+//		stats.updateThroughput(_tuple_counter);
 		String scaleCommand = "";
 		synchronized(pet) {
-			if(pet.pendingCommand != null) {
+			if(pet.pendingCommands.isEmpty() == false) {
 				scaleCommand = pet.returnScaleCommand();
 			}
 		}
@@ -257,6 +258,10 @@ public class SynEFOSpout extends BaseRichSpout {
 				 */
 				Values punctValue = new Values();
 				punctValue.add(strBuild.toString());
+				/**
+				 * Add typical SYNEFO_TIMESTAMP value
+				 */
+				punctValue.add(new Long(System.currentTimeMillis()));
 				for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
 					punctValue.add(null);
 				}
@@ -296,6 +301,7 @@ public class SynEFOSpout extends BaseRichSpout {
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
 		List<String> producerSchema = new ArrayList<String>();
 		producerSchema.add("SYNEFO_HEADER");
+		producerSchema.add("SYNEFO_TIMESTAMP");
 		producerSchema.addAll(tupleProducer.getSchema().toList());
 		declarer.declare(new Fields(producerSchema));
 	}
