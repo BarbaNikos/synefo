@@ -89,10 +89,6 @@ public class EquiJoinOperator<T extends Object> implements AbstractOperator, Ser
 			 * The time-stamp field (the last field of each state tuple) is not included in 
 			 * the result produced
 			 */
-			/**
-			 * Add the time stamp when this new tuple was created
-			 */
-			attributes.add(new Long(System.currentTimeMillis()));
 			attributes.add(val_1);
 			attributes.add(val_2);
 		}
