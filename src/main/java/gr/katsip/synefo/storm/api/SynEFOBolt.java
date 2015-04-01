@@ -247,7 +247,7 @@ public class SynEFOBolt extends BaseRichBolt {
 		values.remove(tuple.getFields().fieldIndex("SYNEFO_TIMESTAMP"));
 		List<String> fieldList = tuple.getFields().toList();
 		fieldList.remove(0);
-		fieldList.remove(1);
+		fieldList.remove(0);
 		Fields fields = new Fields(fieldList);
 		if(intActiveDownstreamTasks != null && intActiveDownstreamTasks.size() > 0) {
 			List<Values> returnedTuples = operator.execute(fields, values);

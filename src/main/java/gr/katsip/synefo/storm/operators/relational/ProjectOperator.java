@@ -18,7 +18,7 @@ public class ProjectOperator implements AbstractOperator, Serializable {
 	private static final long serialVersionUID = 9202155739771523785L;
 
 	private List<Values> stateValues;
-	
+
 	private Fields stateSchema;
 
 	private Fields output_schema;
@@ -36,11 +36,7 @@ public class ProjectOperator implements AbstractOperator, Serializable {
 		Values projected_values = new Values();
 		while(itr.hasNext()) {
 			String field = itr.next();
-			if(field.equals("timestamp")) {
-				projected_values.add(new Long(System.currentTimeMillis()));
-			}else {
-				projected_values.add(values.get(fields.fieldIndex(field)));
-			}
+			projected_values.add(values.get(fields.fieldIndex(field)));
 		}
 		returnTuples.add(projected_values);
 		return returnTuples;
