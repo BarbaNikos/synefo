@@ -300,9 +300,9 @@ public class SynEFOBolt extends BaseRichBolt {
 					", memory: " + statistics.getMemory() + 
 					", latency: " + statistics.getLatency() + 
 					", throughput: " + statistics.getThroughput());
-			reportCounter += 1;
-		}else {
 			reportCounter = 0;
+		}else {
+			reportCounter += 1;
 		}
 
 		//zooPet.setStatisticData(statistics.getCpuLoad(), statistics.getMemory(), 
