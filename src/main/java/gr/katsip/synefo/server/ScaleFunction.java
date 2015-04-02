@@ -66,6 +66,8 @@ public class ScaleFunction {
 		/**
 		 * Remove entry of removedNode (if exists) from active topology
 		 */
+		System.out.println("ScaleFunction.removeActiveNodeTopology: removedNode: " + 
+				removedNode + ", physical topology: " + physicalTopology.get(removedNode));
 		if(activeTopology.containsKey(removedNode)) {
 			activeTopology.remove(removedNode);
 		}
