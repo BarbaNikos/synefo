@@ -65,7 +65,11 @@ public class ZooPet {
 		
 		public ConcurrentLinkedQueue<String> pendingCommands;
 
-		private boolean submittedScaleTask = false;
+//		private boolean submittedScaleTask = false;
+		
+		private boolean submittedScaleOutTask = false;
+		
+		private boolean submittedScaleInTask = false;
 
 		private String taskIP;
 
@@ -110,7 +114,6 @@ public class ZooPet {
 						logger.info("boltWatcher.process(): Children of node " + e.getPath() + 
 								" have changed. Time to check the scale-command.");
 						getScaleCommand();
-						//setBoltNodeWatch();
 					}
 				}
 			}
@@ -142,14 +145,6 @@ public class ZooPet {
 		 * @return the pendingCommand retrieved from a newly added z-node
 		 */
 		public synchronized String returnScaleCommand() {
-//			if(pendingCommand.toUpperCase().contains("ADD") || pendingCommand.toUpperCase().contains("REMOVE") || 
-//					pendingCommand.toUpperCase().contains("ACTIVATE") || pendingCommand.toUpperCase().contains("DEACTIVATE")) {
-//				String returnCommand = pendingCommand;
-//				pendingCommand = null;
-//				return returnCommand;
-//			}else {
-//				return null;
-//			}
 			String returnCommand = pendingCommands.poll();
 			if(returnCommand != null && (returnCommand.toUpperCase().contains("ADD") || returnCommand.toUpperCase().contains("REMOVE") || 
 					returnCommand.toUpperCase().contains("ACTIVATE") || returnCommand.toUpperCase().contains("DEACTIVATE"))) {
@@ -218,39 +213,6 @@ public class ZooPet {
 		}
 
 		/**
-		 * Function that sets an asynchronous watch on the z-node for the component
-		 */
-		//		public void setBoltNodeWatch() {
-		//			zk.getData("/synefo/bolt-tasks/" + task_name + ":" + task_id + "@" + task_ip, 
-		//					boltWatcher, 
-		//					boltNodeDataCallback, 
-		//					null);
-		//		}
-
-		/**
-		 * Callback object for @setBoltNodeWatch() function
-		 */
-		//		private DataCallback boltNodeDataCallback = new DataCallback() {
-		//			public void processResult(int rc, String path, Object ctx, byte[] data,
-		//					Stat stat) {
-		//				switch(Code.get(rc)) {
-		//				case CONNECTIONLOSS:
-		//					logger.info("boltNodeDataCallback(): CONNECTIONLOSS");
-		//					setBoltNodeWatch();
-		//					break;
-		//				case OK:
-		//					logger.info("boltNodeDataCallback(): OK");
-		//					break;
-		//				default:
-		//					logger.info("boltNodeDataCallback(): Unexpected scenario: " + 
-		//							KeeperException.create(Code.get(rc), path));
-		//					break;
-		//
-		//				}
-		//			}
-		//		};
-
-		/**
 		 * This function checks the usage statistics of the component, and if they 
 		 * are below the minimum thresholds, a scale-in request is created in the ZooKeeper ensemble. 
 		 * Similarly, if the usage statistics are above the maximum thresholds, a scale-out 
@@ -260,58 +222,64 @@ public class ZooPet {
 		 * @param latency
 		 * @param throughput
 		 */
-		public void setStatisticData(double cpu, double memory, Integer latency, Integer throughput) {
-			if(state == BoltState.ACTIVE && submittedScaleTask == false) {
-				if(this.cpu.upperBound < cpu || this.mem.upperBound < memory) {
-					/**
-					 * Create also a node under scale-out-event znode with the name of the bolt.
-					 * This way, the SynEFO coordination thread will understand that the bolt 
-					 * is overloaded and that it needs to scale-out.
-					 */
-					logger.info("setStatisticData(): Over-utilization detected. Generating scale out command (" + 
-							taskName + ":" + taskID + "@" + taskIP + ")...");
-					createScaleOutTask();
-					submittedScaleTask = true;
-				}else if(this.cpu.lowerBound > cpu || this.mem.lowerBound > memory) {
-					/**
-					 * Create also a node under scale-in-event znode with the name of the bolt.
-					 * This way, the SynEFO coordination thread will understand that the bolt 
-					 * is overloaded and that it needs to scale-out.
-					 */
-					logger.info("setStatisticData(): Under-utilization detected. Generating scale out command (" + 
-							taskName + ":" + taskID + "@" + taskIP + ")...");
-					createScaleInTask();
-					submittedScaleTask = true;
-				}
-			}
-		}
+//		public void setStatisticData(double cpu, double memory, Integer latency, Integer throughput) {
+//			if(state == BoltState.ACTIVE) {
+//				if(this.cpu.upperBound < cpu || this.mem.upperBound < memory) {
+//					/**
+//					 * Create also a node under scale-out-event znode with the name of the bolt.
+//					 * This way, the SynEFO coordination thread will understand that the bolt 
+//					 * is overloaded and that it needs to scale-out.
+//					 */
+//					logger.info("setStatisticData(): Over-utilization detected. Generating scale out command (" + 
+//							taskName + ":" + taskID + "@" + taskIP + ")...");
+//					createScaleOutTask();
+//					submittedScaleTask = true;
+//				}else if(this.cpu.lowerBound > cpu || this.mem.lowerBound > memory) {
+//					/**
+//					 * Create also a node under scale-in-event znode with the name of the bolt.
+//					 * This way, the SynEFO coordination thread will understand that the bolt 
+//					 * is overloaded and that it needs to scale-out.
+//					 */
+//					logger.info("setStatisticData(): Under-utilization detected. Generating scale out command (" + 
+//							taskName + ":" + taskID + "@" + taskIP + ")...");
+//					createScaleInTask();
+//					submittedScaleTask = true;
+//				}
+//			}
+//		}
 		
 		/**
 		 * Create scale task based on latency
 		 * @param latency
 		 */
 		public void setLatency(long latency) {
-			if(state == BoltState.ACTIVE && submittedScaleTask == false) {
+			if(state == BoltState.ACTIVE) {
 				if(this.latency.upperBound < latency) {
 					/**
 					 * Create also a node under scale-out-event znode with the name of the bolt.
 					 * This way, the SynEFO coordination thread will understand that the bolt 
 					 * is overloaded and that it needs to scale-out.
 					 */
-					logger.info("setStatisticData(): Over-utilization detected. Generating scale out command (" + 
-							taskName + ":" + taskID + "@" + taskIP + ")...");
-					createScaleOutTask();
-					submittedScaleTask = true;
+					if(submittedScaleOutTask != true) {
+						logger.info("setLatency(): Over-utilization detected. Generating scale out command (" + 
+								taskName + ":" + taskID + "@" + taskIP + ")...");
+						createScaleOutTask();
+						submittedScaleOutTask = true;
+						submittedScaleInTask = false;
+					}
 				}else if(this.latency.lowerBound > latency) {
 					/**
 					 * Create also a node under scale-in-event znode with the name of the bolt.
 					 * This way, the SynEFO coordination thread will understand that the bolt 
 					 * is overloaded and that it needs to scale-out.
 					 */
-					logger.info("setStatisticData(): Under-utilization detected. Generating scale out command (" + 
-							taskName + ":" + taskID + "@" + taskIP + ")...");
-					createScaleInTask();
-					submittedScaleTask = true;
+					if(submittedScaleInTask != true) {
+						logger.info("setLatency(): Under-utilization detected. Generating scale out command (" + 
+								taskName + ":" + taskID + "@" + taskIP + ")...");
+						createScaleInTask();
+						submittedScaleInTask = true;
+						submittedScaleOutTask = false;
+					}
 				}
 			}
 		}
@@ -321,27 +289,33 @@ public class ZooPet {
 		 * @param latency
 		 */
 		public void setThroughput(Integer throughput) {
-			if(state == BoltState.ACTIVE && submittedScaleTask == false) {
+			if(state == BoltState.ACTIVE) {
 				if(this.throughput.lowerBound > throughput) {
 					/**
 					 * Create also a node under scale-out-event znode with the name of the bolt.
 					 * This way, the SynEFO coordination thread will understand that the bolt 
 					 * is overloaded and that it needs to scale-out.
 					 */
-					logger.info("setStatisticData(): Over-utilization detected. Generating scale out command (" + 
-							taskName + ":" + taskID + "@" + taskIP + ")...");
-					createScaleOutTask();
-					submittedScaleTask = true;
+					if(submittedScaleOutTask != true) {
+						logger.info("setThroughput(): Over-utilization detected. Generating scale out command (" + 
+								taskName + ":" + taskID + "@" + taskIP + ")...");
+						createScaleOutTask();
+						submittedScaleOutTask = true;
+						submittedScaleInTask = false;
+					}
 				}else if(this.throughput.upperBound < throughput) {
 					/**
 					 * Create also a node under scale-in-event znode with the name of the bolt.
 					 * This way, the SynEFO coordination thread will understand that the bolt 
 					 * is overloaded and that it needs to scale-out.
 					 */
-					logger.info("setStatisticData(): Under-utilization detected. Generating scale out command (" + 
-							taskName + ":" + taskID + "@" + taskIP + ")...");
-					createScaleInTask();
-					submittedScaleTask = true;
+					if(submittedScaleInTask != true) {
+						logger.info("setThroughput(): Under-utilization detected. Generating scale out command (" + 
+								taskName + ":" + taskID + "@" + taskIP + ")...");
+						createScaleInTask();
+						submittedScaleInTask = true;
+						submittedScaleOutTask = false;
+					}
 				}
 			}
 		}
@@ -351,7 +325,9 @@ public class ZooPet {
 		 * scale-out/in requests on the server.
 		 */
 		public void resetSubmittedScaleFlag() {
-			submittedScaleTask = false;
+//			submittedScaleTask = false;
+			submittedScaleOutTask = false;
+			submittedScaleInTask = false;
 		}
 
 		/**
@@ -381,7 +357,6 @@ public class ZooPet {
 					System.out.println("createScaleOutEventCallback(): NODEEXISTS for scale-event-creation");
 					break;
 				case OK:
-					//					scaleOutZnodeName = name;
 					logger.info("createScaleOutEventCallback(): OK for scale-event-creation");
 					break;
 				default:
@@ -417,7 +392,6 @@ public class ZooPet {
 					logger.info("createScaleInEventCallback(): NODEEXISTS for scale-event-creation");
 					break;
 				case OK:
-					//					scaleInZnodeName = name;
 					logger.info("createScaleInEventCallback(): OK for scale-event-creation");
 					break;
 				default:
@@ -428,56 +402,5 @@ public class ZooPet {
 				}
 			}
 		};
-
-		//		public void scaleTaskGC() {
-		//			if(scaleOutZnodeName.equals("") == false) {
-		//				zk.delete("/synefo/scale-out-event/" + scaleOutZnodeName, 
-		//						-1, scaleOutTaskGCcallback, null);
-		//			}
-		//			if(scaleInZnodeName.equals("") == false) {
-		//				zk.delete("/synefo/scale-in-event/" + scaleInZnodeName, 
-		//						-1, scaleInTaskGCcallback, null);
-		//			}
-		//		}
-		//
-		//		private VoidCallback scaleOutTaskGCcallback = new VoidCallback() {
-		//			public void processResult(int rc, String path, Object ctx) {
-		//				switch(Code.get(rc)) {
-		//				case CONNECTIONLOSS:
-		//					scaleTaskGC();
-		//					break;
-		//				case NONODE:
-		//					scaleOutZnodeName = "";
-		//					break;
-		//				case OK:
-		//					scaleOutZnodeName = "";
-		//					break;
-		//				default:
-		//					logger.info("scaleOutTaskGCcallback(): Unexpected scenario: " + 
-		//							KeeperException.create(Code.get(rc), path));
-		//					break;
-		//				}
-		//			}
-		//		};
-		//
-		//		private VoidCallback scaleInTaskGCcallback = new VoidCallback() {
-		//			public void processResult(int rc, String path, Object ctx) {
-		//				switch(Code.get(rc)) {
-		//				case CONNECTIONLOSS:
-		//					scaleTaskGC();
-		//					break;
-		//				case NONODE:
-		//					scaleInZnodeName = "";
-		//					break;
-		//				case OK:
-		//					scaleInZnodeName = "";
-		//					break;
-		//				default:
-		//					logger.info("scaleInTaskGCcallback(): Unexpected scenario: " + 
-		//							KeeperException.create(Code.get(rc), path));
-		//					break;
-		//				}
-		//			}
-		//		};
 
 }

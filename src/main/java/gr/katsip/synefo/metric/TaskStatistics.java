@@ -3,9 +3,11 @@ package gr.katsip.synefo.metric;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 
+
 //import java.lang.management.MemoryUsage;
 import com.sun.management.OperatingSystemMXBean;
 
+@SuppressWarnings("restriction")
 public class TaskStatistics implements Serializable {
 	
 	/**

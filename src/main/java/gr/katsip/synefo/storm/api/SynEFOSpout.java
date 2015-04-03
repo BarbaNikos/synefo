@@ -82,6 +82,8 @@ public class SynEFOSpout extends BaseRichSpout {
 	private String zooIP;
 
 	private Integer zooPort;
+	
+	private int reportCounter;
 
 	public SynEFOSpout(String task_name, String synEFO_ip, Integer synEFO_port, 
 			AbstractTupleProducer tupleProducer, String zooIP, Integer zooPort) {
@@ -95,6 +97,7 @@ public class SynEFOSpout extends BaseRichSpout {
 		_tuple_counter = 0;
 		this.zooIP = zooIP;
 		this.zooPort = zooPort;
+		reportCounter = 0;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -205,11 +208,21 @@ public class SynEFOSpout extends BaseRichSpout {
 			}
 		}
 		_tuple_counter += 1;
-//		metricObject.updateMetrics(_tuple_counter);
-//		stats.updateMemory();
-//		stats.updateCpuLoad();
-//		stats.updateLatency();
-//		stats.updateThroughput(_tuple_counter);
+		metricObject.updateMetrics(_tuple_counter);
+		stats.updateMemory();
+		stats.updateCpuLoad();
+		stats.updateThroughput(1);
+		if(reportCounter >= 1000) {
+			logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
+					") timestamp: " + System.currentTimeMillis() + ", " + 
+					"cpu: " + stats.getCpuLoad() + 
+					", memory: " + stats.getMemory() +  
+					", input-rate: " + stats.getThroughput());
+			reportCounter = 0;
+		}else {
+			reportCounter += 1;
+		}
+		
 		String scaleCommand = "";
 		synchronized(pet) {
 			if(pet.pendingCommands.isEmpty() == false) {
