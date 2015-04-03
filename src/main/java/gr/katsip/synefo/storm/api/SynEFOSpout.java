@@ -10,11 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import gr.katsip.synefo.metric.SynefoMetric;
 import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.lib.SynEFOMessage;
 import gr.katsip.synefo.storm.lib.SynEFOMessage.Type;
@@ -73,10 +70,6 @@ public class SynEFOSpout extends BaseRichSpout {
 
 	private AbstractTupleProducer tupleProducer;
 
-	private long _tuple_counter;
-
-	private SynefoMetric metricObject;
-
 	transient private ZooPet pet;
 
 	private String zooIP;
@@ -94,7 +87,6 @@ public class SynEFOSpout extends BaseRichSpout {
 		synefoPort = synEFO_port;
 		stats = new TaskStatistics();
 		this.tupleProducer = tupleProducer;
-		_tuple_counter = 0;
 		this.zooIP = zooIP;
 		this.zooPort = zooPort;
 		reportCounter = 0;
@@ -122,7 +114,6 @@ public class SynEFOSpout extends BaseRichSpout {
 			output.writeObject(msg);
 			output.flush();
 			msg = null;
-//			logger.info("+EFO-SPOUT (" + taskName + ") wait 1");
 			ArrayList<String> _downstream = null;
 			_downstream = (ArrayList<String>) input.readObject();
 			if(_downstream != null && _downstream.size() > 0) {
@@ -207,8 +198,6 @@ public class SynEFOSpout extends BaseRichSpout {
 				idx += 1;
 			}
 		}
-		_tuple_counter += 1;
-		metricObject.updateMetrics(_tuple_counter);
 		stats.updateMemory();
 		stats.updateCpuLoad();
 		stats.updateThroughput(1);
@@ -307,8 +296,6 @@ public class SynEFOSpout extends BaseRichSpout {
 		}
 		_collector = collector;
 		taskId = context.getThisTaskId();
-		metricObject = new SynefoMetric();
-		metricObject.initMetrics(context, taskName, Integer.toString(taskId));
 	}
 
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {

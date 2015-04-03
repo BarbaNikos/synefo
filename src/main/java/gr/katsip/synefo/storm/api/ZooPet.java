@@ -3,10 +3,6 @@ package gr.katsip.synefo.storm.api;
 import java.io.IOException;
 import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
-
-//import org.apache.zookeeper.AsyncCallback.DataCallback;
-//import org.apache.zookeeper.AsyncCallback.VoidCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -56,16 +52,8 @@ public class ZooPet {
 		public Pair<Long, Long> latency;
 
 		public Pair<Integer, Integer> throughput;
-
-		//		public String scaleOutZnodeName;
-		//
-		//		public String scaleInZnodeName;
-
-		public volatile String pendingCommand;
 		
 		public ConcurrentLinkedQueue<String> pendingCommands;
-
-//		private boolean submittedScaleTask = false;
 		
 		private boolean submittedScaleOutTask = false;
 		
@@ -87,9 +75,6 @@ public class ZooPet {
 			this.taskID = task_id;
 			this.taskName = task_name;
 			state = BoltState.INIT;
-			//			scaleOutZnodeName = "";
-			//			scaleInZnodeName = "";
-			pendingCommand = null;
 			this.taskIP = task_ip;
 			cpu = new Pair<Double, Double>();
 			mem = new Pair<Double, Double>();
@@ -126,7 +111,7 @@ public class ZooPet {
 		public synchronized void getScaleCommand() {
 			Stat stat = new Stat();
 			try {
-				pendingCommand = new String(zk.getData("/synefo/bolt-tasks/" + taskName + ":" + 
+				String pendingCommand = new String(zk.getData("/synefo/bolt-tasks/" + taskName + ":" + 
 						taskID + "@" + taskIP, 
 						boltWatcher, 
 						stat));
@@ -325,7 +310,6 @@ public class ZooPet {
 		 * scale-out/in requests on the server.
 		 */
 		public void resetSubmittedScaleFlag() {
-//			submittedScaleTask = false;
 			submittedScaleOutTask = false;
 			submittedScaleInTask = false;
 		}

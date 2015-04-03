@@ -16,7 +16,7 @@ import java.util.StringTokenizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import gr.katsip.synefo.metric.SynefoMetric;
+//import gr.katsip.synefo.metric.SynefoMetric;
 import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.lib.SynEFOMessage;
 import gr.katsip.synefo.storm.lib.SynEFOMessage.Type;
@@ -48,7 +48,7 @@ public class SynEFOBolt extends BaseRichBolt {
 
 	private int downStreamIndex;
 
-	private long tupleCounter;
+//	private long tupleCounter;
 
 	private OutputCollector collector;
 
@@ -78,7 +78,7 @@ public class SynEFOBolt extends BaseRichBolt {
 
 	private AbstractOperator operator;
 
-	private SynefoMetric metricObject;
+//	private SynefoMetric metricObject;
 
 	private List<Values> stateValues;
 
@@ -101,7 +101,7 @@ public class SynEFOBolt extends BaseRichBolt {
 		intActiveDownstreamTasks = null;
 		statistics = new TaskStatistics();
 		this.operator = operator;
-		tupleCounter = 0;
+//		tupleCounter = 0;
 		stateValues = new ArrayList<Values>();
 		operator.init(stateValues);
 		this.zooIP = zooIP;
@@ -213,8 +213,8 @@ public class SynEFOBolt extends BaseRichBolt {
 		if(downstreamTasks == null && activeDownstreamTasks == null) {
 			registerToSynEFO();
 		}
-		this.metricObject = new SynefoMetric();
-		metricObject.initMetrics(context, taskName, Integer.toString(taskID));
+//		this.metricObject = new SynefoMetric();
+//		metricObject.initMetrics(context, taskName, Integer.toString(taskID));
 		logger.info("+EFO-BOLT (" + taskName + ":" + taskID + "@" + taskIP + ") in prepare().");
 	}
 
@@ -281,8 +281,8 @@ public class SynEFOBolt extends BaseRichBolt {
 			}
 			collector.ack(tuple);
 		}
-		tupleCounter += 1;
-		metricObject.updateMetrics(tupleCounter);
+//		tupleCounter += 1;
+//		metricObject.updateMetrics(tupleCounter);
 		statistics.updateMemory();
 		statistics.updateCpuLoad();
 		if(synefoTimestamp != null) {
@@ -304,10 +304,6 @@ public class SynEFOBolt extends BaseRichBolt {
 		}else {
 			reportCounter += 1;
 		}
-
-		//zooPet.setStatisticData(statistics.getCpuLoad(), statistics.getMemory(), 
-		//		(int) statistics.getLatency(), 
-		//		(int) statistics.getThroughput());
 		zooPet.setLatency(statistics.getLatency());
 		String scaleCommand = "";
 		synchronized(zooPet) {
@@ -621,22 +617,6 @@ public class SynEFOBolt extends BaseRichBolt {
 			}
 		}
 		zooPet.resetSubmittedScaleFlag();
-	}
-
-	public List<Values> getStateValue() {
-		operator.getStateValues();
-		return stateValues;
-	}
-
-	public void printState() {
-		List<Values> state = operator.getStateValues();
-		logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + ") printState() :");
-		Iterator<Values> itr = state.iterator();
-		while(itr.hasNext()) {
-			Values val = itr.next();
-			logger.info("<" + val.toString() + ">");
-		}
-		logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + ") concluded printState() :");
 	}
 
 }
