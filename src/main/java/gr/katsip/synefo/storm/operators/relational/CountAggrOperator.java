@@ -3,7 +3,6 @@ package gr.katsip.synefo.storm.operators.relational;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 import gr.katsip.synefo.storm.operators.AbstractOperator;

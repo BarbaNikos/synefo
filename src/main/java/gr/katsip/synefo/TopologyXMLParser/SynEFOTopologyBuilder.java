@@ -2,7 +2,7 @@ package gr.katsip.synefo.TopologyXMLParser;
 
 //import gr.katsip.synefo.storm.api.SynEFOBolt;
 //import gr.katsip.synefo.storm.api.SynEFOSpout;
-import gr.katsip.synefo.storm.lib.SynEFOMessage;
+import gr.katsip.synefo.storm.lib.SynefoMessage;
 //import gr.katsip.synefo.storm.producers.SampleTupleProducer;
 
 import java.io.ObjectInputStream;
@@ -91,7 +91,7 @@ public class SynEFOTopologyBuilder {
 		Socket synEFOSocket = new Socket(synEFOhost, Integer.parseInt(synEFOport));
 		ObjectOutputStream _out = new ObjectOutputStream(synEFOSocket.getOutputStream());
 		ObjectInputStream _in = new ObjectInputStream(synEFOSocket.getInputStream());
-		SynEFOMessage msg = new SynEFOMessage();
+		SynefoMessage msg = new SynefoMessage();
 		msg._values = new HashMap<String, String>();
 		msg._values.put("TASK_TYPE", "TOPOLOGY");
 		_out.writeObject(msg);

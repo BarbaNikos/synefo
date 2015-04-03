@@ -18,8 +18,8 @@ import org.slf4j.LoggerFactory;
 
 //import gr.katsip.synefo.metric.SynefoMetric;
 import gr.katsip.synefo.metric.TaskStatistics;
-import gr.katsip.synefo.storm.lib.SynEFOMessage;
-import gr.katsip.synefo.storm.lib.SynEFOMessage.Type;
+import gr.katsip.synefo.storm.lib.SynefoMessage;
+import gr.katsip.synefo.storm.lib.SynefoMessage.Type;
 import gr.katsip.synefo.storm.operators.AbstractOperator;
 import gr.katsip.synefo.utils.SynefoConstant;
 import backtype.storm.task.OutputCollector;
@@ -35,14 +35,14 @@ import backtype.storm.tuple.Values;
  * @author Nick R. Katsipoulakis
  *
  */
-public class SynEFOBolt extends BaseRichBolt {
+public class SynefoBolt extends BaseRichBolt {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 4011052074675303959L;
 
-	Logger logger = LoggerFactory.getLogger(SynEFOBolt.class);
+	Logger logger = LoggerFactory.getLogger(SynefoBolt.class);
 
 	private String taskName;
 
@@ -90,7 +90,7 @@ public class SynEFOBolt extends BaseRichBolt {
 
 	private int reportCounter;
 
-	public SynEFOBolt(String task_name, String synEFO_ip, Integer synEFO_port, 
+	public SynefoBolt(String task_name, String synEFO_ip, Integer synEFO_port, 
 			AbstractOperator operator, String zooIP, Integer zooPort) {
 		taskName = task_name;
 		synefoServerIP = synEFO_ip;
@@ -116,7 +116,7 @@ public class SynEFOBolt extends BaseRichBolt {
 	public void registerToSynEFO() {
 		logger.info("+EFO-BOLT (" + taskName + ":" + taskID + "@" + taskIP + ") in registerToSynEFO().");
 		socket = null;
-		SynEFOMessage msg = new SynEFOMessage();
+		SynefoMessage msg = new SynefoMessage();
 		msg._type = Type.REG;
 		try {
 			taskIP = InetAddress.getLocalHost().getHostAddress();

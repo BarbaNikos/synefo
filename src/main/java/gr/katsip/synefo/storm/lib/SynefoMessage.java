@@ -3,7 +3,7 @@ package gr.katsip.synefo.storm.lib;
 import java.io.Serializable;
 import java.util.HashMap;
 
-public class SynEFOMessage implements Serializable {
+public class SynefoMessage implements Serializable {
 
 	/**
 	 * 
@@ -21,7 +21,7 @@ public class SynEFOMessage implements Serializable {
 
 	public HashMap<String, String> _values;
 	
-	public SynEFOMessage() {
+	public SynefoMessage() {
 		_type = Type.DUMMY;
 		_values = new HashMap<String, String>();
 	}

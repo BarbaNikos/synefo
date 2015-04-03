@@ -13,8 +13,8 @@ import java.util.StringTokenizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import gr.katsip.synefo.metric.TaskStatistics;
-import gr.katsip.synefo.storm.lib.SynEFOMessage;
-import gr.katsip.synefo.storm.lib.SynEFOMessage.Type;
+import gr.katsip.synefo.storm.lib.SynefoMessage;
+import gr.katsip.synefo.storm.lib.SynefoMessage.Type;
 import gr.katsip.synefo.storm.producers.AbstractTupleProducer;
 import gr.katsip.synefo.utils.SynefoConstant;
 import backtype.storm.spout.SpoutOutputCollector;
@@ -29,14 +29,14 @@ import backtype.storm.tuple.Values;
  * @author Nick R. Katsipoulakis
  *
  */
-public class SynEFOSpout extends BaseRichSpout {
+public class SynefoSpout extends BaseRichSpout {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -7244170192535254357L;
 	
-	Logger logger = LoggerFactory.getLogger(SynEFOSpout.class);
+	Logger logger = LoggerFactory.getLogger(SynefoSpout.class);
 
 	private String taskName;
 
@@ -78,7 +78,7 @@ public class SynEFOSpout extends BaseRichSpout {
 	
 	private int reportCounter;
 
-	public SynEFOSpout(String task_name, String synEFO_ip, Integer synEFO_port, 
+	public SynefoSpout(String task_name, String synEFO_ip, Integer synEFO_port, 
 			AbstractTupleProducer tupleProducer, String zooIP, Integer zooPort) {
 		taskName = task_name;
 		downstreamTasks = null;
@@ -96,7 +96,7 @@ public class SynEFOSpout extends BaseRichSpout {
 	public void registerToSynEFO() {
 		logger.info("+EFO-SPOUT (" + taskName + ":" + taskId + "@" + taskIP + ") in registerToSynEFO().");
 		socket = null;
-		SynEFOMessage msg = new SynEFOMessage();
+		SynefoMessage msg = new SynefoMessage();
 		msg._type = Type.REG;
 		msg._values.put("TASK_TYPE", "SPOUT");
 		msg._values.put("TASK_NAME", taskName);

@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import gr.katsip.synefo.storm.lib.SynEFOMessage;
+import gr.katsip.synefo.storm.lib.SynefoMessage;
 
 
 public class SynEFOthread implements Runnable {
@@ -59,15 +59,15 @@ public class SynEFOthread implements Runnable {
 	}
 
 	public void run() {
-		SynEFOMessage msg = null;
+		SynefoMessage msg = null;
 		System.out.println("+efo worker: Accepted connection. Initiating handler thread...");
 		try {
-			msg = (SynEFOMessage) input.readObject();
+			msg = (SynefoMessage) input.readObject();
 		} catch (ClassNotFoundException | IOException e) {
 			e.printStackTrace();
 		}
 		if(msg != null) {
-			String _componentType = ((SynEFOMessage) msg)._values.get("TASK_TYPE");
+			String _componentType = ((SynefoMessage) msg)._values.get("TASK_TYPE");
 			switch(_componentType) {
 			case "SPOUT":
 				spoutProcess(msg._values);
