@@ -43,6 +43,7 @@ public class CountGroupByAggrOperator implements Serializable, AbstractOperator 
 			strBuild.append(',');
 		}
 		strBuild.setLength(Math.max(strBuild.length() - 1, 0));
+		
 		String groupByAttrs = strBuild.toString();
 		Integer count = -1;
 		for(int i = 0; i < stateValues.size(); i++) {
@@ -57,7 +58,7 @@ public class CountGroupByAggrOperator implements Serializable, AbstractOperator 
 			}
 		}
 		if(count == -1) {
-			if(stateValues.size() == window) {
+			if(stateValues.size() >= window) {
 				while(stateValues.size() > window) {
 					/**
 					 * Locate the tuple with the earliest time 
