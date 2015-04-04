@@ -11,7 +11,7 @@ public class ScaleFunction {
 	public HashMap<String, ArrayList<String>> physicalTopology;
 
 	public HashMap<String, ArrayList<String>> activeTopology;
-	
+
 	public HashMap<String, ArrayList<String>> inverseTopology;
 
 	public ScaleFunction(HashMap<String, ArrayList<String>> physicalTopology, 
@@ -53,23 +53,25 @@ public class ScaleFunction {
 		/**
 		 * Remove removedNode from all its upstream-nodes lists
 		 */
-		Iterator<Entry<String, ArrayList<String>>> itr = activeTopology.entrySet().iterator();
-		while(itr.hasNext()) {
-			Entry<String, ArrayList<String>> pair = itr.next();
-			String upstreamNode = pair.getKey();
-			ArrayList<String> downstreamNodes = pair.getValue();
-			if(downstreamNodes.indexOf(removedNode) >= 0) {
-				downstreamNodes.remove(downstreamNodes.indexOf(removedNode));
-				activeTopology.put(upstreamNode, downstreamNodes);
+		synchronized(activeTopology) {
+			Iterator<Entry<String, ArrayList<String>>> itr = activeTopology.entrySet().iterator();
+			while(itr.hasNext()) {
+				Entry<String, ArrayList<String>> pair = itr.next();
+				String upstreamNode = pair.getKey();
+				ArrayList<String> downstreamNodes = pair.getValue();
+				if(downstreamNodes.indexOf(removedNode) >= 0) {
+					downstreamNodes.remove(downstreamNodes.indexOf(removedNode));
+					activeTopology.put(upstreamNode, downstreamNodes);
+				}
 			}
-		}
-		/**
-		 * Remove entry of removedNode (if exists) from active topology
-		 */
-		System.out.println("ScaleFunction.removeActiveNodeTopology: removedNode: " + 
-				removedNode + ", physical topology: " + physicalTopology.get(removedNode));
-		if(activeTopology.containsKey(removedNode)) {
-			activeTopology.remove(removedNode);
+			/**
+			 * Remove entry of removedNode (if exists) from active topology
+			 */
+			System.out.println("ScaleFunction.removeActiveNodeTopology: removedNode: " + 
+					removedNode + ", physical topology: " + physicalTopology.get(removedNode));
+			if(activeTopology.containsKey(removedNode)) {
+				activeTopology.remove(removedNode);
+			}
 		}
 	}
 
@@ -78,30 +80,32 @@ public class ScaleFunction {
 		 * Add addedNode to the active topology downstream-lists of 
 		 * all of addedNode's upstream nodes.
 		 */
-		Iterator<Entry<String, ArrayList<String>>> itr = activeTopology.entrySet().iterator();
-		while(itr.hasNext()) {
-			Entry<String, ArrayList<String>> pair = itr.next();
-			String upstreamNode = pair.getKey();
-			ArrayList<String> activeDownStreamNodes = pair.getValue();
-			ArrayList<String> physicalDownStreamNodes = physicalTopology.get(upstreamNode);
-			if(physicalDownStreamNodes.indexOf(addedNode) >= 0 && activeDownStreamNodes.indexOf(addedNode) < 0) {
-				activeDownStreamNodes.add(addedNode);
-				activeTopology.put(upstreamNode, activeDownStreamNodes);
+		synchronized(activeTopology) {
+			Iterator<Entry<String, ArrayList<String>>> itr = activeTopology.entrySet().iterator();
+			while(itr.hasNext()) {
+				Entry<String, ArrayList<String>> pair = itr.next();
+				String upstreamNode = pair.getKey();
+				ArrayList<String> activeDownStreamNodes = pair.getValue();
+				ArrayList<String> physicalDownStreamNodes = physicalTopology.get(upstreamNode);
+				if(physicalDownStreamNodes.indexOf(addedNode) >= 0 && activeDownStreamNodes.indexOf(addedNode) < 0) {
+					activeDownStreamNodes.add(addedNode);
+					activeTopology.put(upstreamNode, activeDownStreamNodes);
+				}
 			}
-		}
-		/**
-		 * Add an entry for addedNode with all of its active downstream nodes
-		 */
-		System.out.println("ScaleFunction.addActiveNodeTopology: addedNode: " + 
-				addedNode + ", physical topology: " + physicalTopology.get(addedNode));
-		ArrayList<String> downStreamNodes = physicalTopology.get(addedNode);
-		ArrayList<String> activeDownStreamNodes = new ArrayList<String>();
-		for(String node : downStreamNodes) {
-			if(activeTopology.containsKey(node)) {
-				activeDownStreamNodes.add(node);
+			/**
+			 * Add an entry for addedNode with all of its active downstream nodes
+			 */
+			System.out.println("ScaleFunction.addActiveNodeTopology: addedNode: " + 
+					addedNode + ", physical topology: " + physicalTopology.get(addedNode));
+			ArrayList<String> downStreamNodes = physicalTopology.get(addedNode);
+			ArrayList<String> activeDownStreamNodes = new ArrayList<String>();
+			for(String node : downStreamNodes) {
+				if(activeTopology.containsKey(node)) {
+					activeDownStreamNodes.add(node);
+				}
 			}
+			activeTopology.put(addedNode, activeDownStreamNodes);
 		}
-		activeTopology.put(addedNode, activeDownStreamNodes);
 	}
 
 	public String getParentNode(String task_name, String task_id) {

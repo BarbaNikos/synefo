@@ -32,7 +32,7 @@ public class SynefoCoordinatorThread implements Runnable {
 
 	private Integer zooPort;
 
-	Thread userInterfaceThread;
+	private Thread userInterfaceThread;
 	
 	private AtomicBoolean operationFlag;
 

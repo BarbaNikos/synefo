@@ -33,7 +33,6 @@ import org.slf4j.LoggerFactory;
  */
 public class ZooMaster {
 
-
 	Logger logger = LoggerFactory.getLogger(ZooMaster.class);
 
 	private enum SynefoState { INIT, BOOTSTRAPPED };
