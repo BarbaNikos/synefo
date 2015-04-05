@@ -378,6 +378,7 @@ public class SynefoBolt extends BaseRichBolt {
 				 * we remove it after sending the punctuation tuples, so 
 				 * that the removed task is notified to share state
 				 */
+				
 				if(action.toLowerCase().contains("remove") && activeDownstreamTasks.indexOf(taskWithIp) >= 0) {
 					activeDownstreamTasks.remove(activeDownstreamTasks.indexOf(taskWithIp));
 					intActiveDownstreamTasks.remove(intActiveDownstreamTasks.indexOf(task_id));
