@@ -103,7 +103,7 @@ public class SynefoBolt extends BaseRichBolt {
 		this.operator = operator;
 //		tupleCounter = 0;
 		stateValues = new ArrayList<Values>();
-		operator.init(stateValues);
+		this.operator.init(stateValues);
 		this.zooIP = zooIP;
 		this.zooPort = zooPort;
 		reportCounter = 0;
@@ -213,9 +213,6 @@ public class SynefoBolt extends BaseRichBolt {
 		if(downstreamTasks == null && activeDownstreamTasks == null) {
 			registerToSynEFO();
 		}
-//		this.metricObject = new SynefoMetric();
-//		metricObject.initMetrics(context, taskName, Integer.toString(taskID));
-		logger.info("+EFO-BOLT (" + taskName + ":" + taskID + "@" + taskIP + ") in prepare().");
 	}
 
 
@@ -245,7 +242,14 @@ public class SynefoBolt extends BaseRichBolt {
 		Values produced_values = null;
 		Values values = new Values(tuple.getValues().toArray());
 		values.remove(tuple.getFields().fieldIndex("SYNEFO_HEADER"));
-		values.remove(tuple.getFields().fieldIndex("SYNEFO_TIMESTAMP"));
+		//CAUTION: The following might be a bug.
+		/*
+		 * Because initially list is {SYNEFO_HEADER, SYNEFO_TIMESTAMP, attr0, ...}
+		 * 1) remove header from position 0 => {SYNEFO_TIMESTAMP, attr0,...}
+		 * 2) remove timestamp from position 1 => {SYNEFO_TIMESTAMP, ...}
+		 */
+//		values.remove(tuple.getFields().fieldIndex("SYNEFO_TIMESTAMP"));
+		values.remove(0);
 		List<String> fieldList = tuple.getFields().toList();
 		fieldList.remove(0);
 		fieldList.remove(0);
