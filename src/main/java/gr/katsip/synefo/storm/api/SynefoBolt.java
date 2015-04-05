@@ -48,8 +48,6 @@ public class SynefoBolt extends BaseRichBolt {
 
 	private int downStreamIndex;
 
-//	private long tupleCounter;
-
 	private OutputCollector collector;
 
 	private ArrayList<String> downstreamTasks;
@@ -78,8 +76,6 @@ public class SynefoBolt extends BaseRichBolt {
 
 	private AbstractOperator operator;
 
-//	private SynefoMetric metricObject;
-
 	private List<Values> stateValues;
 
 	private ZooPet zooPet;
@@ -101,7 +97,6 @@ public class SynefoBolt extends BaseRichBolt {
 		intActiveDownstreamTasks = null;
 		statistics = new TaskStatistics();
 		this.operator = operator;
-//		tupleCounter = 0;
 		stateValues = new ArrayList<Values>();
 		this.operator.init(stateValues);
 		this.zooIP = zooIP;
@@ -285,8 +280,6 @@ public class SynefoBolt extends BaseRichBolt {
 			}
 			collector.ack(tuple);
 		}
-//		tupleCounter += 1;
-//		metricObject.updateMetrics(tupleCounter);
 		statistics.updateMemory();
 		statistics.updateCpuLoad();
 		if(synefoTimestamp != null) {
