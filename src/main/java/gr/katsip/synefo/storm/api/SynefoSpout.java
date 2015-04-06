@@ -60,12 +60,6 @@ public class SynefoSpout extends BaseRichSpout {
 
 	private Integer synefoPort;
 
-	private Socket socket;
-
-	private ObjectOutputStream output = null;
-
-	private ObjectInputStream input = null;
-
 	private TaskStatistics stats;
 
 	private AbstractTupleProducer tupleProducer;
@@ -94,6 +88,9 @@ public class SynefoSpout extends BaseRichSpout {
 
 	@SuppressWarnings("unchecked")
 	public void registerToSynEFO() {
+		Socket socket;
+		ObjectOutputStream output = null;
+		ObjectInputStream input = null;
 		logger.info("+EFO-SPOUT (" + taskName + ":" + taskId + "@" + taskIP + ") in registerToSynEFO().");
 		socket = null;
 		SynefoMessage msg = new SynefoMessage();
@@ -285,6 +282,8 @@ public class SynefoSpout extends BaseRichSpout {
 
 	public void open(@SuppressWarnings("rawtypes") Map conf, TopologyContext context,
 			SpoutOutputCollector collector) {
+		_collector = collector;
+		taskId = context.getThisTaskId();
 		try {
 			taskIP = InetAddress.getLocalHost().getHostAddress();
 		} catch (UnknownHostException e1) {
@@ -294,8 +293,6 @@ public class SynefoSpout extends BaseRichSpout {
 		if(activeDownstreamTasks == null && downstreamTasks == null) {
 			registerToSynEFO();
 		}
-		_collector = collector;
-		taskId = context.getThisTaskId();
 	}
 
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {

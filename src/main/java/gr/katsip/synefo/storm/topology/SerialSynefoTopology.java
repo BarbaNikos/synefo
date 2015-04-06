@@ -3,7 +3,9 @@ package gr.katsip.synefo.storm.topology;
 import gr.katsip.synefo.storm.api.SynefoBolt;
 import gr.katsip.synefo.storm.api.SynefoSpout;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
-import gr.katsip.synefo.storm.operators.relational.EquiJoinOperator;
+import gr.katsip.synefo.storm.operators.relational.CountGroupByAggrOperator;
+import gr.katsip.synefo.storm.operators.relational.JoinOperator;
+import gr.katsip.synefo.storm.operators.relational.ProjectOperator;
 import gr.katsip.synefo.storm.operators.relational.StringComparator;
 import gr.katsip.synefo.storm.producers.StreamgenTupleProducer;
 
@@ -22,9 +24,10 @@ import backtype.storm.generated.InvalidTopologyException;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 
-public class MinimalTopology {
+public class SerialSynefoTopology {
 
-	public static void main(String[] args) throws UnknownHostException, IOException, InterruptedException, ClassNotFoundException, AlreadyAliveException, InvalidTopologyException {
+	public static void main(String[] args) throws UnknownHostException, IOException, InterruptedException, 
+	ClassNotFoundException, AlreadyAliveException, InvalidTopologyException {
 		String synefoIP = "";
 		Integer synefoPort = -1;
 		String streamIP = "";
@@ -53,30 +56,50 @@ public class MinimalTopology {
 				new SynefoSpout("spout_1", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
 		_tmp = new ArrayList<String>();
-		_tmp.add("join_bolt_1");
-		_tmp.add("join_bolt_2");
+		_tmp.add("project_bolt_1");
 		topology.put("spout_1", new ArrayList<String>(_tmp));
 		/**
-		 * Stage 1: Join operators
+		 * Stage 1: Project Operators
 		 */
-		EquiJoinOperator<String> equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "three");
-		String[] join_schema = { "three-a", "three-b" };
-		String[] state_schema = { "one", "two", "three", "four", "time" };
-		equi_join_op.setOutputSchema(new Fields(join_schema));
-		equi_join_op.setStateSchema(new Fields(state_schema));
+		String[] projectOutSchema = { "one", "two", "three", "four" };
+		ProjectOperator projectOperator = new ProjectOperator(new Fields(projectOutSchema));
+		projectOperator.setOutputSchema(new Fields(projectOutSchema));
+		builder.setBolt("project_bolt_1", 
+				new SynefoBolt("project_bolt_1", synefoIP, synefoPort, projectOperator, zooIP, zooPort, false), 1)
+				.setNumTasks(1)
+				.directGrouping("spout_1");
+		_tmp = new ArrayList<String>();
+		_tmp.add("join_bolt_1");
+		topology.put("project_bolt_1", new ArrayList<String>(_tmp));
+		_tmp = null;
+		/**
+		 * Stage 2: Join operators
+		 */
+		JoinOperator<String> joinOperator = new JoinOperator<String>(new StringComparator(), 100, "three", 
+				new Fields(projectOutSchema), new Fields(projectOutSchema));
 		builder.setBolt("join_bolt_1", 
-				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, equi_join_op, zooIP, zooPort, true), 1)
+				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, joinOperator, zooIP, zooPort, false), 1)
 				.setNumTasks(1)
-				.directGrouping("spout_1");
-		equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "three");
-		equi_join_op.setOutputSchema(new Fields(join_schema));
-		equi_join_op.setStateSchema(new Fields(state_schema));
-		builder.setBolt("join_bolt_2", 
-				new SynefoBolt("join_bolt_2", synefoIP, synefoPort, equi_join_op, zooIP, zooPort, true), 1)
+				.directGrouping("project_bolt_1");
+		_tmp = new ArrayList<String>();
+		_tmp.add("count_group_by_bolt_1");
+		topology.put("join_bolt_1", new ArrayList<String>(_tmp));
+		_tmp = null;
+		/**
+		 * Stage 3: Aggregate operator
+		 */
+		CountGroupByAggrOperator countGroupByAggrOperator = new CountGroupByAggrOperator(100, 
+				joinOperator.getOutputSchema().toList().toArray(new String[joinOperator.getOutputSchema().toList().size()]));
+		String[] countGroupBySchema = { "key", "count" };
+		String[] countGroupByStateSchema = { "key", "count", "time" };
+		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
+		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
+		builder.setBolt("count_group_by_bolt_1", 
+				new SynefoBolt("count_group_by_bolt_1", synefoIP, synefoPort, 
+						countGroupByAggrOperator, zooIP, zooPort, false), 1)
 				.setNumTasks(1)
-				.directGrouping("spout_1");
-		topology.put("join_bolt_1", new ArrayList<String>());
-		topology.put("join_bolt_2", new ArrayList<String>());
+				.directGrouping("join_bolt_1");
+		topology.put("count_group_by_bolt_1", new ArrayList<String>());
 		/**
 		 * Notify SynEFO server about the 
 		 * Topology
@@ -102,10 +125,10 @@ public class MinimalTopology {
 		_in.close();
 		_out.close();
 		synEFOSocket.close();
-		
-		conf.setDebug(true);
-		conf.setNumWorkers(3);
-		StormSubmitter.submitTopology("minimal-top", conf, builder.createTopology());
+
+		conf.setDebug(false);
+		conf.setNumWorkers(4);
+		StormSubmitter.submitTopology("synefo-serial-top", conf, builder.createTopology());
 	}
 
 }

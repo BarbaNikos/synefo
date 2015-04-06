@@ -88,19 +88,19 @@ public class TopKTopology {
 		ProjectOperator projectOperator = new ProjectOperator(new Fields(projectOutSchema));
 		projectOperator.setOutputSchema(new Fields(projectOutSchema));
 		builder.setBolt("project_bolt_1", 
-				new SynefoBolt("project_bolt_1", synefoIP, synefoPort, projectOperator, zooIP, zooPort), 1)
+				new SynefoBolt("project_bolt_1", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
 				.directGrouping("spout_1");
 		projectOperator = new ProjectOperator(new Fields(projectOutSchema));
 		projectOperator.setOutputSchema(new Fields(projectOutSchema));
 		builder.setBolt("project_bolt_2", 
-				new SynefoBolt("project_bolt_2", synefoIP, synefoPort, projectOperator, zooIP, zooPort), 1)
+				new SynefoBolt("project_bolt_2", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
 				.directGrouping("spout_1");
 		projectOperator = new ProjectOperator(new Fields(projectOutSchema));
 		projectOperator.setOutputSchema(new Fields(projectOutSchema));
 		builder.setBolt("project_bolt_3", 
-				new SynefoBolt("project_bolt_3", synefoIP, synefoPort, projectOperator, zooIP, zooPort), 1)
+				new SynefoBolt("project_bolt_3", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
 				.directGrouping("spout_1");
 		_tmp = new ArrayList<String>();
@@ -115,19 +115,19 @@ public class TopKTopology {
 		projectOperator = new ProjectOperator(new Fields(projectOutSchema));
 		projectOperator.setOutputSchema(new Fields(projectOutSchema));
 		builder.setBolt("project_bolt_4", 
-				new SynefoBolt("project_bolt_4", synefoIP, synefoPort, projectOperator, zooIP, zooPort), 1)
+				new SynefoBolt("project_bolt_4", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
 				.directGrouping("spout_3");
 		projectOperator = new ProjectOperator(new Fields(projectOutSchema));
 		projectOperator.setOutputSchema(new Fields(projectOutSchema));
 		builder.setBolt("project_bolt_5", 
-				new SynefoBolt("project_bolt_5", synefoIP, synefoPort, projectOperator, zooIP, zooPort), 1)
+				new SynefoBolt("project_bolt_5", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
 				.directGrouping("spout_3");
 		projectOperator = new ProjectOperator(new Fields(projectOutSchema));
 		projectOperator.setOutputSchema(new Fields(projectOutSchema));
 		builder.setBolt("project_bolt_6", 
-				new SynefoBolt("project_bolt_6", synefoIP, synefoPort, projectOperator, zooIP, zooPort), 1)
+				new SynefoBolt("project_bolt_6", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
 				.directGrouping("spout_3");
 		_tmp = new ArrayList<String>();
@@ -148,7 +148,7 @@ public class TopKTopology {
 		equi_join_op.setOutputSchema(new Fields(join_schema));
 		equi_join_op.setStateSchema(new Fields(state_schema));
 		builder.setBolt("join_bolt_1", 
-				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, equi_join_op, zooIP, zooPort), 1)
+				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, equi_join_op, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
 				.directGrouping("project_bolt_1")
 				.directGrouping("project_bolt_2")
@@ -158,7 +158,7 @@ public class TopKTopology {
 		equi_join_op.setOutputSchema(new Fields(join_schema));
 		equi_join_op.setStateSchema(new Fields(state_schema));
 		builder.setBolt("join_bolt_2", 
-				new SynefoBolt("join_bolt_2", synefoIP, synefoPort, equi_join_op, zooIP, zooPort), 1)
+				new SynefoBolt("join_bolt_2", synefoIP, synefoPort, equi_join_op, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
 				.directGrouping("project_bolt_1")
 				.directGrouping("project_bolt_2")
@@ -168,7 +168,7 @@ public class TopKTopology {
 		equi_join_op.setOutputSchema(new Fields(join_schema));
 		equi_join_op.setStateSchema(new Fields(state_schema));
 		builder.setBolt("join_bolt_3", 
-				new SynefoBolt("join_bolt_3", synefoIP, synefoPort, equi_join_op, zooIP, zooPort), 1)
+				new SynefoBolt("join_bolt_3", synefoIP, synefoPort, equi_join_op, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
 				.directGrouping("project_bolt_1")
 				.directGrouping("project_bolt_2")
@@ -189,7 +189,7 @@ public class TopKTopology {
 		equi_join_op.setOutputSchema(new Fields(join_schema));
 		equi_join_op.setStateSchema(new Fields(state_schema));
 		builder.setBolt("join_bolt_4", 
-				new SynefoBolt("join_bolt_4", synefoIP, synefoPort, equi_join_op, zooIP, zooPort), 1)
+				new SynefoBolt("join_bolt_4", synefoIP, synefoPort, equi_join_op, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
 				.directGrouping("project_bolt_4")
 				.directGrouping("project_bolt_5")
@@ -201,7 +201,7 @@ public class TopKTopology {
 		equi_join_op.setOutputSchema(new Fields(join_schema));
 		equi_join_op.setStateSchema(new Fields(state_schema));
 		builder.setBolt("join_bolt_5", 
-				new SynefoBolt("join_bolt_5", synefoIP, synefoPort, equi_join_op, zooIP, zooPort), 1)
+				new SynefoBolt("join_bolt_5", synefoIP, synefoPort, equi_join_op, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
 				.directGrouping("project_bolt_4")
 				.directGrouping("project_bolt_5")
@@ -213,7 +213,7 @@ public class TopKTopology {
 		equi_join_op.setOutputSchema(new Fields(join_schema));
 		equi_join_op.setStateSchema(new Fields(state_schema));
 		builder.setBolt("join_bolt_6", 
-				new SynefoBolt("join_bolt_6", synefoIP, synefoPort, equi_join_op, zooIP, zooPort), 1)
+				new SynefoBolt("join_bolt_6", synefoIP, synefoPort, equi_join_op, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
 				.directGrouping("project_bolt_4")
 				.directGrouping("project_bolt_5")
@@ -239,7 +239,7 @@ public class TopKTopology {
 		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
 		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
 		builder.setBolt("count_group_by_bolt_1", 
-				new SynefoBolt("count_group_by_bolt_1", synefoIP, synefoPort, countGroupByAggrOperator, zooIP, zooPort), 1)
+				new SynefoBolt("count_group_by_bolt_1", synefoIP, synefoPort, countGroupByAggrOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
 				.directGrouping("join_bolt_4")
 				.directGrouping("join_bolt_5")
@@ -248,7 +248,7 @@ public class TopKTopology {
 		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
 		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
 		builder.setBolt("count_group_by_bolt_2", 
-				new SynefoBolt("count_group_by_bolt_2", synefoIP, synefoPort, countGroupByAggrOperator, zooIP, zooPort), 1)
+				new SynefoBolt("count_group_by_bolt_2", synefoIP, synefoPort, countGroupByAggrOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
 				.directGrouping("join_bolt_4")
 				.directGrouping("join_bolt_5")
@@ -257,7 +257,7 @@ public class TopKTopology {
 		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
 		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
 		builder.setBolt("count_group_by_bolt_3", 
-				new SynefoBolt("count_group_by_bolt_3", synefoIP, synefoPort, countGroupByAggrOperator, zooIP, zooPort), 1)
+				new SynefoBolt("count_group_by_bolt_3", synefoIP, synefoPort, countGroupByAggrOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
 				.directGrouping("join_bolt_4")
 				.directGrouping("join_bolt_5")
@@ -274,7 +274,7 @@ public class TopKTopology {
 		projectOperator = new ProjectOperator(new Fields(countGroupBySchema));
 		projectOperator.setOutputSchema(new Fields(countGroupBySchema));
 		builder.setBolt("drain_bolt", 
-				new SynefoBolt("drain_bolt", synefoIP, synefoPort, projectOperator, zooIP, zooPort), 1)
+				new SynefoBolt("drain_bolt", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
 				.directGrouping("count_group_by_bolt_1")
 				.directGrouping("count_group_by_bolt_2")

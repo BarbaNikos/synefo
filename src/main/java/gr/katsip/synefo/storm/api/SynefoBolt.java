@@ -66,12 +66,6 @@ public class SynefoBolt extends BaseRichBolt {
 
 	private Integer synefoServerPort = -1;
 
-	private Socket socket;
-
-	private ObjectOutputStream _output;
-
-	private ObjectInputStream _input;
-
 	private TaskStatistics statistics;
 
 	private AbstractOperator operator;
@@ -86,8 +80,10 @@ public class SynefoBolt extends BaseRichBolt {
 
 	private int reportCounter;
 
+	private boolean autoScale;
+
 	public SynefoBolt(String task_name, String synEFO_ip, Integer synEFO_port, 
-			AbstractOperator operator, String zooIP, Integer zooPort) {
+			AbstractOperator operator, String zooIP, Integer zooPort, boolean autoScale) {
 		taskName = task_name;
 		synefoServerIP = synEFO_ip;
 		synefoServerPort = synEFO_port;
@@ -102,6 +98,7 @@ public class SynefoBolt extends BaseRichBolt {
 		this.zooIP = zooIP;
 		this.zooPort = zooPort;
 		reportCounter = 0;
+		this.autoScale = autoScale;
 	}
 
 	/**
@@ -109,6 +106,9 @@ public class SynefoBolt extends BaseRichBolt {
 	 */
 	@SuppressWarnings("unchecked")
 	public void registerToSynEFO() {
+		Socket socket;
+		ObjectOutputStream _output;
+		ObjectInputStream _input;
 		logger.info("+EFO-BOLT (" + taskName + ":" + taskID + "@" + taskIP + ") in registerToSynEFO().");
 		socket = null;
 		SynefoMessage msg = new SynefoMessage();
@@ -243,7 +243,7 @@ public class SynefoBolt extends BaseRichBolt {
 		 * 1) remove header from position 0 => {SYNEFO_TIMESTAMP, attr0,...}
 		 * 2) remove timestamp from position 1 => {SYNEFO_TIMESTAMP, ...}
 		 */
-//		values.remove(tuple.getFields().fieldIndex("SYNEFO_TIMESTAMP"));
+		//		values.remove(tuple.getFields().fieldIndex("SYNEFO_TIMESTAMP"));
 		values.remove(0);
 		List<String> fieldList = tuple.getFields().toList();
 		fieldList.remove(0);
@@ -301,7 +301,8 @@ public class SynefoBolt extends BaseRichBolt {
 		}else {
 			reportCounter += 1;
 		}
-		zooPet.setLatency(statistics.getLatency());
+		if(autoScale)
+			zooPet.setLatency(statistics.getLatency());
 		String scaleCommand = "";
 		synchronized(zooPet) {
 			if(zooPet.pendingCommands.isEmpty() == false) {
@@ -371,7 +372,7 @@ public class SynefoBolt extends BaseRichBolt {
 				 * we remove it after sending the punctuation tuples, so 
 				 * that the removed task is notified to share state
 				 */
-				
+
 				if(action.toLowerCase().contains("remove") && activeDownstreamTasks.indexOf(taskWithIp) >= 0) {
 					activeDownstreamTasks.remove(activeDownstreamTasks.indexOf(taskWithIp));
 					intActiveDownstreamTasks.remove(intActiveDownstreamTasks.indexOf(task_id));

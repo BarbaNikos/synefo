@@ -54,7 +54,7 @@
 					</descriptorRefs>
 					<archive>
 						<manifest>
-							<!-- <mainClass>gr.katsip.synefo.storm.topology.ExperimentalTopology</mainClass>
+							<!-- <mainClass>gr.katsip.synefo.storm.topology.SynefoSerialTopology</mainClass>
 							 -->
 							<mainClass>gr.katsip.synefo.storm.topology.MinimalTopology</mainClass>
 							<!--  

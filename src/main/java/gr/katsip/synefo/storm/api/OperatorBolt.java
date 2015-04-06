@@ -1,13 +1,21 @@
 package gr.katsip.synefo.storm.api;
 
 import gr.katsip.synefo.metric.TaskStatistics;
+import gr.katsip.synefo.storm.lib.SynefoMessage;
+import gr.katsip.synefo.storm.lib.SynefoMessage.Type;
 import gr.katsip.synefo.storm.operators.AbstractOperator;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.InetAddress;
+import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.StringTokenizer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,9 +58,13 @@ public class OperatorBolt extends BaseRichBolt {
 	private int downStreamIndex;
 
 	private int reportCounter;
+	
+	private String synefoServerIP = null;
+	
+	private Integer synefoServerPort = -1;
 
-	public OperatorBolt(String taskName, AbstractOperator operator, 
-			ArrayList<String> downstreamTasks, ArrayList<Integer> intDownstreamTasks) {
+	public OperatorBolt(String taskName, String synEFO_ip, Integer synEFO_port, 
+			AbstractOperator operator) {
 		this.taskName = taskName;
 		this.operator = operator;
 		stateValues = new ArrayList<Values>();
@@ -60,6 +72,8 @@ public class OperatorBolt extends BaseRichBolt {
 		reportCounter = 0;
 		this.downstreamTasks = new ArrayList<String>(downstreamTasks);
 		this.intDownstreamTasks = new ArrayList<Integer>(intDownstreamTasks);
+		synefoServerIP = synEFO_ip;
+		synefoServerPort = synEFO_port;
 	}
 
 	@Override
@@ -123,9 +137,91 @@ public class OperatorBolt extends BaseRichBolt {
 			reportCounter += 1;
 		}
 	}
+	
+	@SuppressWarnings("unchecked")
+	private void retrieveDownstreamTasks() {
+		ArrayList<String> activeDownstreamTasks;
+		ArrayList<Integer> intActiveDownstreamTasks;
+		Socket socket;
+		ObjectOutputStream _output;
+		ObjectInputStream _input;
+		logger.info("+OPERATOR-BOLT (" + taskName + ":" + taskId + "@" + taskIP + ") in retrieveDownstreamTasks().");
+		socket = null;
+		SynefoMessage msg = new SynefoMessage();
+		msg._type = Type.REG;
+		try {
+			taskIP = InetAddress.getLocalHost().getHostAddress();
+			msg._values.put("TASK_IP", taskIP);
+		} catch (UnknownHostException e1) {
+			e1.printStackTrace();
+		}
+		msg._values.put("TASK_TYPE", "BOLT");
+		msg._values.put("TASK_NAME", taskName);
+		msg._values.put("TASK_ID", Integer.toString(taskId));
+		try {
+			socket = new Socket(synefoServerIP, synefoServerPort);
+			_output = new ObjectOutputStream(socket.getOutputStream());
+			_input = new ObjectInputStream(socket.getInputStream());
+			_output.writeObject(msg);
+			_output.flush();
+			msg = null;
+			ArrayList<String> _downstream = null;
+			_downstream = (ArrayList<String>) _input.readObject();
+			if(_downstream != null && _downstream.size() > 0) {
+				downstreamTasks = new ArrayList<String>(_downstream);
+				intDownstreamTasks = new ArrayList<Integer>();
+				Iterator<String> itr = downstreamTasks.iterator();
+				while(itr.hasNext()) {
+					StringTokenizer strTok = new StringTokenizer(itr.next(), ":");
+					strTok.nextToken();
+					String taskWithIp = strTok.nextToken();
+					strTok = new StringTokenizer(taskWithIp, "@");
+					Integer task = Integer.parseInt(strTok.nextToken());
+					intDownstreamTasks.add(task);
+				}
+			}else {
+				downstreamTasks = new ArrayList<String>();
+				intDownstreamTasks = new ArrayList<Integer>();
+			}
+			ArrayList<String> _active_downstream = null;
+			_active_downstream = (ArrayList<String>) _input.readObject();
+			if(_active_downstream != null && _active_downstream.size() > 0) {
+				activeDownstreamTasks = new ArrayList<String>(_active_downstream);
+				intActiveDownstreamTasks = new ArrayList<Integer>();
+				Iterator<String> itr = activeDownstreamTasks.iterator();
+				while(itr.hasNext()) {
+					StringTokenizer strTok = new StringTokenizer(itr.next(), ":");
+					strTok.nextToken();
+					String taskWithIp = strTok.nextToken();
+					strTok = new StringTokenizer(taskWithIp, "@");
+					Integer task = Integer.parseInt(strTok.nextToken());
+					intActiveDownstreamTasks.add(task);
+				}
+				downStreamIndex = 0;
+			}else {
+				activeDownstreamTasks = new ArrayList<String>();
+				intActiveDownstreamTasks = new ArrayList<Integer>();
+				downStreamIndex = 0;
+			}
+			/**
+			 * Closing channels of communication with 
+			 * SynEFO server
+			 */
+			_output.flush();
+			_output.close();
+			_input.close();
+			socket.close();
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+	}
 
 	@Override
-	public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
+	public void prepare(@SuppressWarnings("rawtypes") Map conf, TopologyContext context, OutputCollector collector) {
 		this.collector = collector;
 		this.downStreamIndex = 0;
 		taskId = context.getThisTaskId();
@@ -137,6 +233,9 @@ public class OperatorBolt extends BaseRichBolt {
 			taskIP = InetAddress.getLocalHost().getHostAddress();
 		} catch (UnknownHostException e1) {
 			e1.printStackTrace();
+		}
+		if(downstreamTasks == null || intDownstreamTasks == null) {
+			retrieveDownstreamTasks();
 		}
 	}
 
