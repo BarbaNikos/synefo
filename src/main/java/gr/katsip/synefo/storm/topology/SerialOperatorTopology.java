@@ -4,10 +4,12 @@ import gr.katsip.synefo.storm.api.OperatorBolt;
 import gr.katsip.synefo.storm.api.OperatorSpout;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.operators.relational.CountGroupByAggrOperator;
+import gr.katsip.synefo.storm.operators.relational.EquiJoinOperator;
 import gr.katsip.synefo.storm.operators.relational.JoinOperator;
 import gr.katsip.synefo.storm.operators.relational.ProjectOperator;
 import gr.katsip.synefo.storm.operators.relational.StringComparator;
 import gr.katsip.synefo.storm.producers.StreamgenTupleProducer;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -15,6 +17,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
+
 import backtype.storm.Config;
 import backtype.storm.StormSubmitter;
 import backtype.storm.generated.AlreadyAliveException;
@@ -68,10 +71,16 @@ public class SerialOperatorTopology {
 		/**
 		 * Stage 2: Join operators
 		 */
-		JoinOperator<String> joinOperator = new JoinOperator<String>(new StringComparator(), 100, "three", 
-				new Fields(projectOutSchema), new Fields(projectOutSchema));
+		EquiJoinOperator<String> equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 100, "three");
+//		JoinOperator<String> joinOperator = new JoinOperator<String>(new StringComparator(), 100, "three", 
+//				new Fields(projectOutSchema), new Fields(projectOutSchema));
+		String[] join_schema = { "three-a", "three-b" };
+//		String[] state_schema = { "num", "timestamp", "one", "two", "three", "four", "time" };
+		String[] state_schema = { "num", "one", "two", "three", "four", "time" };
+		equi_join_op.setOutputSchema(new Fields(join_schema));
+		equi_join_op.setStateSchema(new Fields(state_schema));
 		builder.setBolt("join_bolt_1", 
-				new OperatorBolt("join_bolt_1", synefoIP, synefoPort, joinOperator), 1)
+				new OperatorBolt("join_bolt_1", synefoIP, synefoPort, equi_join_op), 1)
 				.setNumTasks(1)
 				.directGrouping("project_bolt_1");
 		_tmp = new ArrayList<String>();
@@ -81,13 +90,18 @@ public class SerialOperatorTopology {
 		/**
 		 * Stage 3: Aggregate operator
 		 */
-		CountGroupByAggrOperator countGroupByAggrOperator = new CountGroupByAggrOperator(100, 
-				joinOperator.getOutputSchema().toList().toArray(
-						new String[joinOperator.getOutputSchema().toList().size()]));
+		CountGroupByAggrOperator countGroupByAggrOperator = new CountGroupByAggrOperator(100, join_schema);
 		String[] countGroupBySchema = { "key", "count" };
 		String[] countGroupByStateSchema = { "key", "count", "time" };
 		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
 		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
+//		CountGroupByAggrOperator countGroupByAggrOperator = new CountGroupByAggrOperator(100, 
+//				joinOperator.getOutputSchema().toList().toArray(
+//						new String[joinOperator.getOutputSchema().toList().size()]));
+//		String[] countGroupBySchema = { "key", "count" };
+//		String[] countGroupByStateSchema = { "key", "count", "time" };
+//		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
+//		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
 		builder.setBolt("count_group_by_bolt_1", 
 				new OperatorBolt("count_group_by_bolt_1", synefoIP, synefoPort, countGroupByAggrOperator), 1)
 				.setNumTasks(1)
