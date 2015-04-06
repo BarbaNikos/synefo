@@ -47,12 +47,12 @@ public class JoinOperator<T extends Object> implements AbstractOperator, Seriali
 		 * Adding timestamp field
 		 */
 		List<String> schema = leftFieldSchema.toList();
-		schema.add("timestamp");
 		this.leftFieldSchema = new Fields(leftFieldSchema.toList());
+		schema.add("timestamp");
 		this.leftStateFieldSchema = new Fields(schema);
 		schema = rightFieldSchema.toList();
-		schema.add("timestamp");
 		this.rightFieldSchema = new Fields(rightFieldSchema.toList());
+		schema.add("timestamp");
 		this.rightStateFieldSchema = new Fields(schema);
 		this.comparator = comparator;
 	}
@@ -154,8 +154,13 @@ public class JoinOperator<T extends Object> implements AbstractOperator, Seriali
 
 	@Override
 	public Fields getOutputSchema() {
-		List<String> outputSchema = this.leftFieldSchema.toList();
-		outputSchema.addAll(this.rightFieldSchema.toList());
+		List<String> outputSchema = new ArrayList<String>();
+		for(String field : this.leftFieldSchema.toList()) {
+			outputSchema.add("l." + field);
+		}
+		for(String field : this.rightFieldSchema.toList()) {
+			outputSchema.add("r." + field);
+		}
 		output_schema = new Fields(outputSchema);
 		return output_schema;
 	}
@@ -197,8 +202,13 @@ public class JoinOperator<T extends Object> implements AbstractOperator, Seriali
 
 	@Override
 	public void setOutputSchema(Fields _output_schema) {
-		List<String> outputSchema = this.leftFieldSchema.toList();
-		outputSchema.addAll(this.rightFieldSchema.toList());
+		List<String> outputSchema = new ArrayList<String>();
+		for(String field : this.leftFieldSchema.toList()) {
+			outputSchema.add("l." + field);
+		}
+		for(String field : this.rightFieldSchema.toList()) {
+			outputSchema.add("r." + field);
+		}
 		output_schema = new Fields(outputSchema);
 	}
 
@@ -208,9 +218,9 @@ public class JoinOperator<T extends Object> implements AbstractOperator, Seriali
 		 * The following does not really make sense because the left relation might have 
 		 * a different schema compared to the right relation.
 		 */
-		List<String> schema = stateSchema.toList();
-		schema.add("timestamp");
-		this.stateSchema = new Fields(schema);
+//		List<String> schema = stateSchema.toList();
+//		schema.add("timestamp");
+//		this.stateSchema = new Fields(schema);
 	}
 
 }

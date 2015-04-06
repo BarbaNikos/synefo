@@ -4,7 +4,6 @@ import gr.katsip.synefo.storm.api.SynefoBolt;
 import gr.katsip.synefo.storm.api.SynefoSpout;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.operators.relational.CountGroupByAggrOperator;
-import gr.katsip.synefo.storm.operators.relational.EquiJoinOperator;
 import gr.katsip.synefo.storm.operators.relational.JoinOperator;
 import gr.katsip.synefo.storm.operators.relational.ProjectOperator;
 import gr.katsip.synefo.storm.operators.relational.StringComparator;
@@ -76,16 +75,10 @@ public class SerialSynefoTopology {
 		/**
 		 * Stage 2: Join operators
 		 */
-		EquiJoinOperator<String> equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 100, "three");
-//		JoinOperator<String> joinOperator = new JoinOperator<String>(new StringComparator(), 100, "three", 
-//				new Fields(projectOutSchema), new Fields(projectOutSchema));
-		String[] join_schema = { "three-a", "three-b" };
-//		String[] state_schema = { "num", "timestamp", "one", "two", "three", "four", "time" };
-		String[] state_schema = { "num", "one", "two", "three", "four", "time" };
-		equi_join_op.setOutputSchema(new Fields(join_schema));
-		equi_join_op.setStateSchema(new Fields(state_schema));
+		JoinOperator<String> joinOperator = new JoinOperator<String>(new StringComparator(), 100, "three", 
+				new Fields(projectOutSchema), new Fields(projectOutSchema));
 		builder.setBolt("join_bolt_1", 
-				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, equi_join_op, zooIP, zooPort, false), 1)
+				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, joinOperator, zooIP, zooPort, false), 1)
 				.setNumTasks(1)
 				.directGrouping("project_bolt_1");
 		_tmp = new ArrayList<String>();
@@ -95,17 +88,12 @@ public class SerialSynefoTopology {
 		/**
 		 * Stage 3: Aggregate operator
 		 */
-		CountGroupByAggrOperator countGroupByAggrOperator = new CountGroupByAggrOperator(100, join_schema);
+		CountGroupByAggrOperator countGroupByAggrOperator = new CountGroupByAggrOperator(100, 
+				joinOperator.getOutputSchema().toList().toArray(new String[joinOperator.getOutputSchema().toList().size()]));
 		String[] countGroupBySchema = { "key", "count" };
 		String[] countGroupByStateSchema = { "key", "count", "time" };
 		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
 		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
-//		CountGroupByAggrOperator countGroupByAggrOperator = new CountGroupByAggrOperator(100, 
-//				joinOperator.getOutputSchema().toList().toArray(new String[joinOperator.getOutputSchema().toList().size()]));
-//		String[] countGroupBySchema = { "key", "count" };
-//		String[] countGroupByStateSchema = { "key", "count", "time" };
-//		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
-//		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
 		builder.setBolt("count_group_by_bolt_1", 
 				new SynefoBolt("count_group_by_bolt_1", synefoIP, synefoPort, 
 						countGroupByAggrOperator, zooIP, zooPort, false), 1)
