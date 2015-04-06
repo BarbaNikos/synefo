@@ -74,6 +74,7 @@ public class OperatorBolt extends BaseRichBolt {
 		this.intDownstreamTasks = null;
 		synefoServerIP = synEFO_ip;
 		synefoServerPort = synEFO_port;
+		statistics = new TaskStatistics();
 	}
 
 	@Override
