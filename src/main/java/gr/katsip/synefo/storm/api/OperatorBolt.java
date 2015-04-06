@@ -45,9 +45,9 @@ public class OperatorBolt extends BaseRichBolt {
 
 	private OutputCollector collector;
 
-	private ArrayList<String> downstreamTasks;
+	private ArrayList<String> downstreamTasks = null;
 
-	private ArrayList<Integer> intDownstreamTasks;
+	private ArrayList<Integer> intDownstreamTasks = null;
 
 	private TaskStatistics statistics;
 
@@ -70,8 +70,8 @@ public class OperatorBolt extends BaseRichBolt {
 		stateValues = new ArrayList<Values>();
 		this.operator.init(stateValues);
 		reportCounter = 0;
-		this.downstreamTasks = new ArrayList<String>(downstreamTasks);
-		this.intDownstreamTasks = new ArrayList<Integer>(intDownstreamTasks);
+		this.downstreamTasks = null;
+		this.intDownstreamTasks = null;
 		synefoServerIP = synEFO_ip;
 		synefoServerPort = synEFO_port;
 	}
