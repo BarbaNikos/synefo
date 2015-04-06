@@ -25,13 +25,13 @@ public class JoinOperator<T extends Object> implements AbstractOperator, Seriali
 	private String joinAttribute;
 
 	private Fields leftFieldSchema;
-	
+
 	private Fields leftStateFieldSchema;
 
 	private ArrayList<Values> leftRelation;
 
 	private Fields rightFieldSchema;
-	
+
 	private Fields rightStateFieldSchema;
 
 	private ArrayList<Values> rightRelation;
@@ -80,7 +80,10 @@ public class JoinOperator<T extends Object> implements AbstractOperator, Seriali
 				values.add(System.currentTimeMillis());
 				leftRelation.add(values);
 			}else {
-				leftRelation.remove(0);
+				if(leftRelation.size() > 0)
+					leftRelation.remove(0);
+				else
+					rightRelation.remove(0);
 				values.add(System.currentTimeMillis());
 				leftRelation.add(values);
 			}
@@ -97,7 +100,10 @@ public class JoinOperator<T extends Object> implements AbstractOperator, Seriali
 				values.add(System.currentTimeMillis());
 				rightRelation.add(values);
 			}else {
-				rightRelation.remove(0);
+				if(rightRelation.size() > 0)
+					rightRelation.remove(0);
+				else
+					leftRelation.remove(0);
 				values.add(System.currentTimeMillis());
 				rightRelation.add(values);
 			}
