@@ -165,33 +165,37 @@ public class JoinOperator<T extends Object> implements AbstractOperator, Seriali
 	public void mergeState(Fields receivedStateSchema, List<Values> receivedStateValues) {
 		int leftRelationSize = (Integer) receivedStateValues.get(0).get(0);
 		receivedStateValues.remove(0);
-		ArrayList<Values> receivedLeftRelation = new ArrayList<Values>(
-				receivedStateValues.subList(0, leftRelationSize + 1));
-		ArrayList<Values> receivedRightRelation = new ArrayList<Values>(
-				receivedStateValues.subList(leftRelationSize + 1, receivedStateValues.size()));
-		this.leftRelation.addAll(receivedLeftRelation);
-		this.rightRelation.addAll(receivedRightRelation);
-		while(leftRelation.size() > window) {
-			long earliestLeftTime = (long) leftRelation.get(0).get(this.leftStateFieldSchema.fieldIndex("timestamp"));
-			int leftIndex = 0;
-			for(int i = 0; i < leftRelation.size(); i++) {
-				if(earliestLeftTime > (long) leftRelation.get(i).get(this.leftStateFieldSchema.fieldIndex("timestamp"))) {
-					earliestLeftTime = (long) leftRelation.get(i).get(this.leftStateFieldSchema.fieldIndex("timestamp"));
-					leftIndex = i;
+		if(receivedStateValues.size() > 0) {
+			ArrayList<Values> receivedLeftRelation = new ArrayList<Values>(
+					receivedStateValues.subList(0, leftRelationSize + 1));
+			ArrayList<Values> receivedRightRelation = null;
+			if(receivedStateValues.size() > leftRelationSize)
+				receivedRightRelation = new ArrayList<Values>(
+						receivedStateValues.subList(leftRelationSize + 1, receivedStateValues.size()));
+			this.leftRelation.addAll(receivedLeftRelation);
+			this.rightRelation.addAll(receivedRightRelation);
+			while(leftRelation.size() > window) {
+				long earliestLeftTime = (long) leftRelation.get(0).get(this.leftStateFieldSchema.fieldIndex("timestamp"));
+				int leftIndex = 0;
+				for(int i = 0; i < leftRelation.size(); i++) {
+					if(earliestLeftTime > (long) leftRelation.get(i).get(this.leftStateFieldSchema.fieldIndex("timestamp"))) {
+						earliestLeftTime = (long) leftRelation.get(i).get(this.leftStateFieldSchema.fieldIndex("timestamp"));
+						leftIndex = i;
+					}
 				}
+				leftRelation.remove(leftIndex);
 			}
-			leftRelation.remove(leftIndex);
-		}
-		while(rightRelation.size() > window) {
-			long earliestRightTime = (long) rightRelation.get(0).get(this.rightStateFieldSchema.fieldIndex("timestamp"));
-			int rightIndex = 0;
-			for(int i = 0; i < rightRelation.size(); i++) {
-				if(earliestRightTime > (long) rightRelation.get(i).get(this.rightStateFieldSchema.fieldIndex("timestamp"))) {
-					earliestRightTime = (long) rightRelation.get(i).get(this.rightStateFieldSchema.fieldIndex("timestamp"));
-					rightIndex = i;
+			while(rightRelation.size() > window) {
+				long earliestRightTime = (long) rightRelation.get(0).get(this.rightStateFieldSchema.fieldIndex("timestamp"));
+				int rightIndex = 0;
+				for(int i = 0; i < rightRelation.size(); i++) {
+					if(earliestRightTime > (long) rightRelation.get(i).get(this.rightStateFieldSchema.fieldIndex("timestamp"))) {
+						earliestRightTime = (long) rightRelation.get(i).get(this.rightStateFieldSchema.fieldIndex("timestamp"));
+						rightIndex = i;
+					}
 				}
+				rightRelation.remove(rightIndex);
 			}
-			rightRelation.remove(rightIndex);
 		}
 	}
 
@@ -213,9 +217,9 @@ public class JoinOperator<T extends Object> implements AbstractOperator, Seriali
 		 * The following does not really make sense because the left relation might have 
 		 * a different schema compared to the right relation.
 		 */
-//		List<String> schema = stateSchema.toList();
-//		schema.add("timestamp");
-//		this.stateSchema = new Fields(schema);
+		//		List<String> schema = stateSchema.toList();
+		//		schema.add("timestamp");
+		//		this.stateSchema = new Fields(schema);
 	}
 
 }

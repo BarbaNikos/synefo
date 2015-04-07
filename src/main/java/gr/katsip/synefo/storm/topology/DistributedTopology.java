@@ -73,19 +73,22 @@ public class DistributedTopology {
 		ProjectOperator projectOperator = new ProjectOperator(new Fields(projectOutSchema));
 		projectOperator.setOutputSchema(new Fields(projectOutSchema));
 		builder.setBolt("project_bolt_1", 
-				new SynefoBolt("project_bolt_1", synefoIP, synefoPort, projectOperator, zooIP, zooPort, false), 1)
+				new SynefoBolt("project_bolt_1", synefoIP, synefoPort, 
+						projectOperator, zooIP, zooPort, false), 1)
 				.setNumTasks(1)
 				.directGrouping("spout_1");
 		projectOperator = new ProjectOperator(new Fields(projectOutSchema));
 		projectOperator.setOutputSchema(new Fields(projectOutSchema));
 		builder.setBolt("project_bolt_2", 
-				new SynefoBolt("project_bolt_2", synefoIP, synefoPort, projectOperator, zooIP, zooPort, false), 1)
+				new SynefoBolt("project_bolt_2", synefoIP, synefoPort, 
+						projectOperator, zooIP, zooPort, false), 1)
 				.setNumTasks(1)
 				.directGrouping("spout_1");
 		projectOperator = new ProjectOperator(new Fields(projectOutSchema));
 		projectOperator.setOutputSchema(new Fields(projectOutSchema));
 		builder.setBolt("project_bolt_3", 
-				new SynefoBolt("project_bolt_3", synefoIP, synefoPort, projectOperator, zooIP, zooPort, false), 1)
+				new SynefoBolt("project_bolt_3", synefoIP, synefoPort, 
+						projectOperator, zooIP, zooPort, false), 1)
 				.setNumTasks(1)
 				.directGrouping("spout_1");
 		_tmp = new ArrayList<String>();
@@ -102,7 +105,8 @@ public class DistributedTopology {
 		JoinOperator<String> joinOperator = new JoinOperator<String>(new StringComparator(), 100, "three", 
 				new Fields(projectOutSchema), new Fields(projectOutSchema));
 		builder.setBolt("join_bolt_1", 
-				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, joinOperator, zooIP, zooPort, false), 1)
+				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, 
+						joinOperator, zooIP, zooPort, false), 1)
 				.setNumTasks(1)
 				.directGrouping("project_bolt_1")
 				.directGrouping("project_bolt_2")
@@ -111,7 +115,8 @@ public class DistributedTopology {
 		joinOperator = new JoinOperator<String>(new StringComparator(), 100, "three", 
 				new Fields(projectOutSchema), new Fields(projectOutSchema));
 		builder.setBolt("join_bolt_2", 
-				new SynefoBolt("join_bolt_2", synefoIP, synefoPort, joinOperator, zooIP, zooPort, false), 1)
+				new SynefoBolt("join_bolt_2", synefoIP, synefoPort, 
+						joinOperator, zooIP, zooPort, false), 1)
 				.setNumTasks(1)
 				.directGrouping("project_bolt_1")
 				.directGrouping("project_bolt_2")
@@ -120,7 +125,8 @@ public class DistributedTopology {
 		joinOperator = new JoinOperator<String>(new StringComparator(), 100, "three", 
 				new Fields(projectOutSchema), new Fields(projectOutSchema));
 		builder.setBolt("join_bolt_3", 
-				new SynefoBolt("join_bolt_3", synefoIP, synefoPort, joinOperator, zooIP, zooPort, false), 1)
+				new SynefoBolt("join_bolt_3", synefoIP, synefoPort, 
+						joinOperator, zooIP, zooPort, false), 1)
 				.setNumTasks(1)
 				.directGrouping("project_bolt_1")
 				.directGrouping("project_bolt_2")
