@@ -10,8 +10,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.lib.SynefoMessage.Type;
@@ -35,7 +37,7 @@ public class SynefoSpout extends BaseRichSpout {
 	 * 
 	 */
 	private static final long serialVersionUID = -7244170192535254357L;
-	
+
 	Logger logger = LoggerFactory.getLogger(SynefoSpout.class);
 
 	private String taskName;
@@ -69,7 +71,7 @@ public class SynefoSpout extends BaseRichSpout {
 	private String zooIP;
 
 	private Integer zooPort;
-	
+
 	private int reportCounter;
 
 	public SynefoSpout(String task_name, String synEFO_ip, Integer synEFO_port, 
@@ -91,7 +93,8 @@ public class SynefoSpout extends BaseRichSpout {
 		Socket socket;
 		ObjectOutputStream output = null;
 		ObjectInputStream input = null;
-		logger.info("+EFO-SPOUT (" + taskName + ":" + taskId + "@" + taskIP + ") in registerToSynEFO().");
+		logger.info("+EFO-SPOUT (" + taskName + ":" + taskId + "@" + taskIP + ") in registerToSynEFO() (timestamp: " + 
+				System.currentTimeMillis() + ").");
 		socket = null;
 		SynefoMessage msg = new SynefoMessage();
 		msg._type = Type.REG;
@@ -168,7 +171,7 @@ public class SynefoSpout extends BaseRichSpout {
 		pet.getScaleCommand();
 		System.out.println("+EFO-SPOUT (" + 
 				taskName + ":" + taskId + "@" + taskIP + 
-				") registered to +EFO successfully.");
+				") registered to +EFO successfully (timestamp: " + System.currentTimeMillis() + ").");
 	}
 
 	public void nextTuple() {
@@ -208,7 +211,7 @@ public class SynefoSpout extends BaseRichSpout {
 		}else {
 			reportCounter += 1;
 		}
-		
+
 		String scaleCommand = "";
 		synchronized(pet) {
 			if(pet.pendingCommands.isEmpty() == false) {
@@ -230,7 +233,8 @@ public class SynefoSpout extends BaseRichSpout {
 			idx = 0;
 			if(action.toLowerCase().contains("activate") || action.toLowerCase().contains("deactivate")) {
 				logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
-						") located scale-command: " + scaleCommand + ", about to update routing tables.");
+						") located scale-command: " + scaleCommand + ", about to update routing tables (timestamp: " + 
+						System.currentTimeMillis() + ").");
 				if(action.toLowerCase().equals("activate")) {
 					activeDownstreamTasks.add(taskWithIp);
 					intActiveDownstreamTasks.add(task_id);
@@ -240,7 +244,8 @@ public class SynefoSpout extends BaseRichSpout {
 				}
 			}else {
 				logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
-						") located scale-command: " + scaleCommand + ", about to produce punctuation tuple");
+						") located scale-command: " + scaleCommand + ", about to produce punctuation tuple (timestamp: " + 
+						System.currentTimeMillis() + ").");
 				if(action.toLowerCase().contains("add")) {
 					activeDownstreamTasks.add(taskWithIp);
 					intActiveDownstreamTasks.add(task_id);
