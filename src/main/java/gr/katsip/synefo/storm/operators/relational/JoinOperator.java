@@ -76,14 +76,12 @@ public class JoinOperator<T extends Object> implements AbstractOperator, Seriali
 					result.add(resultValues);
 				}
 			}
-			if((rightRelation.size() + leftRelation.size()) < window) {
+			if(leftRelation.size() < window) {
 				values.add(System.currentTimeMillis());
 				leftRelation.add(values);
 			}else {
 				if(leftRelation.size() > 0)
 					leftRelation.remove(0);
-				else
-					rightRelation.remove(0);
 				values.add(System.currentTimeMillis());
 				leftRelation.add(values);
 			}
@@ -96,14 +94,12 @@ public class JoinOperator<T extends Object> implements AbstractOperator, Seriali
 					result.add(resultValues);
 				}
 			}
-			if((rightRelation.size() + leftRelation.size()) < window) {
+			if(rightRelation.size() < window) {
 				values.add(System.currentTimeMillis());
 				rightRelation.add(values);
 			}else {
 				if(rightRelation.size() > 0)
 					rightRelation.remove(0);
-				else
-					leftRelation.remove(0);
 				values.add(System.currentTimeMillis());
 				rightRelation.add(values);
 			}
@@ -175,28 +171,27 @@ public class JoinOperator<T extends Object> implements AbstractOperator, Seriali
 				receivedStateValues.subList(leftRelationSize + 1, receivedStateValues.size()));
 		this.leftRelation.addAll(receivedLeftRelation);
 		this.rightRelation.addAll(receivedRightRelation);
-		while((leftRelation.size() + rightRelation.size()) > window) {
+		while(leftRelation.size() > window) {
 			long earliestLeftTime = (long) leftRelation.get(0).get(this.leftStateFieldSchema.fieldIndex("timestamp"));
 			int leftIndex = 0;
-			long earliestRightTime = (long) rightRelation.get(0).get(this.rightStateFieldSchema.fieldIndex("timestamp"));
-			int rightIndex = 0;
 			for(int i = 0; i < leftRelation.size(); i++) {
 				if(earliestLeftTime > (long) leftRelation.get(i).get(this.leftStateFieldSchema.fieldIndex("timestamp"))) {
 					earliestLeftTime = (long) leftRelation.get(i).get(this.leftStateFieldSchema.fieldIndex("timestamp"));
 					leftIndex = i;
 				}
 			}
+			leftRelation.remove(leftIndex);
+		}
+		while(rightRelation.size() > window) {
+			long earliestRightTime = (long) rightRelation.get(0).get(this.rightStateFieldSchema.fieldIndex("timestamp"));
+			int rightIndex = 0;
 			for(int i = 0; i < rightRelation.size(); i++) {
 				if(earliestRightTime > (long) rightRelation.get(i).get(this.rightStateFieldSchema.fieldIndex("timestamp"))) {
 					earliestRightTime = (long) rightRelation.get(i).get(this.rightStateFieldSchema.fieldIndex("timestamp"));
 					rightIndex = i;
 				}
 			}
-			if(earliestLeftTime < earliestRightTime) {
-				leftRelation.remove(leftIndex);
-			}else {
-				rightRelation.remove(rightIndex);
-			}
+			rightRelation.remove(rightIndex);
 		}
 	}
 
