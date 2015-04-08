@@ -3,7 +3,8 @@ package gr.katsip.synefo.storm.topology;
 import gr.katsip.synefo.storm.api.SynefoBolt;
 import gr.katsip.synefo.storm.api.SynefoSpout;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
-import gr.katsip.synefo.storm.operators.relational.EquiJoinOperator;
+import gr.katsip.synefo.storm.operators.relational.JoinOperator;
+import gr.katsip.synefo.storm.operators.relational.ProjectOperator;
 import gr.katsip.synefo.storm.operators.relational.StringComparator;
 import gr.katsip.synefo.storm.producers.StreamgenTupleProducer;
 
@@ -24,7 +25,8 @@ import backtype.storm.tuple.Fields;
 
 public class MinimalTopology {
 
-	public static void main(String[] args) throws UnknownHostException, IOException, InterruptedException, ClassNotFoundException, AlreadyAliveException, InvalidTopologyException {
+	public static void main(String[] args) throws UnknownHostException, IOException, 
+	InterruptedException, ClassNotFoundException, AlreadyAliveException, InvalidTopologyException {
 		String synefoIP = "";
 		Integer synefoPort = -1;
 		String streamIP = "";
@@ -46,37 +48,59 @@ public class MinimalTopology {
 		}
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
+		/**
+		 * Stage 0: Data Sources
+		 */
 		StreamgenTupleProducer tupleProducer = new StreamgenTupleProducer(streamIP, streamPort);
-		String[] spoutSchema = { "one", "two", "three", "four" };
+		String[] spoutSchema = { "num", "one", "two", "three", "four" };
 		tupleProducer.setSchema(new Fields(spoutSchema));
 		builder.setSpout("spout_1", 
 				new SynefoSpout("spout_1", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
+				.setNumTasks(1);
+		builder.setSpout("spout_2", 
+				new SynefoSpout("spout_2", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
 		_tmp = new ArrayList<String>();
 		_tmp.add("join_bolt_1");
 		_tmp.add("join_bolt_2");
 		topology.put("spout_1", new ArrayList<String>(_tmp));
+		topology.put("spout_2", new ArrayList<String>(_tmp));
 		/**
 		 * Stage 1: Join operators
 		 */
-		EquiJoinOperator<String> equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "three");
-		String[] join_schema = { "three-a", "three-b" };
-		String[] state_schema = { "one", "two", "three", "four", "time" };
-		equi_join_op.setOutputSchema(new Fields(join_schema));
-		equi_join_op.setStateSchema(new Fields(state_schema));
+		String[] projectOutSchema = { "num", "one", "two", "three", "four" };
+		JoinOperator<String> joinOperator = new JoinOperator<String>(new StringComparator(), 100, "three", 
+				new Fields(projectOutSchema), new Fields(projectOutSchema));
 		builder.setBolt("join_bolt_1", 
-				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, equi_join_op, zooIP, zooPort, true), 1)
-				.setNumTasks(1)
-				.directGrouping("spout_1");
-		equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 1000, "three");
-		equi_join_op.setOutputSchema(new Fields(join_schema));
-		equi_join_op.setStateSchema(new Fields(state_schema));
+				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, 
+						joinOperator, zooIP, zooPort, false), 1)
+						.setNumTasks(1)
+						.directGrouping("spout_1")
+						.directGrouping("spout_2");
+		joinOperator = new JoinOperator<String>(new StringComparator(), 100, "three", 
+				new Fields(projectOutSchema), new Fields(projectOutSchema));
 		builder.setBolt("join_bolt_2", 
-				new SynefoBolt("join_bolt_2", synefoIP, synefoPort, equi_join_op, zooIP, zooPort, true), 1)
-				.setNumTasks(1)
-				.directGrouping("spout_1");
-		topology.put("join_bolt_1", new ArrayList<String>());
-		topology.put("join_bolt_2", new ArrayList<String>());
+				new SynefoBolt("join_bolt_2", synefoIP, synefoPort, 
+						joinOperator, zooIP, zooPort, false), 1)
+						.setNumTasks(1)
+						.directGrouping("spout_1")
+						.directGrouping("spout_2");
+		_tmp = new ArrayList<String>();
+		_tmp.add("drain_bolt");
+		topology.put("join_bolt_1", new ArrayList<String>(_tmp));
+		topology.put("join_bolt_2", new ArrayList<String>(_tmp));
+		/**
+		 * Stage 2: Drain Operator (project operator)
+		 */
+		ProjectOperator projectOperator = new ProjectOperator(new Fields(projectOutSchema));
+		projectOperator.setOutputSchema(new Fields(projectOutSchema));
+		builder.setBolt("drain_bolt", 
+				new SynefoBolt("drain_bolt", synefoIP, synefoPort, 
+						projectOperator, zooIP, zooPort, false), 1)
+						.setNumTasks(1)
+						.directGrouping("join_bolt_1")
+						.directGrouping("join_bolt_2");
+		topology.put("drain_bolt", new ArrayList<String>());
 		/**
 		 * Notify SynEFO server about the 
 		 * Topology
@@ -102,9 +126,9 @@ public class MinimalTopology {
 		_in.close();
 		_out.close();
 		synEFOSocket.close();
-		
-		conf.setDebug(true);
-		conf.setNumWorkers(3);
+
+		conf.setDebug(false);
+		conf.setNumWorkers(5);
 		StormSubmitter.submitTopology("minimal-top", conf, builder.createTopology());
 	}
 
