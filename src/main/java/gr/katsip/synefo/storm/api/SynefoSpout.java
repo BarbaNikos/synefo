@@ -185,7 +185,7 @@ public class SynefoSpout extends BaseRichSpout {
 			/**
 			 * Add SYNEFO_HEADER (SYNEFO_TIMESTAMP) value in the beginning
 			 */
-			values.add(new Long(System.currentTimeMillis()));
+			values.add((new Long(System.currentTimeMillis())).toString());
 			Values returnedValues = tupleProducer.nextTuple();
 			for(int i = 0; i < returnedValues.size(); i++) {
 				values.add(returnedValues.get(i));
