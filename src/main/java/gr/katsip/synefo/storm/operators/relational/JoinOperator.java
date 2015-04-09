@@ -168,7 +168,7 @@ public class JoinOperator<T extends Object> implements AbstractOperator, Seriali
 		receivedStateValues.remove(0);
 		if(receivedStateValues.size() > 0) {
 			ArrayList<Values> receivedLeftRelation = new ArrayList<Values>(
-					receivedStateValues.subList(0, leftRelationSize + 1));
+					receivedStateValues.subList(0, leftRelationSize));
 			ArrayList<Values> receivedRightRelation = null;
 			if(receivedStateValues.size() > leftRelationSize)
 				receivedRightRelation = new ArrayList<Values>(
