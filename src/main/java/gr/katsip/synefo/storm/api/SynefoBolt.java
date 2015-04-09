@@ -274,6 +274,9 @@ public class SynefoBolt extends BaseRichBolt {
 		if(synefoTimestamp != null) {
 			long currentTimestamp = System.currentTimeMillis();
 			latency = currentTimestamp - synefoTimestamp;
+			if(latency < 0) {
+				latency = Math.abs(latency);
+			}
 			statistics.updateLatency(latency);
 		}else {
 			statistics.updateLatency();

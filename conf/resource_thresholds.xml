@@ -22,7 +22,7 @@
 	</resource>
 	<resource>
 		<key>latency-max</key>
-		<value>100</value>
+		<value>70</value>
 	</resource>
 	<resource>
 		<key>throughput-min</key>
