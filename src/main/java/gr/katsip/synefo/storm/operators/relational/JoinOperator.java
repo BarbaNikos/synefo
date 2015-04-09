@@ -67,9 +67,9 @@ public class JoinOperator<T extends Object> implements AbstractOperator, Seriali
 	@Override
 	public List<Values> execute(Fields fields, Values values) {
 		List<Values> result = new ArrayList<Values>();
-		if(fields.equals(leftFieldSchema)) {
+		if(fields.toList().equals(leftFieldSchema.toList())) {
 			for(Values rightStateTuple : rightRelation) {
-				Values rightTuple = new Values(rightStateTuple);
+				Values rightTuple = new Values(rightStateTuple.toArray());
 				rightTuple.remove(rightStateFieldSchema.fieldIndex("timestamp"));
 				Values resultValues = equiJoin(values, rightTuple);
 				if(resultValues != null && resultValues.size() > 0) {
@@ -85,9 +85,9 @@ public class JoinOperator<T extends Object> implements AbstractOperator, Seriali
 				values.add(System.currentTimeMillis());
 				leftRelation.add(values);
 			}
-		}else if(fields.equals(rightFieldSchema)) {
+		}else if(fields.toList().equals(rightFieldSchema.toList())) {
 			for(Values leftStateTuple : leftRelation) {
-				Values leftTuple = new Values(leftStateTuple);
+				Values leftTuple = new Values(leftStateTuple.toArray());
 				leftTuple.remove(leftStateFieldSchema.fieldIndex("timestamp"));
 				Values resultValues = equiJoin(leftTuple, values);
 				if(resultValues != null && resultValues.size() > 0) {
@@ -125,7 +125,8 @@ public class JoinOperator<T extends Object> implements AbstractOperator, Seriali
 
 	@Override
 	public List<Values> getStateValues() {
-		stateValues.clear();
+		if(stateValues.isEmpty() == false)
+			stateValues.clear();
 		/**
 		 * The first record of the stateValues list is the offset 
 		 * of the leftRelation records. Therefore, if current state 
