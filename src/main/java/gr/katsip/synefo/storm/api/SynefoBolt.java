@@ -243,7 +243,7 @@ public class SynefoBolt extends BaseRichBolt {
 			List<Values> returnedTuples = operator.execute(fields, values);
 			for(Values v : returnedTuples) {
 				produced_values = new Values();
-				produced_values.add(new Long(System.currentTimeMillis()));
+				produced_values.add((new Long(System.currentTimeMillis())).toString());
 				for(int i = 0; i < v.size(); i++) {
 					produced_values.add(v.get(i));
 				}
@@ -259,7 +259,7 @@ public class SynefoBolt extends BaseRichBolt {
 			List<Values> returnedTuples = operator.execute(fields, values);
 			for(Values v : returnedTuples) {
 				produced_values = new Values();
-				produced_values.add(new Long(System.currentTimeMillis()));
+				produced_values.add((new Long(System.currentTimeMillis())).toString());
 				for(int i = 0; i < v.size(); i++) {
 					produced_values.add(v.get(i));
 				}
