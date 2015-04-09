@@ -20,12 +20,12 @@ public class CountGroupByAggrOperator implements Serializable, AbstractOperator 
 
 	private Fields output_schema;
 
-	private String[] group_by_attrs;
+	private String[] groupByAttributes;
 
 	private Integer window;
 
 	public CountGroupByAggrOperator(int _window, String[] _group_by_attrs) {
-		group_by_attrs = _group_by_attrs;
+		groupByAttributes = _group_by_attrs;
 		window = _window;
 	}
 
@@ -38,8 +38,8 @@ public class CountGroupByAggrOperator implements Serializable, AbstractOperator 
 	public List<Values> execute(Fields fields, Values values) {
 		List<Values> returnValues = new ArrayList<Values>();
 		StringBuilder strBuild = new StringBuilder();
-		for(int i = 0; i < group_by_attrs.length; i++) {
-			strBuild.append(values.get(fields.fieldIndex(group_by_attrs[i])));
+		for(int i = 0; i < groupByAttributes.length; i++) {
+			strBuild.append(values.get(fields.fieldIndex(groupByAttributes[i])));
 			strBuild.append(',');
 		}
 		strBuild.setLength(Math.max(strBuild.length() - 1, 0));

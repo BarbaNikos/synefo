@@ -107,10 +107,8 @@ public class SynefoBolt extends BaseRichBolt {
 	@SuppressWarnings("unchecked")
 	public void registerToSynEFO() {
 		Socket socket;
-		ObjectOutputStream _output;
-		ObjectInputStream _input;
-		logger.info("+EFO-BOLT (" + taskName + ":" + taskID + "@" + taskIP + ") in registerToSynEFO() timestamp: " + 
-				System.currentTimeMillis() + ".");
+		ObjectOutputStream output;
+		ObjectInputStream input;
 		socket = null;
 		SynefoMessage msg = new SynefoMessage();
 		msg._type = Type.REG;
@@ -125,15 +123,15 @@ public class SynefoBolt extends BaseRichBolt {
 		msg._values.put("TASK_ID", Integer.toString(taskID));
 		try {
 			socket = new Socket(synefoServerIP, synefoServerPort);
-			_output = new ObjectOutputStream(socket.getOutputStream());
-			_input = new ObjectInputStream(socket.getInputStream());
-			_output.writeObject(msg);
-			_output.flush();
+			output = new ObjectOutputStream(socket.getOutputStream());
+			input = new ObjectInputStream(socket.getInputStream());
+			output.writeObject(msg);
+			output.flush();
 			msg = null;
-			ArrayList<String> _downstream = null;
-			_downstream = (ArrayList<String>) _input.readObject();
-			if(_downstream != null && _downstream.size() > 0) {
-				downstreamTasks = new ArrayList<String>(_downstream);
+			ArrayList<String> downstream = null;
+			downstream = (ArrayList<String>) input.readObject();
+			if(downstream != null && downstream.size() > 0) {
+				downstreamTasks = new ArrayList<String>(downstream);
 				intDownstreamTasks = new ArrayList<Integer>();
 				Iterator<String> itr = downstreamTasks.iterator();
 				while(itr.hasNext()) {
@@ -148,10 +146,10 @@ public class SynefoBolt extends BaseRichBolt {
 				downstreamTasks = new ArrayList<String>();
 				intDownstreamTasks = new ArrayList<Integer>();
 			}
-			ArrayList<String> _active_downstream = null;
-			_active_downstream = (ArrayList<String>) _input.readObject();
-			if(_active_downstream != null && _active_downstream.size() > 0) {
-				activeDownstreamTasks = new ArrayList<String>(_active_downstream);
+			ArrayList<String> activeDownstream = null;
+			activeDownstream = (ArrayList<String>) input.readObject();
+			if(activeDownstream != null && activeDownstream.size() > 0) {
+				activeDownstreamTasks = new ArrayList<String>(activeDownstream);
 				intActiveDownstreamTasks = new ArrayList<Integer>();
 				Iterator<String> itr = activeDownstreamTasks.iterator();
 				while(itr.hasNext()) {
@@ -172,9 +170,9 @@ public class SynefoBolt extends BaseRichBolt {
 			 * Closing channels of communication with 
 			 * SynEFO server
 			 */
-			_output.flush();
-			_output.close();
-			_input.close();
+			output.flush();
+			output.close();
+			input.close();
 			socket.close();
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
@@ -196,19 +194,14 @@ public class SynefoBolt extends BaseRichBolt {
 	public void prepare(@SuppressWarnings("rawtypes") Map conf, TopologyContext context, OutputCollector collector) {
 		this.collector = collector;
 		taskID = context.getThisTaskId();
-		if(conf.containsKey("TOPOLOGY_DEBUG") || conf.containsKey("topology_debug")) {
-			String debug = (String) conf.get("TOPOLOGY_DEBUG");
-			logger.info("+EFO-BOLT (" + taskName + ":" + taskID + "@" + taskIP + ") topology debug flag: " + debug);
-		}
 		try {
 			taskIP = InetAddress.getLocalHost().getHostAddress();
 		} catch (UnknownHostException e1) {
 			e1.printStackTrace();
 		}
 		zooPet = new ZooPet(zooIP, zooPort, taskName, taskID, taskIP);
-		if(downstreamTasks == null && activeDownstreamTasks == null) {
+		if(downstreamTasks == null && activeDownstreamTasks == null)
 			registerToSynEFO();
-		}
 	}
 
 
@@ -222,32 +215,34 @@ public class SynefoBolt extends BaseRichBolt {
 					") in execute(): received tuple with fields: " + tuple.getFields().toString() + 
 					" from component: " + tuple.getSourceComponent() + " with task-id: " + tuple.getSourceTask());
 		}
+		//SYNEFO_HEADER (SYNEFO_TIMESTAMP) is always the first
 		String synefoHeader = tuple.getString(tuple.getFields().fieldIndex("SYNEFO_HEADER"));
-		Long synefoTimestamp = tuple.getLong(tuple.getFields().fieldIndex("SYNEFO_TIMESTAMP"));
+		Long synefoTimestamp = null;
 		if(synefoHeader != null && synefoHeader.equals("") == false && synefoHeader.contains("/") == true) {
-			StringTokenizer txt = new StringTokenizer(synefoHeader, "/");
-			String prefix = txt.nextToken();
-			if(prefix.equals(SynefoConstant.PUNCT_TUPLE_TAG)) {
-				handlePunctuationTuple(tuple);
-				return;
+			if(synefoHeader.contains("/")) {
+				StringTokenizer txt = new StringTokenizer(synefoHeader, "/");
+				String prefix = txt.nextToken();
+				if(prefix.equals(SynefoConstant.PUNCT_TUPLE_TAG)) {
+					handlePunctuationTuple(tuple);
+					return;
+				}
+			}else {
+				synefoTimestamp = Long.parseLong(synefoHeader);
 			}
 		}
 		/**
-		 * Remove from both values and fields SYNEFO_HEADER & SYNEFO_TIMESTAMP
+		 * Remove from both values and fields SYNEFO_HEADER (SYNEFO_TIMESTAMP)
 		 */
 		Values produced_values = null;
 		Values values = new Values(tuple.getValues().toArray());
-		values.remove(tuple.getFields().fieldIndex("SYNEFO_HEADER"));
 		values.remove(0);
 		List<String> fieldList = tuple.getFields().toList();
-		fieldList.remove(0);
 		fieldList.remove(0);
 		Fields fields = new Fields(fieldList);
 		if(intActiveDownstreamTasks != null && intActiveDownstreamTasks.size() > 0) {
 			List<Values> returnedTuples = operator.execute(fields, values);
 			for(Values v : returnedTuples) {
 				produced_values = new Values();
-				produced_values.add("SYNEFO_HEADER");
 				produced_values.add(new Long(System.currentTimeMillis()));
 				for(int i = 0; i < v.size(); i++) {
 					produced_values.add(v.get(i));
@@ -264,7 +259,6 @@ public class SynefoBolt extends BaseRichBolt {
 			List<Values> returnedTuples = operator.execute(fields, values);
 			for(Values v : returnedTuples) {
 				produced_values = new Values();
-				produced_values.add("SYNEFO_HEADER");
 				produced_values.add(new Long(System.currentTimeMillis()));
 				for(int i = 0; i < v.size(); i++) {
 					produced_values.add(v.get(i));
@@ -355,10 +349,6 @@ public class SynefoBolt extends BaseRichBolt {
 				 */
 				Values punctValue = new Values();
 				punctValue.add(strBuild.toString());
-				/**
-				 * Add typical SYNEFO_TIMESTAMP value
-				 */
-				punctValue.add(new Long(System.currentTimeMillis()));
 				for(int i = 0; i < operator.getOutputSchema().size(); i++) {
 					punctValue.add(null);
 				}
@@ -370,7 +360,6 @@ public class SynefoBolt extends BaseRichBolt {
 				 * we remove it after sending the punctuation tuples, so 
 				 * that the removed task is notified to share state
 				 */
-
 				if(action.toLowerCase().contains("remove") && activeDownstreamTasks.indexOf(taskWithIp) >= 0) {
 					activeDownstreamTasks.remove(activeDownstreamTasks.indexOf(taskWithIp));
 					intActiveDownstreamTasks.remove(intActiveDownstreamTasks.indexOf(task_id));
@@ -382,31 +371,26 @@ public class SynefoBolt extends BaseRichBolt {
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
 		List<String> producerSchema = new ArrayList<String>();
 		producerSchema.add("SYNEFO_HEADER");
-		producerSchema.add("SYNEFO_TIMESTAMP");
 		producerSchema.addAll(operator.getOutputSchema().toList());
 		declarer.declare(new Fields(producerSchema));
 	}
 
 	@SuppressWarnings("unchecked")
 	public void handlePunctuationTuple(Tuple tuple) {
-		/**
-		 * Initiate migration of state
-		 */
-		String action = null;
+		String scaleAction = null;
 		String component_name = null;
 		String component_id = null;
 		Integer comp_num = -1;
 		String ip = null;
 		logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
 				") received punctuation tuple: " + tuple.toString() + "(timestamp: " + System.currentTimeMillis() + ").");
-		StringTokenizer str_tok = new StringTokenizer((String) tuple.getValues()
-				.get(tuple.getFields().fieldIndex("SYNEFO_HEADER")), "/");
+		StringTokenizer str_tok = new StringTokenizer((String) tuple.getValues().get(0), "/");
 		while(str_tok.hasMoreTokens()) {
 			String s = str_tok.nextToken();
 			if((s.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.ADD_ACTION) || 
 					s.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.REMOVE_ACTION)) && 
 					s.equals(SynefoConstant.PUNCT_TUPLE_TAG) == false) {
-				action = s;
+				scaleAction = s;
 			}else if((s.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.ADD_ACTION) == false && 
 					s.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.REMOVE_ACTION) == false) && 
 					s.equals(SynefoConstant.PUNCT_TUPLE_TAG) == false && s.startsWith(SynefoConstant.COMP_TAG) 
@@ -439,7 +423,7 @@ public class SynefoBolt extends BaseRichBolt {
 		/**
 		 * 
 		 */
-		if(action != null && action.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.ADD_ACTION)) {
+		if(scaleAction != null && scaleAction.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.ADD_ACTION)) {
 			System.out.println("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
 					") received an ADD action (timestamp: " + System.currentTimeMillis() + ").");
 			String selfComp = this.taskName + ":" + this.taskID;
@@ -511,7 +495,7 @@ public class SynefoBolt extends BaseRichBolt {
 						logger.info("+EFO-BOLT (" + taskID + "): " + e.getMessage());
 						try
 						{
-							Thread.sleep(500);
+							Thread.sleep(100);
 						}
 						catch(InterruptedException ie){
 							ie.printStackTrace();
@@ -539,7 +523,7 @@ public class SynefoBolt extends BaseRichBolt {
 				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
 						") sent state to newly added node successfully (timestamp: " + System.currentTimeMillis() + ").");
 			}
-		}else if(action != null && action.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.REMOVE_ACTION)) {
+		}else if(scaleAction != null && scaleAction.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.REMOVE_ACTION)) {
 			logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
 					") received a REMOVE action (timestamp: " + System.currentTimeMillis() + ").");
 			String selfComp = this.taskName + ":" + this.taskID;
@@ -586,11 +570,11 @@ public class SynefoBolt extends BaseRichBolt {
 						client = new Socket(ip, 6000 + comp_task_id);
 						attempt_flag = false;
 					} catch (IOException e) {
-						logger.info("+EFO:BOLT (" + taskID + "): Connect failed (2), waiting and trying again");
-						logger.info("+EFO:BOLT (" + taskID + "): " + e.getMessage());
+						logger.info("+EFO-BOLT (" + taskID + "): Connect failed (2), waiting and trying again");
+						logger.info("+EFO-BOLT (" + taskID + "): " + e.getMessage());
 						try
 						{
-							Thread.sleep(500);
+							Thread.sleep(100);
 						}
 						catch(InterruptedException ie){
 							ie.printStackTrace();

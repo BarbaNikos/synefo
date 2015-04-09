@@ -114,10 +114,10 @@ public class SynefoSpout extends BaseRichSpout {
 			output.writeObject(msg);
 			output.flush();
 			msg = null;
-			ArrayList<String> _downstream = null;
-			_downstream = (ArrayList<String>) input.readObject();
-			if(_downstream != null && _downstream.size() > 0) {
-				downstreamTasks = new ArrayList<String>(_downstream);
+			ArrayList<String> downstream = null;
+			downstream = (ArrayList<String>) input.readObject();
+			if(downstream != null && downstream.size() > 0) {
+				downstreamTasks = new ArrayList<String>(downstream);
 				intDownstreamTasks = new ArrayList<Integer>();
 				for(String task : downstreamTasks) {
 					StringTokenizer strTok = new StringTokenizer(task, ":");
@@ -130,10 +130,10 @@ public class SynefoSpout extends BaseRichSpout {
 				downstreamTasks = new ArrayList<String>();
 				intDownstreamTasks = new ArrayList<Integer>();
 			}
-			ArrayList<String> _active_downstream = null;
-			_active_downstream = (ArrayList<String>) input.readObject();
-			if(_active_downstream != null && _active_downstream.size() > 0) {
-				activeDownstreamTasks = new ArrayList<String>(_active_downstream);
+			ArrayList<String> activeDownstream = null;
+			activeDownstream = (ArrayList<String>) input.readObject();
+			if(activeDownstream != null && activeDownstream.size() > 0) {
+				activeDownstreamTasks = new ArrayList<String>(activeDownstream);
 				intActiveDownstreamTasks = new ArrayList<Integer>();
 				for(String task : activeDownstreamTasks) {
 					StringTokenizer strTok = new StringTokenizer(task, ":");
@@ -183,9 +183,8 @@ public class SynefoSpout extends BaseRichSpout {
 		if(intActiveDownstreamTasks != null && intActiveDownstreamTasks.size() > 0) {
 			Values values = new Values();
 			/**
-			 * Add SYNEFO_HEADER and SYNEFO_TIMESTAMP value in the beginning
+			 * Add SYNEFO_HEADER (SYNEFO_TIMESTAMP) value in the beginning
 			 */
-			values.add("SYNEFO_HEADER");
 			values.add(new Long(System.currentTimeMillis()));
 			Values returnedValues = tupleProducer.nextTuple();
 			for(int i = 0; i < returnedValues.size(); i++) {
@@ -262,10 +261,6 @@ public class SynefoSpout extends BaseRichSpout {
 				 */
 				Values punctValue = new Values();
 				punctValue.add(strBuild.toString());
-				/**
-				 * Add typical SYNEFO_TIMESTAMP value
-				 */
-				punctValue.add(new Long(System.currentTimeMillis()));
 				for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
 					punctValue.add(null);
 				}
@@ -303,7 +298,6 @@ public class SynefoSpout extends BaseRichSpout {
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
 		List<String> producerSchema = new ArrayList<String>();
 		producerSchema.add("SYNEFO_HEADER");
-		producerSchema.add("SYNEFO_TIMESTAMP");
 		producerSchema.addAll(tupleProducer.getSchema().toList());
 		declarer.declare(new Fields(producerSchema));
 	}

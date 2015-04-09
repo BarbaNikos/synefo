@@ -196,42 +196,6 @@ public class ZooPet {
 				e.printStackTrace();
 			}
 		}
-
-		/**
-		 * This function checks the usage statistics of the component, and if they 
-		 * are below the minimum thresholds, a scale-in request is created in the ZooKeeper ensemble. 
-		 * Similarly, if the usage statistics are above the maximum thresholds, a scale-out 
-		 * request is created in the ZooKeeper ensemble.
-		 * @param cpu
-		 * @param memory
-		 * @param latency
-		 * @param throughput
-		 */
-//		public void setStatisticData(double cpu, double memory, Integer latency, Integer throughput) {
-//			if(state == BoltState.ACTIVE) {
-//				if(this.cpu.upperBound < cpu || this.mem.upperBound < memory) {
-//					/**
-//					 * Create also a node under scale-out-event znode with the name of the bolt.
-//					 * This way, the SynEFO coordination thread will understand that the bolt 
-//					 * is overloaded and that it needs to scale-out.
-//					 */
-//					logger.info("setStatisticData(): Over-utilization detected. Generating scale out command (" + 
-//							taskName + ":" + taskID + "@" + taskIP + ")...");
-//					createScaleOutTask();
-//					submittedScaleTask = true;
-//				}else if(this.cpu.lowerBound > cpu || this.mem.lowerBound > memory) {
-//					/**
-//					 * Create also a node under scale-in-event znode with the name of the bolt.
-//					 * This way, the SynEFO coordination thread will understand that the bolt 
-//					 * is overloaded and that it needs to scale-out.
-//					 */
-//					logger.info("setStatisticData(): Under-utilization detected. Generating scale out command (" + 
-//							taskName + ":" + taskID + "@" + taskIP + ")...");
-//					createScaleInTask();
-//					submittedScaleTask = true;
-//				}
-//			}
-//		}
 		
 		/**
 		 * Create scale task based on latency
