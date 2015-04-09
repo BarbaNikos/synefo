@@ -173,8 +173,10 @@ public class JoinOperator<T extends Object> implements AbstractOperator, Seriali
 			if(receivedStateValues.size() > leftRelationSize)
 				receivedRightRelation = new ArrayList<Values>(
 						receivedStateValues.subList(leftRelationSize + 1, receivedStateValues.size()));
-			this.leftRelation.addAll(receivedLeftRelation);
-			this.rightRelation.addAll(receivedRightRelation);
+			if(receivedLeftRelation != null && receivedLeftRelation.size() > 0)
+				this.leftRelation.addAll(receivedLeftRelation);
+			if(receivedRightRelation != null && receivedRightRelation.size() > 0)
+				this.rightRelation.addAll(receivedRightRelation);
 			while(leftRelation.size() > window) {
 				long earliestLeftTime = (long) leftRelation.get(0).get(this.leftStateFieldSchema.fieldIndex("timestamp"));
 				int leftIndex = 0;
