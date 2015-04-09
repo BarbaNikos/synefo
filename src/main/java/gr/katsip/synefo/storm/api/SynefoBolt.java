@@ -238,13 +238,6 @@ public class SynefoBolt extends BaseRichBolt {
 		Values produced_values = null;
 		Values values = new Values(tuple.getValues().toArray());
 		values.remove(tuple.getFields().fieldIndex("SYNEFO_HEADER"));
-		//CAUTION: The following might be a bug.
-		/*
-		 * Because initially list is {SYNEFO_HEADER, SYNEFO_TIMESTAMP, attr0, ...}
-		 * 1) remove header from position 0 => {SYNEFO_TIMESTAMP, attr0,...}
-		 * 2) remove timestamp from position 1 => {SYNEFO_TIMESTAMP, ...}
-		 */
-		//		values.remove(tuple.getFields().fieldIndex("SYNEFO_TIMESTAMP"));
 		values.remove(0);
 		List<String> fieldList = tuple.getFields().toList();
 		fieldList.remove(0);
@@ -283,8 +276,10 @@ public class SynefoBolt extends BaseRichBolt {
 		}
 		statistics.updateMemory();
 		statistics.updateCpuLoad();
+		long latency = -1;
 		if(synefoTimestamp != null) {
-			long latency = System.currentTimeMillis() - synefoTimestamp;
+			long currentTimestamp = System.currentTimeMillis();
+			latency = currentTimestamp - synefoTimestamp;
 			statistics.updateLatency(latency);
 		}else {
 			statistics.updateLatency();
@@ -296,7 +291,8 @@ public class SynefoBolt extends BaseRichBolt {
 					") timestamp: " + System.currentTimeMillis() + ", " + 
 					"cpu: " + statistics.getCpuLoad() + 
 					", memory: " + statistics.getMemory() + 
-					", latency: " + statistics.getLatency() + 
+//					", latency: " + statistics.getLatency() + 
+					", latency: " + latency + 
 					", throughput: " + statistics.getThroughput());
 			reportCounter = 0;
 		}else {
