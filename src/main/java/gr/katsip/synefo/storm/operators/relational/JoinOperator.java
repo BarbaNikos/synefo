@@ -40,7 +40,8 @@ public class JoinOperator<T extends Object> implements AbstractOperator, Seriali
 
 	private Comparator<T> comparator;
 
-	public JoinOperator(Comparator<T> comparator, int window, String joinAttribute, Fields leftFieldSchema, Fields rightFieldSchema) {
+	public JoinOperator(Comparator<T> comparator, int window, String joinAttribute, 
+			Fields leftFieldSchema, Fields rightFieldSchema) {
 		this.window = window;
 		this.joinAttribute = joinAttribute;
 		/**

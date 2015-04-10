@@ -20,18 +20,18 @@ public class FilterOperator<T> implements AbstractOperator, Serializable {
 
 	private T value;
 
-	private String field;
+	private String fieldName;
 
 	private Fields stateSchema;
 	
 	private List<Values> stateValues;
 
-	private Fields output_schema;
+	private Fields outputSchema;
 
-	public FilterOperator(Comparator<T> _comparator, String _field, T _value) {
-		comparator = _comparator;
-		value = _value;
-		field = _field;
+	public FilterOperator(Comparator<T> comparator, String fieldName, T value) {
+		this.comparator = comparator;
+		this.value = value;
+		this.fieldName = fieldName;
 	}
 
 	@Override
@@ -43,12 +43,12 @@ public class FilterOperator<T> implements AbstractOperator, Serializable {
 	public List<Values> execute(Fields fields, Values values) {
 		List<Values> returnTuples = new ArrayList<Values>();
 		@SuppressWarnings("unchecked")
-		T tValue = (T) values.get(fields.fieldIndex(field));
+		T tValue = (T) values.get(fields.fieldIndex(fieldName));
 		if(comparator.compare(value, tValue) == 0) {
-			Values newValues = new Values();
-			for(int i = 0; i < values.size(); i++) {
-				newValues.add(values.get(i));
-			}
+			Values newValues = new Values(values.toArray());
+//			for(int i = 0; i < values.size(); i++) {
+//				newValues.add(values.get(i));
+//			}
 			returnTuples.add(newValues);
 			return returnTuples;
 		}
@@ -66,7 +66,7 @@ public class FilterOperator<T> implements AbstractOperator, Serializable {
 
 	@Override
 	public Fields getOutputSchema() {
-		return output_schema;
+		return outputSchema;
 	}
 
 	@Override
@@ -75,8 +75,8 @@ public class FilterOperator<T> implements AbstractOperator, Serializable {
 	}
 
 	@Override
-	public void setOutputSchema(Fields _output_schema) {
-		output_schema = new Fields(_output_schema.toList());
+	public void setOutputSchema(Fields outputSchema) {
+		this.outputSchema = new Fields(outputSchema.toList());
 	}
 
 	@Override

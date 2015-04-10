@@ -18,15 +18,15 @@ public class CountGroupByAggrOperator implements Serializable, AbstractOperator 
 
 	private Fields stateSchema;
 
-	private Fields output_schema;
+	private Fields outputSchema;
 
 	private String[] groupByAttributes;
 
 	private Integer window;
 
-	public CountGroupByAggrOperator(int _window, String[] _group_by_attrs) {
-		groupByAttributes = _group_by_attrs;
-		window = _window;
+	public CountGroupByAggrOperator(int window, String[] groupByAttributes) {
+		this.groupByAttributes = groupByAttributes;
+		this.window = window;
 	}
 
 	@Override
@@ -104,7 +104,7 @@ public class CountGroupByAggrOperator implements Serializable, AbstractOperator 
 
 	@Override
 	public Fields getOutputSchema() {
-		return output_schema;
+		return outputSchema;
 	}
 
 	@Override
@@ -133,8 +133,8 @@ public class CountGroupByAggrOperator implements Serializable, AbstractOperator 
 	}
 
 	@Override
-	public void setOutputSchema(Fields _output_schema) {
-		output_schema = new Fields(_output_schema.toList());
+	public void setOutputSchema(Fields outputSchema) {
+		this.outputSchema = new Fields(outputSchema.toList());
 	}
 
 	@Override

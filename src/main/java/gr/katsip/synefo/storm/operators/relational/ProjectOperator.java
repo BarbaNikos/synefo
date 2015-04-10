@@ -4,7 +4,7 @@ import gr.katsip.synefo.storm.operators.AbstractOperator;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Iterator;
+//import java.util.Iterator;
 import java.util.List;
 
 import backtype.storm.tuple.Fields;
@@ -21,35 +21,36 @@ public class ProjectOperator implements AbstractOperator, Serializable {
 
 	private Fields stateSchema;
 
-	private Fields output_schema;
+	private Fields outputSchema;
 
-	private Fields projected_attributes;
+	private Fields projectedAttributes;
 
-	public ProjectOperator(Fields _projected_attributes) {
-		projected_attributes = new Fields(_projected_attributes.toList());
+	public ProjectOperator(Fields projectedAttributes) {
+		this.projectedAttributes = new Fields(projectedAttributes.toList());
 	}
 
 	@Override
 	public List<Values> execute(Fields fields, Values values) {
 		List<Values> returnTuples = new ArrayList<Values>();
-		Iterator<String> itr = projected_attributes.iterator();
-		Values projected_values = new Values();
-		while(itr.hasNext()) {
-			String field = itr.next();
-			projected_values.add(values.get(fields.fieldIndex(field)));
-		}
-		returnTuples.add(projected_values);
+//		Iterator<String> itr = projectedAttributes.iterator();
+//		Values projected_values = new Values();
+//		while(itr.hasNext()) {
+//			String field = itr.next();
+//			projected_values.add(values.get(fields.fieldIndex(field)));
+//		}
+//		returnTuples.add(projected_values);
+		returnTuples.add(new Values(fields.select(projectedAttributes, values)));
 		return returnTuples;
 	}
 
 	@Override
 	public Fields getOutputSchema() {
-		return output_schema;
+		return outputSchema;
 	}
 
 	@Override
-	public void setOutputSchema(Fields _output_schema) {
-		output_schema = new Fields(_output_schema.toList());
+	public void setOutputSchema(Fields outputSchema) {
+		this.outputSchema = new Fields(outputSchema.toList());
 	}
 
 	@Override

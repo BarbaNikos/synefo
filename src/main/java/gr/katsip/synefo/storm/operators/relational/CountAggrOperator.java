@@ -20,7 +20,7 @@ public class CountAggrOperator implements AbstractOperator, Serializable {
 	
 	private Integer count;
 	
-	private Fields output_schema;
+	private Fields outputSchema;
 	
 	public CountAggrOperator() {
 		count = 0;
@@ -57,7 +57,7 @@ public class CountAggrOperator implements AbstractOperator, Serializable {
 
 	@Override
 	public Fields getOutputSchema() {
-		return output_schema;
+		return outputSchema;
 	}
 	
 	@Override
@@ -69,7 +69,7 @@ public class CountAggrOperator implements AbstractOperator, Serializable {
 
 	@Override
 	public void setOutputSchema(Fields _output_schema) {
-		output_schema = new Fields(_output_schema.toList());
+		outputSchema = new Fields(_output_schema.toList());
 	}
 
 	@Override

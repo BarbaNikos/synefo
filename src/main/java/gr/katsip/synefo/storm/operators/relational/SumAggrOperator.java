@@ -21,12 +21,12 @@ public class SumAggrOperator implements AbstractOperator, Serializable {
 
 	private Integer sum;
 
-	private Fields output_schema;
+	private Fields outputSchema;
 	
-	private String summation_attribute;
+	private String summationAttributeName;
 	
-	public SumAggrOperator(String _summation_attribute) {
-		summation_attribute = _summation_attribute;
+	public SumAggrOperator(String summationAttribute) {
+		this.summationAttributeName = summationAttribute;
 	}
 	
 	public void init(List<Values> stateValues) {
@@ -34,7 +34,7 @@ public class SumAggrOperator implements AbstractOperator, Serializable {
 	}
 
 	public List<Values> execute(Fields fields, Values values) {
-		sum += (Integer) values.get(fields.fieldIndex(summation_attribute));
+		sum += (Integer) values.get(fields.fieldIndex(summationAttributeName));
 		Values newValues = new Values();
 		newValues.add(sum);
 		List<Values> returnTuples = new ArrayList<Values>();
@@ -55,17 +55,18 @@ public class SumAggrOperator implements AbstractOperator, Serializable {
 	}
 
 	public Fields getOutputSchema() {
-		return output_schema;
+		return outputSchema;
 	}
 
-	public void setOutputSchema(Fields _output_schema) {
-		if(_output_schema.contains(summation_attribute))
-			output_schema = new Fields(_output_schema.toList());
+	public void setOutputSchema(Fields outputSchema) {
+		if(outputSchema.contains(summationAttributeName))
+			this.outputSchema = new Fields(outputSchema.toList());
 	}
 
 	public void mergeState(Fields receivedStateSchema,
 			List<Values> receivedStateValues) {
-		int sum = (int) receivedStateValues.get(0).get(receivedStateSchema.fieldIndex(summation_attribute));
+		int sum = (int) receivedStateValues.get(0).get(
+				receivedStateSchema.fieldIndex(summationAttributeName));
 		this.sum += sum;
 	}
 

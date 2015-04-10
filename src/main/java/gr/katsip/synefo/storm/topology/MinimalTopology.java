@@ -7,7 +7,6 @@ import gr.katsip.synefo.storm.operators.relational.JoinOperator;
 import gr.katsip.synefo.storm.operators.relational.ProjectOperator;
 import gr.katsip.synefo.storm.operators.relational.StringComparator;
 import gr.katsip.synefo.storm.producers.StreamgenTupleProducer;
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -15,7 +14,6 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
-
 import backtype.storm.Config;
 import backtype.storm.StormSubmitter;
 import backtype.storm.generated.AlreadyAliveException;
@@ -53,10 +51,12 @@ public class MinimalTopology {
 		 */
 		StreamgenTupleProducer tupleProducer = new StreamgenTupleProducer(streamIP, streamPort);
 		String[] spoutSchema = { "num", "one", "two", "three", "four" };
+		String[] spoutTwoSchema = { "num", "1", "2", "three", "5" };
 		tupleProducer.setSchema(new Fields(spoutSchema));
 		builder.setSpout("spout_1", 
 				new SynefoSpout("spout_1", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
+		tupleProducer.setSchema(new Fields(spoutTwoSchema));
 		builder.setSpout("spout_2", 
 				new SynefoSpout("spout_2", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
@@ -68,9 +68,8 @@ public class MinimalTopology {
 		/**
 		 * Stage 1: Join operators
 		 */
-		String[] projectOutSchema = { "num", "one", "two", "three", "four" };
 		JoinOperator<String> joinOperator = new JoinOperator<String>(new StringComparator(), 100, "three", 
-				new Fields(projectOutSchema), new Fields(projectOutSchema));
+				new Fields(spoutSchema), new Fields(spoutTwoSchema));
 		builder.setBolt("join_bolt_1", 
 				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, 
 						joinOperator, zooIP, zooPort, true), 1)
@@ -78,7 +77,7 @@ public class MinimalTopology {
 						.directGrouping("spout_1")
 						.directGrouping("spout_2");
 		joinOperator = new JoinOperator<String>(new StringComparator(), 100, "three", 
-				new Fields(projectOutSchema), new Fields(projectOutSchema));
+				new Fields(spoutSchema), new Fields(spoutTwoSchema));
 		builder.setBolt("join_bolt_2", 
 				new SynefoBolt("join_bolt_2", synefoIP, synefoPort, 
 						joinOperator, zooIP, zooPort, true), 1)
@@ -92,8 +91,10 @@ public class MinimalTopology {
 		/**
 		 * Stage 2: Drain Operator (project operator)
 		 */
-		ProjectOperator projectOperator = new ProjectOperator(new Fields(projectOutSchema));
-		projectOperator.setOutputSchema(new Fields(projectOutSchema));
+		ProjectOperator projectOperator = new ProjectOperator(new Fields(
+				joinOperator.getOutputSchema().toList().toArray(new String[joinOperator.getOutputSchema().size()])));
+		projectOperator.setOutputSchema(new Fields(
+				joinOperator.getOutputSchema().toList().toArray(new String[joinOperator.getOutputSchema().size()])));
 		builder.setBolt("drain_bolt", 
 				new SynefoBolt("drain_bolt", synefoIP, synefoPort, 
 						projectOperator, zooIP, zooPort, false), 1)
