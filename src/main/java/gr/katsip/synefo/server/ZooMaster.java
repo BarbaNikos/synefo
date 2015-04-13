@@ -6,10 +6,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.StringTokenizer;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
+import java.util.concurrent.locks.ReentrantLock;
 import org.apache.zookeeper.AsyncCallback.ChildrenCallback;
 import org.apache.zookeeper.AsyncCallback.StatCallback;
 import org.apache.zookeeper.CreateMode;
@@ -58,7 +56,9 @@ public class ZooMaster {
 
 	private ConcurrentLinkedQueue<String> scaleRequests;
 	
-	private ConcurrentHashMap<String, Boolean> servedScaleRequests; 
+	private HashMap<String, Boolean> servedScaleRequests; 
+	
+	private final ReentrantLock lock = new ReentrantLock();
 
 	/**
 	 * Watcher object responsible for tracking storm components' requests 
@@ -86,53 +86,58 @@ public class ZooMaster {
 				}
 				String scaleRequest = scaleRequests.poll();
 				String[] tokens = scaleRequest.split("#");
-				if(tokens[0].equals("scale-out") && servedScaleRequests.containsKey(scaleRequest) == false) {
+				lock.lock();
+				if(servedScaleRequests.containsKey(scaleRequest) == false) {
 					servedScaleRequests.put(scaleRequest, true);
-					/**
-					 * New child located: Time to set the scale-out 
-					 * command for that child
-					 */
-					logger.info("ZooMaster # identified new scale-out request: " + scaleRequest);
-					String[] childTokens = tokens[1].split("-");
-					String childWorker = childTokens[0];
-					String upstream_task = scaleFunction.getParentNode(
-							childWorker.substring(0, childWorker.lastIndexOf(':')),
-							childWorker.substring(childWorker.lastIndexOf(':') + 1, childWorker.length()));
-					String command = scaleFunction.produceScaleOutCommand(upstream_task, childWorker);
-					String activateCommand = "ACTIVATE~" + command.substring(command.lastIndexOf("~") + 1, command.length());
-					logger.info("ZooMaster # produced command: " + command + ", along with activate command: " + 
-							activateCommand);
-					if(command.equals("") == false) {
-						ArrayList<String> peerParents = inverseTopology.get(command.substring(command.lastIndexOf("~") + 1, command.length()));
-						peerParents.remove(peerParents.indexOf(upstream_task));
-						setScaleCommand(upstream_task, command, peerParents, activateCommand);
-					}else {
-						logger.info("ZooMaster # no scale-out command produced" + 
-								"(synefo-component:" + childWorker + ", upstream-component: " + upstream_task + ")."
-								);
-					}
-				}else if(tokens[0].equals("scale-in") && servedScaleRequests.containsKey(scaleRequest) == false) {
-					servedScaleRequests.put(scaleRequest, true);
-					logger.info("ZooMaster # identified new scale-in request: " + scaleRequest);
-					String[] childTokens = tokens[1].split("-");
-					String childWorker = childTokens[0];
-					String upstream_task = scaleFunction.getParentNode(
-							childWorker.substring(0, childWorker.lastIndexOf(':')),
-							childWorker.substring(childWorker.lastIndexOf(':') + 1, childWorker.length()));
-					String command = scaleFunction.produceScaleInCommand(childWorker);
-					String deActivateCommand = "DEACTIVATE~" + command.substring(command.lastIndexOf("~") + 1, command.length());
-					System.out.println("ZooMaster.scaleInEventChildrenCallback() # produced command: " + command + ", along with deactivate command: " 
-							+ deActivateCommand);
-					if(command.equals("") == false) {
-						ArrayList<String> peerParents = inverseTopology.get(command.substring(command.lastIndexOf("~") + 1, command.length()));
-						peerParents.remove(peerParents.indexOf(upstream_task));
-						setScaleCommand(upstream_task, command, peerParents, deActivateCommand);
-					}else {
-						logger.info("ZooMaster # no scale-in command produced" + 
-								"(synefo-component:" + childWorker + ", upstream-component: " + upstream_task + ")."
-								);
+					lock.unlock();
+					if(tokens[0].equals("scale-out")) {
+						/**
+						 * New child located: Time to set the scale-out 
+						 * command for that child
+						 */
+						logger.info("ZooMaster # identified new scale-out request: " + scaleRequest);
+						String[] childTokens = tokens[1].split("-");
+						String childWorker = childTokens[0];
+						String upstream_task = scaleFunction.getParentNode(
+								childWorker.substring(0, childWorker.lastIndexOf(':')),
+								childWorker.substring(childWorker.lastIndexOf(':') + 1, childWorker.length()));
+						String command = scaleFunction.produceScaleOutCommand(upstream_task, childWorker);
+						String activateCommand = "ACTIVATE~" + command.substring(command.lastIndexOf("~") + 1, command.length());
+						logger.info("ZooMaster # produced command: " + command + ", along with activate command: " + 
+								activateCommand);
+						if(command.equals("") == false) {
+							ArrayList<String> peerParents = inverseTopology.get(command.substring(command.lastIndexOf("~") + 1, command.length()));
+							peerParents.remove(peerParents.indexOf(upstream_task));
+							setScaleCommand(upstream_task, command, peerParents, activateCommand);
+						}else {
+							logger.info("ZooMaster # no scale-out command produced" + 
+									"(synefo-component:" + childWorker + ", upstream-component: " + upstream_task + ")."
+									);
+						}
+					}else if(tokens[0].equals("scale-in")) {
+						logger.info("ZooMaster # identified new scale-in request: " + scaleRequest);
+						String[] childTokens = tokens[1].split("-");
+						String childWorker = childTokens[0];
+						String upstream_task = scaleFunction.getParentNode(
+								childWorker.substring(0, childWorker.lastIndexOf(':')),
+								childWorker.substring(childWorker.lastIndexOf(':') + 1, childWorker.length()));
+						String command = scaleFunction.produceScaleInCommand(childWorker);
+						String deActivateCommand = "DEACTIVATE~" + command.substring(command.lastIndexOf("~") + 1, command.length());
+						System.out.println("ZooMaster.scaleInEventChildrenCallback() # produced command: " + command + ", along with deactivate command: " 
+								+ deActivateCommand);
+						if(command.equals("") == false) {
+							ArrayList<String> peerParents = inverseTopology.get(command.substring(command.lastIndexOf("~") + 1, command.length()));
+							peerParents.remove(peerParents.indexOf(upstream_task));
+							setScaleCommand(upstream_task, command, peerParents, deActivateCommand);
+						}else {
+							logger.info("ZooMaster # no scale-in command produced" + 
+									"(synefo-component:" + childWorker + ", upstream-component: " + upstream_task + ")."
+									);
+						}
 					}
 				}
+				lock.unlock();
+				
 			}
 		}
 	};
@@ -156,7 +161,7 @@ public class ZooMaster {
 		this.inverseTopology = inverseTopology;
 		this.scaleFunction = new ScaleFunction(physicalTopology, activeTopology, inverseTopology);
 		scaleRequests = new ConcurrentLinkedQueue<String>();
-		servedScaleRequests = new ConcurrentHashMap<String, Boolean>();
+		servedScaleRequests = new HashMap<String, Boolean>();
 	}
 
 	/**
@@ -354,32 +359,6 @@ public class ZooMaster {
 									child);
 							scaleRequests.offer("scale-in#" + child);
 						}
-//						if(scaleInEventChildren.lastIndexOf(child) < 0 && state == SynefoState.BOOTSTRAPPED) {
-//							/**
-//							 * New child located: Time to set the scale-out 
-//							 * command for that child
-//							 */
-//							logger.info("ZooMaster.scaleInEventChildrenCallback() # identified new scale-in request: " + 
-//									child);
-//							StringTokenizer strTok = new StringTokenizer(child, "-");
-//							String childWorker = strTok.nextToken();
-//							String upstream_task = scaleFunction.getParentNode(
-//									childWorker.substring(0, childWorker.lastIndexOf(':')),
-//									childWorker.substring(childWorker.lastIndexOf(':') + 1, childWorker.length()));
-//							String command = scaleFunction.produceScaleInCommand(childWorker);
-//							String deActivateCommand = "DEACTIVATE~" + command.substring(command.lastIndexOf("~") + 1, command.length());
-//							System.out.println("ZooMaster.scaleInEventChildrenCallback() # produced command: " + command + ", along with deactivate command: " 
-//									+ deActivateCommand);
-//							if(command.equals("") == false) {
-//								ArrayList<String> peerParents = inverseTopology.get(command.substring(command.lastIndexOf("~") + 1, command.length()));
-//								peerParents.remove(peerParents.indexOf(upstream_task));
-//								setScaleCommand(upstream_task, command, peerParents, deActivateCommand);
-//							}else {
-//								logger.info("ZooMaster.scaleInEventChildrenCallback() # no scale-in command produced" + 
-//										"(synefo-component:" + childWorker + ", upstream-component: " + upstream_task + ")."
-//										);
-//							}
-//						}
 					}
 				}
 				break;
@@ -472,20 +451,31 @@ public class ZooMaster {
 
 	public HashMap<String, ArrayList<String>> deserializeTopology(String topology) {
 		HashMap<String, ArrayList<String>> top = new HashMap<String, ArrayList<String>>();
-		StringTokenizer strTok = new StringTokenizer(topology, "{|}");
-		while(strTok.hasMoreTokens()) {
-			String task = strTok.nextToken();
+		String[] tokens = topology.split("{|}");
+		for(String task : tokens) {
 			if(task != null && task != "") {
-				StringTokenizer strTok1 = new StringTokenizer(task, ":,");
-				String up_task = strTok1.nextToken();
+				String[] tasks = task.split(":");
+				String up_task = tasks[0];
 				ArrayList<String> d_tasks = new ArrayList<String>();
-				while(strTok1.hasMoreTokens()) {
-					String d_task = strTok1.nextToken();
-					d_tasks.add(d_task);
+				for(int i = 1; i < tasks.length; i++) {
+					d_tasks.add(tasks[i]);
 				}
 				top.put(up_task, d_tasks);
 			}
 		}
+//		while(strTok.hasMoreTokens()) {
+//			String task = strTok.nextToken();
+//			if(task != null && task != "") {
+//				StringTokenizer strTok1 = new StringTokenizer(task, ":,");
+//				String up_task = strTok1.nextToken();
+//				ArrayList<String> d_tasks = new ArrayList<String>();
+//				while(strTok1.hasMoreTokens()) {
+//					String d_task = strTok1.nextToken();
+//					d_tasks.add(d_task);
+//				}
+//				top.put(up_task, d_tasks);
+//			}
+//		}
 		return top;
 	}
 
