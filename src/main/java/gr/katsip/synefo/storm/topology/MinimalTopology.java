@@ -47,24 +47,26 @@ public class MinimalTopology {
 		/**
 		 * Stage 0: Data Sources
 		 */
-		StreamgenTupleProducer tupleProducer = new StreamgenTupleProducer(streamIPs[0]);
 		String[] spoutSchema = { "num", "one", "two", "three", "four" };
 		String[] spoutTwoSchema = { "num", "1", "2", "three", "5" };
+		StreamgenTupleProducer tupleProducer = new StreamgenTupleProducer(streamIPs[0]);
 		tupleProducer.setSchema(new Fields(spoutSchema));
 		builder.setSpout("spout_1a", 
 				new SynefoSpout("spout_1a", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
 		tupleProducer = new StreamgenTupleProducer(streamIPs[1]);
+		tupleProducer.setSchema(new Fields(spoutSchema));
 		builder.setSpout("spout_1b", 
 				new SynefoSpout("spout_1b", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
 		
-		tupleProducer.setSchema(new Fields(spoutTwoSchema));
 		tupleProducer = new StreamgenTupleProducer(streamIPs[2]);
+		tupleProducer.setSchema(new Fields(spoutTwoSchema));
 		builder.setSpout("spout_2a", 
 				new SynefoSpout("spout_2a", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
 		tupleProducer = new StreamgenTupleProducer(streamIPs[3]);
+		tupleProducer.setSchema(new Fields(spoutTwoSchema));
 		builder.setSpout("spout_2b", 
 				new SynefoSpout("spout_2b", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
