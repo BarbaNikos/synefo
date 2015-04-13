@@ -134,13 +134,8 @@ public class OperatorSpout extends BaseRichSpout {
 				downstreamTasks = new ArrayList<String>(_downstream);
 				intDownstreamTasks = new ArrayList<Integer>();
 				for(String task : downstreamTasks) {
-//					StringTokenizer strTok = new StringTokenizer(task, ":");
-					String[] downTask = task.split(":");
-//					strTok.nextToken();
-//					String taskWithIp = strTok.nextToken();
-//					strTok = new StringTokenizer(taskWithIp, "@");
-					String[] taskInfo = downTask[1].split("@");
-					intDownstreamTasks.add(Integer.parseInt(taskInfo[0]));
+					String[] downTask = task.split("[:@]");
+					intDownstreamTasks.add(Integer.parseInt(downTask[1]));
 				}
 			}else {
 				downstreamTasks = new ArrayList<String>();
@@ -152,13 +147,8 @@ public class OperatorSpout extends BaseRichSpout {
 				activeDownstreamTasks = new ArrayList<String>(_active_downstream);
 				intActiveDownstreamTasks = new ArrayList<Integer>();
 				for(String task : activeDownstreamTasks) {
-//					StringTokenizer strTok = new StringTokenizer(task, ":");
-					String[] downTask = task.split(":");
-//					strTok.nextToken();
-//					String taskWithIp = strTok.nextToken();
-					String[] taskInfo = downTask[1].split("@");
-//					strTok = new StringTokenizer(taskWithIp, "@");
-					intActiveDownstreamTasks.add(Integer.parseInt(taskInfo[0]));
+					String[] downTask = task.split("[:@]");
+					intActiveDownstreamTasks.add(Integer.parseInt(downTask[1]));
 				}
 				idx = 0;
 			}else {
