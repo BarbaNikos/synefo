@@ -79,7 +79,7 @@ public class MinimalTopology {
 		/**
 		 * Stage 1: Join operators
 		 */
-		JoinOperator<String> joinOperator = new JoinOperator<String>(new StringComparator(), 100, "three", 
+		JoinOperator<String> joinOperator = new JoinOperator<String>(new StringComparator(), 1000, "three", 
 				new Fields(spoutSchema), new Fields(spoutTwoSchema));
 		builder.setBolt("join_bolt_1", 
 				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, 
@@ -89,7 +89,7 @@ public class MinimalTopology {
 						.directGrouping("spout_1b")
 						.directGrouping("spout_2a")
 						.directGrouping("spout_2b");
-		joinOperator = new JoinOperator<String>(new StringComparator(), 100, "three", 
+		joinOperator = new JoinOperator<String>(new StringComparator(), 1000, "three", 
 				new Fields(spoutSchema), new Fields(spoutTwoSchema));
 		builder.setBolt("join_bolt_2", 
 				new SynefoBolt("join_bolt_2", synefoIP, synefoPort, 
