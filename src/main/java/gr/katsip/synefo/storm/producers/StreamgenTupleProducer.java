@@ -28,20 +28,17 @@ public class StreamgenTupleProducer implements AbstractTupleProducer, Serializab
 	
 	private String dataProviderIP;
 	
-	private Integer dataProviderPort;
-	
 	private long num;
 
-	public StreamgenTupleProducer(String dataProviderIP, Integer dataProviderPort) {
+	public StreamgenTupleProducer(String dataProviderIP) {
 		dataProvider = null;
 		this.dataProviderIP = dataProviderIP;
-		this.dataProviderPort = dataProviderPort;
 		num = 0;
 	}
 	
 	public void connect() {
 		try {
-			dataProvider = new Socket(dataProviderIP, dataProviderPort);
+			dataProvider = new Socket(dataProviderIP, 6666);
 			output = new PrintWriter(dataProvider.getOutputStream(), true);
 			input = new BufferedReader(new InputStreamReader(dataProvider.getInputStream()));
 		} catch (UnknownHostException e) {

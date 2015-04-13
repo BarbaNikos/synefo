@@ -30,26 +30,24 @@ public class SerialSynefoTopology {
 	ClassNotFoundException, AlreadyAliveException, InvalidTopologyException {
 		String synefoIP = "";
 		Integer synefoPort = -1;
-		String streamIP = "";
-		Integer streamPort = -1;
+		String[] streamIPs = null;
 		String zooIP = "";
 		Integer zooPort = -1;
 		HashMap<String, ArrayList<String>> topology = new HashMap<String, ArrayList<String>>();
 		ArrayList<String> _tmp;
-		if(args.length < 6) {
-			System.err.println("Arguments: <synefo-IP> <synefo-port> <stream-IP> <stream-port> <zoo-IP> <zoo-port>");
+		if(args.length < 5) {
+			System.err.println("Arguments: <synefo-IP> <synefo-port> <stream-IP> <zoo-IP> <zoo-port>");
 			System.exit(1);
 		}else {
 			synefoIP = args[0];
 			synefoPort = Integer.parseInt(args[1]);
-			streamIP = args[2];
-			streamPort = Integer.parseInt(args[3]);
-			zooIP = args[4];
-			zooPort = Integer.parseInt(args[5]);
+			streamIPs = args[2].split(",");
+			zooIP = args[3];
+			zooPort = Integer.parseInt(args[4]);
 		}
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
-		StreamgenTupleProducer tupleProducer = new StreamgenTupleProducer(streamIP, streamPort);
+		StreamgenTupleProducer tupleProducer = new StreamgenTupleProducer(streamIPs[0]);
 		String[] spoutSchema = { "one", "two", "three", "four" };
 		tupleProducer.setSchema(new Fields(spoutSchema));
 		builder.setSpout("spout_1", 

@@ -29,22 +29,20 @@ public class SerialOperatorTopology {
 	public static void main(String[] args) throws UnknownHostException, IOException, InterruptedException, ClassNotFoundException, AlreadyAliveException, InvalidTopologyException {
 		String synefoIP = "";
 		Integer synefoPort = -1;
-		String streamIP = "";
-		Integer streamPort = -1;
+		String[] streamIPs = null;
 		HashMap<String, ArrayList<String>> topology = new HashMap<String, ArrayList<String>>();
 		ArrayList<String> _tmp;
-		if(args.length < 4) {
-			System.err.println("Arguments: <synefo-IP> <synefo-port> <stream-IP> <stream-port>");
+		if(args.length < 3) {
+			System.err.println("Arguments: <synefo-IP> <synefo-port> <stream-port>");
 			System.exit(1);
 		}else {
 			synefoIP = args[0];
 			synefoPort = Integer.parseInt(args[1]);
-			streamIP = args[2];
-			streamPort = Integer.parseInt(args[3]);
+			streamIPs = args[2].split(",");
 		}
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
-		StreamgenTupleProducer tupleProducer = new StreamgenTupleProducer(streamIP, streamPort);
+		StreamgenTupleProducer tupleProducer = new StreamgenTupleProducer(streamIPs[0]);
 		String[] spoutSchema = { "one", "two", "three", "four" };
 		tupleProducer.setSchema(new Fields(spoutSchema));
 		builder.setSpout("spout_1", 

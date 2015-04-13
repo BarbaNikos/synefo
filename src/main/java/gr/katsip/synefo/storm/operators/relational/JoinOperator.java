@@ -85,7 +85,8 @@ public class JoinOperator<T extends Object> implements AbstractOperator, Seriali
 				values.add(System.currentTimeMillis());
 				leftRelation.add(values);
 			}
-		}else if(fields.toList().equals(rightFieldSchema.toList())) {
+		}
+		if(fields.toList().equals(rightFieldSchema.toList())) {
 			for(Values leftStateTuple : leftRelation) {
 				Values leftTuple = new Values(leftStateTuple.toArray());
 				leftTuple.remove(leftStateFieldSchema.fieldIndex("timestamp"));
