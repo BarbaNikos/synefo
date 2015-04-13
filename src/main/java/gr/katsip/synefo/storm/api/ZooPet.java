@@ -236,7 +236,7 @@ public class ZooPet {
 		 * Create scale task based on throughput
 		 * @param latency
 		 */
-		public void setThroughput(Integer throughput) {
+		public void setThroughput(Double throughput) {
 			if(state == BoltState.ACTIVE) {
 				if(this.throughput.lowerBound > throughput) {
 					/**

@@ -284,8 +284,10 @@ public class SynefoBolt extends BaseRichBolt {
 		}else {
 			reportCounter += 1;
 		}
+//		if(autoScale)
+//			zooPet.setLatency(statistics.getLatency());
 		if(autoScale)
-			zooPet.setLatency(statistics.getLatency());
+			zooPet.setThroughput(statistics.getThroughput());
 		String scaleCommand = "";
 		synchronized(zooPet) {
 			if(zooPet.pendingCommands.isEmpty() == false) {
