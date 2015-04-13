@@ -1,7 +1,6 @@
 package gr.katsip.synefo.storm.producers;
 
 import java.io.Serializable;
-
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 

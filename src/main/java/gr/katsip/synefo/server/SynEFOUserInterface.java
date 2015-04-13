@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
-import java.util.StringTokenizer;
 
 public class SynEFOUserInterface implements Runnable {
 
@@ -29,9 +28,9 @@ public class SynEFOUserInterface implements Runnable {
 				System.out.print("+efo>");
 				command = _input.readLine();
 				if(command != null && command.length() > 0) {
-					StringTokenizer strTok = new StringTokenizer(command, " ");
-					String comm = strTok.nextToken();
-					parseCommand(comm, strTok);
+					String tokens[] = command.split(" ");
+					String comm = tokens[0];
+					parseCommand(comm, tokens);
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -40,11 +39,11 @@ public class SynEFOUserInterface implements Runnable {
 
 	}
 
-	public void parseCommand(String command, StringTokenizer strTok) {
+	public void parseCommand(String command, String[] tokens) {
 		if(command.equals("scale-out")) {
 			String compOne = null;
-			if(strTok.hasMoreTokens()) {
-				compOne = strTok.nextToken();
+			if(tokens.length > 1) {
+				compOne = tokens[1];
 				if(beastMaster.physicalTopology.containsKey(compOne) == false) {
 					System.out.println("+efo error: Need to define an existing component-A when \"scale-out\" is issued.");
 					return;
@@ -54,8 +53,8 @@ public class SynEFOUserInterface implements Runnable {
 				return;
 			}
 			String compTwo = null;
-			if(strTok.hasMoreTokens()) {
-				compTwo = strTok.nextToken();
+			if(tokens.length > 2) {
+				compTwo = tokens[2];
 				if(beastMaster.physicalTopology.containsKey(compTwo) == false) {
 					System.out.println("+EFO error: Need to define an existing component-B when \"scale-out\" is issued.");
 					return;
@@ -87,8 +86,8 @@ public class SynEFOUserInterface implements Runnable {
 			}
 		}else if(command.equals("scale-in")) {
 			String compOne = null;
-			if(strTok.hasMoreTokens()) {
-				compOne = strTok.nextToken();
+			if(tokens.length > 1) {
+				compOne = tokens[1];
 				if(beastMaster.physicalTopology.containsKey(compOne) == false) {
 					System.out.println("+efo error: Need to define an existing component-A when \"scale-out\" is issued.");
 					return;
@@ -98,8 +97,8 @@ public class SynEFOUserInterface implements Runnable {
 				return;
 			}
 			String compTwo = null;
-			if(strTok.hasMoreTokens()) {
-				compTwo = strTok.nextToken();
+			if(tokens.length > 2) {
+				compTwo = tokens[2];
 				if(beastMaster.physicalTopology.containsKey(compTwo) == false) {
 					System.out.println("+EFO error: Need to define an existing component-B when \"scale-out\" is issued.");
 					return;

@@ -1,7 +1,6 @@
 package gr.katsip.synefo.storm.api;
 
 import java.io.IOException;
-import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -160,18 +159,18 @@ public class ZooPet {
 							CreateMode.PERSISTENT);
 					Stat stat = new Stat();
 					String thresholds = new String(zk.getData("/synefo/scale-out-event", false, stat));
-					StringTokenizer strTok = new StringTokenizer(thresholds, ",");
-					cpu.upperBound = Double.parseDouble(strTok.nextToken());
-					mem.upperBound = Double.parseDouble(strTok.nextToken());
-					latency.upperBound = Long.parseLong(strTok.nextToken());
-					throughput.upperBound = Integer.parseInt(strTok.nextToken());
+					String[] thresholdTokens = thresholds.split(",");
+					cpu.upperBound = Double.parseDouble(thresholdTokens[0]);
+					mem.upperBound = Double.parseDouble(thresholdTokens[1]);
+					latency.upperBound = Long.parseLong(thresholdTokens[2]);
+					throughput.upperBound = Integer.parseInt(thresholdTokens[3]);
 
 					thresholds = new String(zk.getData("/synefo/scale-in-event", false, stat));
-					strTok = new StringTokenizer(thresholds, ",");
-					cpu.lowerBound = Double.parseDouble(strTok.nextToken());
-					mem.lowerBound = Double.parseDouble(strTok.nextToken());
-					latency.lowerBound = Long.parseLong(strTok.nextToken());
-					throughput.lowerBound = Integer.parseInt(strTok.nextToken());
+					thresholdTokens = thresholds.split(",");
+					cpu.lowerBound = Double.parseDouble(thresholdTokens[0]);
+					mem.lowerBound = Double.parseDouble(thresholdTokens[1]);
+					latency.lowerBound = Long.parseLong(thresholdTokens[2]);
+					throughput.lowerBound = Integer.parseInt(thresholdTokens[3]);
 					state = BoltState.ACTIVE;
 					logger.info("start(): Initialization successful (" + 
 							taskName + ":" + taskID + "@" + taskIP + ")");

@@ -11,12 +11,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.StringTokenizer;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-//import gr.katsip.synefo.metric.SynefoMetric;
 import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.lib.SynefoMessage.Type;
@@ -135,11 +131,8 @@ public class SynefoBolt extends BaseRichBolt {
 				intDownstreamTasks = new ArrayList<Integer>();
 				Iterator<String> itr = downstreamTasks.iterator();
 				while(itr.hasNext()) {
-					StringTokenizer strTok = new StringTokenizer(itr.next(), ":");
-					strTok.nextToken();
-					String taskWithIp = strTok.nextToken();
-					strTok = new StringTokenizer(taskWithIp, "@");
-					Integer task = Integer.parseInt(strTok.nextToken());
+					String[] tokens = itr.next().split("[:@]");
+					Integer task = Integer.parseInt(tokens[1]);
 					intDownstreamTasks.add(task);
 				}
 			}else {
@@ -153,11 +146,8 @@ public class SynefoBolt extends BaseRichBolt {
 				intActiveDownstreamTasks = new ArrayList<Integer>();
 				Iterator<String> itr = activeDownstreamTasks.iterator();
 				while(itr.hasNext()) {
-					StringTokenizer strTok = new StringTokenizer(itr.next(), ":");
-					strTok.nextToken();
-					String taskWithIp = strTok.nextToken();
-					strTok = new StringTokenizer(taskWithIp, "@");
-					Integer task = Integer.parseInt(strTok.nextToken());
+					String[] tokens = itr.next().split("[:@]");
+					Integer task = Integer.parseInt(tokens[1]);
 					intActiveDownstreamTasks.add(task);
 				}
 				downStreamIndex = 0;
@@ -220,9 +210,8 @@ public class SynefoBolt extends BaseRichBolt {
 		Long synefoTimestamp = null;
 		if(synefoHeader != null && synefoHeader.equals("") == false && synefoHeader.contains("/") == true) {
 			if(synefoHeader.contains("/")) {
-				StringTokenizer txt = new StringTokenizer(synefoHeader, "/");
-				String prefix = txt.nextToken();
-				if(prefix.equals(SynefoConstant.PUNCT_TUPLE_TAG)) {
+				String[] headerFields = synefoHeader.split("/");
+				if(headerFields[0].equals(SynefoConstant.PUNCT_TUPLE_TAG)) {
 					handlePunctuationTuple(tuple);
 					return;
 				}
@@ -304,15 +293,12 @@ public class SynefoBolt extends BaseRichBolt {
 			}
 		}
 		if(scaleCommand != null && scaleCommand.length() > 0) {
-			StringTokenizer strTok = new StringTokenizer(scaleCommand, "~");
-			String action = strTok.nextToken();
-			String taskWithIp = strTok.nextToken();
-			strTok = new StringTokenizer(taskWithIp, "@");
-			String taskWithId = strTok.nextToken();
-			String taskIp = strTok.nextToken();
-			strTok = new StringTokenizer(taskWithId, ":");
-			String task = strTok.nextToken();
-			Integer task_id = Integer.parseInt(strTok.nextToken());
+			String[] scaleCommandTokens = scaleCommand.split("[~@:]");
+			String action = scaleCommandTokens[0];
+			String taskWithIp = scaleCommandTokens[1] + ":" + scaleCommandTokens[2] + "@" + scaleCommandTokens[3];
+			String taskIp = scaleCommandTokens[3];
+			String task = scaleCommandTokens[1];
+			Integer task_id = Integer.parseInt(scaleCommandTokens[2]);
 			StringBuilder strBuild = new StringBuilder();
 			strBuild.append(SynefoConstant.PUNCT_TUPLE_TAG + "/");
 			downStreamIndex = 0;
@@ -381,48 +367,22 @@ public class SynefoBolt extends BaseRichBolt {
 	@SuppressWarnings("unchecked")
 	public void handlePunctuationTuple(Tuple tuple) {
 		String scaleAction = null;
-		String component_name = null;
-		String component_id = null;
-		Integer comp_num = -1;
+		String componentName = null;
+		String componentId = null;
+		Integer compNum = -1;
 		String ip = null;
 		logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
 				") received punctuation tuple: " + tuple.toString() + "(timestamp: " + System.currentTimeMillis() + ").");
-		StringTokenizer str_tok = new StringTokenizer((String) tuple.getValues().get(0), "/");
-		while(str_tok.hasMoreTokens()) {
-			String s = str_tok.nextToken();
-			if((s.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.ADD_ACTION) || 
-					s.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.REMOVE_ACTION)) && 
-					s.equals(SynefoConstant.PUNCT_TUPLE_TAG) == false) {
-				scaleAction = s;
-			}else if((s.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.ADD_ACTION) == false && 
-					s.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.REMOVE_ACTION) == false) && 
-					s.equals(SynefoConstant.PUNCT_TUPLE_TAG) == false && s.startsWith(SynefoConstant.COMP_TAG) 
-					&& s.startsWith(SynefoConstant.COMP_NUM_TAG) == false && 
-					s.startsWith(SynefoConstant.COMP_IP_TAG) == false) {
-				StringTokenizer strTok = new StringTokenizer(s, ":");
-				component_id = strTok.nextToken();
-				component_name = strTok.nextToken();
-				component_id = strTok.nextToken();
-			}else if((s.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.ADD_ACTION) == false && 
-					s.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.REMOVE_ACTION) == false) && 
-					s.equals(SynefoConstant.PUNCT_TUPLE_TAG) == false && s.startsWith(SynefoConstant.COMP_TAG) && 
-					s.startsWith(SynefoConstant.COMP_NUM_TAG) && s.startsWith(SynefoConstant.COMP_IP_TAG) == false) {
-				StringTokenizer strTok = new StringTokenizer(s, ":");
-				strTok.nextToken();
-				comp_num = Integer.parseInt(strTok.nextToken());
-			}else if((s.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.ADD_ACTION) == false && 
-					s.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.REMOVE_ACTION) == false) && 
-					s.equals(SynefoConstant.PUNCT_TUPLE_TAG) == false && 
-					s.startsWith(SynefoConstant.COMP_NUM_TAG) == false && 
-					s.startsWith(SynefoConstant.COMP_TAG) == false && 
-					s.startsWith(SynefoConstant.COMP_IP_TAG)) {
-				StringTokenizer strTok = new StringTokenizer(s, ":");
-				strTok.nextToken();
-				ip = strTok.nextToken();
-				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
-						") located peer's IP: " + ip);
-			}
-		}
+		/**
+		 * Expected Header format: 
+		 * +EFO/ACTION:{ADD, REMOVE}/COMP:{taskName}:{taskID}/COMP_NUM:{Number of Components}/IP:{taskIP}/
+		 */
+		String[] tokens = ((String) tuple.getValues().get(0)).split("[/:]");
+		scaleAction = tokens[2];
+		componentName = tokens[4];
+		componentId = tokens[5];
+		compNum = Integer.parseInt(tokens[7]);
+		ip = tokens[9];
 		/**
 		 * 
 		 */
@@ -430,7 +390,7 @@ public class SynefoBolt extends BaseRichBolt {
 			System.out.println("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
 					") received an ADD action (timestamp: " + System.currentTimeMillis() + ").");
 			String selfComp = this.taskName + ":" + this.taskID;
-			if(selfComp.equals(component_name + ":" + component_id)) {
+			if(selfComp.equals(componentName + ":" + componentId)) {
 				/**
 				 * If this component is added, open a ServerSocket
 				 */
@@ -441,7 +401,7 @@ public class SynefoBolt extends BaseRichBolt {
 							") accepting connections to receive state... (IP:" + 
 							_socket.getInetAddress().getHostAddress() + ", port: " + _socket.getLocalPort());
 					boolean activeListFlag = false;
-					while(numOfStatesReceived < (comp_num - 1)) {
+					while(numOfStatesReceived < (compNum - 1)) {
 						Socket client = _socket.accept();
 						ObjectOutputStream _stateOutput = new ObjectOutputStream(client.getOutputStream());
 						ObjectInputStream _stateInput = new ObjectInputStream(client.getInputStream());
@@ -454,11 +414,8 @@ public class SynefoBolt extends BaseRichBolt {
 							intActiveDownstreamTasks = new ArrayList<Integer>();
 							Iterator<String> itr = activeDownstreamTasks.iterator();
 							while(itr.hasNext()) {
-								StringTokenizer strTok = new StringTokenizer(itr.next(), ":");
-								strTok.nextToken();
-								String taskWithIp = strTok.nextToken();
-								strTok = new StringTokenizer(taskWithIp, "@");
-								Integer task = Integer.parseInt(strTok.nextToken());
+								String[] downTask = itr.next().split("[:@]");
+								Integer task = Integer.parseInt(downTask[1]);
 								intActiveDownstreamTasks.add(task);
 							}
 							logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
@@ -484,7 +441,7 @@ public class SynefoBolt extends BaseRichBolt {
 						this.activeDownstreamTasks + " (timestamp: " + System.currentTimeMillis() + ").");
 			}else {
 				Socket client = new Socket();
-				Integer comp_task_id = Integer.parseInt(component_id);
+				Integer comp_task_id = Integer.parseInt(componentId);
 				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
 						") about to send state to about-to-be-added operator (IP: " + 
 						ip + ", port: " + (6000 + comp_task_id) + ").");
@@ -530,14 +487,14 @@ public class SynefoBolt extends BaseRichBolt {
 			logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
 					") received a REMOVE action (timestamp: " + System.currentTimeMillis() + ").");
 			String selfComp = this.taskName + ":" + this.taskID;
-			if(selfComp.equals(component_name + ":" + component_id)) {
+			if(selfComp.equals(componentName + ":" + componentId)) {
 				try {
 					ServerSocket _socket = new ServerSocket(6000 + taskID);
 					logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
 							") accepting connections to receive state... (IP:" + 
 							_socket.getInetAddress() + ", port: " + _socket.getLocalPort());
 					int numOfStatesReceived = 0;
-					while(numOfStatesReceived < (comp_num - 1)) {
+					while(numOfStatesReceived < (compNum - 1)) {
 						Socket client = _socket.accept();
 						ObjectOutputStream _stateOutput = new ObjectOutputStream(client.getOutputStream());
 						ObjectInputStream _stateInput = new ObjectInputStream(client.getInputStream());
@@ -563,7 +520,7 @@ public class SynefoBolt extends BaseRichBolt {
 						") routing table:" + this.activeDownstreamTasks + " (timestamp: " + System.currentTimeMillis() + ").");
 			}else {
 				Socket client = new Socket();
-				Integer comp_task_id = Integer.parseInt(component_id);
+				Integer comp_task_id = Integer.parseInt(componentId);
 				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
 						") about to receive state from about-to-be-removed operator (IP: " + ip + 
 						", port: " + (6000 + comp_task_id) + ").");

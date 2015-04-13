@@ -6,8 +6,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.locks.ReentrantLock;
 import org.apache.zookeeper.AsyncCallback.ChildrenCallback;
 import org.apache.zookeeper.AsyncCallback.StatCallback;
 import org.apache.zookeeper.CreateMode;
@@ -56,9 +56,7 @@ public class ZooMaster {
 
 	private ConcurrentLinkedQueue<String> scaleRequests;
 	
-	private HashMap<String, Boolean> servedScaleRequests; 
-	
-	private final ReentrantLock lock = new ReentrantLock();
+	private ConcurrentHashMap<String, Boolean> servedScaleRequests; 
 
 	/**
 	 * Watcher object responsible for tracking storm components' requests 
@@ -86,10 +84,8 @@ public class ZooMaster {
 				}
 				String scaleRequest = scaleRequests.poll();
 				String[] tokens = scaleRequest.split("#");
-				lock.lock();
 				if(servedScaleRequests.containsKey(scaleRequest) == false) {
 					servedScaleRequests.put(scaleRequest, true);
-					lock.unlock();
 					if(tokens[0].equals("scale-out")) {
 						/**
 						 * New child located: Time to set the scale-out 
@@ -136,8 +132,6 @@ public class ZooMaster {
 						}
 					}
 				}
-				lock.unlock();
-				
 			}
 		}
 	};
@@ -161,7 +155,7 @@ public class ZooMaster {
 		this.inverseTopology = inverseTopology;
 		this.scaleFunction = new ScaleFunction(physicalTopology, activeTopology, inverseTopology);
 		scaleRequests = new ConcurrentLinkedQueue<String>();
-		servedScaleRequests = new HashMap<String, Boolean>();
+		servedScaleRequests = new ConcurrentHashMap<String, Boolean>();
 	}
 
 	/**

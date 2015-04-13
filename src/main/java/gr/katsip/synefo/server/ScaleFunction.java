@@ -22,7 +22,7 @@ public class ScaleFunction {
 		this.inverseTopology = inverseTopology;
 	}
 
-	public synchronized String produceScaleOutCommand(String upstreamTask, String overloadedWorker) {
+	public String produceScaleOutCommand(String upstreamTask, String overloadedWorker) {
 		if(overloadedWorker.toLowerCase().contains("spout")) {
 			return "";
 		}else if(upstreamTask == null || upstreamTask.equals("")) {
@@ -36,7 +36,7 @@ public class ScaleFunction {
 		return "ADD~" + selectedTask;
 	}
 
-	public synchronized String produceScaleInCommand(String underloadedWorker) {
+	public String produceScaleInCommand(String underloadedWorker) {
 		String upstreamTask = getParentNode(underloadedWorker.substring(0, underloadedWorker.lastIndexOf(':')),
 				underloadedWorker.substring(underloadedWorker.lastIndexOf(':') + 1, underloadedWorker.lastIndexOf('@')));
 		ArrayList<String> activeNodes = getActiveNodes(upstreamTask, underloadedWorker);

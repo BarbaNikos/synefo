@@ -1,7 +1,6 @@
 package gr.katsip.synefo.storm.operators.relational;
 
 import gr.katsip.synefo.storm.operators.AbstractOperator;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;

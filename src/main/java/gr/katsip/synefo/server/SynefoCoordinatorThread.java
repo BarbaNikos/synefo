@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.StringTokenizer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import gr.katsip.synefo.storm.api.Pair;
@@ -158,10 +157,9 @@ public class SynefoCoordinatorThread implements Runnable {
 		while(itr.hasNext()) {
 			Entry<String, ArrayList<String>> pair = itr.next();
 			if(pair.getKey().startsWith(taskName)) {
-				StringTokenizer strTok = new StringTokenizer(pair.getKey(), ":");
-				String taskIdWithIp = strTok.nextToken();
-				strTok = new StringTokenizer(taskIdWithIp, "@");
-				return Integer.parseInt(strTok.nextToken());
+				String[] key = pair.getKey().split(":");
+				String[] task = (key[0]).split("@");
+				return Integer.parseInt(task[0]);
 			}
 		}
 		return -1;

@@ -7,8 +7,6 @@ import java.io.PrintWriter;
 import java.io.Serializable;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.StringTokenizer;
-
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
@@ -61,10 +59,11 @@ public class StreamgenTupleProducer implements AbstractTupleProducer, Serializab
 		try {
 			String tuple = input.readLine();
 			if(tuple != null && tuple.length() > 0) {
-				StringTokenizer strTok = new StringTokenizer(tuple, ",");
+				String[] tupleTokens = tuple.split(",");
 				val.add(new Long(num));
-				while(strTok.hasMoreTokens() && val.size() < fields.size()) {
-					val.add(strTok.nextToken());
+				for(int i = 0; i < tupleTokens.length; i++) {
+					if(val.size() < fields.size())
+						val.add(tupleTokens[i]);
 				}
 				if(val.size() < fields.size()) {
 					while(val.size() < fields.size()) {

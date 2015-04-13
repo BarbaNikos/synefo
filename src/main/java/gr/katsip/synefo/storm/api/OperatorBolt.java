@@ -4,7 +4,6 @@ import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.lib.SynefoMessage.Type;
 import gr.katsip.synefo.storm.operators.AbstractOperator;
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -15,11 +14,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.StringTokenizer;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
@@ -173,11 +169,13 @@ public class OperatorBolt extends BaseRichBolt {
 				intDownstreamTasks = new ArrayList<Integer>();
 				Iterator<String> itr = downstreamTasks.iterator();
 				while(itr.hasNext()) {
-					StringTokenizer strTok = new StringTokenizer(itr.next(), ":");
-					strTok.nextToken();
-					String taskWithIp = strTok.nextToken();
-					strTok = new StringTokenizer(taskWithIp, "@");
-					Integer task = Integer.parseInt(strTok.nextToken());
+//					StringTokenizer strTok = new StringTokenizer(itr.next(), ":");
+					String[] downTask = itr.next().split(":");
+//					strTok.nextToken();
+//					String taskWithIp = downTask[1];
+//					strTok = new StringTokenizer(taskWithIp, "@");
+					String[] taskInfo = downTask[1].split("@");
+					Integer task = Integer.parseInt(taskInfo[0]);
 					intDownstreamTasks.add(task);
 				}
 			}else {
@@ -191,11 +189,13 @@ public class OperatorBolt extends BaseRichBolt {
 				intActiveDownstreamTasks = new ArrayList<Integer>();
 				Iterator<String> itr = activeDownstreamTasks.iterator();
 				while(itr.hasNext()) {
-					StringTokenizer strTok = new StringTokenizer(itr.next(), ":");
-					strTok.nextToken();
-					String taskWithIp = strTok.nextToken();
-					strTok = new StringTokenizer(taskWithIp, "@");
-					Integer task = Integer.parseInt(strTok.nextToken());
+//					StringTokenizer strTok = new StringTokenizer(itr.next(), ":");
+					String[] downTask = itr.next().split(":");
+//					strTok.nextToken();
+//					String taskWithIp = strTok.nextToken();
+					String[] taskInfo = downTask[1].split("@");
+//					strTok = new StringTokenizer(taskWithIp, "@");
+					Integer task = Integer.parseInt(taskInfo[0]);
 					intActiveDownstreamTasks.add(task);
 				}
 				downStreamIndex = 0;

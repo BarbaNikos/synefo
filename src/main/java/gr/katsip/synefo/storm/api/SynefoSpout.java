@@ -9,11 +9,8 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.StringTokenizer;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.lib.SynefoMessage.Type;
@@ -120,11 +117,8 @@ public class SynefoSpout extends BaseRichSpout {
 				downstreamTasks = new ArrayList<String>(downstream);
 				intDownstreamTasks = new ArrayList<Integer>();
 				for(String task : downstreamTasks) {
-					StringTokenizer strTok = new StringTokenizer(task, ":");
-					strTok.nextToken();
-					String taskWithIp = strTok.nextToken();
-					strTok = new StringTokenizer(taskWithIp, "@");
-					intDownstreamTasks.add(Integer.parseInt(strTok.nextToken()));
+					String[] tokens = task.split("[:@]");
+					intDownstreamTasks.add(Integer.parseInt(tokens[1]));
 				}
 			}else {
 				downstreamTasks = new ArrayList<String>();
@@ -136,11 +130,8 @@ public class SynefoSpout extends BaseRichSpout {
 				activeDownstreamTasks = new ArrayList<String>(activeDownstream);
 				intActiveDownstreamTasks = new ArrayList<Integer>();
 				for(String task : activeDownstreamTasks) {
-					StringTokenizer strTok = new StringTokenizer(task, ":");
-					strTok.nextToken();
-					String taskWithIp = strTok.nextToken();
-					strTok = new StringTokenizer(taskWithIp, "@");
-					intActiveDownstreamTasks.add(Integer.parseInt(strTok.nextToken()));
+					String[] tokens = task.split("[:@]");
+					intActiveDownstreamTasks.add(Integer.parseInt(tokens[1]));
 				}
 				idx = 0;
 			}else {
@@ -218,15 +209,12 @@ public class SynefoSpout extends BaseRichSpout {
 			}
 		}
 		if(scaleCommand != null && scaleCommand.length() > 0) {
-			StringTokenizer strTok = new StringTokenizer(scaleCommand, "~");
-			String action = strTok.nextToken();
-			String taskWithIp = strTok.nextToken();
-			strTok = new StringTokenizer(taskWithIp, "@");
-			String taskWithId = strTok.nextToken();
-			String taskIp = strTok.nextToken();
-			strTok = new StringTokenizer(taskWithId, ":");
-			String task = strTok.nextToken();
-			Integer task_id = Integer.parseInt(strTok.nextToken());
+			String[] scaleCommandTokens = scaleCommand.split("[~:@]");
+			String action = scaleCommandTokens[0];
+			String taskWithIp = scaleCommandTokens[1] + ":" + scaleCommandTokens[2] + "@" + scaleCommandTokens[3];
+			String taskIp = scaleCommandTokens[3];
+			String task = scaleCommandTokens[1];
+			Integer task_id = Integer.parseInt(scaleCommandTokens[2]);
 			StringBuilder strBuild = new StringBuilder();
 			strBuild.append(SynefoConstant.PUNCT_TUPLE_TAG + "/");
 			idx = 0;
