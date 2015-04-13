@@ -23,19 +23,18 @@ import backtype.storm.tuple.Fields;
 public class DebugTopology {
 	public static void main(String[] args) throws Exception {
 		String synefoIP = "";
-		Integer synefoPort = -1;
+		Integer synefoPort = 5555;
 		String zooIP = "";
 		Integer zooPort = -1;
 		HashMap<String, ArrayList<String>> topology = new HashMap<String, ArrayList<String>>();
 		ArrayList<String> _tmp;
-		if(args.length < 4) {
-			System.err.println("Arguments: <synefo-IP> <synefo-port> <zoo-IP> <zoo-port>");
+		if(args.length < 3) {
+			System.err.println("Arguments: <synefo-IP> <zoo-IP> <zoo-port>");
 			System.exit(1);
 		}else {
 			synefoIP = args[0];
-			synefoPort = Integer.parseInt(args[1]);
-			zooIP = args[2];
-			zooPort = Integer.parseInt(args[3]);
+			zooIP = args[1];
+			zooPort = Integer.parseInt(args[2]);
 		}
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();

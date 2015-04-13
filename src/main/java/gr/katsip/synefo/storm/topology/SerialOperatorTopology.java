@@ -28,17 +28,16 @@ public class SerialOperatorTopology {
 
 	public static void main(String[] args) throws UnknownHostException, IOException, InterruptedException, ClassNotFoundException, AlreadyAliveException, InvalidTopologyException {
 		String synefoIP = "";
-		Integer synefoPort = -1;
+		Integer synefoPort = 5555;
 		String[] streamIPs = null;
 		HashMap<String, ArrayList<String>> topology = new HashMap<String, ArrayList<String>>();
 		ArrayList<String> _tmp;
-		if(args.length < 3) {
-			System.err.println("Arguments: <synefo-IP> <synefo-port> <stream-port>");
+		if(args.length < 2) {
+			System.err.println("Arguments: <synefo-IP> <stream-port>");
 			System.exit(1);
 		}else {
 			synefoIP = args[0];
-			synefoPort = Integer.parseInt(args[1]);
-			streamIPs = args[2].split(",");
+			streamIPs = args[1].split(",");
 		}
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();

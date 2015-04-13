@@ -46,7 +46,7 @@ public class Synefo {
 		serverSocket = null;
 		serverPort = -1;
 		try {
-			serverSocket = new ServerSocket(0);
+			serverSocket = new ServerSocket(5555);
 			serverPort = serverSocket.getLocalPort();
 			System.out.println("+efo-INFO#" + serverSocket.getInetAddress().getHostAddress() + ":" + serverPort);
 			File f = new File("synefoserver.conf");

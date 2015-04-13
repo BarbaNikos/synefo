@@ -29,21 +29,20 @@ public class SerialSynefoTopology {
 	public static void main(String[] args) throws UnknownHostException, IOException, InterruptedException, 
 	ClassNotFoundException, AlreadyAliveException, InvalidTopologyException {
 		String synefoIP = "";
-		Integer synefoPort = -1;
+		Integer synefoPort = 5555;
 		String[] streamIPs = null;
 		String zooIP = "";
 		Integer zooPort = -1;
 		HashMap<String, ArrayList<String>> topology = new HashMap<String, ArrayList<String>>();
 		ArrayList<String> _tmp;
-		if(args.length < 5) {
-			System.err.println("Arguments: <synefo-IP> <synefo-port> <stream-IP> <zoo-IP> <zoo-port>");
+		if(args.length < 4) {
+			System.err.println("Arguments: <synefo-IP> <stream-IP> <zoo-IP> <zoo-port>");
 			System.exit(1);
 		}else {
 			synefoIP = args[0];
-			synefoPort = Integer.parseInt(args[1]);
-			streamIPs = args[2].split(",");
-			zooIP = args[3];
-			zooPort = Integer.parseInt(args[4]);
+			streamIPs = args[1].split(",");
+			zooIP = args[2];
+			zooPort = Integer.parseInt(args[3]);
 		}
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
