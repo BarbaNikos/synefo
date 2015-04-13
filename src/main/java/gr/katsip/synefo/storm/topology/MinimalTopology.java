@@ -83,16 +83,20 @@ public class MinimalTopology {
 				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, 
 						joinOperator, zooIP, zooPort, true), 1)
 						.setNumTasks(1)
-						.directGrouping("spout_1")
-						.directGrouping("spout_2");
+						.directGrouping("spout_1a")
+						.directGrouping("spout_1b")
+						.directGrouping("spout_2a")
+						.directGrouping("spout_2b");
 		joinOperator = new JoinOperator<String>(new StringComparator(), 100, "three", 
 				new Fields(spoutSchema), new Fields(spoutTwoSchema));
 		builder.setBolt("join_bolt_2", 
 				new SynefoBolt("join_bolt_2", synefoIP, synefoPort, 
 						joinOperator, zooIP, zooPort, true), 1)
 						.setNumTasks(1)
-						.directGrouping("spout_1")
-						.directGrouping("spout_2");
+						.directGrouping("spout_1a")
+						.directGrouping("spout_1b")
+						.directGrouping("spout_2a")
+						.directGrouping("spout_2b");
 		_tmp = new ArrayList<String>();
 		_tmp.add("drain_bolt");
 		topology.put("join_bolt_1", new ArrayList<String>(_tmp));
