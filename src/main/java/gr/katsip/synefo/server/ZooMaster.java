@@ -457,19 +457,6 @@ public class ZooMaster {
 				top.put(up_task, d_tasks);
 			}
 		}
-//		while(strTok.hasMoreTokens()) {
-//			String task = strTok.nextToken();
-//			if(task != null && task != "") {
-//				StringTokenizer strTok1 = new StringTokenizer(task, ":,");
-//				String up_task = strTok1.nextToken();
-//				ArrayList<String> d_tasks = new ArrayList<String>();
-//				while(strTok1.hasMoreTokens()) {
-//					String d_task = strTok1.nextToken();
-//					d_tasks.add(d_task);
-//				}
-//				top.put(up_task, d_tasks);
-//			}
-//		}
 		return top;
 	}
 

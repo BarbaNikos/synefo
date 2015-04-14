@@ -93,8 +93,6 @@ public class SynefoCoordinatorThread implements Runnable {
 				(double) resourceThresholds.get("memory").lowerBound, 
 				(int) resourceThresholds.get("latency").lowerBound, 
 				(int) resourceThresholds.get("throughput").lowerBound);
-		tamer.setScaleOutEventWatch();
-		tamer.setScaleInEventWatch();
 
 		System.out.println("+efo coordinator thread: received tast name allocation from Storm cluster. Updating internal structures...");
 		HashMap<String, ArrayList<String>> updatedTopology = new HashMap<String, ArrayList<String>>();
@@ -147,6 +145,8 @@ public class SynefoCoordinatorThread implements Runnable {
 			taskNameToIdMap.clear();
 			taskNameToIdMap.notifyAll();
 		}
+		tamer.setScaleOutEventWatch();
+		tamer.setScaleInEventWatch();
 
 		userInterfaceThread = new Thread(new SynEFOUserInterface(tamer));
 		userInterfaceThread.start();
