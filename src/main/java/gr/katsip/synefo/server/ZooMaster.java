@@ -66,20 +66,20 @@ public class ZooMaster {
 	Watcher synefoWatcher = new Watcher() {
 		public void process(WatchedEvent e) {
 			if(e.getType() == Event.EventType.NodeChildrenChanged) {
-				logger.info("synefoWatcher # Children chang detected");
+				System.out.println("synefoWatcher # Children change detected");
 				if(e.getPath().equals("/synefo/scale-out-event")) {
 					/**
 					 * Somehow decide the action to take 
 					 * and have the scale-out-command as String <ACTION{ADD|REMOVE}>-<TASK_ID>
 					 */
-					logger.info("synefoWatcher # scale-out event added.");
+					System.out.println("synefoWatcher # scale-out event added.");
 					setScaleOutEventWatch();
 				}else if(e.getPath().equals("/synefo/scale-in-event")) {
 					/**
 					 * Somehow decide the action to take 
 					 * and have the scale-out-command as String <ACTION{ADD|REMOVE}>-<TASK_ID>
 					 */
-					logger.info("synefoWatcher # scale-in event added.");
+					System.out.println("synefoWatcher # scale-in event added.");
 					setScaleInEventWatch();
 				}
 				String scaleRequest = scaleRequests.poll();
@@ -91,7 +91,7 @@ public class ZooMaster {
 						 * New child located: Time to set the scale-out 
 						 * command for that child
 						 */
-						logger.info("ZooMaster # identified new scale-out request: " + scaleRequest);
+						System.out.println("ZooMaster # identified new scale-out request: " + scaleRequest);
 						String[] childTokens = tokens[1].split("-");
 						String childWorker = childTokens[0];
 						String upstream_task = scaleFunction.getParentNode(
@@ -99,19 +99,19 @@ public class ZooMaster {
 								childWorker.substring(childWorker.lastIndexOf(':') + 1, childWorker.length()));
 						String command = scaleFunction.produceScaleOutCommand(upstream_task, childWorker);
 						String activateCommand = "ACTIVATE~" + command.substring(command.lastIndexOf("~") + 1, command.length());
-						logger.info("ZooMaster # produced command: " + command + ", along with activate command: " + 
+						System.out.println("ZooMaster # produced command: " + command + ", along with activate command: " + 
 								activateCommand);
 						if(command.equals("") == false) {
 							ArrayList<String> peerParents = inverseTopology.get(command.substring(command.lastIndexOf("~") + 1, command.length()));
 							peerParents.remove(peerParents.indexOf(upstream_task));
 							setScaleCommand(upstream_task, command, peerParents, activateCommand);
 						}else {
-							logger.info("ZooMaster # no scale-out command produced" + 
+							System.out.println("ZooMaster # no scale-out command produced" + 
 									"(synefo-component:" + childWorker + ", upstream-component: " + upstream_task + ")."
 									);
 						}
 					}else if(tokens[0].equals("scale-in")) {
-						logger.info("ZooMaster # identified new scale-in request: " + scaleRequest);
+						System.out.println("ZooMaster # identified new scale-in request: " + scaleRequest);
 						String[] childTokens = tokens[1].split("-");
 						String childWorker = childTokens[0];
 						String upstream_task = scaleFunction.getParentNode(
@@ -126,7 +126,7 @@ public class ZooMaster {
 							peerParents.remove(peerParents.indexOf(upstream_task));
 							setScaleCommand(upstream_task, command, peerParents, deActivateCommand);
 						}else {
-							logger.info("ZooMaster # no scale-in command produced" + 
+							System.out.println("ZooMaster # no scale-in command produced" + 
 									"(synefo-component:" + childWorker + ", upstream-component: " + upstream_task + ")."
 									);
 						}
@@ -295,16 +295,16 @@ public class ZooMaster {
 				List<String> children) {
 			switch(Code.get(rc)) {
 			case CONNECTIONLOSS:
-				logger.info("ZooMaster.setScaleOutEventWatch() # CONNECTIONLOSS");
+				System.out.println("ZooMaster.setScaleOutEventWatch() # CONNECTIONLOSS");
 				setScaleOutEventWatch();
 				break;
 			case OK:
-				logger.info("ZooMaster.scaleOutEventChildrenCallback() # OK children received: " + 
+				System.out.println("ZooMaster.scaleOutEventChildrenCallback() # OK children received: " + 
 						children);
 				if(state == SynefoState.BOOTSTRAPPED) {
 					for(String child : children) {
 						if(!scaleRequests.contains("scale-out#" + child)) {
-							logger.info("ZooMaster.scaleOutEventChildrenCallback() # identified new scale-out request: " + 
+							System.out.println("ZooMaster.scaleOutEventChildrenCallback() # identified new scale-out request: " + 
 									child);
 							scaleRequests.offer("scale-out#" + child);
 						}
@@ -315,7 +315,7 @@ public class ZooMaster {
 				setScaleOutEventWatch();
 				break;
 			default:
-				logger.info("ZooMaster.scaleOutEventChildrenCallback() unexpected error: " + KeeperException.create(Code.get(rc)));
+				System.out.println("ZooMaster.scaleOutEventChildrenCallback() unexpected error: " + KeeperException.create(Code.get(rc)));
 				break;
 
 			}
@@ -340,16 +340,16 @@ public class ZooMaster {
 				List<String> children) {
 			switch(Code.get(rc)) {
 			case CONNECTIONLOSS:
-				logger.info("ZooMaster.setScaleInEventWatch() # CONNECTIONLOSS");
+				System.out.println("ZooMaster.setScaleInEventWatch() # CONNECTIONLOSS");
 				setScaleInEventWatch();
 				break;
 			case OK:
-				logger.info("ZooMaster.scaleInEventChildrenCallback() # OK children received: " + 
+				System.out.println("ZooMaster.scaleInEventChildrenCallback() # OK children received: " + 
 						children);
 				if(state == SynefoState.BOOTSTRAPPED) {
 					for(String child : children) {
 						if(!scaleRequests.contains("scale-in#" + child)) {
-							logger.info("ZooMaster.scaleInEventChildrenCallback() # identified new scale-in request: " + 
+							System.out.println("ZooMaster.scaleInEventChildrenCallback() # identified new scale-in request: " + 
 									child);
 							scaleRequests.offer("scale-in#" + child);
 						}
@@ -360,7 +360,7 @@ public class ZooMaster {
 				setScaleInEventWatch();
 				break;
 			default:
-				logger.info("ZooMaster.scaleInEventChildrenCallback() # unexpected error: " + 
+				System.out.println("ZooMaster.scaleInEventChildrenCallback() # unexpected error: " + 
 						KeeperException.create(Code.get(rc)));
 				break;
 
@@ -397,11 +397,11 @@ public class ZooMaster {
 		public void processResult(int rc, String path, Object ctx, Stat stat) {
 			switch(Code.get(rc)) {
 			case OK:
-				logger.info("ZooMaster.setScaleCommandCallback() # scale command has been set properly: " + 
+				System.out.println("ZooMaster.setScaleCommandCallback() # scale command has been set properly: " + 
 						stat + ", command: " + ctx + ", on path: " + path);
 				break;
 			default:
-				logger.info("ZooMaster.setScaleCommandCallback() # scale command has had an unexpected result: " + 
+				System.out.println("ZooMaster.setScaleCommandCallback() # scale command has had an unexpected result: " + 
 						KeeperException.create(Code.get(rc)) + ", command: " + ctx + ", on path: " + path);
 				break;
 			}
