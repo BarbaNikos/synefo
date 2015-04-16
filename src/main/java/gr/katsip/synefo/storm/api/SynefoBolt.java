@@ -205,7 +205,6 @@ public class SynefoBolt extends BaseRichBolt {
 					") in execute(): received tuple with fields: " + tuple.getFields().toString() + 
 					" from component: " + tuple.getSourceComponent() + " with task-id: " + tuple.getSourceTask());
 		}
-		//SYNEFO_HEADER (SYNEFO_TIMESTAMP) is always the first
 		String synefoHeader = tuple.getString(tuple.getFields().fieldIndex("SYNEFO_HEADER"));
 		Long synefoTimestamp = null;
 		if(synefoHeader != null && synefoHeader.equals("") == false && synefoHeader.contains("/") == true) {

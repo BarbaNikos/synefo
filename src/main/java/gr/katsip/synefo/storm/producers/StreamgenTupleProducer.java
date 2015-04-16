@@ -21,7 +21,6 @@ public class StreamgenTupleProducer implements AbstractTupleProducer, Serializab
 
 	private transient BufferedReader input;
 
-	@SuppressWarnings("unused")
 	private transient PrintWriter output;
 
 	private Fields fields;
@@ -72,6 +71,13 @@ public class StreamgenTupleProducer implements AbstractTupleProducer, Serializab
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
+			try {
+				input.close();
+				dataProvider.close();
+				output.close();
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
 		}
 		return null;
 	}

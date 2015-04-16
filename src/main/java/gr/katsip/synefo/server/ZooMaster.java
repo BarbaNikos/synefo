@@ -8,7 +8,8 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import org.apache.zookeeper.AsyncCallback.ChildrenCallback;
+
+//import org.apache.zookeeper.AsyncCallback.ChildrenCallback;
 import org.apache.zookeeper.AsyncCallback.StatCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -55,7 +56,7 @@ public class ZooMaster {
 	public ScaleFunction scaleFunction;
 
 	private ConcurrentLinkedQueue<String> scaleRequests;
-	
+
 	private ConcurrentHashMap<String, Boolean> servedScaleRequests; 
 
 	/**
@@ -277,96 +278,141 @@ public class ZooMaster {
 		}
 	}
 
+	public void setScaleOutEventWatch() {
+		List<String> children = null;
+		try {
+			children = zk.getChildren("/synefo/scale-out-event", synefoWatcher);
+		} catch (KeeperException | InterruptedException e) {
+			e.printStackTrace();
+		}
+		if(children != null) {
+			System.out.println("ZooMaster.scaleOutEventWatch() # OK children received: " + 
+					children);
+			if(state == SynefoState.BOOTSTRAPPED) {
+				for(String child : children) {
+					if(!scaleRequests.contains("scale-out#" + child)) {
+						System.out.println("ZooMaster.scaleOutEventWatch() # identified new scale-out request: " + 
+								child);
+						scaleRequests.offer("scale-out#" + child);
+					}
+				}
+			}
+		}
+	}
+
 	/**
 	 * Function for setting a watch on the /synefo/scale-out-event z-node.
 	 */
-	public void setScaleOutEventWatch() {
-		zk.getChildren("/synefo/scale-out-event", 
-				synefoWatcher, 
-				scaleOutEventChildrenCallback, 
-				null);
-	}
+	//	public void setScaleOutEventWatch() {
+	//		zk.getChildren("/synefo/scale-out-event", 
+	//				synefoWatcher, 
+	//				scaleOutEventChildrenCallback, 
+	//				null);
+	//	}
+	//	
+	//	
+	//
+	//	/**
+	//	 * The callback object responsible for handling scale-out event callbacks.
+	//	 */
+	//	ChildrenCallback scaleOutEventChildrenCallback = new ChildrenCallback() {
+	//		public void processResult(int rc, String path, Object ctx,
+	//				List<String> children) {
+	//			switch(Code.get(rc)) {
+	//			case CONNECTIONLOSS:
+	//				System.out.println("ZooMaster.setScaleOutEventWatch() # CONNECTIONLOSS");
+	//				setScaleOutEventWatch();
+	//				break;
+	//			case OK:
+	//				System.out.println("ZooMaster.scaleOutEventChildrenCallback() # OK children received: " + 
+	//						children);
+	//				if(state == SynefoState.BOOTSTRAPPED) {
+	//					for(String child : children) {
+	//						if(!scaleRequests.contains("scale-out#" + child)) {
+	//							System.out.println("ZooMaster.scaleOutEventChildrenCallback() # identified new scale-out request: " + 
+	//									child);
+	//							scaleRequests.offer("scale-out#" + child);
+	//						}
+	//					}
+	//				}
+	//				break;
+	//			case NONODE:
+	//				setScaleOutEventWatch();
+	//				break;
+	//			default:
+	//				System.out.println("ZooMaster.scaleOutEventChildrenCallback() unexpected error: " + KeeperException.create(Code.get(rc)));
+	//				break;
+	//
+	//			}
+	//		}	
+	//	};
 
-	/**
-	 * The callback object responsible for handling scale-out event callbacks.
-	 */
-	ChildrenCallback scaleOutEventChildrenCallback = new ChildrenCallback() {
-		public void processResult(int rc, String path, Object ctx,
-				List<String> children) {
-			switch(Code.get(rc)) {
-			case CONNECTIONLOSS:
-				System.out.println("ZooMaster.setScaleOutEventWatch() # CONNECTIONLOSS");
-				setScaleOutEventWatch();
-				break;
-			case OK:
-				System.out.println("ZooMaster.scaleOutEventChildrenCallback() # OK children received: " + 
-						children);
-				if(state == SynefoState.BOOTSTRAPPED) {
-					for(String child : children) {
-						if(!scaleRequests.contains("scale-out#" + child)) {
-							System.out.println("ZooMaster.scaleOutEventChildrenCallback() # identified new scale-out request: " + 
-									child);
-							scaleRequests.offer("scale-out#" + child);
-						}
+	public void setScaleInEventWatch() {
+		List<String> children = null;
+		try {
+			children = zk.getChildren("/synefo/scale-in-event", synefoWatcher);
+		} catch (KeeperException | InterruptedException e) {
+			e.printStackTrace();
+		}
+		if(children != null) {
+			System.out.println("ZooMaster.scaleInEventWatch() # OK children received: " + 
+					children);
+			if(state == SynefoState.BOOTSTRAPPED) {
+				for(String child : children) {
+					if(!scaleRequests.contains("scale-in#" + child)) {
+						System.out.println("ZooMaster.scaleInEventWatch() # identified new scale-in request: " + 
+								child);
+						scaleRequests.offer("scale-in#" + child);
 					}
 				}
-				break;
-			case NONODE:
-				setScaleOutEventWatch();
-				break;
-			default:
-				System.out.println("ZooMaster.scaleOutEventChildrenCallback() unexpected error: " + KeeperException.create(Code.get(rc)));
-				break;
-
 			}
-		}	
-	};
-
+		}
+	}
 	/**
 	 * Function for setting a watch on the /synefo/scale-in-event z-node.
 	 */
-	public void setScaleInEventWatch() {
-		zk.getChildren("/synefo/scale-in-event", 
-				synefoWatcher, 
-				scaleInEventChildrenCallback, 
-				null);
-	}
+//	public void setScaleInEventWatch() {
+//		zk.getChildren("/synefo/scale-in-event", 
+//				synefoWatcher, 
+//				scaleInEventChildrenCallback, 
+//				null);
+//	}
 
 	/**
 	 * The callback object responsible for handling scale-in event callbacks.
 	 */
-	ChildrenCallback scaleInEventChildrenCallback = new ChildrenCallback() {
-		public void processResult(int rc, String path, Object ctx,
-				List<String> children) {
-			switch(Code.get(rc)) {
-			case CONNECTIONLOSS:
-				System.out.println("ZooMaster.setScaleInEventWatch() # CONNECTIONLOSS");
-				setScaleInEventWatch();
-				break;
-			case OK:
-				System.out.println("ZooMaster.scaleInEventChildrenCallback() # OK children received: " + 
-						children);
-				if(state == SynefoState.BOOTSTRAPPED) {
-					for(String child : children) {
-						if(!scaleRequests.contains("scale-in#" + child)) {
-							System.out.println("ZooMaster.scaleInEventChildrenCallback() # identified new scale-in request: " + 
-									child);
-							scaleRequests.offer("scale-in#" + child);
-						}
-					}
-				}
-				break;
-			case NONODE:
-				setScaleInEventWatch();
-				break;
-			default:
-				System.out.println("ZooMaster.scaleInEventChildrenCallback() # unexpected error: " + 
-						KeeperException.create(Code.get(rc)));
-				break;
-
-			}
-		}
-	};
+//	ChildrenCallback scaleInEventChildrenCallback = new ChildrenCallback() {
+//		public void processResult(int rc, String path, Object ctx,
+//				List<String> children) {
+//			switch(Code.get(rc)) {
+//			case CONNECTIONLOSS:
+//				System.out.println("ZooMaster.setScaleInEventWatch() # CONNECTIONLOSS");
+//				setScaleInEventWatch();
+//				break;
+//			case OK:
+//				System.out.println("ZooMaster.scaleInEventChildrenCallback() # OK children received: " + 
+//						children);
+//				if(state == SynefoState.BOOTSTRAPPED) {
+//					for(String child : children) {
+//						if(!scaleRequests.contains("scale-in#" + child)) {
+//							System.out.println("ZooMaster.scaleInEventChildrenCallback() # identified new scale-in request: " + 
+//									child);
+//							scaleRequests.offer("scale-in#" + child);
+//						}
+//					}
+//				}
+//				break;
+//			case NONODE:
+//				setScaleInEventWatch();
+//				break;
+//			default:
+//				System.out.println("ZooMaster.scaleInEventChildrenCallback() # unexpected error: " + 
+//						KeeperException.create(Code.get(rc)));
+//				break;
+//
+//			}
+//		}
+//	};
 
 	/**
 	 * this function is called in order to set a scale-out/in command for the synefo 
