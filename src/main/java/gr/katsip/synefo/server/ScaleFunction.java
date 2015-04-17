@@ -36,10 +36,9 @@ public class ScaleFunction {
 		return "ADD~" + selectedTask;
 	}
 
-	public String produceScaleInCommand(String underloadedWorker) {
-		String upstreamTask = getParentNode(underloadedWorker.substring(0, underloadedWorker.lastIndexOf(':')),
-				underloadedWorker.substring(underloadedWorker.lastIndexOf(':') + 1, underloadedWorker.lastIndexOf('@')));
+	public String produceScaleInCommand(String upstreamTask, String underloadedWorker) {
 		ArrayList<String> activeNodes = getActiveNodes(upstreamTask, underloadedWorker);
+		System.out.println("ScaleFunction.produceScaleInCommand(): activeNodes: " + activeNodes);
 		if(activeNodes != null && activeNodes.size() > 1) {
 			removeActiveNodeGc(underloadedWorker);
 			return "REMOVE~" + underloadedWorker;

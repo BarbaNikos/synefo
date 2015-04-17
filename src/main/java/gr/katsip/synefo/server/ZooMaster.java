@@ -118,9 +118,10 @@ public class ZooMaster {
 						String upstream_task = scaleFunction.getParentNode(
 								childWorker.substring(0, childWorker.lastIndexOf(':')),
 								childWorker.substring(childWorker.lastIndexOf(':') + 1, childWorker.length()));
-						String command = scaleFunction.produceScaleInCommand(childWorker);
+						System.out.println("(1) ZooMaster # upstream_task: " + upstream_task);
+						String command = scaleFunction.produceScaleInCommand(upstream_task, childWorker);
 						String deActivateCommand = "DEACTIVATE~" + command.substring(command.lastIndexOf("~") + 1, command.length());
-						System.out.println("ZooMaster.scaleInEventChildrenCallback() # produced command: " + command + ", along with deactivate command: " 
+						System.out.println("(2) ZooMaster # produced command: " + command + ", along with deactivate command: " 
 								+ deActivateCommand);
 						if(command.equals("") == false) {
 							ArrayList<String> peerParents = inverseTopology.get(command.substring(command.lastIndexOf("~") + 1, command.length()));
