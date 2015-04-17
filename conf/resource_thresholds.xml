@@ -30,6 +30,6 @@
 	</resource>
 	<resource>
 		<key>throughput-max</key>
-		<value>1000</value>
+		<value>600</value>
 	</resource>
 </thresholds>
