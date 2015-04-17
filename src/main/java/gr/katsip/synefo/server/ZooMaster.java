@@ -132,6 +132,8 @@ public class ZooMaster {
 									);
 						}
 					}
+				}else {
+					System.out.println("ZooMaster # request: " + scaleRequest + " has already been served.");
 				}
 			}
 		}
