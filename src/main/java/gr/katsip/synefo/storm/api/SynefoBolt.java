@@ -176,6 +176,12 @@ public class SynefoBolt extends BaseRichBolt {
 		 */
 		zooPet.start();
 		zooPet.getScaleCommand();
+		StringBuilder strBuild = new StringBuilder();
+		strBuild.append("+EFO-BOLT (" + taskName + ":" + taskID + ") list of active tasks: ");
+		for(String activeTask : activeDownstreamTasks) {
+			strBuild.append(activeTask + " ");
+		}
+		logger.info(strBuild.toString());
 		logger.info("+EFO-BOLT (" + 
 				taskName + ":" + taskID + 
 				") registered to synEFO successfully, timestamp: " + System.currentTimeMillis() + ".");
