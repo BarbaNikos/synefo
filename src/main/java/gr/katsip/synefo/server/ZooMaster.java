@@ -9,16 +9,18 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+
+
 //import org.apache.zookeeper.AsyncCallback.ChildrenCallback;
-import org.apache.zookeeper.AsyncCallback.StatCallback;
+//import org.apache.zookeeper.AsyncCallback.StatCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.ZooDefs.Ids;
-import org.apache.zookeeper.data.Stat;
-import org.apache.zookeeper.KeeperException.Code;
+//import org.apache.zookeeper.data.Stat;
+//import org.apache.zookeeper.KeeperException.Code;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -334,17 +336,27 @@ public class ZooMaster {
 	 * @param command either ADD or REMOVE
 	 */
 	public void setScaleCommand(String upstreamTask, String command, List<String> peerParents, String activateCommand) {
-		zk.setData("/synefo/bolt-tasks/" + upstreamTask, 
-				(command).getBytes(), 
-				-1, 
-				setScaleCommandCallback, 
-				command);
+//		zk.setData("/synefo/bolt-tasks/" + upstreamTask, 
+//				(command).getBytes(), 
+//				-1, 
+//				setScaleCommandCallback, 
+//				command);
+		try {
+			zk.setData("/synefo/bolt-tasks/" + upstreamTask, (command).getBytes(), -1);
+		} catch (KeeperException | InterruptedException e) {
+			e.printStackTrace();
+		}
 		for(String parent : peerParents) {
-			zk.setData("/synefo/bolt-tasks/" + parent, 
-					(activateCommand).getBytes(), 
-					-1, 
-					setScaleCommandCallback, 
-					activateCommand);
+//			zk.setData("/synefo/bolt-tasks/" + parent, 
+//					(activateCommand).getBytes(), 
+//					-1, 
+//					setScaleCommandCallback, 
+//					activateCommand);
+			try {
+				zk.setData("/synefo/bolt-tasks/" + parent, (activateCommand).getBytes(), -1);
+			} catch (KeeperException | InterruptedException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -352,21 +364,21 @@ public class ZooMaster {
 	 * The callback object responsible for handling the result of a 
 	 * set scale command.
 	 */
-	StatCallback setScaleCommandCallback = new StatCallback() {
-		public void processResult(int rc, String path, Object ctx, Stat stat) {
-			switch(Code.get(rc)) {
-			case OK:
-				System.out.println("ZooMaster.setScaleCommandCallback() # scale command has been set properly: " + 
-						stat.toString() + ", command: " + ctx.toString() + ", on path: " + path);
-				break;
-			default:
-				System.out.println("ZooMaster.setScaleCommandCallback() # scale command has had an unexpected result: " + 
-						KeeperException.create(Code.get(rc)) + ", command: " + ctx + ", on path: " + path);
-				break;
-			}
-		}
-
-	};
+//	StatCallback setScaleCommandCallback = new StatCallback() {
+//		public void processResult(int rc, String path, Object ctx, Stat stat) {
+//			switch(Code.get(rc)) {
+//			case OK:
+//				System.out.println("ZooMaster.setScaleCommandCallback() # scale command has been set properly: " + 
+//						stat.toString() + ", command: " + ctx.toString() + ", on path: " + path);
+//				break;
+//			default:
+//				System.out.println("ZooMaster.setScaleCommandCallback() # scale command has had an unexpected result: " + 
+//						KeeperException.create(Code.get(rc)) + ", command: " + ctx + ", on path: " + path);
+//				break;
+//			}
+//		}
+//
+//	};
 
 	/**
 	 * this function is called in order to close communication with the ZooKeeper ensemble.
