@@ -83,58 +83,60 @@ public class ZooMaster {
 					System.out.println("synefoWatcher # scale-in event added.");
 					setScaleInEventWatch();
 				}
-				String scaleRequest = scaleRequests.poll();
-				String[] tokens = scaleRequest.split("#");
-				if(servedScaleRequests.containsKey(scaleRequest) == false) {
-					servedScaleRequests.put(scaleRequest, true);
-					if(tokens[0].equals("scale-out")) {
-						/**
-						 * New child located: Time to set the scale-out 
-						 * command for that child
-						 */
-						System.out.println("ZooMaster # identified new scale-out request: " + scaleRequest);
-						String[] childTokens = tokens[1].split("-");
-						String childWorker = childTokens[0];
-						String upstream_task = scaleFunction.getParentNode(
-								childWorker.substring(0, childWorker.lastIndexOf(':')),
-								childWorker.substring(childWorker.lastIndexOf(':') + 1, childWorker.length()));
-						String command = scaleFunction.produceScaleOutCommand(upstream_task, childWorker);
-						String activateCommand = scaleFunction.produceActivateCommand(command);
-						System.out.println("ZooMaster # produced command: " + command + ", along with activate command: " + 
-								activateCommand);
-						if(command.equals("") == false) {
-							ArrayList<String> peerParents = inverseTopology.get(command.substring(command.lastIndexOf("~") + 1, command.length()));
-							peerParents.remove(peerParents.indexOf(upstream_task));
-							setScaleCommand(upstream_task, command, peerParents, activateCommand);
-						}else {
-							System.out.println("ZooMaster # no scale-out command produced" + 
-									"(synefo-component:" + childWorker + ", upstream-component: " + upstream_task + ")."
-									);
+				String scaleRequest = null;
+				while((scaleRequest = scaleRequests.poll()) != null) {
+					String[] tokens = scaleRequest.split("#");
+					if(servedScaleRequests.containsKey(scaleRequest) == false) {
+						servedScaleRequests.put(scaleRequest, true);
+						if(tokens[0].equals("scale-out")) {
+							/**
+							 * New child located: Time to set the scale-out 
+							 * command for that child
+							 */
+							System.out.println("ZooMaster # identified new scale-out request: " + scaleRequest);
+							String[] childTokens = tokens[1].split("-");
+							String childWorker = childTokens[0];
+							String upstream_task = scaleFunction.getParentNode(
+									childWorker.substring(0, childWorker.lastIndexOf(':')),
+									childWorker.substring(childWorker.lastIndexOf(':') + 1, childWorker.length()));
+							String command = scaleFunction.produceScaleOutCommand(upstream_task, childWorker);
+							String activateCommand = scaleFunction.produceActivateCommand(command);
+							System.out.println("ZooMaster # produced command: " + command + ", along with activate command: " + 
+									activateCommand);
+							if(command.equals("") == false) {
+								ArrayList<String> peerParents = inverseTopology.get(command.substring(command.lastIndexOf("~") + 1, command.length()));
+								peerParents.remove(peerParents.indexOf(upstream_task));
+								setScaleCommand(upstream_task, command, peerParents, activateCommand);
+							}else {
+								System.out.println("ZooMaster # no scale-out command produced" + 
+										"(synefo-component:" + childWorker + ", upstream-component: " + upstream_task + ")."
+										);
+							}
+						}else if(tokens[0].equals("scale-in")) {
+							System.out.println("ZooMaster # identified new scale-in request: " + scaleRequest);
+							String[] childTokens = tokens[1].split("-");
+							String childWorker = childTokens[0];
+							String upstream_task = scaleFunction.getParentNode(
+									childWorker.substring(0, childWorker.lastIndexOf(':')),
+									childWorker.substring(childWorker.lastIndexOf(':') + 1, childWorker.length()));
+							System.out.println("(1) ZooMaster # upstream_task: " + upstream_task);
+							String command = scaleFunction.produceScaleInCommand(upstream_task, childWorker);
+							String deActivateCommand = scaleFunction.produceDeactivateCommand(command);
+							System.out.println("(2) ZooMaster # produced command: " + command + ", along with deactivate command: " 
+									+ deActivateCommand);
+							if(command.equals("") == false) {
+								ArrayList<String> peerParents = inverseTopology.get(command.substring(command.lastIndexOf("~") + 1, command.length()));
+								peerParents.remove(peerParents.indexOf(upstream_task));
+								setScaleCommand(upstream_task, command, peerParents, deActivateCommand);
+							}else {
+								System.out.println("ZooMaster # no scale-in command produced" + 
+										"(synefo-component:" + childWorker + ", upstream-component: " + upstream_task + ")."
+										);
+							}
 						}
-					}else if(tokens[0].equals("scale-in")) {
-						System.out.println("ZooMaster # identified new scale-in request: " + scaleRequest);
-						String[] childTokens = tokens[1].split("-");
-						String childWorker = childTokens[0];
-						String upstream_task = scaleFunction.getParentNode(
-								childWorker.substring(0, childWorker.lastIndexOf(':')),
-								childWorker.substring(childWorker.lastIndexOf(':') + 1, childWorker.length()));
-						System.out.println("(1) ZooMaster # upstream_task: " + upstream_task);
-						String command = scaleFunction.produceScaleInCommand(upstream_task, childWorker);
-						String deActivateCommand = scaleFunction.produceDeactivateCommand(command);
-						System.out.println("(2) ZooMaster # produced command: " + command + ", along with deactivate command: " 
-								+ deActivateCommand);
-						if(command.equals("") == false) {
-							ArrayList<String> peerParents = inverseTopology.get(command.substring(command.lastIndexOf("~") + 1, command.length()));
-							peerParents.remove(peerParents.indexOf(upstream_task));
-							setScaleCommand(upstream_task, command, peerParents, deActivateCommand);
-						}else {
-							System.out.println("ZooMaster # no scale-in command produced" + 
-									"(synefo-component:" + childWorker + ", upstream-component: " + upstream_task + ")."
-									);
-						}
+					}else {
+						System.out.println("ZooMaster # request: " + scaleRequest + " has already been served.");
 					}
-				}else {
-					System.out.println("ZooMaster # request: " + scaleRequest + " has already been served.");
 				}
 			}
 		}
