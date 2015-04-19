@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 
 
+
 //import org.apache.zookeeper.AsyncCallback.ChildrenCallback;
 //import org.apache.zookeeper.AsyncCallback.StatCallback;
 import org.apache.zookeeper.CreateMode;
@@ -19,6 +20,7 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.ZooDefs.Ids;
+import org.apache.zookeeper.data.Stat;
 //import org.apache.zookeeper.data.Stat;
 //import org.apache.zookeeper.KeeperException.Code;
 import org.slf4j.Logger;
@@ -342,7 +344,8 @@ public class ZooMaster {
 //				setScaleCommandCallback, 
 //				command);
 		try {
-			zk.setData("/synefo/bolt-tasks/" + upstreamTask, (command).getBytes(), -1);
+			Stat stat = zk.setData("/synefo/bolt-tasks/" + upstreamTask, (command).getBytes(), -1);
+//			System.out.println("setScaleCommand(): " + stat.)
 		} catch (KeeperException | InterruptedException e) {
 			e.printStackTrace();
 		}
