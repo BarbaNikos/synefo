@@ -15,8 +15,6 @@ public class SynefoCoordinatorThread implements Runnable {
 
 	private HashMap<String, ArrayList<String>> activeTopology;
 
-	private HashMap<String, ArrayList<String>> inverseTopology;
-
 	private HashMap<String, Integer> taskNameToIdMap;
 
 	private Integer totalTaskNum = -1;
@@ -42,7 +40,6 @@ public class SynefoCoordinatorThread implements Runnable {
 			AtomicBoolean operationFlag) {
 		this.physicalTopology = physicalTopology;
 		this.activeTopology = runningTopology;
-		inverseTopology = new HashMap<String, ArrayList<String>>();
 		this.taskNameToIdMap = taskNameToIdMap;
 		this.taskIPs = taskIPs;
 		this.resourceThresholds = resourceThresholds;
@@ -114,26 +111,14 @@ public class SynefoCoordinatorThread implements Runnable {
 						String childTask = name + ":" + Integer.toString(taskNameToIdMap.get(name)) + "@" + 
 								taskIPs.get(name + ":" + Integer.toString(taskNameToIdMap.get(name)));
 						downStreamIds.add(childTask);
-						if(inverseTopology.containsKey(childTask)) {
-							ArrayList<String> parentList = inverseTopology.get(childTask);
-							if(parentList.indexOf(parentTask) < 0) {
-								parentList.add(parentTask);
-								inverseTopology.put(childTask, parentList);
-							}
-						}else {
-							ArrayList<String> parentList = new ArrayList<String>();
-							parentList.add(parentTask);
-							inverseTopology.put(childTask, parentList);
-						}
 					}
 					updatedTopology.put(parentTask, downStreamIds);
-					if(inverseTopology.containsKey(parentTask) == false)
-						inverseTopology.put(parentTask, new ArrayList<String>());
 				}else {
 					updatedTopology.put(parentTask, new ArrayList<String>());
 				}
 			}
-			activeUpdatedTopology = ScaleFunction.getInitialActiveTopology(updatedTopology, inverseTopology);
+			activeUpdatedTopology = ScaleFunction.getInitialActiveTopology(updatedTopology, 
+					ScaleFunction.getInverseTopology(updatedTopology));
 			itr = activeUpdatedTopology.entrySet().iterator();
 			System.out.println("Initial active topology:");
 			while(itr.hasNext()) {
@@ -151,7 +136,7 @@ public class SynefoCoordinatorThread implements Runnable {
 			tamer.setPhysicalTopology();
 			tamer.setActiveTopology();
 			System.out.println("ZooMaster initial active topology: ");
-			itr = tamer.activeTopology.entrySet().iterator();
+			itr = (new HashMap<String, ArrayList<String>>(tamer.scaleFunction.activeTopology)).entrySet().iterator();
 			while(itr.hasNext()) {
 				Entry<String, ArrayList<String>> pair = itr.next();
 				System.out.print(pair.getKey() + " -> {");
@@ -169,39 +154,8 @@ public class SynefoCoordinatorThread implements Runnable {
 		tamer.setScaleOutEventWatch();
 		tamer.setScaleInEventWatch();
 
-		userInterfaceThread = new Thread(new SynEFOUserInterface(tamer));
+		userInterfaceThread = new Thread(new SynEFOUserInterface(tamer, physicalTopology));
 		userInterfaceThread.start();
-	}
-
-	public int getTaskId(String taskName) {
-		Iterator<Entry<String, ArrayList<String>>> itr = physicalTopology.entrySet().iterator();
-		while(itr.hasNext()) {
-			Entry<String, ArrayList<String>> pair = itr.next();
-			if(pair.getKey().startsWith(taskName)) {
-				String[] key = pair.getKey().split(":");
-				String[] task = (key[0]).split("@");
-				return Integer.parseInt(task[0]);
-			}
-		}
-		return -1;
-	}
-
-	public ArrayList<String> getDownstreamTasks(String taskName, int task_id, String task_ip) {
-		if(physicalTopology.containsKey(taskName + ":" + task_id + "@" + task_ip))
-			return physicalTopology.get(taskName + ":" + task_id + "@" + task_ip);
-		else
-			return null;
-	}
-
-	public HashMap<String, ArrayList<String>> getInverseTopology() {
-		return inverseTopology;
-	}
-
-	public ArrayList<String> getUpstreamTasks(String taskName, int task_id, String task_ip) {
-		if(inverseTopology.containsKey(taskName + ":" + task_id + "@" + task_ip))
-			return inverseTopology.get(taskName + ":" + task_id + "@" + task_ip);
-		else 
-			return null;
 	}
 
 }

@@ -45,8 +45,6 @@ public class ZooMaster {
 
 	public HashMap<String, ArrayList<String>> physicalTopology;
 
-	public HashMap<String, ArrayList<String>> activeTopology;
-
 	public ScaleFunction scaleFunction;
 
 	private ConcurrentLinkedQueue<String> scaleRequests;
@@ -152,7 +150,6 @@ public class ZooMaster {
 		this.zoo_port = zoo_port;
 		state = SynefoState.INIT;
 		this.physicalTopology = physicalTopology;
-		this.activeTopology = activeTopology;
 		this.scaleFunction = new ScaleFunction(physicalTopology, activeTopology);
 		scaleRequests = new ConcurrentLinkedQueue<String>();
 		servedScaleRequests = new ConcurrentHashMap<String, Boolean>();
