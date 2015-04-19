@@ -29,7 +29,7 @@ public class ScaleFunctionTest {
 		Iterator<Entry<String, ArrayList<String>>> itr = physicalTopology.entrySet().iterator();
 		while(itr.hasNext()) {
 			Entry<String, ArrayList<String>> pair = itr.next();
-			System.out.print(pair.getKey() + "{");
+			System.out.print(pair.getKey() + " -> {");
 			for(String downTask : pair.getValue()) {
 				System.out.print(downTask + " ");
 			}
@@ -40,7 +40,7 @@ public class ScaleFunctionTest {
 		itr = ScaleFunction.getInverseTopology(physicalTopology).entrySet().iterator();
 		while(itr.hasNext()) {
 			Entry<String, ArrayList<String>> pair = itr.next();
-			System.out.print(pair.getKey() + "{");
+			System.out.print(pair.getKey() + " -> {");
 			for(String downTask : pair.getValue()) {
 				System.out.print(downTask + " ");
 			}
@@ -52,7 +52,7 @@ public class ScaleFunctionTest {
 				.getInverseTopology(physicalTopology)).entrySet().iterator();
 		while(itr.hasNext()) {
 			Entry<String, ArrayList<String>> pair = itr.next();
-			System.out.print(pair.getKey() + "{");
+			System.out.print(pair.getKey() + " -> {");
 			for(String downTask : pair.getValue()) {
 				System.out.print(downTask + " ");
 			}
