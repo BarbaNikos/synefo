@@ -13,13 +13,10 @@ public class ScaleFunction {
 
 	public HashMap<String, ArrayList<String>> activeTopology;
 
-	public HashMap<String, ArrayList<String>> inverseTopology;
-
 	public ScaleFunction(HashMap<String, ArrayList<String>> physicalTopology, 
 			HashMap<String, ArrayList<String>> activeTopology) {
 		this.physicalTopology = physicalTopology;
 		this.activeTopology = activeTopology;
-		this.inverseTopology = ScaleFunction.getInverseTopology(physicalTopology);
 	}
 
 	public String produceScaleOutCommand(String upstreamTask, String overloadedWorker) {
@@ -140,24 +137,22 @@ public class ScaleFunction {
 			return null;
 		for(String task : activeNodes) {
 			if(task.equals(underloadedNode)) {
-				//TODO: THIS IS THE MAJOR CHANGE
-//				activeNodes.remove(activeNodes.lastIndexOf(task));
 				return activeNodes;
 			}
 		}
 		return null;
 	}
 
-	private String randomChoice(ArrayList<String> available_nodes) {
+	private static String randomChoice(ArrayList<String> available_nodes) {
 		Random random = new Random();
 		return available_nodes.get(random.nextInt(available_nodes.size()));
 	}
 	
-	public String produceActivateCommand(String addCommand) {
+	public static String produceActivateCommand(String addCommand) {
 		return "ACTIVATE~" + addCommand.substring(addCommand.lastIndexOf("~") + 1, addCommand.length());
 	}
 	
-	public String produceDeactivateCommand(String removeCommand) {
+	public static String produceDeactivateCommand(String removeCommand) {
 		return "DEACTIVATE~" + removeCommand.substring(removeCommand.lastIndexOf("~") + 1, removeCommand.length());
 	}
 	

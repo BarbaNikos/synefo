@@ -24,7 +24,7 @@ public class Synefo {
 
 	private HashMap<String, ArrayList<String>> physicalTopology;
 
-	private HashMap<String, ArrayList<String>> runningTopology;
+	private HashMap<String, ArrayList<String>> activeTopology;
 
 	private HashMap<String, Integer> nameToIdMap;
 
@@ -40,7 +40,7 @@ public class Synefo {
 
 	public Synefo(String zooHost, Integer zooIP, HashMap<String, Pair<Number, Number>> _resource_thresholds) {
 		physicalTopology = new HashMap<String, ArrayList<String>>();
-		runningTopology = new HashMap<String, ArrayList<String>>();
+		activeTopology = new HashMap<String, ArrayList<String>>();
 		nameToIdMap = new HashMap<String, Integer>();
 		taskIPs = new HashMap<String, String>();
 		serverSocket = null;
@@ -76,13 +76,13 @@ public class Synefo {
 		Socket _stormComponent = null;
 		OutputStream _out = null;
 		InputStream _in = null;
-		(new Thread(new SynefoCoordinatorThread(zooHost, zooIP, resourceThresholds, physicalTopology, runningTopology, nameToIdMap, taskIPs, operationFlag))).start();
+		(new Thread(new SynefoCoordinatorThread(zooHost, zooIP, resourceThresholds, physicalTopology, activeTopology, nameToIdMap, taskIPs, operationFlag))).start();
 		while(killCommand == false) {
 			try {
 				_stormComponent = serverSocket.accept();
 				_out = _stormComponent.getOutputStream();
 				_in = _stormComponent.getInputStream();
-				(new Thread(new SynEFOthread(physicalTopology, runningTopology, nameToIdMap, _in, _out, taskIPs, operationFlag))).start();
+				(new Thread(new SynEFOthread(physicalTopology, activeTopology, nameToIdMap, _in, _out, taskIPs, operationFlag))).start();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

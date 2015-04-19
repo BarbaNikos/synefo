@@ -82,7 +82,7 @@ public class SynefoCoordinatorThread implements Runnable {
 		/**
 		 * Update ZooKeeper entries and Nodes
 		 */
-		tamer = new ZooMaster(zooHost, zooPort, physicalTopology, activeTopology, inverseTopology);
+		tamer = new ZooMaster(zooHost, zooPort, physicalTopology, activeTopology);
 
 		tamer.start();
 		tamer.setScaleOutThresholds((double) resourceThresholds.get("cpu").upperBound, 

@@ -8,12 +8,6 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
-
-
-
-//import org.apache.zookeeper.AsyncCallback.ChildrenCallback;
-//import org.apache.zookeeper.AsyncCallback.StatCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -21,8 +15,6 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.data.Stat;
-//import org.apache.zookeeper.data.Stat;
-//import org.apache.zookeeper.KeeperException.Code;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,8 +46,6 @@ public class ZooMaster {
 	public HashMap<String, ArrayList<String>> physicalTopology;
 
 	public HashMap<String, ArrayList<String>> activeTopology;
-
-	public HashMap<String, ArrayList<String>> inverseTopology;
 
 	public ScaleFunction scaleFunction;
 
@@ -104,11 +94,12 @@ public class ZooMaster {
 									childWorker.substring(0, childWorker.lastIndexOf(':')),
 									childWorker.substring(childWorker.lastIndexOf(':') + 1, childWorker.length()));
 							String command = scaleFunction.produceScaleOutCommand(upstream_task, childWorker);
-							String activateCommand = scaleFunction.produceActivateCommand(command);
+							String activateCommand = ScaleFunction.produceActivateCommand(command);
 							System.out.println("ZooMaster # produced command: " + command + ", along with activate command: " + 
 									activateCommand);
 							if(command.equals("") == false) {
-								ArrayList<String> peerParents = inverseTopology.get(command.substring(command.lastIndexOf("~") + 1, command.length()));
+								ArrayList<String> peerParents = ScaleFunction.getInverseTopology(physicalTopology)
+										.get(command.substring(command.lastIndexOf("~") + 1, command.length()));
 								peerParents.remove(peerParents.indexOf(upstream_task));
 								setScaleCommand(upstream_task, command, peerParents, activateCommand);
 							}else {
@@ -125,11 +116,12 @@ public class ZooMaster {
 									childWorker.substring(childWorker.lastIndexOf(':') + 1, childWorker.length()));
 							System.out.println("(1) ZooMaster # upstream_task: " + upstream_task);
 							String command = scaleFunction.produceScaleInCommand(upstream_task, childWorker);
-							String deActivateCommand = scaleFunction.produceDeactivateCommand(command);
+							String deActivateCommand = ScaleFunction.produceDeactivateCommand(command);
 							System.out.println("(2) ZooMaster # produced command: " + command + ", along with deactivate command: " 
 									+ deActivateCommand);
 							if(command.equals("") == false) {
-								ArrayList<String> peerParents = inverseTopology.get(command.substring(command.lastIndexOf("~") + 1, command.length()));
+								ArrayList<String> peerParents = ScaleFunction.getInverseTopology(physicalTopology)
+										.get(command.substring(command.lastIndexOf("~") + 1, command.length()));
 								peerParents.remove(peerParents.indexOf(upstream_task));
 								setScaleCommand(upstream_task, command, peerParents, deActivateCommand);
 							}else {
@@ -155,14 +147,12 @@ public class ZooMaster {
 	 */
 	public ZooMaster(String zoo_ip, Integer zoo_port, 
 			HashMap<String, ArrayList<String>> physicalTopology, 
-			HashMap<String, ArrayList<String>> activeTopology, 
-			HashMap<String, ArrayList<String>> inverseTopology) {
+			HashMap<String, ArrayList<String>> activeTopology) {
 		this.zoo_ip = zoo_ip;
 		this.zoo_port = zoo_port;
 		state = SynefoState.INIT;
 		this.physicalTopology = physicalTopology;
 		this.activeTopology = activeTopology;
-		this.inverseTopology = inverseTopology;
 		this.scaleFunction = new ScaleFunction(physicalTopology, activeTopology);
 		scaleRequests = new ConcurrentLinkedQueue<String>();
 		servedScaleRequests = new ConcurrentHashMap<String, Boolean>();
@@ -338,50 +328,23 @@ public class ZooMaster {
 	 * @param command either ADD or REMOVE
 	 */
 	public void setScaleCommand(String upstreamTask, String command, List<String> peerParents, String activateCommand) {
-//		zk.setData("/synefo/bolt-tasks/" + upstreamTask, 
-//				(command).getBytes(), 
-//				-1, 
-//				setScaleCommandCallback, 
-//				command);
 		try {
 			Stat stat = zk.setData("/synefo/bolt-tasks/" + upstreamTask, (command).getBytes(), -1);
-//			System.out.println("setScaleCommand(): " + stat.)
+			System.out.println("setScaleCommand(): Setting command: \"" + command + "\", on path: " + 
+					"\"/synefo/bolt-tasks/" + upstreamTask + "\" returned version stat: " + stat.getVersion() + ".");
 		} catch (KeeperException | InterruptedException e) {
 			e.printStackTrace();
 		}
 		for(String parent : peerParents) {
-//			zk.setData("/synefo/bolt-tasks/" + parent, 
-//					(activateCommand).getBytes(), 
-//					-1, 
-//					setScaleCommandCallback, 
-//					activateCommand);
 			try {
-				zk.setData("/synefo/bolt-tasks/" + parent, (activateCommand).getBytes(), -1);
+				Stat stat = zk.setData("/synefo/bolt-tasks/" + parent, (activateCommand).getBytes(), -1);
+				System.out.println("setScaleCommand(): Setting command: \"" + command + "\", on path: " + 
+						"\"/synefo/bolt-tasks/" + parent + "\" returned version stat: " + stat.getVersion() + ".");
 			} catch (KeeperException | InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
 	}
-
-	/**
-	 * The callback object responsible for handling the result of a 
-	 * set scale command.
-	 */
-//	StatCallback setScaleCommandCallback = new StatCallback() {
-//		public void processResult(int rc, String path, Object ctx, Stat stat) {
-//			switch(Code.get(rc)) {
-//			case OK:
-//				System.out.println("ZooMaster.setScaleCommandCallback() # scale command has been set properly: " + 
-//						stat.toString() + ", command: " + ctx.toString() + ", on path: " + path);
-//				break;
-//			default:
-//				System.out.println("ZooMaster.setScaleCommandCallback() # scale command has had an unexpected result: " + 
-//						KeeperException.create(Code.get(rc)) + ", command: " + ctx + ", on path: " + path);
-//				break;
-//			}
-//		}
-//
-//	};
 
 	/**
 	 * this function is called in order to close communication with the ZooKeeper ensemble.
@@ -394,7 +357,7 @@ public class ZooMaster {
 		}
 	}
 
-	public String serializeTopology(HashMap<String, ArrayList<String>> topology) {
+	public static String serializeTopology(HashMap<String, ArrayList<String>> topology) {
 		StringBuilder strBuild = new StringBuilder();
 		strBuild.append("{");
 		Iterator<Entry<String, ArrayList<String>>> itr = topology.entrySet().iterator();
@@ -417,7 +380,7 @@ public class ZooMaster {
 		return strBuild.toString();
 	}
 
-	public HashMap<String, ArrayList<String>> deserializeTopology(String topology) {
+	public static HashMap<String, ArrayList<String>> deserializeTopology(String topology) {
 		HashMap<String, ArrayList<String>> top = new HashMap<String, ArrayList<String>>();
 		String[] tokens = topology.split("{|}");
 		for(String task : tokens) {
