@@ -335,7 +335,7 @@ public class ZooMaster {
 		for(String parent : peerParents) {
 			try {
 				Stat stat = zk.setData("/synefo/bolt-tasks/" + parent, (activateCommand).getBytes(), -1);
-				System.out.println("setScaleCommand(): Setting command: \"" + command + "\", on path: " + 
+				System.out.println("setScaleCommand(): Setting command: \"" + activateCommand + "\", on path: " + 
 						"\"/synefo/bolt-tasks/" + parent + "\" returned version stat: " + stat.getVersion() + ".");
 			} catch (KeeperException | InterruptedException e) {
 				e.printStackTrace();
