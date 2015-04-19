@@ -390,11 +390,12 @@ public class SynefoBolt extends BaseRichBolt {
 		componentId = tokens[5];
 		compNum = Integer.parseInt(tokens[7]);
 		ip = tokens[9];
+		logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + ") action: " + scaleAction + ".");
 		/**
 		 * 
 		 */
-		if(scaleAction != null && scaleAction.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.ADD_ACTION)) {
-			System.out.println("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+		if(scaleAction != null && scaleAction.equals(SynefoConstant.ADD_ACTION)) {
+			logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
 					") received an ADD action (timestamp: " + System.currentTimeMillis() + ").");
 			String selfComp = this.taskName + ":" + this.taskID;
 			if(selfComp.equals(componentName + ":" + componentId)) {
@@ -426,7 +427,7 @@ public class SynefoBolt extends BaseRichBolt {
 								intActiveDownstreamTasks.add(task);
 							}
 							logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
-									") received active downstream task list:" + activeDownstreamTasks);
+									") received active downstream task list:" + activeDownstreamTasks + "(intActiveDownstreamTasks: " + intActiveDownstreamTasks.toString() + ")");
 							activeListFlag = true;
 							downStreamIndex = 0;
 						}else {
@@ -490,7 +491,7 @@ public class SynefoBolt extends BaseRichBolt {
 				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
 						") sent state to newly added node successfully (timestamp: " + System.currentTimeMillis() + ").");
 			}
-		}else if(scaleAction != null && scaleAction.equals(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.REMOVE_ACTION)) {
+		}else if(scaleAction != null && scaleAction.equals(SynefoConstant.REMOVE_ACTION)) {
 			logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
 					") received a REMOVE action (timestamp: " + System.currentTimeMillis() + ").");
 			String selfComp = this.taskName + ":" + this.taskID;

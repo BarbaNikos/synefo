@@ -98,6 +98,7 @@ public class SynEFOthread implements Runnable {
 			/**
 			 * Send physical-topology and active-topology.
 			 * TODO: Check if task-id and task-ip have changed
+			 * NOTE: Spouts are always active in Synefo
 			 */
 			System.out.println("+EFO-SPOUT: " + taskName + "(" + taskId + "@" + taskIP + 
 					") has RE-connected.");
@@ -109,10 +110,6 @@ public class SynEFOthread implements Runnable {
 					System.out.println("+efo SPOUT: " + taskName + "(" + taskId + "@" + taskIP + 
 							") retrieved active topology after RE-CONNECTION");
 					_activeDownStream = new ArrayList<String>(activeTopology.get(taskName + ":" + taskId + "@" + taskIP));
-				}else { 
-					System.out.println("+efo SPOUT: " + taskName + "(" + taskId + "@" + taskIP + 
-							") no active-topology record has been found for RE-CONNECTED bolt.");
-					_activeDownStream = new ArrayList<String>();
 				}
 			}else {
 				System.out.println("+efo SPOUT: " + taskName + "(" + taskId + "@" + taskIP + 
@@ -178,8 +175,6 @@ public class SynEFOthread implements Runnable {
 				System.out.println("+efo SPOUT: " + taskName + "(" + taskId + "@" + taskIP + 
 						") retrieving active topology");
 				_activeDownStream = new ArrayList<String>(activeTopology.get(taskName + ":" + taskId + "@" + taskIP));
-			}else { 
-				_activeDownStream = new ArrayList<String>();
 			}
 			System.out.println("+efo SPOUT: " + taskName + "@" + taskIP + 
 					"(" + taskId + ") downstream task list: " + _activeDownStream.toString());
@@ -229,12 +224,16 @@ public class SynEFOthread implements Runnable {
 				_downStream = new ArrayList<String>(physicalTopology.get(taskName + ":" + taskId + "@" + taskIP));
 				if(activeTopology.containsKey(taskName + ":" + taskId + "@" + taskIP)) {
 					System.out.println("+efo BOLT: " + taskName + "(" + taskId + "@" + taskIP + 
-							") retrieved active topology after RE-CONNECTION");
+							") retrieved active topology record after RE-CONNECTION");
 					_activeDownStream = new ArrayList<String>(activeTopology.get(taskName + ":" + taskId + "@" + taskIP));
 				}else { 
 					System.out.println("+efo BOLT: " + taskName + "(" + taskId + "@" + taskIP + 
 							") no active-topology record has been found for RE-CONNECTED bolt.");
 					_activeDownStream = new ArrayList<String>();
+					for(String task : _downStream) {
+						if(activeTopology.containsKey(task))
+							_activeDownStream.add(task);
+					}
 				}
 			}else {
 				System.out.println("+efo BOLT: " + taskName + "(" + taskId + "@" + taskIP + 
@@ -302,6 +301,11 @@ public class SynEFOthread implements Runnable {
 				_activeDownStream = new ArrayList<String>(activeTopology.get(taskName + ":" + taskId + "@" + taskIP));
 			}else { 
 				_activeDownStream = new ArrayList<String>();
+				for(String task : _downStream) {
+					if(activeTopology.containsKey(task)) {
+						_activeDownStream.add(task);
+					}
+				}
 			}
 			System.out.println("+efo BOLT: " + taskName + "@" + taskIP + 
 					"(" + taskId + ") downstream task list: " + _activeDownStream.toString());
