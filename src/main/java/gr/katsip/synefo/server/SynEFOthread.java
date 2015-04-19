@@ -181,6 +181,8 @@ public class SynEFOthread implements Runnable {
 			}else { 
 				_activeDownStream = new ArrayList<String>();
 			}
+			System.out.println("+efo SPOUT: " + taskName + "@" + taskIP + 
+					"(" + taskId + ") downstream task list: " + _activeDownStream.toString());
 		}else {
 			_downStream = new ArrayList<String>();
 			_activeDownStream = new ArrayList<String>();
@@ -301,6 +303,8 @@ public class SynEFOthread implements Runnable {
 			}else { 
 				_activeDownStream = new ArrayList<String>();
 			}
+			System.out.println("+efo BOLT: " + taskName + "@" + taskIP + 
+					"(" + taskId + ") downstream task list: " + _activeDownStream.toString());
 		}else {
 			_downStream = new ArrayList<String>();
 			_activeDownStream = new ArrayList<String>();
