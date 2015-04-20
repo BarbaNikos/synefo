@@ -160,7 +160,7 @@ public class SynefoSpout extends BaseRichSpout {
 		 */
 		pet.start();
 		pet.getScaleCommand();
-		System.out.println("+EFO-SPOUT (" + 
+		logger.info("+EFO-SPOUT (" + 
 				taskName + ":" + taskId + "@" + taskIP + 
 				") registered to +EFO successfully (timestamp: " + System.currentTimeMillis() + ").");
 	}

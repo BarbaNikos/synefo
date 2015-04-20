@@ -51,6 +51,18 @@ public class JoinOpTest {
 		System.out.println("Id: " + component_id);
 		System.out.println("Num: " + comp_num);
 		System.out.println("IP: " + ip);
+		
+		String scaleCommand = "ADD~bolt_1:7@136.142.184.19";
+		String[] scaleCommandTokens = scaleCommand.split("[~:@]");
+		String action = scaleCommandTokens[0];
+		String taskWithIp = scaleCommandTokens[1] + ":" + scaleCommandTokens[2] + "@" + scaleCommandTokens[3];
+		String taskIp = scaleCommandTokens[3];
+		task = scaleCommandTokens[1];
+		Integer task_id = Integer.parseInt(scaleCommandTokens[2]);
+		System.out.println("Action: " + action);
+		System.out.println("taskWithIp: " + taskWithIp);
+		System.out.println("taskIp: " + taskIp);
+		System.out.println("task-id: " + task_id);
 	}
 
 }
