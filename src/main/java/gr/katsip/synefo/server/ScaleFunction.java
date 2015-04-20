@@ -30,12 +30,12 @@ public class ScaleFunction {
 	 * @return
 	 */
 	public String produceScaleOutCommand(String upstreamTask, String overloadedWorker) {
-		activeTopologyLock.readLock().lock();
 		if(overloadedWorker.toLowerCase().contains("spout")) {
 			return "";
 		}else if(upstreamTask == null || upstreamTask.equals("")) {
 			return "";
 		}
+		activeTopologyLock.writeLock().lock();
 		ArrayList<String> availableNodes = ScaleFunction.getInActiveNodes(
 				physicalTopology, activeTopology,
 				upstreamTask, overloadedWorker);
@@ -43,11 +43,12 @@ public class ScaleFunction {
 			return "";
 		String selectedTask = randomChoice(availableNodes);
 		if(selectedTask != null && selectedTask.length() > 0) {
-			activeTopologyLock.readLock().unlock();
 			addActiveNodeTopology(selectedTask);
+			activeTopologyLock.writeLock().unlock();
 			return "ADD~" + selectedTask;
 		}else {
-			return "ADD~";
+			activeTopologyLock.writeLock().unlock();
+			return "";
 		}
 	}
 
@@ -58,24 +59,28 @@ public class ScaleFunction {
 	 * @return
 	 */
 	public String produceScaleInCommand(String upstreamTask, String underloadedWorker) {
-		activeTopologyLock.readLock().lock();
+		activeTopologyLock.writeLock().lock();
 		ArrayList<String> activeNodes = ScaleFunction.getActiveNodes(
 				physicalTopology, activeTopology, 
 				upstreamTask, underloadedWorker);
 		System.out.println("ScaleFunction.produceScaleInCommand(): activeNodes: " + activeNodes);
 		if(activeNodes != null && activeNodes.size() > 1) {
-			activeTopologyLock.readLock().unlock();
 			removeActiveNodeGc(underloadedWorker);
+			activeTopologyLock.writeLock().unlock();
 			return "REMOVE~" + underloadedWorker;
 		}else {
-			activeTopologyLock.readLock().unlock();
+			activeTopologyLock.writeLock().unlock();
 			return "";
 		}
 	}
 
-
-	public void removeActiveNodeGc(String removedNode) {
+	public void removeActiveNode(String node) {
 		activeTopologyLock.writeLock().lock();
+		removeActiveNodeGc(node);
+		activeTopologyLock.writeLock().unlock();
+	}
+
+	private void removeActiveNodeGc(String removedNode) {
 		Iterator<Entry<String, ArrayList<String>>> itr = activeTopology.entrySet().iterator();
 		while(itr.hasNext()) {
 			Entry<String, ArrayList<String>> pair = itr.next();
@@ -89,20 +94,24 @@ public class ScaleFunction {
 		/**
 		 * Remove entry of removedNode (if exists) from active topology
 		 */
-		System.out.println("ScaleFunction.removeActiveNodeTopology: removedNode: " + 
-				removedNode + ", physical topology: " + physicalTopology.get(removedNode));
 		if(activeTopology.containsKey(removedNode)) {
 			activeTopology.remove(removedNode);
 		}
+//		System.out.println("ScaleFunction.removeActiveNodeTopology: removedNode: " + 
+//				removedNode + ", physical topology: " + physicalTopology.get(removedNode));
+	}
+	
+	public void addInactiveNode(String node) {
+		activeTopologyLock.writeLock().lock();
+		addActiveNodeTopology(node);
 		activeTopologyLock.writeLock().unlock();
 	}
 
-	public void addActiveNodeTopology(String addedNode) {
+	private void addActiveNodeTopology(String addedNode) {
 		/**
 		 * Add addedNode to the active topology downstream-lists of 
 		 * all of addedNode's upstream nodes.
 		 */
-		activeTopologyLock.writeLock().lock();
 		Iterator<Entry<String, ArrayList<String>>> itr = activeTopology.entrySet().iterator();
 		while(itr.hasNext()) {
 			Entry<String, ArrayList<String>> pair = itr.next();
@@ -117,8 +126,6 @@ public class ScaleFunction {
 		/**
 		 * Add an entry for addedNode with all of its active downstream nodes
 		 */
-		System.out.println("ScaleFunction.addActiveNodeTopology: addedNode: " + 
-				addedNode + ", physical topology: " + physicalTopology.get(addedNode));
 		ArrayList<String> downStreamNodes = physicalTopology.get(addedNode);
 		ArrayList<String> activeDownStreamNodes = new ArrayList<String>();
 		for(String node : downStreamNodes) {
@@ -127,7 +134,8 @@ public class ScaleFunction {
 			}
 		}
 		activeTopology.put(addedNode, activeDownStreamNodes);
-		activeTopologyLock.writeLock().unlock();
+//		System.out.println("ScaleFunction.addActiveNodeTopology: addedNode: " + 
+//				addedNode + ", physical topology: " + physicalTopology.get(addedNode));
 	}
 
 	public static String getParentNode(HashMap<String, ArrayList<String>> physicalTopology, String task_name, String task_id) {
