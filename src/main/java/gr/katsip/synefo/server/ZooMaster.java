@@ -88,7 +88,8 @@ public class ZooMaster {
 							System.out.println("ZooMaster # identified new scale-out request: " + scaleRequest);
 							String[] childTokens = tokens[1].split("-");
 							String childWorker = childTokens[0];
-							String upstream_task = scaleFunction.getParentNode(
+							String upstream_task = ScaleFunction.getParentNode(
+									scaleFunction.physicalTopology,
 									childWorker.substring(0, childWorker.lastIndexOf(':')),
 									childWorker.substring(childWorker.lastIndexOf(':') + 1, childWorker.length()));
 							String command = scaleFunction.produceScaleOutCommand(upstream_task, childWorker);
@@ -109,7 +110,8 @@ public class ZooMaster {
 							System.out.println("ZooMaster # identified new scale-in request: " + scaleRequest);
 							String[] childTokens = tokens[1].split("-");
 							String childWorker = childTokens[0];
-							String upstream_task = scaleFunction.getParentNode(
+							String upstream_task = ScaleFunction.getParentNode(
+									scaleFunction.physicalTopology,
 									childWorker.substring(0, childWorker.lastIndexOf(':')),
 									childWorker.substring(childWorker.lastIndexOf(':') + 1, childWorker.length()));
 							System.out.println("(1) ZooMaster # upstream_task: " + upstream_task);

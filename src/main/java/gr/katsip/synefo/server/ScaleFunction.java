@@ -6,12 +6,16 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class ScaleFunction {
 
 	public HashMap<String, ArrayList<String>> physicalTopology;
 
 	public HashMap<String, ArrayList<String>> activeTopology;
+	
+	private final ReadWriteLock activeTopologyLock = new ReentrantReadWriteLock();
 
 	public ScaleFunction(HashMap<String, ArrayList<String>> physicalTopology, 
 			HashMap<String, ArrayList<String>> activeTopology) {
@@ -19,56 +23,78 @@ public class ScaleFunction {
 		this.activeTopology = activeTopology;
 	}
 
+	/**
+	 * Modifies activeTopology
+	 * @param upstreamTask
+	 * @param overloadedWorker
+	 * @return
+	 */
 	public String produceScaleOutCommand(String upstreamTask, String overloadedWorker) {
+		activeTopologyLock.readLock().lock();
 		if(overloadedWorker.toLowerCase().contains("spout")) {
 			return "";
 		}else if(upstreamTask == null || upstreamTask.equals("")) {
 			return "";
 		}
-		ArrayList<String> availableNodes = getInActiveNodes(upstreamTask, overloadedWorker);
+		ArrayList<String> availableNodes = ScaleFunction.getInActiveNodes(
+				physicalTopology, activeTopology,
+				upstreamTask, overloadedWorker);
 		if(availableNodes == null || availableNodes.size() == 0)
 			return "";
 		String selectedTask = randomChoice(availableNodes);
-		addActiveNodeTopology(selectedTask);
-		return "ADD~" + selectedTask;
+		if(selectedTask != null && selectedTask.length() > 0) {
+			activeTopologyLock.readLock().unlock();
+			addActiveNodeTopology(selectedTask);
+			return "ADD~" + selectedTask;
+		}else {
+			return "ADD~";
+		}
 	}
 
+	/**
+	 * Modifies activeTopology
+	 * @param upstreamTask
+	 * @param underloadedWorker
+	 * @return
+	 */
 	public String produceScaleInCommand(String upstreamTask, String underloadedWorker) {
-		ArrayList<String> activeNodes = getActiveNodes(upstreamTask, underloadedWorker);
+		activeTopologyLock.readLock().lock();
+		ArrayList<String> activeNodes = ScaleFunction.getActiveNodes(
+				physicalTopology, activeTopology, 
+				upstreamTask, underloadedWorker);
 		System.out.println("ScaleFunction.produceScaleInCommand(): activeNodes: " + activeNodes);
 		if(activeNodes != null && activeNodes.size() > 1) {
+			activeTopologyLock.readLock().unlock();
 			removeActiveNodeGc(underloadedWorker);
 			return "REMOVE~" + underloadedWorker;
 		}else {
+			activeTopologyLock.readLock().unlock();
 			return "";
 		}
 	}
 
 
 	public void removeActiveNodeGc(String removedNode) {
-		/**
-		 * Remove removedNode from all its upstream-nodes lists
-		 */
-		synchronized(activeTopology) {
-			Iterator<Entry<String, ArrayList<String>>> itr = activeTopology.entrySet().iterator();
-			while(itr.hasNext()) {
-				Entry<String, ArrayList<String>> pair = itr.next();
-				String upstreamNode = pair.getKey();
-				ArrayList<String> downstreamNodes = pair.getValue();
-				if(downstreamNodes.indexOf(removedNode) >= 0) {
-					downstreamNodes.remove(downstreamNodes.indexOf(removedNode));
-					activeTopology.put(upstreamNode, downstreamNodes);
-				}
-			}
-			/**
-			 * Remove entry of removedNode (if exists) from active topology
-			 */
-			System.out.println("ScaleFunction.removeActiveNodeTopology: removedNode: " + 
-					removedNode + ", physical topology: " + physicalTopology.get(removedNode));
-			if(activeTopology.containsKey(removedNode)) {
-				activeTopology.remove(removedNode);
+		activeTopologyLock.writeLock().lock();
+		Iterator<Entry<String, ArrayList<String>>> itr = activeTopology.entrySet().iterator();
+		while(itr.hasNext()) {
+			Entry<String, ArrayList<String>> pair = itr.next();
+			String upstreamNode = pair.getKey();
+			ArrayList<String> downstreamNodes = pair.getValue();
+			if(downstreamNodes.indexOf(removedNode) >= 0) {
+				downstreamNodes.remove(downstreamNodes.indexOf(removedNode));
+				activeTopology.put(upstreamNode, downstreamNodes);
 			}
 		}
+		/**
+		 * Remove entry of removedNode (if exists) from active topology
+		 */
+		System.out.println("ScaleFunction.removeActiveNodeTopology: removedNode: " + 
+				removedNode + ", physical topology: " + physicalTopology.get(removedNode));
+		if(activeTopology.containsKey(removedNode)) {
+			activeTopology.remove(removedNode);
+		}
+		activeTopologyLock.writeLock().unlock();
 	}
 
 	public void addActiveNodeTopology(String addedNode) {
@@ -76,35 +102,35 @@ public class ScaleFunction {
 		 * Add addedNode to the active topology downstream-lists of 
 		 * all of addedNode's upstream nodes.
 		 */
-		synchronized(activeTopology) {
-			Iterator<Entry<String, ArrayList<String>>> itr = activeTopology.entrySet().iterator();
-			while(itr.hasNext()) {
-				Entry<String, ArrayList<String>> pair = itr.next();
-				String upstreamNode = pair.getKey();
-				ArrayList<String> activeDownStreamNodes = pair.getValue();
-				ArrayList<String> physicalDownStreamNodes = physicalTopology.get(upstreamNode);
-				if(physicalDownStreamNodes.indexOf(addedNode) >= 0 && activeDownStreamNodes.indexOf(addedNode) < 0) {
-					activeDownStreamNodes.add(addedNode);
-					activeTopology.put(upstreamNode, activeDownStreamNodes);
-				}
+		activeTopologyLock.writeLock().lock();
+		Iterator<Entry<String, ArrayList<String>>> itr = activeTopology.entrySet().iterator();
+		while(itr.hasNext()) {
+			Entry<String, ArrayList<String>> pair = itr.next();
+			String upstreamNode = pair.getKey();
+			ArrayList<String> activeDownStreamNodes = pair.getValue();
+			ArrayList<String> physicalDownStreamNodes = physicalTopology.get(upstreamNode);
+			if(physicalDownStreamNodes.indexOf(addedNode) >= 0 && activeDownStreamNodes.indexOf(addedNode) < 0) {
+				activeDownStreamNodes.add(addedNode);
+				activeTopology.put(upstreamNode, activeDownStreamNodes);
 			}
-			/**
-			 * Add an entry for addedNode with all of its active downstream nodes
-			 */
-			System.out.println("ScaleFunction.addActiveNodeTopology: addedNode: " + 
-					addedNode + ", physical topology: " + physicalTopology.get(addedNode));
-			ArrayList<String> downStreamNodes = physicalTopology.get(addedNode);
-			ArrayList<String> activeDownStreamNodes = new ArrayList<String>();
-			for(String node : downStreamNodes) {
-				if(activeTopology.containsKey(node)) {
-					activeDownStreamNodes.add(node);
-				}
-			}
-			activeTopology.put(addedNode, activeDownStreamNodes);
 		}
+		/**
+		 * Add an entry for addedNode with all of its active downstream nodes
+		 */
+		System.out.println("ScaleFunction.addActiveNodeTopology: addedNode: " + 
+				addedNode + ", physical topology: " + physicalTopology.get(addedNode));
+		ArrayList<String> downStreamNodes = physicalTopology.get(addedNode);
+		ArrayList<String> activeDownStreamNodes = new ArrayList<String>();
+		for(String node : downStreamNodes) {
+			if(activeTopology.containsKey(node)) {
+				activeDownStreamNodes.add(node);
+			}
+		}
+		activeTopology.put(addedNode, activeDownStreamNodes);
+		activeTopologyLock.writeLock().unlock();
 	}
 
-	public String getParentNode(String task_name, String task_id) {
+	public static String getParentNode(HashMap<String, ArrayList<String>> physicalTopology, String task_name, String task_id) {
 		Iterator<Entry<String, ArrayList<String>>> itr = physicalTopology.entrySet().iterator();
 		while(itr.hasNext()) {
 			Entry<String, ArrayList<String>> pair = itr.next();
@@ -117,7 +143,10 @@ public class ScaleFunction {
 		return null;
 	}
 
-	public ArrayList<String> getInActiveNodes(String upstream_task, String overloadedWorker) {
+	public static ArrayList<String> getInActiveNodes(
+			HashMap<String, ArrayList<String>> physicalTopology, 
+			HashMap<String, ArrayList<String>> activeTopology, 
+			String upstream_task, String overloadedWorker) {
 		ArrayList<String> available_nodes = new ArrayList<String>();
 		ArrayList<String> active_nodes = activeTopology.get(upstream_task);
 		ArrayList<String> physical_nodes = physicalTopology.get(upstream_task);
@@ -129,10 +158,13 @@ public class ScaleFunction {
 		return available_nodes;
 	}
 
-	public ArrayList<String> getActiveNodes(String upstream_task, String underloadedNode) {
-		if(activeTopology.containsKey(upstream_task) == false)
+	public static ArrayList<String> getActiveNodes(
+			HashMap<String, ArrayList<String>> physicalTopology, 
+			HashMap<String, ArrayList<String>> activeTopology, 
+			String upstreamTask, String underloadedNode) {
+		if(activeTopology.containsKey(upstreamTask) == false)
 			return null;
-		ArrayList<String> activeNodes = new ArrayList<String>(activeTopology.get(upstream_task));
+		ArrayList<String> activeNodes = new ArrayList<String>(activeTopology.get(upstreamTask));
 		if(activeNodes == null || activeNodes.size() == 0)
 			return null;
 		for(String task : activeNodes) {
@@ -147,15 +179,15 @@ public class ScaleFunction {
 		Random random = new Random();
 		return available_nodes.get(random.nextInt(available_nodes.size()));
 	}
-	
+
 	public static String produceActivateCommand(String addCommand) {
 		return "ACTIVATE~" + addCommand.substring(addCommand.lastIndexOf("~") + 1, addCommand.length());
 	}
-	
+
 	public static String produceDeactivateCommand(String removeCommand) {
 		return "DEACTIVATE~" + removeCommand.substring(removeCommand.lastIndexOf("~") + 1, removeCommand.length());
 	}
-	
+
 	public static HashMap<String, ArrayList<String>> getInverseTopology(HashMap<String, ArrayList<String>> topology) {
 		HashMap<String, ArrayList<String>> inverseTopology = new HashMap<String, ArrayList<String>>();
 		if(topology == null || topology.size() == 0)
@@ -185,7 +217,7 @@ public class ScaleFunction {
 		}
 		return inverseTopology;
 	}
-	
+
 	/**
 	 * This function separates the topology operators into different layers (stages) of computation. In each layer, 
 	 * the source operators (nodes with no upstream operators) and the drain operators (operators with no downstream operators) are 
@@ -232,7 +264,7 @@ public class ScaleFunction {
 		}
 		return operatorLayers;
 	}
-	
+
 	/**
 	 * Function to randomly select the initially active topology of operators. This function includes 
 	 * all source operators (spouts) and all drain operators (bolts in the end of the topology) in the 
