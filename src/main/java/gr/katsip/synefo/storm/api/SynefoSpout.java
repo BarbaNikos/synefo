@@ -222,6 +222,8 @@ public class SynefoSpout extends BaseRichSpout {
 				logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
 						") located scale-command: " + scaleCommand + ", about to update routing tables (timestamp: " + 
 						System.currentTimeMillis() + ").");
+				logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
+						") active downstream tasks list: " + activeDownstreamTasks.toString());
 				if(action.toLowerCase().equals("activate")) {
 					activeDownstreamTasks.add(taskWithIp);
 					intActiveDownstreamTasks.add(task_id);
@@ -229,6 +231,8 @@ public class SynefoSpout extends BaseRichSpout {
 					activeDownstreamTasks.remove(activeDownstreamTasks.indexOf(taskWithIp));
 					intActiveDownstreamTasks.remove(intActiveDownstreamTasks.indexOf(task_id));
 				}
+				logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
+						") active downstream tasks list after activating/deactivating node: " + activeDownstreamTasks.toString());
 			}else {
 				logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
 						") located scale-command: " + scaleCommand + ", about to produce punctuation tuple (timestamp: " + 
@@ -264,6 +268,8 @@ public class SynefoSpout extends BaseRichSpout {
 					activeDownstreamTasks.remove(activeDownstreamTasks.indexOf(taskWithIp));
 					intActiveDownstreamTasks.remove(intActiveDownstreamTasks.indexOf(task_id));
 				}
+				logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
+						") active downstream tasks list after adding/removing node: " + activeDownstreamTasks.toString());
 			}
 		}
 	}
