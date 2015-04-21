@@ -2,8 +2,7 @@ package gr.katsip.synefo.metric;
 
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
-
-
+import java.util.LinkedList;
 //import java.lang.management.MemoryUsage;
 import com.sun.management.OperatingSystemMXBean;
 
@@ -32,6 +31,10 @@ public class TaskStatistics implements Serializable {
 	
 	private long throughputPreviousTupleNumber;
 	
+	private LinkedList<Double> throughputSampleWindow;
+	
+	private final int sampleWindowSize = 100;
+	
 	private double memory;
 	
 	private long memorySamples;
@@ -57,6 +60,7 @@ public class TaskStatistics implements Serializable {
 		inputRateSamples = 0;
 		cpuLoad = 0.0;
 		cpuSamples = 0;
+		throughputSampleWindow = new LinkedList<Double>();
 	}
 	
 	public void updateSelectivity(double selectivity) {
@@ -101,10 +105,10 @@ public class TaskStatistics implements Serializable {
 		return latency;
 	}
 	
-	public void updateThroughput(long _thrpt_current_tuple_num) {
+	public void updateThroughput() {
 		if(throughputSamples == 0) {
 			this.throughput = 0;
-			throughputPreviousTupleNumber = _thrpt_current_tuple_num;
+			throughputPreviousTupleNumber = 1;
 			throughputPreviousTimestamp = System.currentTimeMillis();
 			throughputSamples += 1;
 		}else {
@@ -112,19 +116,48 @@ public class TaskStatistics implements Serializable {
 			//Time difference in seconds
 			long _thrpt_time_delta = Math.abs(_curr_timestamp - throughputPreviousTimestamp);
 			if(_thrpt_time_delta >= 1000) {
-				double throughput = throughputPreviousTupleNumber + _thrpt_current_tuple_num;
+				double throughput = throughputPreviousTupleNumber + 1;
 				this.throughput = this.throughput + (throughput - this.throughput)/(throughputSamples + 1);
 				throughputSamples += 1;
 				throughputPreviousTupleNumber = 0;
 				throughputPreviousTimestamp = _curr_timestamp;
 			}else {
-				throughputPreviousTupleNumber += _thrpt_current_tuple_num;
+				throughputPreviousTupleNumber += 1;
 			}
 		}
+	}
+	
+	public void updateWindowThroughput() {
+		if(throughputSamples == 0) {
+			this.throughput = 0;
+			throughputPreviousTupleNumber = 1;
+			throughputPreviousTimestamp = System.currentTimeMillis();
+		}else {
+			long currTimestamp = System.currentTimeMillis();
+			long timeDelta = Math.abs(currTimestamp - throughputPreviousTimestamp);
+			if(timeDelta >= 1000) {
+				double throughput = throughputPreviousTupleNumber + 1;
+				this.throughput = throughput;
+				throughputPreviousTupleNumber = 0;
+				throughputPreviousTimestamp = currTimestamp;
+			}else {
+				throughputPreviousTupleNumber += 1;
+			}
+		}
+		if(throughputSampleWindow.size() >= sampleWindowSize)
+			throughputSampleWindow.poll();
+		throughputSampleWindow.offer(this.throughput);
 	}
 
 	public double getThroughput() {
 		return throughput;
+	}
+	
+	public double getWindowThroughput() {
+		Double sumOfThroughput = 0.0;
+		for(Double d : throughputSampleWindow)
+			sumOfThroughput += d;
+		return sumOfThroughput / throughputSampleWindow.size();
 	}
 	
 	public void updateMemory() {

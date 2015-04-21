@@ -30,11 +30,13 @@ public class SynefoCoordinatorThread implements Runnable {
 	private Integer zooPort;
 
 	private Thread userInterfaceThread;
-	
+
 	private AtomicBoolean operationFlag;
 
-	public SynefoCoordinatorThread(String zooHost, Integer zooPort, HashMap<String, Pair<Number, Number>> resourceThresholds, 
-			HashMap<String, ArrayList<String>> physicalTopology, HashMap<String, ArrayList<String>> runningTopology, 
+	public SynefoCoordinatorThread(String zooHost, Integer zooPort, 
+			HashMap<String, Pair<Number, Number>> resourceThresholds, 
+			HashMap<String, ArrayList<String>> physicalTopology, 
+			HashMap<String, ArrayList<String>> runningTopology, 
 			HashMap<String, Integer> taskNameToIdMap, 
 			HashMap<String, String> taskIPs,
 			AtomicBoolean operationFlag) {
@@ -60,7 +62,8 @@ public class SynefoCoordinatorThread implements Runnable {
 			}
 			totalTaskNum = physicalTopology.size();
 		}
-		System.out.println("+efo coordinator thread: Received physical topology (size: " + totalTaskNum + ").");
+		System.out.println("+efo coordinator thread: Received physical topology (size: " + 
+				totalTaskNum + ").");
 		synchronized(taskNameToIdMap) {
 			while(taskNameToIdMap.size() < totalTaskNum) {
 				try {
@@ -136,7 +139,8 @@ public class SynefoCoordinatorThread implements Runnable {
 			tamer.setPhysicalTopology();
 			tamer.setActiveTopology();
 			System.out.println("ZooMaster initial active topology: ");
-			itr = (new HashMap<String, ArrayList<String>>(tamer.scaleFunction.activeTopology)).entrySet().iterator();
+			itr = (new HashMap<String, ArrayList<String>>(
+					tamer.scaleFunction.getActiveTopology())).entrySet().iterator();
 			while(itr.hasNext()) {
 				Entry<String, ArrayList<String>> pair = itr.next();
 				System.out.print(pair.getKey() + " -> {");
@@ -145,7 +149,7 @@ public class SynefoCoordinatorThread implements Runnable {
 				}
 				System.out.println("}");
 			}
-			
+
 			operationFlag.set(true);
 
 			taskNameToIdMap.clear();

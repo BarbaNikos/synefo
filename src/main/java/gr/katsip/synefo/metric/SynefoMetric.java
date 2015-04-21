@@ -31,10 +31,10 @@ public class SynefoMetric {
 		context.registerMetric("memory_load_metric" + taskName + ":" + taskId, memoryMetric, 1);
 	}
 	
-	public void updateMetrics(long _thrpt_current_tuple_num) {
+	public void updateMetrics() {
 		updateCPU();
 		updateMemory();
-		updateThroughput(_thrpt_current_tuple_num);
+		updateThroughput();
 		updateLatency();
 	}
 	
@@ -48,8 +48,8 @@ public class SynefoMetric {
 		memoryMetric.setValue(usage.getMemory());
 	}
 	
-	public void updateThroughput(long _thrpt_current_tuple_num) {
-		usage.updateThroughput(_thrpt_current_tuple_num);
+	public void updateThroughput() {
+		usage.updateThroughput();
 		throughputMetric.setValue(usage.getThroughput());
 	}
 	

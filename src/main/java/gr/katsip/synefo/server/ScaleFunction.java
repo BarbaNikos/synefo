@@ -13,7 +13,7 @@ public class ScaleFunction {
 
 	public HashMap<String, ArrayList<String>> physicalTopology;
 
-	public HashMap<String, ArrayList<String>> activeTopology;
+	private HashMap<String, ArrayList<String>> activeTopology;
 	
 	private final ReadWriteLock activeTopologyLock = new ReentrantReadWriteLock();
 
@@ -21,6 +21,14 @@ public class ScaleFunction {
 			HashMap<String, ArrayList<String>> activeTopology) {
 		this.physicalTopology = physicalTopology;
 		this.activeTopology = activeTopology;
+	}
+	
+	public HashMap<String, ArrayList<String>> getActiveTopology() {
+		HashMap<String, ArrayList<String>> activeTopologyCopy = null;
+		activeTopologyLock.readLock().lock();
+		activeTopologyCopy = new HashMap<String, ArrayList<String>>(activeTopology);
+		activeTopologyLock.readLock().unlock();
+		return activeTopologyCopy;
 	}
 
 	/**

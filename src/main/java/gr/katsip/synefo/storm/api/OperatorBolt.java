@@ -120,7 +120,8 @@ public class OperatorBolt extends BaseRichBolt {
 		}else {
 			statistics.updateLatency();
 		}
-		statistics.updateThroughput(1);
+//		statistics.updateThroughput();
+		statistics.updateWindowThroughput();
 		
 		if(reportCounter >= 1000) {
 			logger.info("OPERATOR-BOLT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 

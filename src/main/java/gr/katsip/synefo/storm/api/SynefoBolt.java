@@ -275,7 +275,8 @@ public class SynefoBolt extends BaseRichBolt {
 		}else {
 			statistics.updateLatency();
 		}
-		statistics.updateThroughput(1);
+//		statistics.updateThroughput();
+		statistics.updateWindowThroughput();
 
 		if(reportCounter >= 1000) {
 			logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
@@ -292,7 +293,8 @@ public class SynefoBolt extends BaseRichBolt {
 //		if(autoScale)
 //			zooPet.setLatency(statistics.getLatency());
 		if(autoScale)
-			zooPet.setThroughput(statistics.getThroughput());
+			zooPet.setThroughput(statistics.getWindowThroughput());
+//			zooPet.setThroughput(statistics.getThroughput());
 		String scaleCommand = "";
 		synchronized(zooPet) {
 			if(zooPet.pendingCommands.isEmpty() == false) {

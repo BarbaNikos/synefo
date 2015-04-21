@@ -230,7 +230,7 @@ public class ZooMaster {
 	 */
 	public void setActiveTopology() {
 		try {
-			zk.setData("/synefo/active-top", serializeTopology(scaleFunction.activeTopology).getBytes(), -1);
+			zk.setData("/synefo/active-top", serializeTopology(scaleFunction.getActiveTopology()).getBytes(), -1);
 		} catch (KeeperException e) {
 			e.printStackTrace();
 		} catch (InterruptedException e) {
@@ -288,7 +288,8 @@ public class ZooMaster {
 					children);
 			if(state == SynefoState.BOOTSTRAPPED) {
 				for(String child : children) {
-					if(!scaleRequests.contains("scale-out#" + child) && servedScaleRequests.containsKey("scale-out#" + child) == false) {
+					if(!scaleRequests.contains("scale-out#" + child) && 
+							servedScaleRequests.containsKey("scale-out#" + child) == false) {
 						System.out.println("ZooMaster.scaleOutEventWatch() # identified new scale-out request: " + 
 								child);
 						scaleRequests.offer("scale-out#" + child);
@@ -310,7 +311,8 @@ public class ZooMaster {
 					children);
 			if(state == SynefoState.BOOTSTRAPPED) {
 				for(String child : children) {
-					if(!scaleRequests.contains("scale-in#" + child) && servedScaleRequests.containsKey("scale-in#" + child) == false) {
+					if(!scaleRequests.contains("scale-in#" + child) && 
+							servedScaleRequests.containsKey("scale-in#" + child) == false) {
 						System.out.println("ZooMaster.scaleInEventWatch() # identified new scale-in request: " + 
 								child);
 						scaleRequests.offer("scale-in#" + child);

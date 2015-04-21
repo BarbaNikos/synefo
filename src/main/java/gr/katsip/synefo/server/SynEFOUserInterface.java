@@ -77,8 +77,8 @@ public class SynEFOUserInterface implements Runnable {
 				/**
 				 * If the node is not active.
 				 */
-				if(beastMaster.scaleFunction.activeTopology.get(compOne).lastIndexOf(compTwo) < 0 && 
-						beastMaster.scaleFunction.activeTopology.containsKey(compTwo) == false) {
+				if(beastMaster.scaleFunction.getActiveTopology().get(compOne).lastIndexOf(compTwo) < 0 && 
+						beastMaster.scaleFunction.getActiveTopology().containsKey(compTwo) == false) {
 					beastMaster.scaleFunction.addInactiveNode(compTwo);
 					String scaleOutCommand = "ADD~" + compTwo;
 					String activateCommand = "ACTIVATE~" + compTwo;
@@ -116,7 +116,7 @@ public class SynEFOUserInterface implements Runnable {
 			if(physicalTopology.get(compOne).lastIndexOf(compTwo) == -1) {
 				System.out.println("+efo error: " + compTwo + " is not an available downstream task of " + compOne + ".");
 				return;
-			}else if(beastMaster.scaleFunction.activeTopology.get(compOne).lastIndexOf(compTwo) == -1) {
+			}else if(beastMaster.scaleFunction.getActiveTopology().get(compOne).lastIndexOf(compTwo) == -1) {
 				System.out.println("+efo error: " + compTwo + " is not an active downstream task of " + compOne + ".");
 				return;
 			}
@@ -124,8 +124,8 @@ public class SynEFOUserInterface implements Runnable {
 				/**
 				 * If the node is active.
 				 */
-				if(beastMaster.scaleFunction.activeTopology.get(compOne).lastIndexOf(compTwo) >= 0 && 
-						beastMaster.scaleFunction.activeTopology.containsKey(compTwo) == true) {
+				if(beastMaster.scaleFunction.getActiveTopology().get(compOne).lastIndexOf(compTwo) >= 0 && 
+						beastMaster.scaleFunction.getActiveTopology().containsKey(compTwo) == true) {
 					beastMaster.scaleFunction.removeActiveNode(compTwo);
 					String scaleInCommand = "REMOVE~" + compTwo;
 					String deActivateCommand = "DEACTIVATE~" + compTwo;
@@ -137,7 +137,8 @@ public class SynEFOUserInterface implements Runnable {
 				}
 			}
 		}else if(command.equals("active-top")) {
-			HashMap<String, ArrayList<String>> activeTopologyCopy = new HashMap<String, ArrayList<String>>(beastMaster.scaleFunction.activeTopology);
+			HashMap<String, ArrayList<String>> activeTopologyCopy = new HashMap<String, ArrayList<String>>(
+					beastMaster.scaleFunction.getActiveTopology());
 			Iterator<Entry<String, ArrayList<String>>> itr = activeTopologyCopy.entrySet().iterator();
 			while(itr.hasNext()) {
 				Entry<String, ArrayList<String>> entry = itr.next();

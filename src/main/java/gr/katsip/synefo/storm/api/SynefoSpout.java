@@ -190,7 +190,8 @@ public class SynefoSpout extends BaseRichSpout {
 		}
 		stats.updateMemory();
 		stats.updateCpuLoad();
-		stats.updateThroughput(1);
+//		stats.updateThroughput();
+		stats.updateWindowThroughput();
 		if(reportCounter >= 1000) {
 			logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
 					") timestamp: " + System.currentTimeMillis() + ", " + 
