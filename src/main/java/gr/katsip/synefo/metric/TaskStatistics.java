@@ -33,6 +33,8 @@ public class TaskStatistics implements Serializable {
 	
 	private LinkedList<Double> throughputSampleWindow;
 	
+	private Double runningWindowSum;
+	
 	private final int sampleWindowSize = 100;
 	
 	private double memory;
@@ -130,23 +132,28 @@ public class TaskStatistics implements Serializable {
 	public void updateWindowThroughput() {
 		if(throughputSamples == 0) {
 			this.throughput = 0;
+			runningWindowSum = 0.0;
 			throughputPreviousTupleNumber = 1;
 			throughputPreviousTimestamp = System.currentTimeMillis();
+			throughputSamples += 1;
 		}else {
 			long currTimestamp = System.currentTimeMillis();
 			long timeDelta = Math.abs(currTimestamp - throughputPreviousTimestamp);
 			if(timeDelta >= 1000) {
-				double throughput = throughputPreviousTupleNumber + 1;
-				this.throughput = throughput;
+				throughput = throughputPreviousTupleNumber + 1;
 				throughputPreviousTupleNumber = 0;
 				throughputPreviousTimestamp = currTimestamp;
+				throughputSamples += 1;
 			}else {
 				throughputPreviousTupleNumber += 1;
 			}
 		}
-		if(throughputSampleWindow.size() >= sampleWindowSize)
-			throughputSampleWindow.poll();
-		throughputSampleWindow.offer(this.throughput);
+		if(throughputSampleWindow.size() >= sampleWindowSize) {
+			Double removedValue = throughputSampleWindow.poll();
+			runningWindowSum -= removedValue;
+		}
+		throughputSampleWindow.offer(throughput);
+		runningWindowSum += throughput;
 	}
 
 	public double getThroughput() {
@@ -154,10 +161,11 @@ public class TaskStatistics implements Serializable {
 	}
 	
 	public double getWindowThroughput() {
-		Double sumOfThroughput = 0.0;
-		for(Double d : throughputSampleWindow)
-			sumOfThroughput += d;
-		return sumOfThroughput / throughputSampleWindow.size();
+//		Double sumOfThroughput = 0.0;
+//		for(Double d : throughputSampleWindow)
+//			sumOfThroughput += d;
+//		return sumOfThroughput / throughputSampleWindow.size();
+		return (runningWindowSum / throughputSampleWindow.size());
 	}
 	
 	public void updateMemory() {
