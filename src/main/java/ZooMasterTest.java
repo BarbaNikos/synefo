@@ -8,7 +8,6 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
-import org.apache.zookeeper.Watcher.Event;
 import org.apache.zookeeper.ZooDefs.Ids;
 
 import gr.katsip.synefo.server.ScaleFunction;

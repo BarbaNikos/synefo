@@ -75,7 +75,7 @@ public class ScaleFunctionTest {
 		
 		ScaleFunction scaleFunction = new ScaleFunction(physicalTopology, activeTopology);
 		String scaleCommand = scaleFunction.produceScaleOutCommand("spout_1b", joinActiveBolt);
-		String addCommand = scaleFunction.produceActivateCommand(scaleCommand);
+		String addCommand = ScaleFunction.produceActivateCommand(scaleCommand);
 		System.out.println("scale-out command: " + scaleCommand + ", activate command: " + addCommand);
 		System.out.println("");
 		System.out.println("Initial active topology: ");
@@ -92,7 +92,7 @@ public class ScaleFunctionTest {
 		}
 		
 		scaleCommand = scaleFunction.produceScaleInCommand("spout_2a", joinActiveBolt);
-		String removeCommand = scaleFunction.produceDeactivateCommand(scaleCommand);
+		String removeCommand = ScaleFunction.produceDeactivateCommand(scaleCommand);
 		System.out.println("scale-out command: " + scaleCommand + ", activate command: " + removeCommand);
 		System.out.println("");
 		System.out.println("Initial active topology: ");
@@ -108,7 +108,7 @@ public class ScaleFunctionTest {
 			System.out.println("}");
 		}
 		scaleCommand = scaleFunction.produceScaleInCommand("spout_2a", joinActiveBolt);
-		removeCommand = scaleFunction.produceDeactivateCommand(scaleCommand);
+		removeCommand = ScaleFunction.produceDeactivateCommand(scaleCommand);
 		System.out.println("Active Topology: ");
 		itr = activeTopology.entrySet().iterator();
 		while(itr.hasNext()) {

@@ -77,6 +77,8 @@ public class SynefoBolt extends BaseRichBolt {
 	private int reportCounter;
 
 	private boolean autoScale;
+	
+	private boolean warmFlag;
 
 	public SynefoBolt(String task_name, String synEFO_ip, Integer synEFO_port, 
 			AbstractOperator operator, String zooIP, Integer zooPort, boolean autoScale) {
@@ -95,6 +97,7 @@ public class SynefoBolt extends BaseRichBolt {
 		this.zooPort = zooPort;
 		reportCounter = 0;
 		this.autoScale = autoScale;
+		warmFlag = false;
 	}
 
 	/**
@@ -287,12 +290,14 @@ public class SynefoBolt extends BaseRichBolt {
 					", latency: " + latency + 
 					", throughput: " + statistics.getThroughput());
 			reportCounter = 0;
+			if(warmFlag == false)
+				warmFlag = true;
 		}else {
 			reportCounter += 1;
 		}
 //		if(autoScale)
 //			zooPet.setLatency(statistics.getLatency());
-		if(autoScale)
+		if(autoScale && warmFlag)
 			zooPet.setThroughput(statistics.getWindowThroughput());
 //			zooPet.setThroughput(statistics.getThroughput());
 		String scaleCommand = "";
@@ -429,7 +434,8 @@ public class SynefoBolt extends BaseRichBolt {
 								intActiveDownstreamTasks.add(task);
 							}
 							logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
-									") received active downstream task list:" + activeDownstreamTasks + "(intActiveDownstreamTasks: " + intActiveDownstreamTasks.toString() + ")");
+									") received active downstream task list:" + activeDownstreamTasks + "(intActiveDownstreamTasks: " + 
+									intActiveDownstreamTasks.toString() + ")");
 							activeListFlag = true;
 							downStreamIndex = 0;
 						}else {
