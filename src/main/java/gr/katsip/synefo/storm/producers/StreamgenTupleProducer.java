@@ -27,12 +27,12 @@ public class StreamgenTupleProducer implements AbstractTupleProducer, Serializab
 	
 	private String dataProviderIP;
 	
-	private long num;
+//	private long num;
 
 	public StreamgenTupleProducer(String dataProviderIP) {
 		dataProvider = null;
 		this.dataProviderIP = dataProviderIP;
-		num = 0;
+//		num = 0;
 	}
 	
 	public void connect() {
@@ -56,7 +56,7 @@ public class StreamgenTupleProducer implements AbstractTupleProducer, Serializab
 			String tuple = input.readLine();
 			if(tuple != null && tuple.length() > 0) {
 				String[] tupleTokens = tuple.split(",");
-				val.add(new Long(num));
+//				val.add(new Long(num));
 				for(int i = 0; i < tupleTokens.length; i++) {
 					if(val.size() < fields.size())
 						val.add(tupleTokens[i]);
@@ -66,7 +66,7 @@ public class StreamgenTupleProducer implements AbstractTupleProducer, Serializab
 						val.add(new String("N/A"));
 					}
 				}
-				num += 1;
+//				num += 1;
 				return val;
 			}
 		} catch (IOException e) {

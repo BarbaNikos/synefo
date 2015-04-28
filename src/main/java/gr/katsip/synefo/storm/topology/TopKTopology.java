@@ -4,7 +4,7 @@ import gr.katsip.synefo.storm.api.SynefoBolt;
 import gr.katsip.synefo.storm.api.SynefoSpout;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.operators.relational.CountGroupByAggrOperator;
-import gr.katsip.synefo.storm.operators.relational.EquiJoinOperator;
+import gr.katsip.synefo.storm.operators.relational.JoinOperator;
 import gr.katsip.synefo.storm.operators.relational.ProjectOperator;
 import gr.katsip.synefo.storm.operators.relational.StringComparator;
 import gr.katsip.synefo.storm.producers.StreamgenTupleProducer;
@@ -24,6 +24,16 @@ import backtype.storm.generated.InvalidTopologyException;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 
+/**
+ * The following topology simulates a SQL query as the following
+ * SELECT A.three, B.three, COUNT(*) 
+ * FROM STREAM A, STREAM B
+ * WHERE A.three = B.three
+ * GROUP BY A.three, B.three
+ * 
+ * @author katsip
+ *
+ */
 public class TopKTopology {
 
 	public static void main(String[] args) throws UnknownHostException, IOException, ClassNotFoundException, InterruptedException, AlreadyAliveException, InvalidTopologyException {
@@ -33,7 +43,7 @@ public class TopKTopology {
 		String zooIP = "";
 		Integer zooPort = -1;
 		HashMap<String, ArrayList<String>> topology = new HashMap<String, ArrayList<String>>();
-		ArrayList<String> _tmp;
+		ArrayList<String> taskList;
 		if(args.length < 4) {
 			System.err.println("Arguments: <synefo-IP> <stream-IP> <zoo-IP> <zoo-port>");
 			System.exit(1);
@@ -46,228 +56,150 @@ public class TopKTopology {
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
 		/**
-		 * Stage 0: Three input streams (spout_1, spout_2, spout_3)
+		 * Stage 0: Two input streams (spout_1, spout_2)
 		 */
 		StreamgenTupleProducer tupleProducer = new StreamgenTupleProducer(streamIPs[0]);
-		String[] spoutSchema = { "num", "one", "two", "three", "four" };
-		tupleProducer.setSchema(new Fields(spoutSchema));
+		String[] spoutSchemaOne = { "one", "two", "three", "four", "five" };
+		tupleProducer.setSchema(new Fields(spoutSchemaOne));
 		builder.setSpout("spout_1", 
 				new SynefoSpout("spout_1", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
-		_tmp = new ArrayList<String>();
-		_tmp.add("project_bolt_1");
-		_tmp.add("project_bolt_2");
-		_tmp.add("project_bolt_3");
-		topology.put("spout_1", new ArrayList<String>(_tmp));
+		taskList = new ArrayList<String>();
+		taskList.add("project_bolt_1");
+		taskList.add("project_bolt_2");
+		taskList.add("project_bolt_3");
+		topology.put("spout_1", new ArrayList<String>(taskList));
+		
 		tupleProducer = new StreamgenTupleProducer(streamIPs[1]);
+		String[] spoutSchemaTwo = { "1", "2", "three", "4", "5" };
+		tupleProducer.setSchema(new Fields(spoutSchemaTwo));
 		builder.setSpout("spout_2", 
 				new SynefoSpout("spout_2", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
-		_tmp = new ArrayList<String>();
-		_tmp.add("join_bolt_1");
-		_tmp.add("join_bolt_2");
-		_tmp.add("join_bolt_3");
-		topology.put("spout_2", new ArrayList<String>(_tmp));
-		builder.setSpout("spout_3", 
-				new SynefoSpout("spout_3", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
-				.setNumTasks(1);
-		_tmp = new ArrayList<String>();
-		_tmp.add("project_bolt_4");
-		_tmp.add("project_bolt_5");
-		_tmp.add("project_bolt_6");
-		topology.put("spout_3", new ArrayList<String>(_tmp));
-		/**
-		 * Stage 1: Selection (filter) operators for spout_1 and spout_3
-		 */
+		taskList = new ArrayList<String>();
+		taskList.add("join_bolt_1");
+		taskList.add("join_bolt_2");
+		taskList.add("join_bolt_3");
+		topology.put("spout_2", new ArrayList<String>(taskList));
+		
 		/**
 		 * Stage 1: Project operators spout_1 => {project_1, 2, 3} / spout_3 => {project_4, 5, 6}
 		 */
-		String[] projectOutSchema = { "num", "one", "two", "three", "four" };
-		ProjectOperator projectOperator = new ProjectOperator(new Fields(projectOutSchema));
-		projectOperator.setOutputSchema(new Fields(projectOutSchema));
+		ProjectOperator projectOperator = new ProjectOperator(new Fields(spoutSchemaOne));
+		projectOperator.setOutputSchema(new Fields(spoutSchemaOne));
 		builder.setBolt("project_bolt_1", 
 				new SynefoBolt("project_bolt_1", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
 				.directGrouping("spout_1");
-		projectOperator = new ProjectOperator(new Fields(projectOutSchema));
-		projectOperator.setOutputSchema(new Fields(projectOutSchema));
+		projectOperator = new ProjectOperator(new Fields(spoutSchemaOne));
+		projectOperator.setOutputSchema(new Fields(spoutSchemaOne));
 		builder.setBolt("project_bolt_2", 
 				new SynefoBolt("project_bolt_2", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
 				.directGrouping("spout_1");
-		projectOperator = new ProjectOperator(new Fields(projectOutSchema));
-		projectOperator.setOutputSchema(new Fields(projectOutSchema));
+		projectOperator = new ProjectOperator(new Fields(spoutSchemaOne));
+		projectOperator.setOutputSchema(new Fields(spoutSchemaOne));
 		builder.setBolt("project_bolt_3", 
 				new SynefoBolt("project_bolt_3", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
 				.directGrouping("spout_1");
-		_tmp = new ArrayList<String>();
-		_tmp.add("join_bolt_1");
-		_tmp.add("join_bolt_2");
-		_tmp.add("join_bolt_3");
-		topology.put("project_bolt_1", new ArrayList<String>(_tmp));
-		topology.put("project_bolt_2", new ArrayList<String>(_tmp));
-		topology.put("project_bolt_3", new ArrayList<String>(_tmp));
-		_tmp = null;
-		
-		projectOperator = new ProjectOperator(new Fields(projectOutSchema));
-		projectOperator.setOutputSchema(new Fields(projectOutSchema));
-		builder.setBolt("project_bolt_4", 
-				new SynefoBolt("project_bolt_4", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
-				.setNumTasks(1)
-				.directGrouping("spout_3");
-		projectOperator = new ProjectOperator(new Fields(projectOutSchema));
-		projectOperator.setOutputSchema(new Fields(projectOutSchema));
-		builder.setBolt("project_bolt_5", 
-				new SynefoBolt("project_bolt_5", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
-				.setNumTasks(1)
-				.directGrouping("spout_3");
-		projectOperator = new ProjectOperator(new Fields(projectOutSchema));
-		projectOperator.setOutputSchema(new Fields(projectOutSchema));
-		builder.setBolt("project_bolt_6", 
-				new SynefoBolt("project_bolt_6", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
-				.setNumTasks(1)
-				.directGrouping("spout_3");
-		_tmp = new ArrayList<String>();
-		_tmp.add("join_bolt_4");
-		_tmp.add("join_bolt_5");
-		_tmp.add("join_bolt_6");
-		topology.put("project_bolt_4", new ArrayList<String>(_tmp));
-		topology.put("project_bolt_5", new ArrayList<String>(_tmp));
-		topology.put("project_bolt_6", new ArrayList<String>(_tmp));
-		_tmp = null;
+		taskList = new ArrayList<String>();
+		taskList.add("join_bolt_1");
+		taskList.add("join_bolt_2");
+		taskList.add("join_bolt_3");
+		topology.put("project_bolt_1", new ArrayList<String>(taskList));
+		topology.put("project_bolt_2", new ArrayList<String>(taskList));
+		topology.put("project_bolt_3", new ArrayList<String>(taskList));
+		taskList = null;
 		
 		/**
-		 * Stage 3: Join operators between project_bolt_1:3 (spout_1) and spout_2
+		 * Stage 2: Join operators between project_bolt_1:3 (spout_1) and spout_2
 		 */
-		EquiJoinOperator<String> equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 100, "three");
-		String[] join_schema = { "three", "three" };
-		String[] state_schema = { "num", "one", "two", "three", "four", "time" };
-		equi_join_op.setOutputSchema(new Fields(join_schema));
-		equi_join_op.setStateSchema(new Fields(state_schema));
+		JoinOperator<String> joinOperator = new JoinOperator<String>(new StringComparator(), 500, "three", 
+				new Fields(spoutSchemaOne), new Fields(spoutSchemaTwo));
 		builder.setBolt("join_bolt_1", 
-				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, equi_join_op, zooIP, zooPort, true), 1)
+				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, 
+						joinOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
 				.directGrouping("project_bolt_1")
 				.directGrouping("project_bolt_2")
 				.directGrouping("project_bolt_3")
 				.directGrouping("spout_2");
-		equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 100, "three");
-		equi_join_op.setOutputSchema(new Fields(join_schema));
-		equi_join_op.setStateSchema(new Fields(state_schema));
+		joinOperator = new JoinOperator<String>(new StringComparator(), 500, "three", 
+				new Fields(spoutSchemaOne), new Fields(spoutSchemaTwo));
 		builder.setBolt("join_bolt_2", 
-				new SynefoBolt("join_bolt_2", synefoIP, synefoPort, equi_join_op, zooIP, zooPort, true), 1)
+				new SynefoBolt("join_bolt_2", synefoIP, synefoPort, 
+						joinOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
 				.directGrouping("project_bolt_1")
 				.directGrouping("project_bolt_2")
 				.directGrouping("project_bolt_3")
 				.directGrouping("spout_2");
-		equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 100, "three");
-		equi_join_op.setOutputSchema(new Fields(join_schema));
-		equi_join_op.setStateSchema(new Fields(state_schema));
+		joinOperator = new JoinOperator<String>(new StringComparator(), 500, "three", 
+				new Fields(spoutSchemaOne), new Fields(spoutSchemaTwo));
 		builder.setBolt("join_bolt_3", 
-				new SynefoBolt("join_bolt_3", synefoIP, synefoPort, equi_join_op, zooIP, zooPort, true), 1)
+				new SynefoBolt("join_bolt_3", synefoIP, synefoPort, 
+						joinOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
 				.directGrouping("project_bolt_1")
 				.directGrouping("project_bolt_2")
 				.directGrouping("project_bolt_3")
 				.directGrouping("spout_2");
-		_tmp = new ArrayList<String>();
-		_tmp.add("join_bolt_4");
-		_tmp.add("join_bolt_5");
-		_tmp.add("join_bolt_6");
-		topology.put("join_bolt_1", new ArrayList<String>(_tmp));
-		topology.put("join_bolt_2", new ArrayList<String>(_tmp));
-		topology.put("join_bolt_3", new ArrayList<String>(_tmp));
+		taskList = new ArrayList<String>();
+		taskList.add("count_group_by_bolt_1");
+		taskList.add("count_group_by_bolt_2");
+		taskList.add("count_group_by_bolt_3");
+		topology.put("join_bolt_1", new ArrayList<String>(taskList));
+		topology.put("join_bolt_2", new ArrayList<String>(taskList));
+		topology.put("join_bolt_3", new ArrayList<String>(taskList));
+		taskList = null;
 		
 		/**
-		 * Stage 4: Join operators between join_bolt_1:3 and project_bolt_4:6
+		 * Stage 3: Count-Group-By operators between join_bolt_1:3
 		 */
-		equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 100, "three");
-		equi_join_op.setOutputSchema(new Fields(join_schema));
-		equi_join_op.setStateSchema(new Fields(state_schema));
-		builder.setBolt("join_bolt_4", 
-				new SynefoBolt("join_bolt_4", synefoIP, synefoPort, equi_join_op, zooIP, zooPort, true), 1)
-				.setNumTasks(1)
-				.directGrouping("project_bolt_4")
-				.directGrouping("project_bolt_5")
-				.directGrouping("project_bolt_6")
-				.directGrouping("join_bolt_1")
-				.directGrouping("join_bolt_2")
-				.directGrouping("join_bolt_3");
-		equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 100, "three");
-		equi_join_op.setOutputSchema(new Fields(join_schema));
-		equi_join_op.setStateSchema(new Fields(state_schema));
-		builder.setBolt("join_bolt_5", 
-				new SynefoBolt("join_bolt_5", synefoIP, synefoPort, equi_join_op, zooIP, zooPort, true), 1)
-				.setNumTasks(1)
-				.directGrouping("project_bolt_4")
-				.directGrouping("project_bolt_5")
-				.directGrouping("project_bolt_6")
-				.directGrouping("join_bolt_1")
-				.directGrouping("join_bolt_2")
-				.directGrouping("join_bolt_3");
-		equi_join_op = new EquiJoinOperator<String>(new StringComparator(), 100, "three");
-		equi_join_op.setOutputSchema(new Fields(join_schema));
-		equi_join_op.setStateSchema(new Fields(state_schema));
-		builder.setBolt("join_bolt_6", 
-				new SynefoBolt("join_bolt_6", synefoIP, synefoPort, equi_join_op, zooIP, zooPort, true), 1)
-				.setNumTasks(1)
-				.directGrouping("project_bolt_4")
-				.directGrouping("project_bolt_5")
-				.directGrouping("project_bolt_6")
-				.directGrouping("join_bolt_1")
-				.directGrouping("join_bolt_2")
-				.directGrouping("join_bolt_3");
-		_tmp = new ArrayList<String>();
-		_tmp.add("count_group_by_bolt_1");
-		_tmp.add("count_group_by_bolt_2");
-		_tmp.add("count_group_by_bolt_3");
-		topology.put("join_bolt_4", new ArrayList<String>(_tmp));
-		topology.put("join_bolt_5", new ArrayList<String>(_tmp));
-		topology.put("join_bolt_6", new ArrayList<String>(_tmp));
-		_tmp = null;
+		String[] groupByAttributes = new String[joinOperator.getOutputSchema().toList().size()];
+		groupByAttributes = joinOperator.getOutputSchema().toList().toArray(groupByAttributes);
 		
-		/**
-		 * Stage 5: Count-Group-By operators between join_bolt_4:6
-		 */
-		CountGroupByAggrOperator countGroupByAggrOperator = new CountGroupByAggrOperator(100, join_schema);
+		CountGroupByAggrOperator countGroupByAggrOperator = new CountGroupByAggrOperator(500, groupByAttributes);
 		String[] countGroupBySchema = { "key", "count" };
 		String[] countGroupByStateSchema = { "key", "count", "time" };
 		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
 		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
 		builder.setBolt("count_group_by_bolt_1", 
-				new SynefoBolt("count_group_by_bolt_1", synefoIP, synefoPort, countGroupByAggrOperator, zooIP, zooPort, true), 1)
+				new SynefoBolt("count_group_by_bolt_1", synefoIP, synefoPort, 
+						countGroupByAggrOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
-				.directGrouping("join_bolt_4")
-				.directGrouping("join_bolt_5")
-				.directGrouping("join_bolt_6");
-		countGroupByAggrOperator = new CountGroupByAggrOperator(100, join_schema);
+				.directGrouping("join_bolt_1")
+				.directGrouping("join_bolt_2")
+				.directGrouping("join_bolt_3");
+		countGroupByAggrOperator = new CountGroupByAggrOperator(500, groupByAttributes);
 		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
 		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
 		builder.setBolt("count_group_by_bolt_2", 
-				new SynefoBolt("count_group_by_bolt_2", synefoIP, synefoPort, countGroupByAggrOperator, zooIP, zooPort, true), 1)
+				new SynefoBolt("count_group_by_bolt_2", synefoIP, synefoPort, 
+						countGroupByAggrOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
-				.directGrouping("join_bolt_4")
-				.directGrouping("join_bolt_5")
-				.directGrouping("join_bolt_6");
-		countGroupByAggrOperator = new CountGroupByAggrOperator(100, join_schema);
+				.directGrouping("join_bolt_1")
+				.directGrouping("join_bolt_2")
+				.directGrouping("join_bolt_3");
+		countGroupByAggrOperator = new CountGroupByAggrOperator(500, groupByAttributes);
 		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
 		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
 		builder.setBolt("count_group_by_bolt_3", 
-				new SynefoBolt("count_group_by_bolt_3", synefoIP, synefoPort, countGroupByAggrOperator, zooIP, zooPort, true), 1)
+				new SynefoBolt("count_group_by_bolt_3", synefoIP, synefoPort, 
+						countGroupByAggrOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
-				.directGrouping("join_bolt_4")
-				.directGrouping("join_bolt_5")
-				.directGrouping("join_bolt_6");
-		_tmp = new ArrayList<String>();
-		_tmp.add("drain_bolt");
-		topology.put("count_group_by_bolt_1", _tmp);
-		topology.put("count_group_by_bolt_2", _tmp);
-		topology.put("count_group_by_bolt_3", _tmp);
+				.directGrouping("join_bolt_1")
+				.directGrouping("join_bolt_2")
+				.directGrouping("join_bolt_3");
+		taskList = new ArrayList<String>();
+		taskList.add("drain_bolt");
+		topology.put("count_group_by_bolt_1", taskList);
+		topology.put("count_group_by_bolt_2", taskList);
+		topology.put("count_group_by_bolt_3", taskList);
 		
 		/**
-		 * Stage 6: Drain Operator (project operator)
+		 * Stage 4: Drain Operator (project operator)
 		 */
 		projectOperator = new ProjectOperator(new Fields(countGroupBySchema));
 		projectOperator.setOutputSchema(new Fields(countGroupBySchema));
@@ -306,7 +238,7 @@ public class TopKTopology {
 		synEFOSocket.close();
 		
 		conf.setDebug(false);
-		conf.setNumWorkers(19);
+		conf.setNumWorkers(12);
 		StormSubmitter.submitTopology("top-k-top", conf, builder.createTopology());
 	}
 
