@@ -77,16 +77,16 @@ public class CountGroupByAggrOperator implements Serializable, AbstractOperator 
 				Values v = new Values();
 				v.add(groupByAttrs);
 				v.add(new Integer(1));
+				returnValues.add(v);
 				v.add(System.currentTimeMillis());
 				stateValues.add(v);
-				returnValues.add(v);
 			}else {
 				Values v = new Values();
 				v.add(groupByAttrs);
 				v.add(new Integer(1));
+				returnValues.add(v);
 				v.add(System.currentTimeMillis());
 				stateValues.add(v);
-				returnValues.add(v);
 			}
 		}
 		return returnValues;
