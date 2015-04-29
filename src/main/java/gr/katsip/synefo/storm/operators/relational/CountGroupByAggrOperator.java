@@ -79,21 +79,27 @@ public class CountGroupByAggrOperator implements Serializable, AbstractOperator 
 					stateValues.remove(idx);
 				}
 				Values v = new Values();
+				Values returnVal = new Values();
 				v.add(groupByAttrs);
+				returnVal.add(groupByAttrs);
 				v.add(new Integer(1));
-				returnValues.add(v);
+				returnVal.add(new Integer(1));
+				returnValues.add(returnVal);
 				v.add(System.currentTimeMillis());
 				stateValues.add(v);
 			}else {
 				Values v = new Values();
+				Values returnVal = new Values();
 				v.add(groupByAttrs);
+				returnVal.add(groupByAttrs);
 				v.add(new Integer(1));
-				returnValues.add(v);
+				returnVal.add(new Integer(1));
+				returnValues.add(returnVal);
 				v.add(System.currentTimeMillis());
 				stateValues.add(v);
 			}
 		}
-		System.out.println("CountGroupByAggrOperator: produced tuple: " + returnValues.toArray());
+//		System.out.println("CountGroupByAggrOperator: produced tuple: " + returnValues.toArray());
 		return returnValues;
 	}
 
