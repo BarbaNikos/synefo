@@ -1,43 +1,36 @@
 package gr.katsp.synefo.server.time;
 
-import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.nio.ByteBuffer;
 
-public class TimeServer {
+public class TimeServer implements Runnable {
 
-	private int port;
+	private ServerSocket server;
 
 	public TimeServer(int port) {
-		this.port = port;
+		try {
+			server = new ServerSocket(port);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
-	public void run() throws Exception {
-		EventLoopGroup bossGroup = new NioEventLoopGroup();
-		EventLoopGroup workerGroup = new NioEventLoopGroup();
-		try {
-			ServerBootstrap b = new ServerBootstrap();
-			b.group(bossGroup, workerGroup)
-			.channel(NioServerSocketChannel.class)
-			.childHandler(new ChannelInitializer<SocketChannel>() {
-				public void initChannel(SocketChannel ch) throws Exception {
-					ch.pipeline().addLast(new TimeServerHandler());
-				}
-			})
-			.option(ChannelOption.SO_BACKLOG, 128)
-			.childOption(ChannelOption.SO_KEEPALIVE, true);
-
-			ChannelFuture f = b.bind(port).sync();
-
-			f.channel().closeFuture().sync();
-		}finally {
-			workerGroup.shutdownGracefully();
-			bossGroup.shutdownGracefully();
+	public void run() {
+		while(true) {
+			try {
+				Socket client = server.accept();
+				Long time = new Long(System.currentTimeMillis());
+				byte[] buffer = ByteBuffer.allocate(8).putLong(time).array();
+				OutputStream output = client.getOutputStream();
+				output.write(buffer);
+				output.flush();
+				output.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
