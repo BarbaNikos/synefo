@@ -1,9 +1,12 @@
 package gr.katsip.synefo.storm.operators.relational;
 
 import gr.katsip.synefo.storm.operators.AbstractOperator;
+
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
@@ -29,14 +32,14 @@ public class ProjectOperator implements AbstractOperator, Serializable {
 	@Override
 	public List<Values> execute(Fields fields, Values values) {
 		List<Values> returnTuples = new ArrayList<Values>();
-//		Iterator<String> itr = projectedAttributes.iterator();
-//		Values projected_values = new Values();
-//		while(itr.hasNext()) {
-//			String field = itr.next();
-//			projected_values.add(values.get(fields.fieldIndex(field)));
-//		}
-//		returnTuples.add(projected_values);
-		returnTuples.add(new Values(fields.select(projectedAttributes, values)));
+		Iterator<String> itr = projectedAttributes.iterator();
+		Values projected_values = new Values();
+		while(itr.hasNext()) {
+			String field = itr.next();
+			projected_values.add(values.get(fields.fieldIndex(field)));
+		}
+		returnTuples.add(projected_values);
+//		returnTuples.add(new Values(fields.select(projectedAttributes, values)));
 		return returnTuples;
 	}
 
