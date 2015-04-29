@@ -53,7 +53,7 @@ public class CountGroupByAggrOperator implements Serializable, AbstractOperator 
 				Values v = stateValues.get(i);
 				v.set(1, count);
 				stateValues.set(i, v);
-				Values returnVal = new Values(stateValues.toArray());
+				Values returnVal = new Values(v.toArray());
 				returnVal.remove(returnVal.size() - 1);
 				returnValues.add(returnVal);
 				break;
