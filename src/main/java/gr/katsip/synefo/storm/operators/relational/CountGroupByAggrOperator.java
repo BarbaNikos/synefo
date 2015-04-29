@@ -89,6 +89,7 @@ public class CountGroupByAggrOperator implements Serializable, AbstractOperator 
 				stateValues.add(v);
 			}
 		}
+		System.out.println("CountGroupByAggrOperator: produced tuple: " + returnValues.toArray());
 		return returnValues;
 	}
 
