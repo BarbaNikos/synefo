@@ -53,10 +53,8 @@ public class CountGroupByAggrOperator implements Serializable, AbstractOperator 
 				Values v = stateValues.get(i);
 				v.set(1, count);
 				stateValues.set(i, v);
-				Values returnVal = new Values();
-				for(int j = 0; j < v.size() - 1; j++) {
-					returnVal.add(v.get(j));
-				}
+				Values returnVal = new Values(stateValues.toArray());
+				returnVal.remove(returnVal.size() - 1);
 				returnValues.add(returnVal);
 				break;
 			}
@@ -79,27 +77,24 @@ public class CountGroupByAggrOperator implements Serializable, AbstractOperator 
 					stateValues.remove(idx);
 				}
 				Values v = new Values();
-				Values returnVal = new Values();
 				v.add(groupByAttrs);
-				returnVal.add(groupByAttrs);
 				v.add(new Integer(1));
-				returnVal.add(new Integer(1));
-				returnValues.add(returnVal);
 				v.add(System.currentTimeMillis());
 				stateValues.add(v);
+				Values returnVal = new Values(v.toArray());
+				returnVal.remove(returnVal.size() - 1);
+				returnValues.add(returnVal);
 			}else {
 				Values v = new Values();
-				Values returnVal = new Values();
 				v.add(groupByAttrs);
-				returnVal.add(groupByAttrs);
 				v.add(new Integer(1));
-				returnVal.add(new Integer(1));
-				returnValues.add(returnVal);
 				v.add(System.currentTimeMillis());
 				stateValues.add(v);
+				Values returnVal = new Values(v.toArray());
+				returnVal.remove(returnVal.size() - 1);
+				returnValues.add(returnVal);
 			}
 		}
-//		System.out.println("CountGroupByAggrOperator: produced tuple: " + returnValues.toArray());
 		return returnValues;
 	}
 

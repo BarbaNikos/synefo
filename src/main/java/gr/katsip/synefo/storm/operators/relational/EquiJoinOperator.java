@@ -9,6 +9,13 @@ import java.util.List;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
+/**
+ * 
+ * @author Nick R. Katsipoulakis
+ *
+ * @param <T>
+ * @deprecated
+ */
 public class EquiJoinOperator<T extends Object> implements AbstractOperator, Serializable {
 	
 	/**
