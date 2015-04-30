@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import gr.katsip.synefo.storm.api.Pair;
+import gr.katsp.synefo.server.time.TimeServer;
 
 public class SynefoCoordinatorThread implements Runnable {
 
@@ -160,6 +161,7 @@ public class SynefoCoordinatorThread implements Runnable {
 
 		userInterfaceThread = new Thread(new SynEFOUserInterface(tamer, physicalTopology));
 		userInterfaceThread.start();
+		(new Thread(new TimeServer(5556))).start();
 	}
 
 }

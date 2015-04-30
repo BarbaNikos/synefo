@@ -283,9 +283,9 @@ public class SynefoBolt extends BaseRichBolt {
 						Socket timeClient = new Socket(synefoServerIP, 5556);
 						OutputStream out = timeClient.getOutputStream();
 						InputStream in = timeClient.getInputStream();
-						byte[] buffer = new byte[Long.BYTES];
+						byte[] buffer = new byte[8];
 						Long receivedTimestamp = (long) 0;
-						if(in.read(buffer) == Long.BYTES) {
+						if(in.read(buffer) == 8) {
 							ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
 							receivedTimestamp = byteBuffer.getLong();
 						}
