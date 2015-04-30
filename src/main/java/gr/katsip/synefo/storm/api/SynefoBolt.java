@@ -1,18 +1,23 @@
 package gr.katsip.synefo.storm.api;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.lib.SynefoMessage.Type;
@@ -77,7 +82,7 @@ public class SynefoBolt extends BaseRichBolt {
 	private int reportCounter;
 
 	private boolean autoScale;
-	
+
 	private boolean warmFlag;
 
 	public SynefoBolt(String task_name, String synEFO_ip, Integer synEFO_port, 
@@ -205,6 +210,7 @@ public class SynefoBolt extends BaseRichBolt {
 
 
 	public void execute(Tuple tuple) {
+		boolean queryLatencyFlag = false;
 		/**
 		 * If punctuation tuple is received:
 		 * Perform Share of state and return execution
@@ -217,14 +223,22 @@ public class SynefoBolt extends BaseRichBolt {
 		String synefoHeader = tuple.getString(tuple.getFields().fieldIndex("SYNEFO_HEADER"));
 		Long synefoTimestamp = null;
 		if(synefoHeader != null && synefoHeader.equals("") == false && synefoHeader.contains("/") == true) {
-			if(synefoHeader.contains("/")) {
+			if(synefoHeader.contains("/") && synefoHeader.contains(SynefoConstant.PUNCT_TUPLE_TAG) == true 
+					&& synefoHeader.contains(SynefoConstant.ACTION_PREFIX) == true
+					&& synefoHeader.contains(SynefoConstant.COMP_IP_TAG) == true) {
 				String[] headerFields = synefoHeader.split("/");
 				if(headerFields[0].equals(SynefoConstant.PUNCT_TUPLE_TAG)) {
 					handlePunctuationTuple(tuple);
 					return;
 				}
 			}else {
-				synefoTimestamp = Long.parseLong(synefoHeader);
+				if(synefoHeader.contains(SynefoConstant.QUERY_LATENCY_METRIC) == true) {
+					queryLatencyFlag = true;
+					String[] tokens = synefoHeader.split(":");
+					synefoTimestamp = Long.parseLong(tokens[1]);
+				}else {
+					synefoTimestamp = null;
+				}
 			}
 		}
 		/**
@@ -260,25 +274,46 @@ public class SynefoBolt extends BaseRichBolt {
 				for(int i = 0; i < v.size(); i++) {
 					produced_values.add(v.get(i));
 				}
-				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + 
-						this.taskIP + ") emits: " + produced_values);
+				if(synefoTimestamp != null && queryLatencyFlag == false) {
+					logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + 
+							this.taskIP + ") emits: " + produced_values);
+				}else {
+					long latency = -1;
+					try {
+						Socket timeClient = new Socket(synefoServerIP, 5556);
+						OutputStream out = timeClient.getOutputStream();
+						InputStream in = timeClient.getInputStream();
+						byte[] buffer = new byte[Long.BYTES];
+						Long receivedTimestamp = (long) 0;
+						if(in.read(buffer) == Long.BYTES) {
+							ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
+							receivedTimestamp = byteBuffer.getLong();
+						}
+						in.close();
+						out.close();
+						timeClient.close();
+						latency = Math.abs(receivedTimestamp - synefoTimestamp);
+						logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + 
+								this.taskIP + ") calculated PER-QUERY-LATENCY: " + latency + " (msec)");
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
 			}
 			collector.ack(tuple);
 		}
 		statistics.updateMemory();
 		statistics.updateCpuLoad();
 		long latency = -1;
-		if(synefoTimestamp != null) {
+		if(synefoTimestamp != null && queryLatencyFlag == false) {
 			long currentTimestamp = System.currentTimeMillis();
 			latency = currentTimestamp - synefoTimestamp;
 			if(latency < 0) {
 				latency = Math.abs(latency);
 			}
 			statistics.updateLatency(latency);
-		}else {
-			statistics.updateLatency();
 		}
-//		statistics.updateThroughput();
+		//		statistics.updateThroughput();
 		statistics.updateWindowThroughput();
 
 		if(reportCounter >= 1000) {
@@ -286,7 +321,7 @@ public class SynefoBolt extends BaseRichBolt {
 					") timestamp: " + System.currentTimeMillis() + ", " + 
 					"cpu: " + statistics.getCpuLoad() + 
 					", memory: " + statistics.getMemory() + 
-//					", latency: " + statistics.getLatency() + 
+					//					", latency: " + statistics.getLatency() + 
 					", latency: " + latency + 
 					", throughput: " + statistics.getThroughput());
 			reportCounter = 0;
@@ -295,11 +330,11 @@ public class SynefoBolt extends BaseRichBolt {
 		}else {
 			reportCounter += 1;
 		}
-//		if(autoScale)
-//			zooPet.setLatency(statistics.getLatency());
+		//		if(autoScale)
+		//			zooPet.setLatency(statistics.getLatency());
 		if(autoScale && warmFlag)
 			zooPet.setThroughput(statistics.getWindowThroughput());
-//			zooPet.setThroughput(statistics.getThroughput());
+		//			zooPet.setThroughput(statistics.getThroughput());
 		String scaleCommand = "";
 		synchronized(zooPet) {
 			if(zooPet.pendingCommands.isEmpty() == false) {

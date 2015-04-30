@@ -1,16 +1,21 @@
 package gr.katsip.synefo.storm.api;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.lib.SynefoMessage.Type;
@@ -199,6 +204,33 @@ public class SynefoSpout extends BaseRichSpout {
 					", memory: " + stats.getMemory() +  
 					", input-rate: " + stats.getThroughput());
 			reportCounter = 0;
+			/**
+			 * Send out a QUERY_LATENCY_METRIC tuple to measure the latency per query
+			 */
+			try {
+				Socket timeClient = new Socket(synefoIP, 5556);
+				OutputStream out = timeClient.getOutputStream();
+				InputStream in = timeClient.getInputStream();
+				byte[] buffer = new byte[Long.BYTES];
+				Long receivedTimestamp = (long) 0;
+				if(in.read(buffer) == Long.BYTES) {
+					ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
+					receivedTimestamp = byteBuffer.getLong();
+				}
+				in.close();
+				out.close();
+				timeClient.close();
+				Values latencyTuple = new Values();
+				latencyTuple.add(new String(SynefoConstant.QUERY_LATENCY_METRIC + ":" + receivedTimestamp));
+				for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
+					latencyTuple.add(null);
+				}
+				for(int task : intActiveDownstreamTasks) {
+					_collector.emitDirect(task, latencyTuple);
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}else {
 			reportCounter += 1;
 		}

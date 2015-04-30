@@ -15,4 +15,6 @@ public class SynefoConstant {
 	public static final String COMP_IP_TAG = "IP";
 	
 	public static final String COMP_NUM_TAG = "COMP_NUM";
+	
+	public static final String QUERY_LATENCY_METRIC = "+EFO_QUERY_LATENCY_METRIC";
 }
