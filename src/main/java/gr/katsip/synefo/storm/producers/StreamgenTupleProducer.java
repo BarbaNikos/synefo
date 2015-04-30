@@ -24,17 +24,17 @@ public class StreamgenTupleProducer implements AbstractTupleProducer, Serializab
 	private transient PrintWriter output;
 
 	private Fields fields;
-	
+
 	private String dataProviderIP;
-	
-//	private long num;
+
+	//	private long num;
 
 	public StreamgenTupleProducer(String dataProviderIP) {
 		dataProvider = null;
 		this.dataProviderIP = dataProviderIP;
-//		num = 0;
+		//		num = 0;
 	}
-	
+
 	public void connect() {
 		try {
 			dataProvider = new Socket(dataProviderIP, 6666);
@@ -53,31 +53,36 @@ public class StreamgenTupleProducer implements AbstractTupleProducer, Serializab
 			connect();
 		Values val = new Values();
 		try {
-			String tuple = input.readLine();
-			if(tuple != null && tuple.length() > 0) {
-				String[] tupleTokens = tuple.split(",");
-//				val.add(new Long(num));
-				for(int i = 0; i < tupleTokens.length; i++) {
-					if(val.size() < fields.size())
-						val.add(tupleTokens[i]);
-				}
-				if(val.size() < fields.size()) {
-					while(val.size() < fields.size()) {
-						val.add(new String("N/A"));
+			if(dataProvider.isClosed() == false) {
+				String tuple = input.readLine();
+				if(tuple != null && tuple.length() > 0) {
+					String[] tupleTokens = tuple.split(",");
+					for(int i = 0; i < tupleTokens.length; i++) {
+						if(val.size() < fields.size())
+							val.add(tupleTokens[i]);
 					}
+					if(val.size() < fields.size()) {
+						while(val.size() < fields.size()) {
+							val.add(new String("N/A"));
+						}
+					}
+					return val;
 				}
-//				num += 1;
-				return val;
+			}else {
+				return null;
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 			try {
 				input.close();
-				dataProvider.close();
 				output.close();
+				dataProvider.close();
+				return val;
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}
+		} catch (NullPointerException e) {
+			return val;
 		}
 		return null;
 	}

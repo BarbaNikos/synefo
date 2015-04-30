@@ -44,7 +44,7 @@ public class SynefoSpout extends BaseRichSpout {
 
 	private String taskName;
 
-	private SpoutOutputCollector _collector;
+	private SpoutOutputCollector collector;
 
 	private int taskId;
 
@@ -183,21 +183,23 @@ public class SynefoSpout extends BaseRichSpout {
 			 */
 			values.add((new Long(System.currentTimeMillis())).toString());
 			Values returnedValues = tupleProducer.nextTuple();
-			for(int i = 0; i < returnedValues.size(); i++) {
-				values.add(returnedValues.get(i));
-			}
-			_collector.emitDirect(intActiveDownstreamTasks.get(idx), values);
-			if(idx >= (intActiveDownstreamTasks.size() - 1)) {
-				idx = 0;
-			}else {
-				idx += 1;
+			if(returnedValues != null) {
+				for(int i = 0; i < returnedValues.size(); i++) {
+					values.add(returnedValues.get(i));
+				}
+				collector.emitDirect(intActiveDownstreamTasks.get(idx), values);
+				if(idx >= (intActiveDownstreamTasks.size() - 1)) {
+					idx = 0;
+				}else {
+					idx += 1;
+				}
 			}
 		}
 		stats.updateMemory();
 		stats.updateCpuLoad();
-//		stats.updateThroughput();
+		//		stats.updateThroughput();
 		stats.updateWindowThroughput();
-		if(reportCounter >= 1000) {
+		if(reportCounter >= 10000) {
 			logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
 					") timestamp: " + System.currentTimeMillis() + ", " + 
 					"cpu: " + stats.getCpuLoad() + 
@@ -225,8 +227,10 @@ public class SynefoSpout extends BaseRichSpout {
 				for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
 					latencyTuple.add(null);
 				}
+				logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
+						") about to emit query-latency tuple: " + latencyTuple.toString());
 				for(int task : intActiveDownstreamTasks) {
-					_collector.emitDirect(task, latencyTuple);
+					collector.emitDirect(task, latencyTuple);
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -290,7 +294,7 @@ public class SynefoSpout extends BaseRichSpout {
 					punctValue.add(null);
 				}
 				for(Integer d_task : intActiveDownstreamTasks) {
-					_collector.emitDirect(d_task, punctValue);
+					collector.emitDirect(d_task, punctValue);
 				}
 				/**
 				 * In the case of removing a downstream task 
@@ -309,7 +313,7 @@ public class SynefoSpout extends BaseRichSpout {
 
 	public void open(@SuppressWarnings("rawtypes") Map conf, TopologyContext context,
 			SpoutOutputCollector collector) {
-		_collector = collector;
+		this.collector = collector;
 		taskId = context.getThisTaskId();
 		try {
 			taskIP = InetAddress.getLocalHost().getHostAddress();
