@@ -19,6 +19,7 @@ public class TimeServer implements Runnable {
 	}
 
 	public void run() {
+		System.out.println("synefo-Time-server initiated...");
 		while(true) {
 			try {
 				Socket client = server.accept();

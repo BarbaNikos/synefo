@@ -222,7 +222,7 @@ public class SynefoBolt extends BaseRichBolt {
 		}
 		String synefoHeader = tuple.getString(tuple.getFields().fieldIndex("SYNEFO_HEADER"));
 		Long synefoTimestamp = null;
-		if(synefoHeader != null && synefoHeader.equals("") == false && synefoHeader.contains("/") == true) {
+		if(synefoHeader != null && synefoHeader.equals("") == false) {
 			if(synefoHeader.contains("/") && synefoHeader.contains(SynefoConstant.PUNCT_TUPLE_TAG) == true 
 					&& synefoHeader.contains(SynefoConstant.ACTION_PREFIX) == true
 					&& synefoHeader.contains(SynefoConstant.COMP_IP_TAG) == true) {
@@ -231,25 +231,25 @@ public class SynefoBolt extends BaseRichBolt {
 					handlePunctuationTuple(tuple);
 					return;
 				}
-			}else {
-				if(synefoHeader.contains(SynefoConstant.QUERY_LATENCY_METRIC) == true) {
-					queryLatencyFlag = true;
-					String[] tokens = synefoHeader.split(":");
-					synefoTimestamp = Long.parseLong(tokens[1]);
-					if(intActiveDownstreamTasks != null && intActiveDownstreamTasks.size() > 0) {
-						Values v = new Values();
-						v.add(synefoHeader);
-						for(int i = 0; i < operator.getOutputSchema().size(); i++) {
-							v.add(null);
-						}
-						for(Integer d_task : intActiveDownstreamTasks) {
-							collector.emitDirect(d_task, v);
-						}
-						return;
+			}else if(synefoHeader.contains(SynefoConstant.QUERY_LATENCY_METRIC) == true) {
+				queryLatencyFlag = true;
+				String[] tokens = synefoHeader.split(":");
+				synefoTimestamp = Long.parseLong(tokens[1]);
+				if(intActiveDownstreamTasks != null && intActiveDownstreamTasks.size() > 0) {
+					Values v = new Values();
+					v.add(synefoHeader);
+					for(int i = 0; i < operator.getOutputSchema().size(); i++) {
+						v.add(null);
 					}
-				}else {
-					synefoTimestamp = null;
+					for(Integer d_task : intActiveDownstreamTasks) {
+						collector.emitDirect(d_task, v);
+					}
+					logger.info("+EFO-BOLT (" + taskName + ":" + taskID + "@" + taskIP + 
+							") just forwarded a QUERY-LATENCY-TUPLE.");
+					return;
 				}
+			}else {
+				synefoTimestamp = Long.parseLong(synefoHeader);
 			}
 		}
 		/**
@@ -278,37 +278,37 @@ public class SynefoBolt extends BaseRichBolt {
 				downStreamIndex += 1;
 			}
 		}else {
-			List<Values> returnedTuples = operator.execute(fields, values);
-			for(Values v : returnedTuples) {
-				produced_values = new Values();
-				produced_values.add((new Long(System.currentTimeMillis())).toString());
-				for(int i = 0; i < v.size(); i++) {
-					produced_values.add(v.get(i));
+			if(queryLatencyFlag == true) {
+				long latency = -1;
+				try {
+					Socket timeClient = new Socket(synefoServerIP, 5556);
+					OutputStream out = timeClient.getOutputStream();
+					InputStream in = timeClient.getInputStream();
+					byte[] buffer = new byte[8];
+					Long receivedTimestamp = (long) 0;
+					if(in.read(buffer) == 8) {
+						ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
+						receivedTimestamp = byteBuffer.getLong();
+					}
+					in.close();
+					out.close();
+					timeClient.close();
+					latency = Math.abs(receivedTimestamp - synefoTimestamp);
+					logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + 
+							this.taskIP + ") calculated PER-QUERY-LATENCY: " + latency + " (msec)");
+				} catch (IOException e) {
+					e.printStackTrace();
 				}
-				if(synefoTimestamp != null && queryLatencyFlag == false) {
+			}else {
+				List<Values> returnedTuples = operator.execute(fields, values);
+				for(Values v : returnedTuples) {
+					produced_values = new Values();
+					produced_values.add((new Long(System.currentTimeMillis())).toString());
+					for(int i = 0; i < v.size(); i++) {
+						produced_values.add(v.get(i));
+					}
 					logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + 
 							this.taskIP + ") emits: " + produced_values);
-				}else {
-					long latency = -1;
-					try {
-						Socket timeClient = new Socket(synefoServerIP, 5556);
-						OutputStream out = timeClient.getOutputStream();
-						InputStream in = timeClient.getInputStream();
-						byte[] buffer = new byte[8];
-						Long receivedTimestamp = (long) 0;
-						if(in.read(buffer) == 8) {
-							ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
-							receivedTimestamp = byteBuffer.getLong();
-						}
-						in.close();
-						out.close();
-						timeClient.close();
-						latency = Math.abs(receivedTimestamp - synefoTimestamp);
-						logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + 
-								this.taskIP + ") calculated PER-QUERY-LATENCY: " + latency + " (msec)");
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
 				}
 			}
 			collector.ack(tuple);
