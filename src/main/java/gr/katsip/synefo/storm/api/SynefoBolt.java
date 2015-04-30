@@ -236,6 +236,17 @@ public class SynefoBolt extends BaseRichBolt {
 					queryLatencyFlag = true;
 					String[] tokens = synefoHeader.split(":");
 					synefoTimestamp = Long.parseLong(tokens[1]);
+					if(intActiveDownstreamTasks != null && intActiveDownstreamTasks.size() > 0) {
+						Values v = new Values();
+						v.add(synefoHeader);
+						for(int i = 0; i < operator.getOutputSchema().size(); i++) {
+							v.add(null);
+						}
+						for(Integer d_task : intActiveDownstreamTasks) {
+							collector.emitDirect(d_task, v);
+						}
+						return;
+					}
 				}else {
 					synefoTimestamp = null;
 				}
