@@ -75,6 +75,20 @@ public class SynefoSpout extends BaseRichSpout {
 	private Integer zooPort;
 
 	private int reportCounter;
+	
+	private enum OpLatencyState {
+		na,
+		s_1,
+		s_2,
+		s_3,
+		r_1,
+		r_2,
+		r_3
+	}
+	
+	private OpLatencyState opLatencySendState;
+	
+	private long opLatencySendTimestamp;
 
 	public SynefoSpout(String task_name, String synEFO_ip, Integer synEFO_port, 
 			AbstractTupleProducer tupleProducer, String zooIP, Integer zooPort) {
@@ -88,6 +102,8 @@ public class SynefoSpout extends BaseRichSpout {
 		this.zooIP = zooIP;
 		this.zooPort = zooPort;
 		reportCounter = 0;
+		opLatencySendState = OpLatencyState.na;
+		opLatencySendTimestamp = 0L;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -199,6 +215,30 @@ public class SynefoSpout extends BaseRichSpout {
 		stats.updateCpuLoad();
 		//		stats.updateThroughput();
 		stats.updateWindowThroughput();
+		long currentTimestamp = System.currentTimeMillis();
+		if(opLatencySendState.equals(OpLatencyState.s_1) && Math.abs(currentTimestamp - opLatencySendTimestamp) >= 1000) {
+			this.opLatencySendState = OpLatencyState.s_2;
+			this.opLatencySendTimestamp = currentTimestamp;
+			Values v = new Values();
+			v.add(SynefoConstant.QUERY_LATENCY_METRIC + ":" + OpLatencyState.s_2.toString() + ":" + opLatencySendTimestamp);
+			for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
+				v.add(null);
+			}
+			for(Integer d_task : intActiveDownstreamTasks) {
+				collector.emitDirect(d_task, v);
+			}
+		}else if(opLatencySendState.equals(OpLatencyState.s_2) && Math.abs(currentTimestamp - opLatencySendTimestamp) >= 1000) {
+			this.opLatencySendState = OpLatencyState.na;
+			this.opLatencySendTimestamp = currentTimestamp;
+			Values v = new Values();
+			v.add(SynefoConstant.QUERY_LATENCY_METRIC + ":" + OpLatencyState.s_3.toString() + ":" + opLatencySendTimestamp);
+			for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
+				v.add(null);
+			}
+			for(Integer d_task : intActiveDownstreamTasks) {
+				collector.emitDirect(d_task, v);
+			}
+		}
 		if(reportCounter >= 10000) {
 			logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
 					") timestamp: " + System.currentTimeMillis() + ", " + 
@@ -234,6 +274,21 @@ public class SynefoSpout extends BaseRichSpout {
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
+			}
+			/**
+			 * Initiate operator latency sequence
+			 */
+			if(opLatencySendState.equals(OpLatencyState.na)) {
+				this.opLatencySendState = OpLatencyState.s_1;
+				this.opLatencySendTimestamp = System.currentTimeMillis();
+				Values v = new Values();
+				v.add(SynefoConstant.QUERY_LATENCY_METRIC + ":" + OpLatencyState.s_1.toString() + ":" + opLatencySendTimestamp);
+				for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
+					v.add(null);
+				}
+				for(Integer d_task : intActiveDownstreamTasks) {
+					collector.emitDirect(d_task, v);
+				}
 			}
 		}else {
 			reportCounter += 1;
@@ -308,6 +363,11 @@ public class SynefoSpout extends BaseRichSpout {
 				logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
 						") active downstream tasks list after adding/removing node: " + activeDownstreamTasks.toString());
 			}
+			/**
+			 * Re-initialize Operator-latency metrics
+			 */
+			opLatencySendState = OpLatencyState.na;
+			opLatencySendTimestamp = 0L;
 		}
 	}
 

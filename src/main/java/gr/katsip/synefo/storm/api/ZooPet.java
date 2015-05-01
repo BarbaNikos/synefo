@@ -310,7 +310,6 @@ public class ZooPet {
 					logger.info("createScaleOutEventCallback(): Unexpected scenario: " + 
 							KeeperException.create(Code.get(rc), path));
 					break;
-
 				}
 			}
 		};
