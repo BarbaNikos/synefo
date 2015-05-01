@@ -299,15 +299,14 @@ public class SynefoBolt extends BaseRichBolt {
 							Math.abs(this.opLatencyLocalTimestamp[2] - this.opLatencyLocalTimestamp[1] - 1000 - (this.opLatencyReceivedTimestamp[2] - this.opLatencyReceivedTimestamp[1] - 1000)) + 
 							Math.abs(this.opLatencyLocalTimestamp[1] - this.opLatencyLocalTimestamp[0] - 1000 - (this.opLatencyReceivedTimestamp[1] - this.opLatencyReceivedTimestamp[0] - 1000))
 							) / 2;
-					statistics.updateLatency(latency);
+//					statistics.updateLatency(latency);
+					statistics.updateWindowLatency(latency);
 					this.opLatencyReceiveState = OpLatencyState.na;
 					opLatencyLocalTimestamp = new long[3];
 					opLatencyReceivedTimestamp = new long[3];
 					logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + 
 							this.taskIP + ") calculated OPERATOR-LATENCY-METRIC: " + latency + ".");
 				}
-				logger.info("+EFO-BOLT (" + taskName + ":" + taskID + "@" + taskIP + 
-						") just received OPERATOR-LATENCY tuple state: " + opLatencyReceiveState.toString() + ".");
 				return;
 			}else {
 				synefoTimestamp = Long.parseLong(synefoHeader);
@@ -376,7 +375,6 @@ public class SynefoBolt extends BaseRichBolt {
 		}
 		statistics.updateMemory();
 		statistics.updateCpuLoad();
-		//		statistics.updateThroughput();
 		statistics.updateWindowThroughput();
 		long currentTimestamp = System.currentTimeMillis();
 		if(opLatencySendState.equals(OpLatencyState.s_1) && Math.abs(currentTimestamp - opLatencySendTimestamp) >= 1000) {
@@ -408,8 +406,7 @@ public class SynefoBolt extends BaseRichBolt {
 					") timestamp: " + System.currentTimeMillis() + ", " + 
 					"cpu: " + statistics.getCpuLoad() + 
 					", memory: " + statistics.getMemory() + 
-					//					", latency: " + statistics.getLatency() + 
-					", latency: " + statistics.getLatency() + 
+					", latency: " + statistics.getWindowLatency() + 
 					", throughput: " + statistics.getThroughput());
 			reportCounter = 0;
 			if(warmFlag == false)
@@ -421,7 +418,8 @@ public class SynefoBolt extends BaseRichBolt {
 				this.opLatencySendState = OpLatencyState.s_1;
 				this.opLatencySendTimestamp = System.currentTimeMillis();
 				Values v = new Values();
-				v.add(SynefoConstant.OP_LATENCY_METRIC + ":" + OpLatencyState.s_1.toString() + ":" + opLatencySendTimestamp);
+				v.add(SynefoConstant.OP_LATENCY_METRIC + ":" + OpLatencyState.s_1.toString() + 
+						":" + opLatencySendTimestamp);
 				for(int i = 0; i < operator.getOutputSchema().size(); i++) {
 					v.add(null);
 				}

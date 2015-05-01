@@ -7,50 +7,53 @@ import java.util.LinkedList;
 //import java.lang.management.MemoryUsage;
 import com.sun.management.OperatingSystemMXBean;
 
-@SuppressWarnings("restriction")
 public class TaskStatistics implements Serializable {
-	
+
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 2552450405227774625L;
 
 	private double selectivity;
-	
+
 	private long selectivitySamples;
-	
+
 	private long latency;
-	
+
 	private long previousLatency;
-	
+
 	private long latencySamples;
-	
+
 	private double throughput;
-	
+
 	private long throughputSamples;
-	
+
 	private long throughputPreviousTimestamp;
-	
+
 	private long throughputPreviousTupleNumber;
-	
+
 	private LinkedList<Double> throughputSampleWindow;
-	
-	private Double runningWindowSum;
-	
+
+	private Double runningThroughputWindowSum;
+
 	private final int sampleWindowSize = 100;
-	
+
+	private LinkedList<Long> latencySampleWindow;
+
+	private Long runningLatencyWindowSum;
+
 	private double memory;
-	
+
 	private long memorySamples;
-	
+
 	private double inputRate;
-	
+
 	private long inputRateSamples;
 
 	private double cpuLoad;
-	
+
 	private long cpuSamples;
-	
+
 	public TaskStatistics() {
 		selectivity = 0.0;
 		selectivitySamples = 0;
@@ -65,8 +68,11 @@ public class TaskStatistics implements Serializable {
 		cpuLoad = 0.0;
 		cpuSamples = 0;
 		throughputSampleWindow = new LinkedList<Double>();
+		runningThroughputWindowSum = 0.0;
+		latencySampleWindow = new LinkedList<Long>();
+		runningLatencyWindowSum = 0L;
 	}
-	
+
 	public void updateSelectivity(double selectivity) {
 		if(selectivitySamples == 0) {
 			this.selectivity = selectivity;
@@ -80,7 +86,7 @@ public class TaskStatistics implements Serializable {
 	public double getSelectivity() {
 		return selectivity;
 	}
-	
+
 	public void updateLatency() {
 		if(latencySamples == 0) {
 			this.latency = 0;
@@ -94,7 +100,7 @@ public class TaskStatistics implements Serializable {
 			previousLatency = currentTimestamp;
 		}
 	}
-	
+
 	public void updateLatency(long latency) {
 		if(latencySamples == 0) {
 			this.latency = latency;
@@ -108,7 +114,7 @@ public class TaskStatistics implements Serializable {
 	public long getLatency() {
 		return latency;
 	}
-	
+
 	public void updateThroughput() {
 		if(throughputSamples == 0) {
 			this.throughput = 0;
@@ -130,11 +136,11 @@ public class TaskStatistics implements Serializable {
 			}
 		}
 	}
-	
+
 	public void updateWindowThroughput() {
 		if(throughputSamples == 0) {
 			this.throughput = 0;
-			runningWindowSum = 0.0;
+			runningThroughputWindowSum = 0.0;
 			throughputPreviousTupleNumber = 1;
 			throughputPreviousTimestamp = System.currentTimeMillis();
 			throughputSamples += 1;
@@ -152,32 +158,42 @@ public class TaskStatistics implements Serializable {
 		}
 		if(throughputSampleWindow.size() >= sampleWindowSize) {
 			Double removedValue = throughputSampleWindow.poll();
-			runningWindowSum -= removedValue;
+			runningThroughputWindowSum -= removedValue;
 		}
 		throughputSampleWindow.offer(throughput);
-		runningWindowSum += throughput;
+		runningThroughputWindowSum += throughput;
+	}
+
+	public void updateWindowLatency(long latency) {
+		this.latency = latency;
+		if(latencySampleWindow.size() >= sampleWindowSize) {
+			Long removedValue = latencySampleWindow.poll();
+			runningLatencyWindowSum -= removedValue;
+		}
+		latencySampleWindow.offer(this.latency);
+		runningLatencyWindowSum += this.latency;
 	}
 
 	public double getThroughput() {
 		return throughput;
 	}
-	
+
 	public double getWindowThroughput() {
-//		Double sumOfThroughput = 0.0;
-//		for(Double d : throughputSampleWindow)
-//			sumOfThroughput += d;
-//		return sumOfThroughput / throughputSampleWindow.size();
-		return (runningWindowSum / throughputSampleWindow.size());
+		return (runningThroughputWindowSum / throughputSampleWindow.size());
 	}
 	
+	public long getWindowLatency() {
+		return (runningLatencyWindowSum / latencySampleWindow.size());
+	}
+
 	public void updateMemory() {
-//		MemoryUsage heapMemUsage = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage();
-//		MemoryUsage nonHeapMemUsage = ManagementFactory.getMemoryMXBean().getNonHeapMemoryUsage();
-//		long memory = heapMemUsage.getUsed() + nonHeapMemUsage.getUsed();
+		//		MemoryUsage heapMemUsage = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage();
+		//		MemoryUsage nonHeapMemUsage = ManagementFactory.getMemoryMXBean().getNonHeapMemoryUsage();
+		//		long memory = heapMemUsage.getUsed() + nonHeapMemUsage.getUsed();
 		Runtime runtime = Runtime.getRuntime();
 		double memory = (runtime.totalMemory() - runtime.freeMemory()) / runtime.totalMemory();
 		if(memorySamples == 0) {
-//			this.memory = memory;
+			//			this.memory = memory;
 			this.memory = memory;
 			memorySamples += 1;
 		}else {
@@ -185,11 +201,11 @@ public class TaskStatistics implements Serializable {
 			memorySamples += 1;
 		}
 	}
-	
+
 	public double getMemory() {
 		return memory;
 	}
-	
+
 	public void updateInputRate(double input_rate) {
 		if(inputRateSamples == 0) {
 			this.inputRate = input_rate;
@@ -199,15 +215,15 @@ public class TaskStatistics implements Serializable {
 			inputRateSamples += 1;
 		}
 	}
-	
+
 	public double getInputRate() {
 		return inputRate;
 	}
-	
+
 	public void updateCpuLoad() {
 		double cpu_load = 0.0;
 		OperatingSystemMXBean bean = (com.sun.management.OperatingSystemMXBean) ManagementFactory
-	            .getOperatingSystemMXBean();
+				.getOperatingSystemMXBean();
 		cpu_load = bean.getProcessCpuLoad();
 		if(cpuSamples == 0) {
 			this.cpuLoad = cpu_load;
@@ -217,11 +233,11 @@ public class TaskStatistics implements Serializable {
 			cpuSamples += 1;
 		}
 	}
-	
+
 	public double getCpuLoad() {
 		return cpuLoad;
 	}
-	
+
 	public void resetStatistics() {
 		selectivity = 0.0;
 		selectivitySamples = 0;
@@ -247,5 +263,5 @@ public class TaskStatistics implements Serializable {
 				+ ", _input_rate=" + inputRate 
 				+ ", _cpu_load=" + cpuLoad + "]";
 	}
-	
+
 }
