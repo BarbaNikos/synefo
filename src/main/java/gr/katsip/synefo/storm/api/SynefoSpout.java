@@ -220,7 +220,7 @@ public class SynefoSpout extends BaseRichSpout {
 			this.opLatencySendState = OpLatencyState.s_2;
 			this.opLatencySendTimestamp = currentTimestamp;
 			Values v = new Values();
-			v.add(SynefoConstant.QUERY_LATENCY_METRIC + ":" + OpLatencyState.s_2.toString() + ":" + opLatencySendTimestamp);
+			v.add(SynefoConstant.OP_LATENCY_METRIC + ":" + OpLatencyState.s_2.toString() + ":" + opLatencySendTimestamp);
 			for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
 				v.add(null);
 			}
@@ -231,7 +231,7 @@ public class SynefoSpout extends BaseRichSpout {
 			this.opLatencySendState = OpLatencyState.na;
 			this.opLatencySendTimestamp = currentTimestamp;
 			Values v = new Values();
-			v.add(SynefoConstant.QUERY_LATENCY_METRIC + ":" + OpLatencyState.s_3.toString() + ":" + opLatencySendTimestamp);
+			v.add(SynefoConstant.OP_LATENCY_METRIC + ":" + OpLatencyState.s_3.toString() + ":" + opLatencySendTimestamp);
 			for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
 				v.add(null);
 			}
@@ -282,7 +282,7 @@ public class SynefoSpout extends BaseRichSpout {
 				this.opLatencySendState = OpLatencyState.s_1;
 				this.opLatencySendTimestamp = System.currentTimeMillis();
 				Values v = new Values();
-				v.add(SynefoConstant.QUERY_LATENCY_METRIC + ":" + OpLatencyState.s_1.toString() + ":" + opLatencySendTimestamp);
+				v.add(SynefoConstant.OP_LATENCY_METRIC + ":" + OpLatencyState.s_1.toString() + ":" + opLatencySendTimestamp);
 				for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
 					v.add(null);
 				}
