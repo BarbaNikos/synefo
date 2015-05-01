@@ -277,19 +277,38 @@ public class SynefoBolt extends BaseRichBolt {
 				String[] tokens = synefoHeader.split(":");
 				String opLatState = tokens[1];
 				Long opLatTs = Long.parseLong(tokens[2]);
-				if(opLatencyReceiveState.equals(OpLatencyState.na) && opLatState.equals(OpLatencyState.r_1.toString())) {
+				if(opLatencyReceiveState.equals(OpLatencyState.na) && opLatState.equals(OpLatencyState.s_1.toString())) {
 					this.opLatencyReceivedTimestamp[0] = opLatTs;
 					this.opLatencyLocalTimestamp[0] = System.currentTimeMillis();
 					opLatencyReceiveState = OpLatencyState.r_1;
-				}else if(opLatencyReceiveState.equals(OpLatencyState.r_1) && opLatState.equals(OpLatencyState.r_2.toString())) {
+				}else if(opLatencyReceiveState.equals(OpLatencyState.r_1) && opLatState.equals(OpLatencyState.s_2.toString())) {
 					this.opLatencyReceivedTimestamp[1] = opLatTs;
 					this.opLatencyLocalTimestamp[1] = System.currentTimeMillis();
 					opLatencyReceiveState = OpLatencyState.r_2;
-				}else if(opLatencyReceiveState.equals(OpLatencyState.r_2) && opLatState.equals(OpLatencyState.r_3.toString())) {
+				}else if(opLatencyReceiveState.equals(OpLatencyState.r_2) && opLatState.equals(OpLatencyState.s_3.toString())) {
 					this.opLatencyReceivedTimestamp[2] = opLatTs;
 					this.opLatencyLocalTimestamp[2] = System.currentTimeMillis();
 					opLatencyReceiveState = OpLatencyState.r_3;
+					long latency = -1;
+					/**
+					 * Calculate latency
+					 */
+					logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + 
+							this.taskIP + ") calculating latency ( local: " + opLatencyLocalTimestamp + ", received: " + opLatencyReceivedTimestamp + ").");
+					latency = ( 
+							Math.abs(this.opLatencyLocalTimestamp[2] - this.opLatencyLocalTimestamp[1] - 1000 - (this.opLatencyReceivedTimestamp[2] - this.opLatencyReceivedTimestamp[1] - 1000)) + 
+							Math.abs(this.opLatencyLocalTimestamp[1] - this.opLatencyLocalTimestamp[0] - 1000 - (this.opLatencyReceivedTimestamp[1] - this.opLatencyReceivedTimestamp[0] - 1000))
+							) / 2;
+					statistics.updateLatency(latency);
+					this.opLatencyReceiveState = OpLatencyState.na;
+					opLatencyLocalTimestamp = new long[3];
+					opLatencyReceivedTimestamp = new long[3];
+					logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + 
+							this.taskIP + ") calculated OPERATOR-LATENCY-METRIC: " + latency + ".");
 				}
+				logger.info("+EFO-BOLT (" + taskName + ":" + taskID + "@" + taskIP + 
+						") just received OPERATOR-LATENCY tuple state: " + opLatencyReceiveState.toString() + ".");
+				return;
 			}else {
 				synefoTimestamp = Long.parseLong(synefoHeader);
 			}
@@ -357,20 +376,6 @@ public class SynefoBolt extends BaseRichBolt {
 		}
 		statistics.updateMemory();
 		statistics.updateCpuLoad();
-		long latency = -1;
-		if(this.opLatencyReceiveState.equals(OpLatencyState.r_3.toString())) {
-			/**
-			 * Calculate latency
-			 */
-			latency = ( 
-					Math.abs(this.opLatencyLocalTimestamp[2] - this.opLatencyLocalTimestamp[1] - 1000 - (this.opLatencyReceivedTimestamp[2] - this.opLatencyReceivedTimestamp[1] - 1000)) + 
-					Math.abs(this.opLatencyLocalTimestamp[1] - this.opLatencyLocalTimestamp[0] - 1000 - (this.opLatencyReceivedTimestamp[1] - this.opLatencyReceivedTimestamp[0] - 1000))
-					) / 2;
-			statistics.updateLatency(latency);
-			this.opLatencyReceiveState = OpLatencyState.na;
-			opLatencyLocalTimestamp = new long[3];
-			opLatencyReceivedTimestamp = new long[3];
-		}
 		//		statistics.updateThroughput();
 		statistics.updateWindowThroughput();
 		long currentTimestamp = System.currentTimeMillis();
@@ -404,7 +409,7 @@ public class SynefoBolt extends BaseRichBolt {
 					"cpu: " + statistics.getCpuLoad() + 
 					", memory: " + statistics.getMemory() + 
 					//					", latency: " + statistics.getLatency() + 
-					", latency: " + latency + 
+					", latency: " + statistics.getLatency() + 
 					", throughput: " + statistics.getThroughput());
 			reportCounter = 0;
 			if(warmFlag == false)
