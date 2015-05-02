@@ -175,7 +175,7 @@ public class OperatorBolt extends BaseRichBolt {
 			List<Values> returnedTuples = operator.execute(fields, values);
 			for(Values v : returnedTuples) {
 				produced_values = new Values();
-				produced_values.add(new Long(System.currentTimeMillis()));
+				produced_values.add(Long.toString(System.currentTimeMillis()));
 				for(int i = 0; i < v.size(); i++) {
 					produced_values.add(v.get(i));
 				}
@@ -213,7 +213,7 @@ public class OperatorBolt extends BaseRichBolt {
 				List<Values> returnedTuples = operator.execute(fields, values);
 				for(Values v : returnedTuples) {
 					produced_values = new Values();
-					produced_values.add((new Long(System.currentTimeMillis())).toString());
+					produced_values.add(Long.toString(System.currentTimeMillis()));
 					for(int i = 0; i < v.size(); i++) {
 						produced_values.add(v.get(i));
 					}

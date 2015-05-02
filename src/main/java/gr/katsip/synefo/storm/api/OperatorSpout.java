@@ -96,7 +96,7 @@ public class OperatorSpout extends BaseRichSpout {
 			/**
 			 * Add OPERATOR_HEADER value in the beginning
 			 */
-			values.add(new Long(System.currentTimeMillis()));
+			values.add(Long.toString(System.currentTimeMillis()));
 			Values returnedValues = tupleProducer.nextTuple();
 			if(returnedValues != null) {
 				for(int i = 0; i < returnedValues.size(); i++) {
