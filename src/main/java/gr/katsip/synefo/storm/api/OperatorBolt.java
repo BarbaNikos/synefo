@@ -4,18 +4,25 @@ import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.lib.SynefoMessage.Type;
 import gr.katsip.synefo.storm.operators.AbstractOperator;
+import gr.katsip.synefo.utils.SynefoConstant;
+
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
@@ -58,6 +65,26 @@ public class OperatorBolt extends BaseRichBolt {
 	private String synefoServerIP = null;
 	
 	private Integer synefoServerPort = -1;
+	
+	private enum OpLatencyState {
+		na,
+		s_1,
+		s_2,
+		s_3,
+		r_1,
+		r_2,
+		r_3
+	}
+	
+	private OpLatencyState opLatencySendState;
+	
+	private OpLatencyState opLatencyReceiveState;
+	
+	private long[] opLatencyReceivedTimestamp = new long[3];
+	
+	private long[] opLatencyLocalTimestamp = new long[3];
+	
+	private long opLatencySendTimestamp;
 
 	public OperatorBolt(String taskName, String synEFO_ip, Integer synEFO_port, 
 			AbstractOperator operator) {
@@ -71,15 +98,76 @@ public class OperatorBolt extends BaseRichBolt {
 		synefoServerIP = synEFO_ip;
 		synefoServerPort = synEFO_port;
 		statistics = new TaskStatistics();
+		opLatencyReceiveState = OpLatencyState.na;
+		opLatencySendState = OpLatencyState.na;
+		opLatencySendTimestamp = 0L;
+		opLatencyReceivedTimestamp = new long[3];
+		opLatencyLocalTimestamp = new long[3];
 	}
 
 	@Override
 	public void execute(Tuple tuple) {
-		Long operatorTimestamp = tuple.getLong(tuple.getFields()
-				.fieldIndex("OPERATOR_TIMESTAMP"));
+		boolean queryLatencyFlag = false;
+		String operatorHeader = tuple.getString(tuple.fieldIndex("OPERATOR_HEADER"));
+		Long operatorTimestamp = null;
+		if(operatorHeader != null && operatorHeader.equals("") == false) {
+			if(operatorHeader.contains(SynefoConstant.QUERY_LATENCY_METRIC) == true) {
+				queryLatencyFlag = true;
+				String[] tokens = operatorHeader.split(":");
+				operatorTimestamp = Long.parseLong(tokens[1]);
+				if(intDownstreamTasks != null && intDownstreamTasks.size() > 0) {
+					Values v = new Values();
+					v.add(operatorHeader);
+					for(int i = 0; i < operator.getOutputSchema().size(); i++) {
+						v.add(null);
+					}
+					for(Integer d_task : intDownstreamTasks) {
+						collector.emitDirect(d_task, v);
+					}
+					logger.info("OPERATOR-BOLT (" + taskName + ":" + taskId + "@" + taskIP + 
+							") just forwarded a QUERY-LATENCY-TUPLE.");
+					return;
+				}
+			}else if(operatorHeader.contains(SynefoConstant.OP_LATENCY_METRIC)) {
+				String[] tokens = operatorHeader.split(":");
+				String opLatState = tokens[1];
+				Long opLatTs = Long.parseLong(tokens[2]);
+				if(opLatencyReceiveState.equals(OpLatencyState.na) && opLatState.equals(OpLatencyState.s_1.toString())) {
+					this.opLatencyReceivedTimestamp[0] = opLatTs;
+					this.opLatencyLocalTimestamp[0] = System.currentTimeMillis();
+					opLatencyReceiveState = OpLatencyState.r_1;
+				}else if(opLatencyReceiveState.equals(OpLatencyState.r_1) && opLatState.equals(OpLatencyState.s_2.toString())) {
+					this.opLatencyReceivedTimestamp[1] = opLatTs;
+					this.opLatencyLocalTimestamp[1] = System.currentTimeMillis();
+					opLatencyReceiveState = OpLatencyState.r_2;
+				}else if(opLatencyReceiveState.equals(OpLatencyState.r_2) && opLatState.equals(OpLatencyState.s_3.toString())) {
+					this.opLatencyReceivedTimestamp[2] = opLatTs;
+					this.opLatencyLocalTimestamp[2] = System.currentTimeMillis();
+					opLatencyReceiveState = OpLatencyState.r_3;
+					long latency = -1;
+					/**
+					 * Calculate latency
+					 */
+					latency = ( 
+							Math.abs(this.opLatencyLocalTimestamp[2] - this.opLatencyLocalTimestamp[1] - 1000 - (this.opLatencyReceivedTimestamp[2] - this.opLatencyReceivedTimestamp[1] - 1000)) + 
+							Math.abs(this.opLatencyLocalTimestamp[1] - this.opLatencyLocalTimestamp[0] - 1000 - (this.opLatencyReceivedTimestamp[1] - this.opLatencyReceivedTimestamp[0] - 1000))
+							) / 2;
+					statistics.updateWindowLatency(latency);
+					this.opLatencyReceiveState = OpLatencyState.na;
+					opLatencyLocalTimestamp = new long[3];
+					opLatencyReceivedTimestamp = new long[3];
+					logger.info("OPERATOR-BOLT (" + this.taskName + ":" + taskId + "@" + 
+							this.taskIP + ") calculated OPERATOR-LATENCY-METRIC: " + latency + ".");
+				}
+				return;
+			}else {
+				operatorTimestamp = Long.parseLong(operatorHeader);
+			}
+		}
+		
 		Values produced_values = null;
 		Values values = new Values(tuple.getValues().toArray());
-		values.remove(tuple.getFields().fieldIndex("OPERATOR_TIMESTAMP"));
+		values.remove(tuple.getFields().fieldIndex("OPERATOR_HEADER"));
 		List<String> fieldList = tuple.getFields().toList();
 		fieldList.remove(0);
 		Fields fields = new Fields(fieldList);
@@ -100,37 +188,96 @@ public class OperatorBolt extends BaseRichBolt {
 				downStreamIndex += 1;
 			}
 		}else {
-			List<Values> returnedTuples = operator.execute(fields, values);
-			for(Values v : returnedTuples) {
-				produced_values = new Values();
-				produced_values.add(new Long(System.currentTimeMillis()));
-				for(int i = 0; i < v.size(); i++) {
-					produced_values.add(v.get(i));
+			if(queryLatencyFlag == true) {
+				long latency = -1;
+				try {
+					Socket timeClient = new Socket(synefoServerIP, 5556);
+					OutputStream out = timeClient.getOutputStream();
+					InputStream in = timeClient.getInputStream();
+					byte[] buffer = new byte[8];
+					Long receivedTimestamp = (long) 0;
+					if(in.read(buffer) == 8) {
+						ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
+						receivedTimestamp = byteBuffer.getLong();
+					}
+					in.close();
+					out.close();
+					timeClient.close();
+					latency = Math.abs(receivedTimestamp - operatorTimestamp);
+					logger.info("OPERATOR-BOLT (" + this.taskName + ":" + taskId + "@" + 
+							this.taskIP + ") calculated PER-QUERY-LATENCY: " + latency + " (msec)");
+				} catch (IOException e) {
+					e.printStackTrace();
 				}
-				logger.info("OPERATOR-BOLT (" + this.taskName + ":" + this.taskId + "@" + 
-						this.taskIP + ") emits: " + produced_values);
+			}else {
+				List<Values> returnedTuples = operator.execute(fields, values);
+				for(Values v : returnedTuples) {
+					produced_values = new Values();
+					produced_values.add((new Long(System.currentTimeMillis())).toString());
+					for(int i = 0; i < v.size(); i++) {
+						produced_values.add(v.get(i));
+					}
+					logger.info("OPERATOR-BOLT (" + this.taskName + ":" + taskId + "@" + 
+							this.taskIP + ") emits: " + produced_values);
+				}
 			}
 			collector.ack(tuple);
 		}
 		statistics.updateMemory();
 		statistics.updateCpuLoad();
-		if(operatorTimestamp != null) {
-			long latency = System.currentTimeMillis() - operatorTimestamp;
-			statistics.updateLatency(latency);
-		}else {
-			statistics.updateLatency();
-		}
-//		statistics.updateThroughput();
 		statistics.updateWindowThroughput();
+		/**
+		 * Part where additional timestamps are sent for operator-latency metric
+		 */
+		long currentTimestamp = System.currentTimeMillis();
+		if(opLatencySendState.equals(OpLatencyState.s_1) && Math.abs(currentTimestamp - opLatencySendTimestamp) >= 1000) {
+			this.opLatencySendState = OpLatencyState.s_2;
+			this.opLatencySendTimestamp = currentTimestamp;
+			Values v = new Values();
+			v.add(SynefoConstant.OP_LATENCY_METRIC + ":" + OpLatencyState.s_2.toString() + ":" + opLatencySendTimestamp);
+			for(int i = 0; i < operator.getOutputSchema().size(); i++) {
+				v.add(null);
+			}
+			for(Integer d_task : intDownstreamTasks) {
+				collector.emitDirect(d_task, v);
+			}
+		}else if(opLatencySendState.equals(OpLatencyState.s_2) && Math.abs(currentTimestamp - opLatencySendTimestamp) >= 1000) {
+			this.opLatencySendState = OpLatencyState.na;
+			this.opLatencySendTimestamp = currentTimestamp;
+			Values v = new Values();
+			v.add(SynefoConstant.OP_LATENCY_METRIC + ":" + OpLatencyState.s_3.toString() + ":" + opLatencySendTimestamp);
+			for(int i = 0; i < operator.getOutputSchema().size(); i++) {
+				v.add(null);
+			}
+			for(Integer d_task : intDownstreamTasks) {
+				collector.emitDirect(d_task, v);
+			}
+		}
 		
-		if(reportCounter >= 1000) {
+		if(reportCounter >= 10000) {
 			logger.info("OPERATOR-BOLT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
 					") timestamp: " + System.currentTimeMillis() + ", " + 
 					"cpu: " + statistics.getCpuLoad() + 
 					", memory: " + statistics.getMemory() + 
-					", latency: " + statistics.getLatency() + 
-					", throughput: " + statistics.getThroughput());
+					", latency: " + statistics.getWindowLatency() + 
+					", throughput: " + statistics.getWindowThroughput());
 			reportCounter = 0;
+			/**
+			 * Initiate operator latency metric sequence
+			 */
+			if(opLatencySendState.equals(OpLatencyState.na)) {
+				this.opLatencySendState = OpLatencyState.s_1;
+				this.opLatencySendTimestamp = System.currentTimeMillis();
+				Values v = new Values();
+				v.add(SynefoConstant.OP_LATENCY_METRIC + ":" + OpLatencyState.s_1.toString() + 
+						":" + opLatencySendTimestamp);
+				for(int i = 0; i < operator.getOutputSchema().size(); i++) {
+					v.add(null);
+				}
+				for(Integer d_task : intDownstreamTasks) {
+					collector.emitDirect(d_task, v);
+				}
+			}
 		}else {
 			reportCounter += 1;
 		}
@@ -234,7 +381,7 @@ public class OperatorBolt extends BaseRichBolt {
 	@Override
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
 		List<String> producerSchema = new ArrayList<String>();
-		producerSchema.add("OPERATOR_TIMESTAMP");
+		producerSchema.add("OPERATOR_HEADER");
 		producerSchema.addAll(operator.getOutputSchema().toList());
 		declarer.declare(new Fields(producerSchema));
 	}

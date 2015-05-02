@@ -111,8 +111,6 @@ public class SynefoSpout extends BaseRichSpout {
 		Socket socket;
 		ObjectOutputStream output = null;
 		ObjectInputStream input = null;
-		logger.info("+EFO-SPOUT (" + taskName + ":" + taskId + "@" + taskIP + ") in registerToSynEFO() (timestamp: " + 
-				System.currentTimeMillis() + ").");
 		socket = null;
 		SynefoMessage msg = new SynefoMessage();
 		msg._type = Type.REG;
@@ -175,7 +173,6 @@ public class SynefoSpout extends BaseRichSpout {
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		}
-
 		/**
 		 * Handshake with ZooKeeper
 		 */
@@ -183,7 +180,8 @@ public class SynefoSpout extends BaseRichSpout {
 		pet.getScaleCommand();
 		logger.info("+EFO-SPOUT (" + 
 				taskName + ":" + taskId + "@" + taskIP + 
-				") registered to +EFO successfully (timestamp: " + System.currentTimeMillis() + ").");
+				") registered to +EFO successfully (timestamp: " + 
+				System.currentTimeMillis() + ").");
 	}
 
 	public void nextTuple() {
@@ -213,7 +211,6 @@ public class SynefoSpout extends BaseRichSpout {
 		}
 		stats.updateMemory();
 		stats.updateCpuLoad();
-		//		stats.updateThroughput();
 		stats.updateWindowThroughput();
 		long currentTimestamp = System.currentTimeMillis();
 		if(opLatencySendState.equals(OpLatencyState.s_1) && Math.abs(currentTimestamp - opLatencySendTimestamp) >= 1000) {
@@ -244,7 +241,7 @@ public class SynefoSpout extends BaseRichSpout {
 					") timestamp: " + System.currentTimeMillis() + ", " + 
 					"cpu: " + stats.getCpuLoad() + 
 					", memory: " + stats.getMemory() +  
-					", input-rate: " + stats.getThroughput());
+					", input-rate: " + stats.getWindowThroughput());
 			reportCounter = 0;
 			/**
 			 * Send out a QUERY_LATENCY_METRIC tuple to measure the latency per query

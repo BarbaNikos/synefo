@@ -187,13 +187,9 @@ public class TaskStatistics implements Serializable {
 	}
 
 	public void updateMemory() {
-		//		MemoryUsage heapMemUsage = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage();
-		//		MemoryUsage nonHeapMemUsage = ManagementFactory.getMemoryMXBean().getNonHeapMemoryUsage();
-		//		long memory = heapMemUsage.getUsed() + nonHeapMemUsage.getUsed();
 		Runtime runtime = Runtime.getRuntime();
 		double memory = (runtime.totalMemory() - runtime.freeMemory()) / runtime.totalMemory();
 		if(memorySamples == 0) {
-			//			this.memory = memory;
 			this.memory = memory;
 			memorySamples += 1;
 		}else {
