@@ -167,7 +167,7 @@ public class OperatorBolt extends BaseRichBolt {
 		
 		Values produced_values = null;
 		Values values = new Values(tuple.getValues().toArray());
-		values.remove(tuple.getFields().fieldIndex("OPERATOR_HEADER"));
+		values.remove(0);
 		List<String> fieldList = tuple.getFields().toList();
 		fieldList.remove(0);
 		Fields fields = new Fields(fieldList);
@@ -175,7 +175,7 @@ public class OperatorBolt extends BaseRichBolt {
 			List<Values> returnedTuples = operator.execute(fields, values);
 			for(Values v : returnedTuples) {
 				produced_values = new Values();
-				produced_values.add(Long.toString(System.currentTimeMillis()));
+				produced_values.add((new Long(System.currentTimeMillis())).toString());
 				for(int i = 0; i < v.size(); i++) {
 					produced_values.add(v.get(i));
 				}
