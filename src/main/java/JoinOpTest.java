@@ -10,8 +10,9 @@ import gr.katsip.synefo.storm.operators.relational.StringComparator;
 public class JoinOpTest {
 
 	public static void main(String[] args) {
-		String[] leftSchema = { "num", "one", "two", "three", "four" };
-		String[] rightSchema = { "num", "1", "2", "three", "5" };
+		String[] leftSchema = { "one", "two", "three", "four", "five" };
+		String[] rightSchema = { "one", "two", "three", "four", "five" };
+//		String[] rightSchema = { "num", "1", "2", "three", "5" };
 		Fields lf = new Fields(leftSchema);
 		Fields rf = new Fields(rightSchema);
 		JoinOperator<String> joinOperator = 
@@ -33,36 +34,36 @@ public class JoinOpTest {
 		System.out.println("state: " + result.toString());
 		joinOperator.mergeState(new Fields(), result);
 		result = joinOperator.getStateValues();
-		System.out.println("state: " + result.toString());
-		String task = "ADD~bolt_1a:12@123.421.123.421";
-		String[] tokens = task.split("[~:@]");
-		for(String t : tokens) {
-			System.out.println(t);
-		}
-		String punctTuple = "+EFO/ACTION:ADD/COMP:join_bolt_1:7/COMP_NUM:2/IP:136.142.184.19/";
-		tokens = punctTuple.split("[/:]");
-		String scaleAction = tokens[2];
-		String component_name = tokens[4];
-		String component_id = tokens[5];
-		Integer comp_num = Integer.parseInt(tokens[7]);
-		String ip = tokens[9];
-		System.out.println("Action: " + scaleAction);
-		System.out.println("Name: " + component_name);
-		System.out.println("Id: " + component_id);
-		System.out.println("Num: " + comp_num);
-		System.out.println("IP: " + ip);
-		
-		String scaleCommand = "ADD~bolt_1:7@136.142.184.19";
-		String[] scaleCommandTokens = scaleCommand.split("[~:@]");
-		String action = scaleCommandTokens[0];
-		String taskWithIp = scaleCommandTokens[1] + ":" + scaleCommandTokens[2] + "@" + scaleCommandTokens[3];
-		String taskIp = scaleCommandTokens[3];
-		task = scaleCommandTokens[1];
-		Integer task_id = Integer.parseInt(scaleCommandTokens[2]);
-		System.out.println("Action: " + action);
-		System.out.println("taskWithIp: " + taskWithIp);
-		System.out.println("taskIp: " + taskIp);
-		System.out.println("task-id: " + task_id);
+//		System.out.println("state: " + result.toString());
+//		String task = "ADD~bolt_1a:12@123.421.123.421";
+//		String[] tokens = task.split("[~:@]");
+//		for(String t : tokens) {
+//			System.out.println(t);
+//		}
+//		String punctTuple = "+EFO/ACTION:ADD/COMP:join_bolt_1:7/COMP_NUM:2/IP:136.142.184.19/";
+//		tokens = punctTuple.split("[/:]");
+//		String scaleAction = tokens[2];
+//		String component_name = tokens[4];
+//		String component_id = tokens[5];
+//		Integer comp_num = Integer.parseInt(tokens[7]);
+//		String ip = tokens[9];
+//		System.out.println("Action: " + scaleAction);
+//		System.out.println("Name: " + component_name);
+//		System.out.println("Id: " + component_id);
+//		System.out.println("Num: " + comp_num);
+//		System.out.println("IP: " + ip);
+//		
+//		String scaleCommand = "ADD~bolt_1:7@136.142.184.19";
+//		String[] scaleCommandTokens = scaleCommand.split("[~:@]");
+//		String action = scaleCommandTokens[0];
+//		String taskWithIp = scaleCommandTokens[1] + ":" + scaleCommandTokens[2] + "@" + scaleCommandTokens[3];
+//		String taskIp = scaleCommandTokens[3];
+//		task = scaleCommandTokens[1];
+//		Integer task_id = Integer.parseInt(scaleCommandTokens[2]);
+//		System.out.println("Action: " + action);
+//		System.out.println("taskWithIp: " + taskWithIp);
+//		System.out.println("taskIp: " + taskIp);
+//		System.out.println("task-id: " + task_id);
 	}
 
 }

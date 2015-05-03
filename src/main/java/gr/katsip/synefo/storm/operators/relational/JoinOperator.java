@@ -77,13 +77,15 @@ public class JoinOperator<T extends Object> implements AbstractOperator, Seriali
 				}
 			}
 			if(leftRelation.size() < window) {
-				values.add(System.currentTimeMillis());
-				leftRelation.add(values);
+				Values v = new Values(values.toArray());
+				v.add(System.currentTimeMillis());
+				leftRelation.add(v);
 			}else {
 				if(leftRelation.size() > 0)
 					leftRelation.remove(0);
-				values.add(System.currentTimeMillis());
-				leftRelation.add(values);
+				Values v = new Values(values.toArray());
+				v.add(System.currentTimeMillis());
+				leftRelation.add(v);
 			}
 		}
 		if(fields.toList().equals(rightFieldSchema.toList())) {
@@ -96,13 +98,15 @@ public class JoinOperator<T extends Object> implements AbstractOperator, Seriali
 				}
 			}
 			if(rightRelation.size() < window) {
-				values.add(System.currentTimeMillis());
-				rightRelation.add(values);
+				Values v = new Values(values.toArray());
+				v.add(System.currentTimeMillis());
+				rightRelation.add(v);
 			}else {
 				if(rightRelation.size() > 0)
 					rightRelation.remove(0);
-				values.add(System.currentTimeMillis());
-				rightRelation.add(values);
+				Values v = new Values(values.toArray());
+				v.add(System.currentTimeMillis());
+				rightRelation.add(v);
 			}
 		}
 		return result;
