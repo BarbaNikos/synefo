@@ -179,11 +179,13 @@ public class TaskStatistics implements Serializable {
 	}
 
 	public double getWindowThroughput() {
-		return (runningThroughputWindowSum / throughputSampleWindow.size());
+		return throughputSampleWindow.size() > 0 ? (runningThroughputWindowSum / throughputSampleWindow.size()) : 0;
+//		return (runningThroughputWindowSum / throughputSampleWindow.size());
 	}
 	
 	public long getWindowLatency() {
-		return (runningLatencyWindowSum / latencySampleWindow.size());
+		return latencySampleWindow.size() > 0 ? (runningLatencyWindowSum / latencySampleWindow.size()) : 0;
+//		return (runningLatencyWindowSum / latencySampleWindow.size());
 	}
 
 	public void updateMemory() {
