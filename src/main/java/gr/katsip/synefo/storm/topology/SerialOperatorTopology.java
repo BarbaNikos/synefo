@@ -26,7 +26,8 @@ import backtype.storm.tuple.Fields;
 
 public class SerialOperatorTopology {
 
-	public static void main(String[] args) throws UnknownHostException, IOException, InterruptedException, ClassNotFoundException, AlreadyAliveException, InvalidTopologyException {
+	public static void main(String[] args) throws UnknownHostException, IOException, 
+	InterruptedException, ClassNotFoundException, AlreadyAliveException, InvalidTopologyException {
 		String synefoIP = "";
 		Integer synefoPort = 5555;
 		String[] streamIPs = null;
@@ -42,7 +43,7 @@ public class SerialOperatorTopology {
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
 		StreamgenTupleProducer tupleProducer = new StreamgenTupleProducer(streamIPs[0]);
-		String[] spoutSchema = { "one", "two", "three", "four" };
+		String[] spoutSchema = { "one", "two", "three", "four", "five" };
 		tupleProducer.setSchema(new Fields(spoutSchema));
 		builder.setSpout("spout_1", 
 				new OperatorSpout("spout_1", synefoIP, synefoPort, tupleProducer), 1)
@@ -53,7 +54,7 @@ public class SerialOperatorTopology {
 		/**
 		 * Stage 1: Project Operators
 		 */
-		String[] projectOutSchema = { "one", "two", "three", "four" };
+		String[] projectOutSchema = { "one", "two", "three", "four", "five" };
 		ProjectOperator projectOperator = new ProjectOperator(new Fields(projectOutSchema));
 		projectOperator.setOutputSchema(new Fields(projectOutSchema));
 		builder.setBolt("project_bolt_1", 

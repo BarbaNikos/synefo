@@ -47,7 +47,7 @@ public class SerialSynefoTopology {
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
 		StreamgenTupleProducer tupleProducer = new StreamgenTupleProducer(streamIPs[0]);
-		String[] spoutSchema = { "one", "two", "three", "four" };
+		String[] spoutSchema = { "one", "two", "three", "four", "five" };
 		tupleProducer.setSchema(new Fields(spoutSchema));
 		builder.setSpout("spout_1", 
 				new SynefoSpout("spout_1", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
@@ -58,7 +58,7 @@ public class SerialSynefoTopology {
 		/**
 		 * Stage 1: Project Operators
 		 */
-		String[] projectOutSchema = { "one", "two", "three", "four" };
+		String[] projectOutSchema = { "one", "two", "three", "four", "five" };
 		ProjectOperator projectOperator = new ProjectOperator(new Fields(projectOutSchema));
 		projectOperator.setOutputSchema(new Fields(projectOutSchema));
 		builder.setBolt("project_bolt_1", 
@@ -86,7 +86,9 @@ public class SerialSynefoTopology {
 		 * Stage 3: Aggregate operator
 		 */
 		CountGroupByAggrOperator countGroupByAggrOperator = new CountGroupByAggrOperator(100, 
-				joinOperator.getOutputSchema().toList().toArray(new String[joinOperator.getOutputSchema().toList().size()]));
+				joinOperator.getOutputSchema().toList().toArray(
+						new String[joinOperator.getOutputSchema().toList().size()])
+						);
 		String[] countGroupBySchema = { "key", "count" };
 		String[] countGroupByStateSchema = { "key", "count", "time" };
 		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
