@@ -58,9 +58,8 @@ public class SerialSynefoTopology {
 		/**
 		 * Stage 1: Project Operators
 		 */
-		String[] projectOutSchema = { "one", "two", "three", "four", "five" };
-		ProjectOperator projectOperator = new ProjectOperator(new Fields(projectOutSchema));
-		projectOperator.setOutputSchema(new Fields(projectOutSchema));
+		ProjectOperator projectOperator = new ProjectOperator(new Fields(spoutSchema));
+		projectOperator.setOutputSchema(new Fields(spoutSchema));
 		builder.setBolt("project_bolt_1", 
 				new SynefoBolt("project_bolt_1", synefoIP, synefoPort, projectOperator, zooIP, zooPort, false), 1)
 				.setNumTasks(1)
@@ -73,7 +72,7 @@ public class SerialSynefoTopology {
 		 * Stage 2: Join operators
 		 */
 		JoinOperator<String> joinOperator = new JoinOperator<String>(new StringComparator(), 100, "three", 
-				new Fields(projectOutSchema), new Fields(projectOutSchema));
+				new Fields(spoutSchema), new Fields(spoutSchema));
 		builder.setBolt("join_bolt_1", 
 				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, joinOperator, zooIP, zooPort, false), 1)
 				.setNumTasks(1)
@@ -85,10 +84,10 @@ public class SerialSynefoTopology {
 		/**
 		 * Stage 3: Aggregate operator
 		 */
+		String[] groupByAttributes = new String[joinOperator.getOutputSchema().toList().size()];
+		groupByAttributes = joinOperator.getOutputSchema().toList().toArray(groupByAttributes);
 		CountGroupByAggrOperator countGroupByAggrOperator = new CountGroupByAggrOperator(100, 
-				joinOperator.getOutputSchema().toList().toArray(
-						new String[joinOperator.getOutputSchema().toList().size()])
-						);
+				groupByAttributes);
 		String[] countGroupBySchema = { "key", "count" };
 		String[] countGroupByStateSchema = { "key", "count", "time" };
 		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
