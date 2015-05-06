@@ -99,7 +99,7 @@ public class DemoTopologyFour {
 		returnSet.add(0);
 		returnSet.add(1);
 		returnSet.add(2);
-		Select selectOperator = new Select(returnSet, "50", 1, 0, 0, 1000, "0", zooIP, zooPort);
+		Select selectOperator = new Select(returnSet, "50", 1, 1, 0, 1000, "0", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt_1", 
 				new SynefoBolt("select_bolt_1", synefoIP, synefoPort, selectOperator, 
@@ -111,7 +111,7 @@ public class DemoTopologyFour {
 		topology.put("select_bolt_1", new ArrayList<String>(_tmp));
 		
 		String[] selectionTwoOutputSchema = dataSpoutTwoSchema; // These two have to be the same since it is just a selection
-		selectOperator = new Select(returnSet, "50", 1, 0, 1, 1000, "1", zooIP, zooPort);
+		selectOperator = new Select(returnSet, "50", 1, 1, 1, 1000, "1", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt_2", 
 				new SynefoBolt("select_bolt_2", synefoIP, synefoPort, selectOperator, 
