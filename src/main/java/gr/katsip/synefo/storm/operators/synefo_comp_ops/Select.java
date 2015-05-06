@@ -140,7 +140,7 @@ public class Select implements Serializable, AbstractOperator  {
 			rets[0]=tuple[0];
 			rets[1]=tuple[1];
 			for(int i = 0;i<selections.size();i++){
-				rets[i+2]=tuple[selections.get(i)+2];
+				rets[i]=tuple[selections.get(i)];
 			}
 			return rets;
 		}
@@ -155,7 +155,8 @@ public class Select implements Serializable, AbstractOperator  {
 				String[] rets = new String[selections.size()+1];
 				rets[0]=tuple[0];
 				for(int i = 0;i<selections.size();i++){
-					rets[i+2]=tuple[selections.get(i)+2];
+					//rets[i+2]=tuple[selections.get(i)+2];
+					rets[i]=tuple[selections.get(i)];
 				}
 				return rets;
 			}
@@ -167,7 +168,7 @@ public class Select implements Serializable, AbstractOperator  {
 				String[] rets = new String[selections.size()+1];
 				rets[0]=tuple[0];
 				for(int i = 0;i<selections.size();i++){
-					rets[i+2]=tuple[selections.get(i)+2];
+					rets[i]=tuple[selections.get(i)];
 				}
 				return rets;
 			}
@@ -184,7 +185,7 @@ public class Select implements Serializable, AbstractOperator  {
 				String[] rets = new String[selections.size()+1];
 				rets[0]=tuple[0];
 				for(int i = 0;i<selections.size();i++){
-					rets[i+2]=tuple[selections.get(i)+2];
+					rets[i]=tuple[selections.get(i)];
 				}
 				return rets;
 			}
@@ -196,7 +197,7 @@ public class Select implements Serializable, AbstractOperator  {
 				String[] rets = new String[selections.size()+1];
 				rets[0]=tuple[0];
 				for(int i = 0;i<selections.size();i++){
-					rets[i+2]=tuple[selections.get(i)+2];
+					rets[i]=tuple[selections.get(i)];
 				}
 				return rets;
 			}
