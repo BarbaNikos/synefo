@@ -48,16 +48,14 @@ public class DemoTopologyFour {
 		/**
 		 * Stage 0: Data Sources Spouts
 		 */
-		//Need to change the following to your punctuation schema
+		
 		String[] punctuationSpoutSchema = { "punct" };
-
 		CrypefoPunctuationTupleProducer punctuationTupleProducer = new CrypefoPunctuationTupleProducer(streamIPs[0]);
 		punctuationTupleProducer.setSchema(new Fields(punctuationSpoutSchema));
 		builder.setSpout("spout_punctuation_tuples_1", 
 				new SynefoSpout("spout_punctuation_tuples_1", synefoIP, synefoPort, punctuationTupleProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
-
-		//Need to change the following to your data schema
+		
 		String[] dataSpoutSchema = { "tuple" };
 		CrypefoDataTupleProducer dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[0]);
 		punctuationTupleProducer.setSchema(new Fields(dataSpoutSchema));
@@ -72,7 +70,6 @@ public class DemoTopologyFour {
 		_tmp.add("select_bolt_1");
 		topology.put("spout_data_tuples_1", new ArrayList<String>(_tmp));
 
-		//Need to change the following to your punctuation schema
 		String[] punctuationSpoutTwoSchema = { "punct" };
 		punctuationTupleProducer = new CrypefoPunctuationTupleProducer(streamIPs[1]);
 		punctuationTupleProducer.setSchema(new Fields(punctuationSpoutTwoSchema));
@@ -80,7 +77,6 @@ public class DemoTopologyFour {
 				new SynefoSpout("spout_punctuation_tuples_2", synefoIP, synefoPort, punctuationTupleProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
 
-		//Need to change the following to your data schema
 		String[] dataSpoutTwoSchema = { "tuple" };
 		dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[1]);
 		punctuationTupleProducer.setSchema(new Fields(dataSpoutTwoSchema));
@@ -98,8 +94,7 @@ public class DemoTopologyFour {
 		/**
 		 * Stage 1: Select operator
 		 */
-		String[] selectionOutputSchema = dataSpoutSchema; // These two have to be the same since it is just a selection
-		//Select(ArrayList<Integer> returnSet, String pred, int att, int typ, int client,int statBuffer, String ID, String zooIP, Integer zooPort)
+		String[] selectionOutputSchema = dataSpoutSchema;
 		ArrayList<Integer> returnSet = new ArrayList<Integer>();
 		returnSet.add(0);
 		returnSet.add(1);
