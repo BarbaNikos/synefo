@@ -7,6 +7,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -181,7 +182,7 @@ public class Select implements Serializable, AbstractOperator  {
 
 	public String[] greaterSelect(String[] tuple){
 		if(type==3){
-			System.out.println("predicate: " + predicate + ", tuple" + tuple.toString());
+			System.out.println("predicate: " + predicate + ", tuple" + Arrays.toString(tuple));
 			if(Integer.parseInt(tuple[attribute])>Integer.parseInt(predicate)){
 				String[] rets = new String[selections.size()+1];
 				rets[0]=tuple[0];
