@@ -386,7 +386,6 @@ public class SynefoSpout extends BaseRichSpout {
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
 		List<String> producerSchema = new ArrayList<String>();
 		producerSchema.add("SYNEFO_HEADER");
-		System.out.println("spout: " + this.taskName + " schema: " + tupleProducer.getSchema().toList().toArray());
 		producerSchema.addAll(tupleProducer.getSchema().toList());
 		declarer.declare(new Fields(producerSchema));
 	}
