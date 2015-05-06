@@ -7,8 +7,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import gr.katsip.synefo.server.time.TimeServer;
 import gr.katsip.synefo.storm.api.Pair;
-import gr.katsp.synefo.server.time.TimeServer;
 
 public class SynefoCoordinatorThread implements Runnable {
 

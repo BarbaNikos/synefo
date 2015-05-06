@@ -1,4 +1,4 @@
-import gr.katsp.synefo.server.time.TimeServer;
+import gr.katsip.synefo.server.time.TimeServer;
 
 
 public class TimeServerTest {

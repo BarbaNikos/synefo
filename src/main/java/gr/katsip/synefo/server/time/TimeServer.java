@@ -1,4 +1,4 @@
-package gr.katsp.synefo.server.time;
+package gr.katsip.synefo.server.time;
 
 import java.io.IOException;
 import java.io.OutputStream;
