@@ -41,9 +41,6 @@ public class DemoTopologyOne {
 			zooIP = args[2];
 			zooPort = Integer.parseInt(args[3]);
 		}
-		
-		
-		
 		/*try {
 			Runtime.getRuntime().exec("/home/cpabe-0.11/cpabe-setup");
 		} catch (IOException e) {
@@ -108,13 +105,13 @@ public class DemoTopologyOne {
 		_tmp.add("client_bolt");
 		topology.put("spout_punctuation_tuples", new ArrayList<String>(_tmp));
 		_tmp = new ArrayList<String>();
-		_tmp.add("select_bolt");
+		_tmp.add("count_bolt");
 		topology.put("spout_data_tuples", new ArrayList<String>(_tmp));
 		
 		/**
-		 * Stage 1: Select operator
+		 * Stage 1: Count operator
 		 */
-		String[] selectionOutputSchema = dataSpoutSchema; // These two have to be the same since it is just a selection
+		String[] countOutputSchema = dataSpoutSchema; // These two have to be the same since it is just a selection
 		//ArrayList<Integer> retSet = new ArrayList<Integer>(); //for select
 		//int buff, int attr, String pred, int typ, String client, int statBuffer
 		int buffer = 100;
@@ -123,16 +120,16 @@ public class DemoTopologyOne {
 		Count count = new Count(buffer, attribute, pred, 1, "0",1000, zooIP, zooPort);
 		//FilterOperator<String> filterOperator = new FilterOperator<String>(new StringComparator(), 
 		//		"communist_level", "50");
-		count.setOutputSchema(new Fields(selectionOutputSchema));
+		count.setOutputSchema(new Fields(countOutputSchema));
 		//filterOperator.setOutputSchema(new Fields(selectionOutputSchema));
-		builder.setBolt("select_bolt", 
-				new SynefoBolt("select_bolt", synefoIP, synefoPort, count, 
+		builder.setBolt("count_bolt", 
+				new SynefoBolt("count_bolt", synefoIP, synefoPort, count, 
 						zooIP, zooPort, false), 1)
 						.setNumTasks(1)
 						.directGrouping("spout_data_tuples");
 		_tmp = new ArrayList<String>();
 		_tmp.add("client_bolt");
-		topology.put("select_bolt", new ArrayList<String>(_tmp));
+		topology.put("count_bolt", new ArrayList<String>(_tmp));
 		
 		/**
 		 * Stage 2: Client Bolt (project operator)
@@ -145,7 +142,7 @@ public class DemoTopologyOne {
 				new SynefoBolt("client_bolt", synefoIP, synefoPort, 
 						projectOperator, zooIP, zooPort, false), 1)
 						.setNumTasks(1)
-						.directGrouping("select_bolt")
+						.directGrouping("count_bolt")
 						.directGrouping("spout_punctuation_tuples");
 		topology.put("client_bolt", new ArrayList<String>());
 		/**
@@ -177,13 +174,6 @@ public class DemoTopologyOne {
 		conf.setDebug(false);
 		conf.setNumWorkers(4);
 		StormSubmitter.submitTopology("crypefo-top-1", conf, builder.createTopology());
-		
-		//LocalCluster cluster = new LocalCluster();
-		//cluster.submitTopology("debug-topology", conf, builder.createTopology());
-		
-//		Thread.sleep(200000);
-		
-	//	cluster.shutdown();
 	}
 	
 

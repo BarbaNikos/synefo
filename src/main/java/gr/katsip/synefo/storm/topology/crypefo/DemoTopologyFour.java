@@ -3,10 +3,11 @@ package gr.katsip.synefo.storm.topology.crypefo;
 import gr.katsip.synefo.storm.api.SynefoBolt;
 import gr.katsip.synefo.storm.api.SynefoSpout;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
-import gr.katsip.synefo.storm.operators.relational.FilterOperator;
 import gr.katsip.synefo.storm.operators.relational.JoinOperator;
 import gr.katsip.synefo.storm.operators.relational.ProjectOperator;
 import gr.katsip.synefo.storm.operators.relational.StringComparator;
+import gr.katsip.synefo.storm.operators.synefo_comp_ops.Select;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -14,6 +15,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
+
 import backtype.storm.Config;
 import backtype.storm.StormSubmitter;
 import backtype.storm.generated.AlreadyAliveException;
@@ -47,7 +49,7 @@ public class DemoTopologyFour {
 		 * Stage 0: Data Sources Spouts
 		 */
 		//Need to change the following to your punctuation schema
-		String[] punctuationSpoutSchema = { "tuple" };
+		String[] punctuationSpoutSchema = { "punct" };
 
 		CrypefoPunctuationTupleProducer punctuationTupleProducer = new CrypefoPunctuationTupleProducer(streamIPs[0]);
 		punctuationTupleProducer.setSchema(new Fields(punctuationSpoutSchema));
@@ -71,8 +73,8 @@ public class DemoTopologyFour {
 		topology.put("spout_data_tuples_1", new ArrayList<String>(_tmp));
 
 		//Need to change the following to your punctuation schema
-		String[] punctuationSpoutTwoSchema = { "tuple" };
-		punctuationTupleProducer = new CrypefoPunctuationTupleProducer(streamIPs[0]);
+		String[] punctuationSpoutTwoSchema = { "punct" };
+		punctuationTupleProducer = new CrypefoPunctuationTupleProducer(streamIPs[1]);
 		punctuationTupleProducer.setSchema(new Fields(punctuationSpoutTwoSchema));
 		builder.setSpout("spout_punctuation_tuples_2", 
 				new SynefoSpout("spout_punctuation_tuples_2", synefoIP, synefoPort, punctuationTupleProducer, zooIP, zooPort), 1)
@@ -80,7 +82,7 @@ public class DemoTopologyFour {
 
 		//Need to change the following to your data schema
 		String[] dataSpoutTwoSchema = { "tuple" };
-		dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[0]);
+		dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[1]);
 		punctuationTupleProducer.setSchema(new Fields(dataSpoutTwoSchema));
 		builder.setSpout("spout_data_tuples_2", 
 				new SynefoSpout("spout_data_tuples_2", synefoIP, synefoPort, dataTupleProducer, zooIP, zooPort), 1)
@@ -97,11 +99,15 @@ public class DemoTopologyFour {
 		 * Stage 1: Select operator
 		 */
 		String[] selectionOutputSchema = dataSpoutSchema; // These two have to be the same since it is just a selection
-		FilterOperator<String> filterOperator = new FilterOperator<String>(new StringComparator(), 
-				"selection-field-name", "selection-field-value");
-		filterOperator.setOutputSchema(new Fields(selectionOutputSchema));
+		//Select(ArrayList<Integer> returnSet, String pred, int att, int typ, int client,int statBuffer, String ID, String zooIP, Integer zooPort)
+		ArrayList<Integer> returnSet = new ArrayList<Integer>();
+		returnSet.add(0);
+		returnSet.add(1);
+		returnSet.add(2);
+		Select selectOperator = new Select(returnSet, "50", 1, 0, 0, 1000, "0", zooIP, zooPort);
+		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt_1", 
-				new SynefoBolt("select_bolt_1", synefoIP, synefoPort, filterOperator, 
+				new SynefoBolt("select_bolt_1", synefoIP, synefoPort, selectOperator, 
 						zooIP, zooPort, false), 1)
 						.setNumTasks(1)
 						.directGrouping("spout_data_tuples_1");
@@ -110,11 +116,10 @@ public class DemoTopologyFour {
 		topology.put("select_bolt_1", new ArrayList<String>(_tmp));
 		
 		String[] selectionTwoOutputSchema = dataSpoutTwoSchema; // These two have to be the same since it is just a selection
-		filterOperator = new FilterOperator<String>(new StringComparator(), 
-				"selection-field-name", "selection-field-value");
-		filterOperator.setOutputSchema(new Fields(selectionTwoOutputSchema));
+		selectOperator = new Select(returnSet, "50", 1, 0, 1, 1000, "1", zooIP, zooPort);
+		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt_2", 
-				new SynefoBolt("select_bolt_2", synefoIP, synefoPort, filterOperator, 
+				new SynefoBolt("select_bolt_2", synefoIP, synefoPort, selectOperator, 
 						zooIP, zooPort, false), 1)
 						.setNumTasks(1)
 						.directGrouping("spout_data_tuples_2");
@@ -125,7 +130,7 @@ public class DemoTopologyFour {
 		/**
 		 * Stage 2: Join Bolt
 		 */
-		JoinOperator<String> joinOperator = new JoinOperator<String>(new StringComparator(), 1000, "join-field-name", 
+		JoinOperator<String> joinOperator = new JoinOperator<String>(new StringComparator(), 1000, "tuple", 
 				new Fields(selectionOutputSchema), new Fields(selectionTwoOutputSchema));
 		builder.setBolt("join_bolt", 
 				new SynefoBolt("join_bolt", synefoIP, synefoPort, 
