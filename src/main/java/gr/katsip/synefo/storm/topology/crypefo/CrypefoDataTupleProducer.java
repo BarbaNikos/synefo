@@ -30,12 +30,9 @@ public class CrypefoDataTupleProducer implements AbstractTupleProducer, Serializ
 
 	private String dataProviderIP;
 
-	private long num;
-
 	public CrypefoDataTupleProducer(String dataProviderIP) {
 		dataProvider = null;
 		this.dataProviderIP = dataProviderIP;
-		num = 0;
 	}
 
 	public void connect() {
@@ -60,9 +57,10 @@ public class CrypefoDataTupleProducer implements AbstractTupleProducer, Serializ
 		Values val = new Values();
 		try {
 			String tuple = input.readLine();
+			
 			if(tuple != null && tuple.length() > 0) {
-				String[] tupleTokens = tuple.split(",");
-				val.add(new Long(num));
+				String[] tupleTokens_1 = tuple.split(":");				
+				String[] tupleTokens = {tupleTokens_1[1]};
 				for(int i = 0; i < tupleTokens.length; i++) {
 					if(val.size() < fields.size())
 						val.add(tupleTokens[i]);
@@ -72,7 +70,6 @@ public class CrypefoDataTupleProducer implements AbstractTupleProducer, Serializ
 						val.add(new String("N/A"));
 					}
 				}
-				num += 1;
 				return val;
 			}
 		} catch (IOException e) {

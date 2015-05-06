@@ -47,7 +47,7 @@ public class DemoTopologyFour {
 		 * Stage 0: Data Sources Spouts
 		 */
 		//Need to change the following to your punctuation schema
-		String[] punctuationSpoutSchema = { "num", "one", "two", "three", "four" };
+		String[] punctuationSpoutSchema = { "tuple" };
 
 		CrypefoPunctuationTupleProducer punctuationTupleProducer = new CrypefoPunctuationTupleProducer(streamIPs[0]);
 		punctuationTupleProducer.setSchema(new Fields(punctuationSpoutSchema));
@@ -56,7 +56,7 @@ public class DemoTopologyFour {
 				.setNumTasks(1);
 
 		//Need to change the following to your data schema
-		String[] dataSpoutSchema = { "num", "1", "2", "three", "5" };
+		String[] dataSpoutSchema = { "tuple" };
 		CrypefoDataTupleProducer dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[0]);
 		punctuationTupleProducer.setSchema(new Fields(dataSpoutSchema));
 		builder.setSpout("spout_data_tuples_1", 
@@ -71,8 +71,7 @@ public class DemoTopologyFour {
 		topology.put("spout_data_tuples_1", new ArrayList<String>(_tmp));
 
 		//Need to change the following to your punctuation schema
-		String[] punctuationSpoutTwoSchema = { "num", "one", "two", "three", "four" };
-
+		String[] punctuationSpoutTwoSchema = { "tuple" };
 		punctuationTupleProducer = new CrypefoPunctuationTupleProducer(streamIPs[0]);
 		punctuationTupleProducer.setSchema(new Fields(punctuationSpoutTwoSchema));
 		builder.setSpout("spout_punctuation_tuples_2", 
@@ -80,7 +79,7 @@ public class DemoTopologyFour {
 				.setNumTasks(1);
 
 		//Need to change the following to your data schema
-		String[] dataSpoutTwoSchema = { "num", "1", "2", "three", "5" };
+		String[] dataSpoutTwoSchema = { "tuple" };
 		dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[0]);
 		punctuationTupleProducer.setSchema(new Fields(dataSpoutTwoSchema));
 		builder.setSpout("spout_data_tuples_2", 

@@ -3,9 +3,8 @@ package gr.katsip.synefo.storm.topology.crypefo;
 import gr.katsip.synefo.storm.api.SynefoBolt;
 import gr.katsip.synefo.storm.api.SynefoSpout;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
-import gr.katsip.synefo.storm.operators.relational.FilterOperator;
 import gr.katsip.synefo.storm.operators.relational.ProjectOperator;
-import gr.katsip.synefo.storm.operators.relational.StringComparator;
+import gr.katsip.synefo.storm.operators.synefo_comp_ops.Count;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -22,6 +21,8 @@ import backtype.storm.tuple.Fields;
 
 public class DemoTopologyOne {
 
+
+	
 	public static void main(String[] args) throws UnknownHostException, IOException, 
 	InterruptedException, ClassNotFoundException, AlreadyAliveException, InvalidTopologyException {
 		String synefoIP = "";
@@ -40,13 +41,54 @@ public class DemoTopologyOne {
 			zooIP = args[2];
 			zooPort = Integer.parseInt(args[3]);
 		}
+		
+		
+		
+		/*try {
+			Runtime.getRuntime().exec("/home/cpabe-0.11/cpabe-setup");
+		} catch (IOException e) {
+			System.out.println("Error in Central Authority. CPABE command error, could not execute commands.");
+			e.printStackTrace();
+		}
+		String masterKey="";
+		String publicKey="";
+		try {
+			FileInputStream fstream = new FileInputStream("pub_key");
+			DataInputStream in = new DataInputStream(fstream);
+			BufferedReader br = new BufferedReader(new InputStreamReader(in));
+			String strLine;
+			while ((strLine = br.readLine()) != null)   {
+				publicKey=strLine;
+			}
+		} catch (FileNotFoundException e) {
+			System.out.println("Error in Central Authority. File: priv_key_1 not found.");
+			e.printStackTrace();
+		} catch (IOException e) {
+			System.out.println("Error in Central Authority. Reading File: priv_key_1 error, good luck.");
+			e.printStackTrace();
+		}
+		try {
+			FileInputStream fstream = new FileInputStream("master_key");
+			DataInputStream in = new DataInputStream(fstream);
+			BufferedReader br = new BufferedReader(new InputStreamReader(in));
+			String strLine;
+			while ((strLine = br.readLine()) != null)   {
+				masterKey=strLine;
+			}
+		} catch (FileNotFoundException e) {
+			System.out.println("Error in Central Authority. File: priv_key_1 not found.");
+			e.printStackTrace();
+		} catch (IOException e) {
+			System.out.println("Error in Central Authority. Reading File: priv_key_1 error, good luck.");
+			e.printStackTrace();
+		}*/
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
 		/**
 		 * Stage 0: Data Sources Spouts
 		 */
 		//Need to change the following to your punctuation schema
-		String[] punctuationSpoutSchema = { "num", "one", "two", "three", "four" };
+		String[] punctuationSpoutSchema = { "punct" };
 		
 		CrypefoPunctuationTupleProducer punctuationTupleProducer = new CrypefoPunctuationTupleProducer(streamIPs[0]);
 		punctuationTupleProducer.setSchema(new Fields(punctuationSpoutSchema));
@@ -55,9 +97,9 @@ public class DemoTopologyOne {
 				.setNumTasks(1);
 		
 		//Need to change the following to your data schema
-		String[] dataSpoutSchema = { "num", "1", "2", "three", "5" };
+		String[] dataSpoutSchema = { "tuple" };
 		CrypefoDataTupleProducer dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[0]);
-		punctuationTupleProducer.setSchema(new Fields(dataSpoutSchema));
+		dataTupleProducer.setSchema(new Fields(dataSpoutSchema));
 		builder.setSpout("spout_data_tuples", 
 				new SynefoSpout("spout_data_tuples", synefoIP, synefoPort, dataTupleProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
@@ -73,11 +115,18 @@ public class DemoTopologyOne {
 		 * Stage 1: Select operator
 		 */
 		String[] selectionOutputSchema = dataSpoutSchema; // These two have to be the same since it is just a selection
-		FilterOperator<String> filterOperator = new FilterOperator<String>(new StringComparator(), 
-				"selection-field-name", "selection-field-value");
-		filterOperator.setOutputSchema(new Fields(selectionOutputSchema));
+		//ArrayList<Integer> retSet = new ArrayList<Integer>(); //for select
+		//int buff, int attr, String pred, int typ, String client, int statBuffer
+		int buffer = 100;
+		String pred = "50";
+		int attribute = 2;
+		Count count = new Count(buffer, attribute, pred, 1, "0",1000, zooIP, zooPort);
+		//FilterOperator<String> filterOperator = new FilterOperator<String>(new StringComparator(), 
+		//		"communist_level", "50");
+		count.setOutputSchema(new Fields(selectionOutputSchema));
+		//filterOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt", 
-				new SynefoBolt("select_bolt", synefoIP, synefoPort, filterOperator, 
+				new SynefoBolt("select_bolt", synefoIP, synefoPort, count, 
 						zooIP, zooPort, false), 1)
 						.setNumTasks(1)
 						.directGrouping("spout_data_tuples");
@@ -89,9 +138,9 @@ public class DemoTopologyOne {
 		 * Stage 2: Client Bolt (project operator)
 		 */
 		ProjectOperator projectOperator = new ProjectOperator(new Fields(
-				filterOperator.getOutputSchema().toList().toArray(new String[filterOperator.getOutputSchema().size()])));
+				count.getOutputSchema().toList().toArray(new String[count.getOutputSchema().size()])));
 		projectOperator.setOutputSchema(new Fields(
-				filterOperator.getOutputSchema().toList().toArray(new String[filterOperator.getOutputSchema().size()])));
+				count.getOutputSchema().toList().toArray(new String[count.getOutputSchema().size()])));
 		builder.setBolt("client_bolt", 
 				new SynefoBolt("client_bolt", synefoIP, synefoPort, 
 						projectOperator, zooIP, zooPort, false), 1)
@@ -128,6 +177,14 @@ public class DemoTopologyOne {
 		conf.setDebug(false);
 		conf.setNumWorkers(4);
 		StormSubmitter.submitTopology("crypefo-top-1", conf, builder.createTopology());
+		
+		//LocalCluster cluster = new LocalCluster();
+		//cluster.submitTopology("debug-topology", conf, builder.createTopology());
+		
+//		Thread.sleep(200000);
+		
+	//	cluster.shutdown();
 	}
+	
 
 }
