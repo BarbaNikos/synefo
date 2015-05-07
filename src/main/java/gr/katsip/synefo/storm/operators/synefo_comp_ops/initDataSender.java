@@ -78,7 +78,6 @@ public class initDataSender {
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
-		}
-		
+		}		
 	}
 }
