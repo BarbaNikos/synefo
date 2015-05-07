@@ -85,16 +85,13 @@ public class DemoTopologyOne {
 		/**
 		 * Stage 0: Data Sources Spouts
 		 */
-		//Need to change the following to your punctuation schema
 		String[] punctuationSpoutSchema = { "punct" };
-		
 		CrypefoPunctuationTupleProducer punctuationTupleProducer = new CrypefoPunctuationTupleProducer(streamIPs[0]);
 		punctuationTupleProducer.setSchema(new Fields(punctuationSpoutSchema));
 		builder.setSpout("spout_punctuation_tuples", 
 				new SynefoSpout("spout_punctuation_tuples", synefoIP, synefoPort, punctuationTupleProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
 		
-		//Need to change the following to your data schema
 		String[] dataSpoutSchema = { "tuple" };
 		CrypefoDataTupleProducer dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[0]);
 		dataTupleProducer.setSchema(new Fields(dataSpoutSchema));
@@ -145,7 +142,6 @@ public class DemoTopologyOne {
 		/**
 		 * Middle Stage Checker
 		 */
-		
 		String[] middleSchema = { "one", "two", "three", "four" };
 		valuesConverter converter = new valuesConverter(3);
 		converter.setStateSchema(new Fields(middleSchema));
