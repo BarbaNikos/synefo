@@ -5,6 +5,8 @@ import gr.katsip.synefo.storm.api.SynefoSpout;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.operators.relational.ProjectOperator;
 import gr.katsip.synefo.storm.operators.synefo_comp_ops.Count;
+import gr.katsip.synefo.storm.operators.synefo_comp_ops.Select;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -12,7 +14,9 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
+
 import backtype.storm.Config;
+import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;
 import backtype.storm.generated.AlreadyAliveException;
 import backtype.storm.generated.InvalidTopologyException;
@@ -105,44 +109,43 @@ public class DemoTopologyOne {
 		_tmp.add("client_bolt");
 		topology.put("spout_punctuation_tuples", new ArrayList<String>(_tmp));
 		_tmp = new ArrayList<String>();
-		_tmp.add("count_bolt");
+		_tmp.add("select_bolt");
 		topology.put("spout_data_tuples", new ArrayList<String>(_tmp));
 		
 		/**
 		 * Stage 1: Count operator
 		 */
-		String[] countOutputSchema = dataSpoutSchema; // These two have to be the same since it is just a selection
-		//ArrayList<Integer> retSet = new ArrayList<Integer>(); //for select
-		//int buff, int attr, String pred, int typ, String client, int statBuffer
-		int buffer = 100;
-		String pred = "50";
-		int attribute = 2;
-		Count count = new Count(buffer, attribute, pred, 1, "0",1000, zooIP, zooPort);
+		String[] selectionOutputSchema = dataSpoutSchema;
+		ArrayList<Integer> returnSet = new ArrayList<Integer>();
+		returnSet.add(0);
+		returnSet.add(1);
+		returnSet.add(2);
+		Select selectOperator = new Select(returnSet, "50", 2, 3, 0, 1000, "0", zooIP, zooPort);
 		//FilterOperator<String> filterOperator = new FilterOperator<String>(new StringComparator(), 
 		//		"communist_level", "50");
-		count.setOutputSchema(new Fields(countOutputSchema));
+		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		//filterOperator.setOutputSchema(new Fields(selectionOutputSchema));
-		builder.setBolt("count_bolt", 
-				new SynefoBolt("count_bolt", synefoIP, synefoPort, count, 
+		builder.setBolt("select_bolt", 
+				new SynefoBolt("select_bolt", synefoIP, synefoPort, selectOperator, 
 						zooIP, zooPort, false), 1)
 						.setNumTasks(1)
 						.directGrouping("spout_data_tuples");
 		_tmp = new ArrayList<String>();
 		_tmp.add("client_bolt");
-		topology.put("count_bolt", new ArrayList<String>(_tmp));
+		topology.put("select_bolt", new ArrayList<String>(_tmp));
 		
 		/**
 		 * Stage 2: Client Bolt (project operator)
 		 */
 		ProjectOperator projectOperator = new ProjectOperator(new Fields(
-				count.getOutputSchema().toList().toArray(new String[count.getOutputSchema().size()])));
+				selectOperator.getOutputSchema().toList().toArray(new String[selectOperator.getOutputSchema().size()])));
 		projectOperator.setOutputSchema(new Fields(
-				count.getOutputSchema().toList().toArray(new String[count.getOutputSchema().size()])));
+				selectOperator.getOutputSchema().toList().toArray(new String[selectOperator.getOutputSchema().size()])));
 		builder.setBolt("client_bolt", 
 				new SynefoBolt("client_bolt", synefoIP, synefoPort, 
 						projectOperator, zooIP, zooPort, false), 1)
 						.setNumTasks(1)
-						.directGrouping("count_bolt")
+						.directGrouping("select_bolt")
 						.directGrouping("spout_punctuation_tuples");
 		topology.put("client_bolt", new ArrayList<String>());
 		/**
@@ -173,7 +176,13 @@ public class DemoTopologyOne {
 
 		conf.setDebug(false);
 		conf.setNumWorkers(4);
-		StormSubmitter.submitTopology("crypefo-top-1", conf, builder.createTopology());
+		//StormSubmitter.submitTopology("crypefo-top-1", conf, builder.createTopology());
+		LocalCluster cluster = new LocalCluster();
+		cluster.submitTopology("crypefo-top-1", conf, builder.createTopology());
+		
+		Thread.sleep(200000);
+		
+		//cluster.shutdown();
 	}
 	
 

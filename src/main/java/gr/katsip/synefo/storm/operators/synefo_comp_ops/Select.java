@@ -60,6 +60,7 @@ public class Select implements Serializable, AbstractOperator  {
 		encryptionData.put("OPE",0);
 		encryptionData.put("HOM",0);
 		stats = statBuffer;
+		this.ID=ID;
 		this.zooIP = zooIP;
 		this.zooPort = zooPort;
 		dataSender = null;
@@ -105,106 +106,88 @@ public class Select implements Serializable, AbstractOperator  {
 		if(!values.get(0).toString().contains("SPS")){
 			String[] tuples = values.get(0).toString().split(",");
 			List<Values> vals = new ArrayList<Values>();
+			boolean matches  = false;
 			if (type==0){
-				values.add(equiSelect(tuples));
+				matches=equiSelect(tuples);
 			}
 			else if (type ==1 || type ==2){
-				values.add(lessSelect(tuples));
+				matches=lessSelect(tuples);
 			}
 			else if (type ==3 || type ==4){
-				values.add(greaterSelect(tuples));
+				matches=greaterSelect(tuples);
 			}
 			else{
-				vals  = null;
+				matches=false;
 			}
+			
 			//System.out.println(values.toString());
 			encryptionData.put(tuples[tuples.length-1], encryptionData.get(tuples[tuples.length-1])+1);
 			statsCounter++;
 			if(statsCounter>1000){
 				updateData();
 			}
-			return vals;
+			Values val = new Values(); val.addAll(values);
+			ArrayList<Values> valz = new ArrayList<Values>();
+			vals.add(val);
+			if(matches){
+				System.out.println(values.toString());
+				return valz;
+			}else{
+				return new ArrayList<Values>();
+			}
 		}else{
 			return null;
 		}
 	}
 
-	public String[] equiSelect(String[] tuple){
+	public boolean equiSelect(String[] tuple){
 		if(predicate.equals("*")&& predicate==null){
-			return tuple;
+			return true;
 		}
 		if(tuple[attribute].equalsIgnoreCase(predicate)){
-			if(predicate.equals("*")){
-				return tuple;
-			}
-			String[] rets = new String[selections.size()+2];
-			rets[0]=tuple[0];
-			rets[1]=tuple[1];
-			for(int i = 0;i<selections.size();i++){
-				rets[i]=tuple[selections.get(i)];
-			}
-			return rets;
+			return true;
 		}
 		else{
-			return null;
+			return false;
 		}
 	}
 
-	public String[] lessSelect(String[] tuple){
+	public boolean lessSelect(String[] tuple){
 		if(type==1){
 			if(Integer.parseInt(tuple[attribute])<Integer.parseInt(predicate)){
-				String[] rets = new String[selections.size()+1];
-				rets[0]=tuple[0];
-				for(int i = 0;i<selections.size();i++){
-					//rets[i+2]=tuple[selections.get(i)+2];
-					rets[i]=tuple[selections.get(i)];
-				}
-				return rets;
+				return true;
 			}
 			else{
-				return null;
+				return false;
 			}	
 		}else{
 			if(Integer.parseInt(tuple[attribute])<=Integer.parseInt(predicate)){
-				String[] rets = new String[selections.size()+1];
-				rets[0]=tuple[0];
-				for(int i = 0;i<selections.size();i++){
-					rets[i]=tuple[selections.get(i)];
-				}
-				return rets;
+
+				return true;
 			}
 			else{
-				return null;
+				return false;
 			}
 
 		}
 	}
 
-	public String[] greaterSelect(String[] tuple){
+	public boolean greaterSelect(String[] tuple){
 		if(type==3){
-			System.out.println("predicate: " + predicate + ", tuple" + Arrays.toString(tuple));
+			//	System.out.println("predicate: " + predicate+ " tuple: "+ Arrays.toString(tuple) + " attribute: "+tuple[attribute]);
 			if(Integer.parseInt(tuple[attribute])>Integer.parseInt(predicate)){
-				String[] rets = new String[selections.size()+1];
-				rets[0]=tuple[0];
-				for(int i = 0;i<selections.size();i++){
-					rets[i]=tuple[selections.get(i)];
-				}
-				return rets;
+				return true;
 			}
 			else{
-				return null;
+				return false;
 			}	
 		}else{
 			if(Integer.parseInt(tuple[attribute])>=Integer.parseInt(predicate)){
-				String[] rets = new String[selections.size()+1];
-				rets[0]=tuple[0];
-				for(int i = 0;i<selections.size();i++){
-					rets[i]=tuple[selections.get(i)];
-				}
-				return rets;
+
+				return true;
 			}
 			else{
-				return null;
+				return false;
 			}
 
 		}
