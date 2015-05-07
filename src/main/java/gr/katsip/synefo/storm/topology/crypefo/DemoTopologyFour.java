@@ -152,7 +152,7 @@ public class DemoTopologyFour {
 		/**
 		 * Stage 2: Join Bolt
 		 */
-		JoinOperator<String> joinOperator = new JoinOperator<String>(new StringComparator(), 1000, "tuple", 
+		JoinOperator<String> joinOperator = new JoinOperator<String>(new StringComparator(), 1000, "two", 
 				new Fields(middleSchema), new Fields(middleSchema));
 		builder.setBolt("join_bolt", 
 				new SynefoBolt("join_bolt", synefoIP, synefoPort, 
