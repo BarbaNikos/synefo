@@ -7,6 +7,7 @@ import gr.katsip.synefo.storm.operators.relational.JoinOperator;
 import gr.katsip.synefo.storm.operators.relational.ProjectOperator;
 import gr.katsip.synefo.storm.operators.relational.StringComparator;
 import gr.katsip.synefo.storm.operators.synefo_comp_ops.Select;
+import gr.katsip.synefo.storm.operators.synefo_comp_ops.valuesConverter;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -123,16 +124,44 @@ public class DemoTopologyFour {
 		topology.put("select_bolt_2", new ArrayList<String>(_tmp));
 		
 		/**
+		 * Stage 1b: Converter stage
+		 */
+		String[] middleSchema = { "one","two","three" };
+		valuesConverter converter = new valuesConverter(3);
+		converter.setStateSchema(new Fields(middleSchema));
+		converter.setOutputSchema(new Fields(middleSchema));
+		builder.setBolt("converter_bolt_1", 
+				new SynefoBolt("converter_bolt_1", synefoIP, synefoPort, converter, 
+						zooIP, zooPort, false), 1)
+						.setNumTasks(1)
+						.directGrouping("select_bolt_1");
+		_tmp = new ArrayList<String>();
+		_tmp.add("join_bolt");
+		topology.put("converter_bolt_1", new ArrayList<String>(_tmp));
+		
+		converter = new valuesConverter(3);
+		converter.setStateSchema(new Fields(middleSchema));
+		converter.setOutputSchema(new Fields(middleSchema));
+		builder.setBolt("converter_bolt_2", 
+				new SynefoBolt("converter_bolt_2", synefoIP, synefoPort, converter, 
+						zooIP, zooPort, false), 1)
+						.setNumTasks(1)
+						.directGrouping("select_bolt_2");
+		_tmp = new ArrayList<String>();
+		_tmp.add("join_bolt");
+		topology.put("converter_bolt_2", new ArrayList<String>(_tmp));
+		
+		/**
 		 * Stage 2: Join Bolt
 		 */
 		JoinOperator<String> joinOperator = new JoinOperator<String>(new StringComparator(), 1000, "tuple", 
-				new Fields(selectionOutputSchema), new Fields(selectionTwoOutputSchema));
+				new Fields(middleSchema), new Fields(middleSchema));
 		builder.setBolt("join_bolt", 
 				new SynefoBolt("join_bolt", synefoIP, synefoPort, 
 						joinOperator, zooIP, zooPort, true), 1)
 						.setNumTasks(1)
-						.directGrouping("select_bolt_1")
-						.directGrouping("select_bolt_2");
+						.directGrouping("converter_bolt_1")
+						.directGrouping("converter_bolt_2");
 		_tmp = new ArrayList<String>();
 		_tmp.add("client_bolt");
 		topology.put("join_bolt", new ArrayList<String>(_tmp));
