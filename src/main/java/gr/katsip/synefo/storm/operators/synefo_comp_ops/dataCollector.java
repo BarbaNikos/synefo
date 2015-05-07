@@ -80,7 +80,7 @@ public class dataCollector implements Serializable {
 	public void createChildNode(){
 		String path = "/data/"+opId+"/";
 		String path2 = "/data/"+opId;
-		System.out.println("Creating Child Node: "+new String(buffer));
+//		System.out.println("Creating Child Node: "+new String(buffer));
 		try {
 			zk.setData(path2, buffer, counter++);
 			zk.create(path, buffer ,Ids.OPEN_ACL_UNSAFE,CreateMode.EPHEMERAL_SEQUENTIAL);
