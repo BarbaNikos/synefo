@@ -50,17 +50,17 @@ public class dataCollector implements Serializable {
 	}
 
 	public void addToBuffer(String tuple) {
-		tuple = tuple+";";
+		tuple = tuple + ";";
 		byte[] newArray = tuple.getBytes();
-		if(byteCounter+newArray.length > bufferSize){
+		if(byteCounter + newArray.length > bufferSize) {
 			byteCounter=0;
 			createChildNode();
 			buffer = new byte[bufferSize];
-			for(int i=0; i<newArray.length; i++){
+			for(int i=0; i<newArray.length; i++) {
 				buffer[byteCounter]=newArray[i];
 				byteCounter++;
 			}
-		}else{
+		}else {
 			for(int i=0; i<newArray.length; i++) {
 				buffer[byteCounter]=newArray[i];
 				byteCounter++;
@@ -75,6 +75,7 @@ public class dataCollector implements Serializable {
 		String nodePath = "/data/" + opId;
 //		System.out.println("Creating Child Node: "+new String(buffer));
 		try {
+			//TODO: Do we need the data twice?? Both in the /data/opId node and in the /data/opId/n node??
 			zk.setData(nodePath, buffer, -1);
 			zk.create(newChildPath, buffer, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT_SEQUENTIAL);
 		} catch (InterruptedException e) {
