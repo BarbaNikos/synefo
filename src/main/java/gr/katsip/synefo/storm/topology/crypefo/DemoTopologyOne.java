@@ -106,11 +106,12 @@ public class DemoTopologyOne {
 		_tmp.add("client_bolt");
 		topology.put("spout_punctuation_tuples", new ArrayList<String>(_tmp));
 		_tmp = new ArrayList<String>();
-		_tmp.add("select_bolt");
+		_tmp.add("select_bolt_1");
+		_tmp.add("select_bolt_2");
 		topology.put("spout_data_tuples", new ArrayList<String>(_tmp));
 		
 		/**
-		 * Stage 1: Count operator
+		 * Stage 1: Select operator
 		 */
 		String[] selectionOutputSchema = dataSpoutSchema;
 		ArrayList<Integer> returnSet = new ArrayList<Integer>();
@@ -119,46 +120,72 @@ public class DemoTopologyOne {
 		returnSet.add(2);
 		Select selectOperator = new Select(returnSet, "50", 2, 3, 0, 1000, "0", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
-		builder.setBolt("select_bolt", 
-				new SynefoBolt("select_bolt", synefoIP, synefoPort, selectOperator, 
+		builder.setBolt("select_bolt_1", 
+				new SynefoBolt("select_bolt_1", synefoIP, synefoPort, selectOperator, 
+						zooIP, zooPort, false), 1)
+						.setNumTasks(1)
+						.directGrouping("spout_data_tuples");
+		returnSet = new ArrayList<Integer>();
+		returnSet.add(0);
+		returnSet.add(1);
+		returnSet.add(2);
+		selectOperator = new Select(returnSet, "50", 2, 3, 0, 1000, "0", zooIP, zooPort);
+		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
+		builder.setBolt("select_bolt_2", 
+				new SynefoBolt("select_bolt_2", synefoIP, synefoPort, selectOperator, 
 						zooIP, zooPort, false), 1)
 						.setNumTasks(1)
 						.directGrouping("spout_data_tuples");
 		_tmp = new ArrayList<String>();
-		_tmp.add("client_bolt");
-		_tmp.add("converter_bolt");
-		topology.put("select_bolt", new ArrayList<String>(_tmp));
+		_tmp.add("converter_bolt_1");
+		_tmp.add("converter_bolt_2");
+		topology.put("select_bolt_1", new ArrayList<String>(_tmp));
+		topology.put("select_bolt_2", new ArrayList<String>(_tmp));
 		
 		/**
 		 * Middle Stage Checker
 		 */
+		
 		String[] middleSchema = { "one", "two", "three", "four" };
 		valuesConverter converter = new valuesConverter(3);
 		converter.setStateSchema(new Fields(middleSchema));
 		converter.setOutputSchema(new Fields(middleSchema));
-		builder.setBolt("converter_bolt", 
-				new SynefoBolt("converter_bolt", synefoIP, synefoPort, converter, 
+		builder.setBolt("converter_bolt_1", 
+				new SynefoBolt("converter_bolt_1", synefoIP, synefoPort, converter, 
 						zooIP, zooPort, false), 1)
 						.setNumTasks(1)
-						.directGrouping("select_bolt");
+						.directGrouping("select_bolt_1")
+						.directGrouping("select_bolt_2");
+		converter = new valuesConverter(3);
+		converter.setStateSchema(new Fields(middleSchema));
+		converter.setOutputSchema(new Fields(middleSchema));
+		builder.setBolt("converter_bolt_2", 
+				new SynefoBolt("converter_bolt_2", synefoIP, synefoPort, converter, 
+						zooIP, zooPort, false), 1)
+						.setNumTasks(1)
+						.directGrouping("select_bolt_1")
+						.directGrouping("select_bolt_2");
 		_tmp = new ArrayList<String>();
 		_tmp.add("client_bolt");
-		topology.put("converter_bolt", new ArrayList<String>(_tmp));
+		topology.put("converter_bolt_1", new ArrayList<String>(_tmp));
+		topology.put("converter_bolt_2", new ArrayList<String>(_tmp));
 		
 		/**
 		 * Stage 2: Client Bolt (project operator)
 		 */
 		ProjectOperator projectOperator = new ProjectOperator(new Fields(
-				selectOperator.getOutputSchema().toList().toArray(new String[selectOperator.getOutputSchema().size()])));
+				converter.getOutputSchema().toList().toArray(new String[converter.getOutputSchema().size()])));
 		projectOperator.setOutputSchema(new Fields(
-				selectOperator.getOutputSchema().toList().toArray(new String[selectOperator.getOutputSchema().size()])));
+				converter.getOutputSchema().toList().toArray(new String[converter.getOutputSchema().size()])));
 		builder.setBolt("client_bolt", 
 				new SynefoBolt("client_bolt", synefoIP, synefoPort, 
 						projectOperator, zooIP, zooPort, false), 1)
 						.setNumTasks(1)
-						.directGrouping("select_bolt")
+						.directGrouping("converter_bolt_1")
+						.directGrouping("converter_bolt_2")
 						.directGrouping("spout_punctuation_tuples");
 		topology.put("client_bolt", new ArrayList<String>());
+		
 		/**
 		 * Notify SynEFO server about the 
 		 * Topology
@@ -186,7 +213,7 @@ public class DemoTopologyOne {
 		synEFOSocket.close();
 
 		conf.setDebug(false);
-		conf.setNumWorkers(5);
+		conf.setNumWorkers(7);
 		StormSubmitter.submitTopology("crypefo-top-1", conf, builder.createTopology());
 	}
 	
