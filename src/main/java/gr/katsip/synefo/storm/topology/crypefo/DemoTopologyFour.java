@@ -124,7 +124,7 @@ public class DemoTopologyFour {
 		/**
 		 * Stage 1b: Converter stage
 		 */
-		String[] middleSchema = { "one","two","three" };
+		String[] middleSchema = { "one", "two", "three", "four" };
 		valuesConverter converter = new valuesConverter(3);
 		converter.setStateSchema(new Fields(middleSchema));
 		converter.setOutputSchema(new Fields(middleSchema));
