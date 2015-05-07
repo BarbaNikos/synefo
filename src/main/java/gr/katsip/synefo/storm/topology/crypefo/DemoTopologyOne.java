@@ -6,6 +6,7 @@ import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.operators.relational.ProjectOperator;
 import gr.katsip.synefo.storm.operators.synefo_comp_ops.Count;
 import gr.katsip.synefo.storm.operators.synefo_comp_ops.Select;
+import gr.katsip.synefo.storm.operators.synefo_comp_ops.valuesConverter;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -132,7 +133,24 @@ public class DemoTopologyOne {
 						.directGrouping("spout_data_tuples");
 		_tmp = new ArrayList<String>();
 		_tmp.add("client_bolt");
+		_tmp.add("converter_bolt");
 		topology.put("select_bolt", new ArrayList<String>(_tmp));
+		
+		/**
+		 * Middle Stage Checker
+		 */
+		String[] middleSchema = { "one","two","three" };
+		valuesConverter converter = new valuesConverter(3);
+		converter.setStateSchema(new Fields(middleSchema));
+		converter.setOutputSchema(new Fields(middleSchema));
+		builder.setBolt("converter_bolt", 
+				new SynefoBolt("converter_bolt", synefoIP, synefoPort, converter, 
+						zooIP, zooPort, false), 1)
+						.setNumTasks(1)
+						.directGrouping("select_bolt");
+		_tmp = new ArrayList<String>();
+		_tmp.add("client_bolt");
+		topology.put("converter_bolt", new ArrayList<String>(_tmp));
 		
 		/**
 		 * Stage 2: Client Bolt (project operator)

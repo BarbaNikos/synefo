@@ -128,9 +128,9 @@ public class Select implements Serializable, AbstractOperator  {
 			}
 			Values val = new Values(); val.addAll(values);
 			ArrayList<Values> valz = new ArrayList<Values>();
-			vals.add(val);
+			valz.add(val);
 			if(matches){
-				System.out.println(values.toString());
+				//System.out.println(values.toString());
 				return valz;
 			}else{
 				return new ArrayList<Values>();
