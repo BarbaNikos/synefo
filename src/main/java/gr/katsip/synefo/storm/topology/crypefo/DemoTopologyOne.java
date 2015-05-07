@@ -4,10 +4,8 @@ import gr.katsip.synefo.storm.api.SynefoBolt;
 import gr.katsip.synefo.storm.api.SynefoSpout;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.operators.relational.ProjectOperator;
-import gr.katsip.synefo.storm.operators.synefo_comp_ops.Count;
 import gr.katsip.synefo.storm.operators.synefo_comp_ops.Select;
 import gr.katsip.synefo.storm.operators.synefo_comp_ops.valuesConverter;
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -15,9 +13,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
-
 import backtype.storm.Config;
-import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;
 import backtype.storm.generated.AlreadyAliveException;
 import backtype.storm.generated.InvalidTopologyException;
@@ -122,10 +118,7 @@ public class DemoTopologyOne {
 		returnSet.add(1);
 		returnSet.add(2);
 		Select selectOperator = new Select(returnSet, "50", 2, 3, 0, 1000, "0", zooIP, zooPort);
-		//FilterOperator<String> filterOperator = new FilterOperator<String>(new StringComparator(), 
-		//		"communist_level", "50");
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
-		//filterOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt", 
 				new SynefoBolt("select_bolt", synefoIP, synefoPort, selectOperator, 
 						zooIP, zooPort, false), 1)
@@ -193,14 +186,8 @@ public class DemoTopologyOne {
 		synEFOSocket.close();
 
 		conf.setDebug(false);
-		conf.setNumWorkers(4);
-		//StormSubmitter.submitTopology("crypefo-top-1", conf, builder.createTopology());
-		LocalCluster cluster = new LocalCluster();
-		cluster.submitTopology("crypefo-top-1", conf, builder.createTopology());
-		
-		Thread.sleep(200000);
-		
-		//cluster.shutdown();
+		conf.setNumWorkers(5);
+		StormSubmitter.submitTopology("crypefo-top-1", conf, builder.createTopology());
 	}
 	
 

@@ -49,7 +49,6 @@ public class DemoTopologyFour {
 		/**
 		 * Stage 0: Data Sources Spouts
 		 */
-		
 		String[] punctuationSpoutSchema = { "punct" };
 		CrypefoPunctuationTupleProducer punctuationTupleProducer = new CrypefoPunctuationTupleProducer(streamIPs[0]);
 		punctuationTupleProducer.setSchema(new Fields(punctuationSpoutSchema));
@@ -108,10 +107,9 @@ public class DemoTopologyFour {
 						.setNumTasks(1)
 						.directGrouping("spout_data_tuples_1");
 		_tmp = new ArrayList<String>();
-		_tmp.add("client_bolt");
+		_tmp.add("converter_bolt_1");
 		topology.put("select_bolt_1", new ArrayList<String>(_tmp));
 		
-		String[] selectionTwoOutputSchema = dataSpoutTwoSchema; // These two have to be the same since it is just a selection
 		selectOperator = new Select(returnSet, "50", 1, 3, 1, 1000, "1", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt_2", 
@@ -120,7 +118,7 @@ public class DemoTopologyFour {
 						.setNumTasks(1)
 						.directGrouping("spout_data_tuples_2");
 		_tmp = new ArrayList<String>();
-		_tmp.add("client_bolt");
+		_tmp.add("converter_bolt_2");
 		topology.put("select_bolt_2", new ArrayList<String>(_tmp));
 		
 		/**
@@ -208,7 +206,7 @@ public class DemoTopologyFour {
 		synEFOSocket.close();
 
 		conf.setDebug(false);
-		conf.setNumWorkers(8);
+		conf.setNumWorkers(10);
 		StormSubmitter.submitTopology("crypefo-top-4", conf, builder.createTopology());
 	}
 }

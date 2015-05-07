@@ -1,13 +1,10 @@
 package gr.katsip.synefo.storm.operators.synefo_comp_ops;
+
 import gr.katsip.synefo.storm.operators.AbstractOperator;
-
 import java.io.Serializable;
-
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
-
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -105,7 +102,7 @@ public class Select implements Serializable, AbstractOperator  {
 		}
 		if(!values.get(0).toString().contains("SPS")){
 			String[] tuples = values.get(0).toString().split(",");
-			List<Values> vals = new ArrayList<Values>();
+//			List<Values> vals = new ArrayList<Values>();
 			boolean matches  = false;
 			if (type==0){
 				matches=equiSelect(tuples);
