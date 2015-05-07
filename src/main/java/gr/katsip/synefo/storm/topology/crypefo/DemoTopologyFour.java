@@ -139,14 +139,14 @@ public class DemoTopologyFour {
 		returnSet.add(0);
 		returnSet.add(1);
 		returnSet.add(2);
-		Select selectOperator = new Select(returnSet, "50", 1, 3, 0, 1000, "0", zooIP, zooPort);
+		Select selectOperator = new Select(returnSet, "50", 1, 3, 0, 1000, "select_bolt_1a", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt_1a", 
 				new SynefoBolt("select_bolt_1a", synefoIP, synefoPort, selectOperator, 
 						zooIP, zooPort, false), 1)
 						.setNumTasks(1)
 						.directGrouping("spout_data_tuples_1");
-		selectOperator = new Select(returnSet, "50", 1, 3, 0, 1000, "0", zooIP, zooPort);
+		selectOperator = new Select(returnSet, "50", 1, 3, 0, 1000, "select_bolt_1b", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt_1b", 
 				new SynefoBolt("select_bolt_1b", synefoIP, synefoPort, selectOperator, 
@@ -160,14 +160,14 @@ public class DemoTopologyFour {
 		topology.put("select_bolt_1a", new ArrayList<String>(_tmp));
 		topology.put("select_bolt_1b", new ArrayList<String>(_tmp));
 		
-		selectOperator = new Select(returnSet, "50", 1, 3, 1, 1000, "1", zooIP, zooPort);
+		selectOperator = new Select(returnSet, "50", 1, 3, 1, 1000, "select_bolt_2a", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt_2a", 
 				new SynefoBolt("select_bolt_2a", synefoIP, synefoPort, selectOperator, 
 						zooIP, zooPort, false), 1)
 						.setNumTasks(1)
 						.directGrouping("spout_data_tuples_2");
-		selectOperator = new Select(returnSet, "50", 1, 3, 1, 1000, "1", zooIP, zooPort);
+		selectOperator = new Select(returnSet, "50", 1, 3, 1, 1000, "select_bolt_2b", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt_2b", 
 				new SynefoBolt("select_bolt_2b", synefoIP, synefoPort, selectOperator, 

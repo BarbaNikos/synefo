@@ -20,8 +20,6 @@ public class dataCollector implements Serializable {
 	
 	private String opId;
 	
-	private int counter=0;
-	
 	byte[] buffer;
 	
 	private String zooIP;
@@ -32,14 +30,14 @@ public class dataCollector implements Serializable {
 
 	public dataCollector(String zooIP, Integer zooPort, int maxBuffer, String ID) {
 		bufferSize = maxBuffer;
-		opId=ID;
+		opId = ID;
 		buffer = new byte[maxBuffer];
 		this.zooIP = zooIP;
 		this.zooPort = zooPort;
 		try {
 			zk = new ZooKeeper(this.zooIP + ":" + this.zooPort, 100000, null);
-			if(zk.exists("/data/"+opId, false) != null ) {
-				zk.delete("/data/"+opId, -1);
+			if(zk.exists("/data/" + opId, false) != null ) {
+				zk.delete("/data/" + opId, -1);
 			}
 			zk.create("/data/"+ opId, buffer ,Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 		} catch (IOException e) {
@@ -77,8 +75,8 @@ public class dataCollector implements Serializable {
 		String nodePath = "/data/" + opId;
 //		System.out.println("Creating Child Node: "+new String(buffer));
 		try {
-			zk.setData(nodePath, buffer, counter++);
-			zk.create(newChildPath, buffer ,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT_SEQUENTIAL);
+			zk.setData(nodePath, buffer, -1);
+			zk.create(newChildPath, buffer, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT_SEQUENTIAL);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		} catch (KeeperException e) {

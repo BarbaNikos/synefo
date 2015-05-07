@@ -155,7 +155,7 @@ public class DemoTopologyOne {
 		returnSet.add(0);
 		returnSet.add(1);
 		returnSet.add(2);
-		Select selectOperator = new Select(returnSet, "50", 2, 3, 0, 1000, "0", zooIP, zooPort);
+		Select selectOperator = new Select(returnSet, "50", 2, 3, 0, 1000, "select_bolt_1", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt_1", 
 				new SynefoBolt("select_bolt_1", synefoIP, synefoPort, selectOperator, 
@@ -166,7 +166,7 @@ public class DemoTopologyOne {
 		returnSet.add(0);
 		returnSet.add(1);
 		returnSet.add(2);
-		selectOperator = new Select(returnSet, "50", 2, 3, 0, 1000, "0", zooIP, zooPort);
+		selectOperator = new Select(returnSet, "50", 2, 3, 0, 1000, "select_bolt_2", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt_2", 
 				new SynefoBolt("select_bolt_2", synefoIP, synefoPort, selectOperator, 

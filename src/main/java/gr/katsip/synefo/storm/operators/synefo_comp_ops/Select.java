@@ -46,7 +46,7 @@ public class Select implements Serializable, AbstractOperator  {
 
 	private String ID;
 
-	public Select(ArrayList<Integer> returnSet, String pred, int att, int typ, int client,int statBuffer, String ID, String zooIP, Integer zooPort) {
+	public Select(ArrayList<Integer> returnSet, String pred, int att, int typ, int client, int statBuffer, String ID, String zooIP, Integer zooPort) {
 		predicate=pred;
 		attribute=att;
 		type = typ;
