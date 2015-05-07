@@ -203,7 +203,7 @@ public class DemoTopologyFour {
 		/**
 		 * Stage 2: Join Bolt
 		 */
-		JoinOperator<String> joinOperator = new JoinOperator<String>(new StringComparator(), 1000, "two", 
+		JoinOperator<String> joinOperator = new JoinOperator<String>(new StringComparator(), 100, "two", 
 				new Fields(middleSchema), new Fields(middleSchema));
 		builder.setBolt("join_bolt_1", 
 				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, 
@@ -213,7 +213,7 @@ public class DemoTopologyFour {
 						.directGrouping("converter_bolt_1b")
 						.directGrouping("converter_bolt_2a")
 						.directGrouping("converter_bolt_2b");
-		joinOperator = new JoinOperator<String>(new StringComparator(), 1000, "two", 
+		joinOperator = new JoinOperator<String>(new StringComparator(), 100, "two", 
 				new Fields(middleSchema), new Fields(middleSchema));
 		builder.setBolt("join_bolt_2", 
 				new SynefoBolt("join_bolt_2", synefoIP, synefoPort, 
