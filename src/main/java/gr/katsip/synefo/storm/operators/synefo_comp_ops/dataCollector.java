@@ -2,7 +2,6 @@ package gr.katsip.synefo.storm.operators.synefo_comp_ops;
 
 import java.io.IOException;
 import java.io.Serializable;
-
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
@@ -31,22 +30,18 @@ public class dataCollector implements Serializable {
 	
 	private ZooKeeper zk = null;
 
-	public dataCollector(String zooIP, Integer zooPort, int maxBuffer, String ID){
-		bufferSize =maxBuffer;
+	public dataCollector(String zooIP, Integer zooPort, int maxBuffer, String ID) {
+		bufferSize = maxBuffer;
 		opId=ID;
 		buffer = new byte[maxBuffer];
 		this.zooIP = zooIP;
 		this.zooPort = zooPort;
 		try {
-			zk = new ZooKeeper(zooIP + ":" + zooPort, 100000, null);
-			if(zk.exists("/data/"+opId, false) != null){
+			zk = new ZooKeeper(this.zooIP + ":" + this.zooPort, 100000, null);
+			if(zk.exists("/data/"+opId, false) != null ) {
 				zk.delete("/data/"+opId, -1);
 			}
-			if(zk.exists("/data", false) != null){
-				zk.delete("/data", -1);
-			}
-			zk.create("/data", buffer ,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zk.create("/data/"+opId, buffer ,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
+			zk.create("/data/"+ opId, buffer ,Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (InterruptedException e) {
@@ -56,7 +51,7 @@ public class dataCollector implements Serializable {
 		}
 	}
 
-	public void addToBuffer(String tuple){
+	public void addToBuffer(String tuple) {
 		tuple = tuple+";";
 		byte[] newArray = tuple.getBytes();
 		if(byteCounter+newArray.length > bufferSize){
@@ -68,7 +63,7 @@ public class dataCollector implements Serializable {
 				byteCounter++;
 			}
 		}else{
-			for(int i=0; i<newArray.length; i++){
+			for(int i=0; i<newArray.length; i++) {
 				buffer[byteCounter]=newArray[i];
 				byteCounter++;
 			}
@@ -77,13 +72,13 @@ public class dataCollector implements Serializable {
 
 
 
-	public void createChildNode(){
-		String path = "/data/"+opId+"/";
-		String path2 = "/data/"+opId;
+	public void createChildNode() {
+		String newChildPath = "/data/" + opId + "/";
+		String nodePath = "/data/" + opId;
 //		System.out.println("Creating Child Node: "+new String(buffer));
 		try {
-			zk.setData(path2, buffer, counter++);
-			zk.create(path, buffer ,Ids.OPEN_ACL_UNSAFE,CreateMode.EPHEMERAL_SEQUENTIAL);
+			zk.setData(nodePath, buffer, counter++);
+			zk.create(newChildPath, buffer ,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT_SEQUENTIAL);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		} catch (KeeperException e) {

@@ -17,6 +17,11 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.ZooDefs.Ids;
+
 import backtype.storm.Config;
 import backtype.storm.StormSubmitter;
 import backtype.storm.generated.AlreadyAliveException;
@@ -44,6 +49,26 @@ public class DemoTopologyFour {
 			zooIP = args[2];
 			zooPort = Integer.parseInt(args[3]);
 		}
+		/**
+		 * Create the /data z-node once for all the bolts
+		 */
+		try {
+			ZooKeeper zk = new ZooKeeper(zooIP + ":" + zooPort, 100000, null);
+			if(zk.exists("/data", false) != null) {
+				zk.delete("/data", -1);
+			}
+			zk.create("/data", ("/data").getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+			zk.close();
+		}catch(IOException e) {
+			e.printStackTrace();
+		}catch (InterruptedException e) {
+			e.printStackTrace();
+		} catch (KeeperException e) {
+			e.printStackTrace();
+		}
+		/**
+		 * Start building the topology
+		 */
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
 		/**

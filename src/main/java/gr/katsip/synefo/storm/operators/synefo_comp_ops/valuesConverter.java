@@ -5,7 +5,6 @@ import gr.katsip.synefo.storm.operators.AbstractOperator;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
@@ -21,19 +20,17 @@ public class valuesConverter implements Serializable, AbstractOperator {
 	private Fields output_schema;
 	public int ID;
 
-	public valuesConverter(int ID){
+	public valuesConverter(int ID) {
 		this.ID=ID;
 	}
 	
 	@Override
 	public List<Values> execute(Fields fields, Values values) {
-//		System.out.println("Converting");
 		ArrayList<Values> vals = new ArrayList<Values>();
 		if(!values.get(0).toString().contains("SPS")) {
 			Object[] tuples = values.get(0).toString().split(",");
 			Values v = new Values(tuples);
 			vals.add(v);
-//			System.out.println("converted: "+ vals.toString());
 			return vals;
 		}else {
 			return vals;
@@ -73,9 +70,5 @@ public class valuesConverter implements Serializable, AbstractOperator {
 	public void setStateSchema(Fields stateSchema) {
 		this.stateSchema = new Fields(stateSchema.toList());
 	}
-
-
-
-
 
 }

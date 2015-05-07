@@ -6,6 +6,7 @@ import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.operators.relational.ProjectOperator;
 import gr.katsip.synefo.storm.operators.synefo_comp_ops.Select;
 import gr.katsip.synefo.storm.operators.synefo_comp_ops.valuesConverter;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -13,6 +14,12 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
+
+import org.apache.zookeeper.ZooDefs.Ids;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.ZooKeeper;
+
 import backtype.storm.Config;
 import backtype.storm.StormSubmitter;
 import backtype.storm.generated.AlreadyAliveException;
@@ -23,7 +30,7 @@ import backtype.storm.tuple.Fields;
 public class DemoTopologyOne {
 
 
-	
+
 	public static void main(String[] args) throws UnknownHostException, IOException, 
 	InterruptedException, ClassNotFoundException, AlreadyAliveException, InvalidTopologyException {
 		String synefoIP = "";
@@ -80,6 +87,26 @@ public class DemoTopologyOne {
 			System.out.println("Error in Central Authority. Reading File: priv_key_1 error, good luck.");
 			e.printStackTrace();
 		}*/
+		/**
+		 * Create the /data z-node once for all the bolts
+		 */
+		try {
+			ZooKeeper zk = new ZooKeeper(zooIP + ":" + zooPort, 100000, null);
+			if(zk.exists("/data", false) != null) {
+				zk.delete("/data", -1);
+			}
+			zk.create("/data", ("/data").getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+			zk.close();
+		}catch(IOException e) {
+			e.printStackTrace();
+		}catch (InterruptedException e) {
+			e.printStackTrace();
+		} catch (KeeperException e) {
+			e.printStackTrace();
+		}
+		/**
+		 * Start building the topology
+		 */
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
 		/**
@@ -91,14 +118,14 @@ public class DemoTopologyOne {
 		builder.setSpout("spout_punctuation_tuples", 
 				new SynefoSpout("spout_punctuation_tuples", synefoIP, synefoPort, punctuationTupleProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
-		
+
 		String[] dataSpoutSchema = { "tuple" };
 		CrypefoDataTupleProducer dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[0]);
 		dataTupleProducer.setSchema(new Fields(dataSpoutSchema));
 		builder.setSpout("spout_data_tuples", 
 				new SynefoSpout("spout_data_tuples", synefoIP, synefoPort, dataTupleProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
-		
+
 		_tmp = new ArrayList<String>();
 		_tmp.add("client_bolt");
 		topology.put("spout_punctuation_tuples", new ArrayList<String>(_tmp));
@@ -106,7 +133,7 @@ public class DemoTopologyOne {
 		_tmp.add("select_bolt_1");
 		_tmp.add("select_bolt_2");
 		topology.put("spout_data_tuples", new ArrayList<String>(_tmp));
-		
+
 		/**
 		 * Stage 1: Select operator
 		 */
@@ -138,7 +165,7 @@ public class DemoTopologyOne {
 		_tmp.add("converter_bolt_2");
 		topology.put("select_bolt_1", new ArrayList<String>(_tmp));
 		topology.put("select_bolt_2", new ArrayList<String>(_tmp));
-		
+
 		/**
 		 * Middle Stage Checker
 		 */
@@ -165,7 +192,7 @@ public class DemoTopologyOne {
 		_tmp.add("client_bolt");
 		topology.put("converter_bolt_1", new ArrayList<String>(_tmp));
 		topology.put("converter_bolt_2", new ArrayList<String>(_tmp));
-		
+
 		/**
 		 * Stage 2: Client Bolt (project operator)
 		 */
@@ -181,7 +208,7 @@ public class DemoTopologyOne {
 						.directGrouping("converter_bolt_2")
 						.directGrouping("spout_punctuation_tuples");
 		topology.put("client_bolt", new ArrayList<String>());
-		
+
 		/**
 		 * Notify SynEFO server about the 
 		 * Topology
@@ -212,6 +239,6 @@ public class DemoTopologyOne {
 		conf.setNumWorkers(7);
 		StormSubmitter.submitTopology("crypefo-top-1", conf, builder.createTopology());
 	}
-	
+
 
 }
