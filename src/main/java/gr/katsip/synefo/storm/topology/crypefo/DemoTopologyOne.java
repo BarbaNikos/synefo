@@ -14,6 +14,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.CreateMode;
@@ -88,11 +89,23 @@ public class DemoTopologyOne {
 			e.printStackTrace();
 		}*/
 		/**
-		 * Create the /data z-node once for all the bolts
+		 * Create the /data z-node once for all the bolts (also clean-up previous contents)
 		 */
 		try {
 			ZooKeeper zk = new ZooKeeper(zooIP + ":" + zooPort, 100000, null);
 			if(zk.exists("/data", false) != null) {
+				List<String> operators = zk.getChildren("/data", false);
+				if(operators != null && operators.size() > 0) {
+					for(String operator : operators) {
+						List<String> dataPoints = zk.getChildren("/data/" + operator, false);
+						if(dataPoints != null && dataPoints.size() > 0) {
+							for(String dataPoint : dataPoints) {
+								zk.delete("/data/" + operator + "/" + dataPoint, -1);
+							}
+						}
+						zk.delete("/data/" + operator, -1);
+					}
+				}
 				zk.delete("/data", -1);
 			}
 			zk.create("/data", ("/data").getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
