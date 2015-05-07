@@ -156,7 +156,7 @@ public class DemoTopologyFour {
 				new Fields(middleSchema), new Fields(middleSchema));
 		builder.setBolt("join_bolt", 
 				new SynefoBolt("join_bolt", synefoIP, synefoPort, 
-						joinOperator, zooIP, zooPort, true), 1)
+						joinOperator, zooIP, zooPort, false), 1)
 						.setNumTasks(1)
 						.directGrouping("converter_bolt_1")
 						.directGrouping("converter_bolt_2");
