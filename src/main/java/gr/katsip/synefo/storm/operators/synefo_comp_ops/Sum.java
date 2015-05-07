@@ -161,7 +161,7 @@ public class Sum implements AbstractOperator,Serializable {
 		int throughput = 0;
 		int sel = 0;
 		//////////////////////////replace 1 with id
-		String tuple = 	1+","+CPU+","+memory+","+latency+","+throughput+","+sel+","+encryptionData.get("pln")+","
+		String tuple = 	ID+","+CPU+","+memory+","+latency+","+throughput+","+sel+","+encryptionData.get("pln")+","
 				+encryptionData.get("RND")+","
 				+encryptionData.get("DET")+","
 				+encryptionData.get("OPE")+","
