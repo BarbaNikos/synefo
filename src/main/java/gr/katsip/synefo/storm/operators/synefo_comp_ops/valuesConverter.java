@@ -30,17 +30,16 @@ public class valuesConverter implements Serializable, AbstractOperator {
 		System.out.println("Converting");
 		ArrayList<Values> vals = new ArrayList<Values>();
 		if(!values.get(0).toString().contains("SPS")){
-			String[] tuples = values.get(0).toString().split(",");
-			for(int k=0;k<tuples.length;k++){
-				vals.add(new Values(tuples[k]));
-			}
+			Object[] tuples = values.get(0).toString().split(",");
+			Values v = new Values(tuples);
+			vals.add(v);
 			System.out.println("converted: "+ vals.toString());
 			return vals;
 		}else{
 			return vals;
 		}
-		
 	}
+	
 	@Override
 	public void init(List<Values> stateValues) {
 		this.stateValues = stateValues;
