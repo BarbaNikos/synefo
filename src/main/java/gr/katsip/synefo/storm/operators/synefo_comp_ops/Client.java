@@ -28,48 +28,60 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
 public class Client implements AbstractOperator, Serializable {
-	
+
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -8137112194881808673L;
-	
+
 	private int id;
-	
+
 	private String CPABEDecryptFile;
-	
+
 	private int counter=0;
-	
+
 	private int displayCount=1000;
-	
+
 	public String currentTuple;
-	
+
 	private ArrayList<Integer> dataProviders;
-	
+
 	private HashMap<Integer, byte[]> keys = new HashMap<Integer, byte[]>();//maps data provider to key
-	
-	private Map<Integer, Integer> subscriptions = new Hashtable<Integer, Integer>(); //maps data provider to permission
-	
-	public Client(int idd, String nme, String[] atts, String[] querie, HashMap<Integer, ArrayList<String>> schema, ArrayList<Integer> dataPs){
+
+	private Map<Integer, HashMap<Integer,Integer>> subscriptions = new Hashtable<Integer, HashMap<Integer, Integer>>(); //maps data provider to permission
+
+	private List<Values> stateValues;
+
+	private Fields stateSchema;
+
+	private Fields output_schema;
+
+	private int schemaSize;
+
+	public Client(int idd, String nme, String[] atts, String[] querie, HashMap<Integer, ArrayList<String>> schema, ArrayList<Integer> dataPs, int schemaSize){
 		id = idd;
 		CPABEDecryptFile = nme+""+idd;
 		dataProviders = new ArrayList<Integer>(dataPs);
+		this.schemaSize=schemaSize;
 		for(int i=0;i<dataProviders.size();i++){//initilize all to assume full access, until SPS says otheriwse
-			subscriptions.put(dataProviders.get(i), 0);
+			subscriptions.put(dataProviders.get(i), new HashMap<Integer,Integer>());
+			for(int y=0;y<schemaSize;y++){
+				subscriptions.get(dataProviders.get(i)).put(y,0);
+			}
 		}
 
 	}
-	
+
 	public void acceptSps(int perm, byte[] sp, String stream){
 		//decrypt with ABE
-		subscriptions.put(Integer.parseInt(stream), perm);
-		
+		//subscriptions.put(Integer.parseInt(stream), perm);
+
 		System.out.println("UPDATED PERMISSION IN CLIENT"+id+" TO "+perm +" ON STREAM "+stream+ " CHECK "+subscriptions.get(Integer.parseInt(stream)));
 		//write to file, decryot, read file in, save as bytes
 		try{
 			// Create file 
 			FileOutputStream fstream = new FileOutputStream("tempKey"+id+".txt.cpabe");
-			
+
 			fstream.write(sp);
 			//Close the output stream
 			fstream.close();
@@ -104,7 +116,7 @@ public class Client implements AbstractOperator, Serializable {
 			System.out.println(in.available());
 			in.readFully(detainBytes);
 			in.close();
-			
+
 		} catch (FileNotFoundException e) {
 			System.out.println("Error in Client: "+id+". File: tempKey.txt not found.");
 			e.printStackTrace();
@@ -113,7 +125,7 @@ public class Client implements AbstractOperator, Serializable {
 			e.printStackTrace();
 		}
 		if(detainBytes.length>0){
-		//	System.out.println("KEY IN CLIENT: "+(new String(detainBytes)));
+			//	System.out.println("KEY IN CLIENT: "+(new String(detainBytes)));
 			keys.put(Integer.parseInt(stream), detainBytes);
 		}
 		else{
@@ -123,20 +135,20 @@ public class Client implements AbstractOperator, Serializable {
 
 	@Override
 	public void init(List<Values> stateValues) {
-		// TODO Auto-generated method stub
-		
+		this.stateValues= stateValues;
+
 	}
 
 	@Override
 	public void setStateSchema(Fields stateSchema) {
-		// TODO Auto-generated method stub
-		
+		this.stateSchema=stateSchema;
+
 	}
 
 	@Override
 	public void setOutputSchema(Fields output_schema) {
-		// TODO Auto-generated method stub
-		
+		this.output_schema = output_schema;
+
 	}
 
 	@Override
@@ -146,6 +158,7 @@ public class Client implements AbstractOperator, Serializable {
 		String[] tuples = reduce.split(",");
 		if(tuples[0].equalsIgnoreCase("SPS")){
 			//tuples[2]),key, tuples[3]);
+			processSps(tuples);
 			acceptSps(Integer.parseInt(tuples[1]), (byte[]) values.get(3), tuples[3] );
 		}
 		else{
@@ -160,29 +173,46 @@ public class Client implements AbstractOperator, Serializable {
 
 	@Override
 	public List<Values> getStateValues() {
-		// TODO Auto-generated method stub
-		return null;
+		return this.stateValues;
 	}
 
 	@Override
 	public Fields getStateSchema() {
-		// TODO Auto-generated method stub
-		return null;
+		return this.stateSchema;
 	}
 
 	@Override
 	public Fields getOutputSchema() {
-		// TODO Auto-generated method stub
-		return null;
+		return this.output_schema;
 	}
 
 	@Override
 	public void mergeState(Fields receivedStateSchema,
 			List<Values> receivedStateValues) {
 		// TODO Auto-generated method stub
-		
+
 	}
-	
+
+	public void processSps(String[] tuple){
+		//String tuple = "SPS", StreamId, permission, clientID, field, key;
+		int clientId = Integer.parseInt(tuple[3]);
+		int field = Integer.parseInt(tuple[4]);
+		int permission = Integer.parseInt(tuple[2]);
+		System.out.println("Client "+id+" recieved permission "+permission+" for stream "+ clientId+".");
+		subscriptions.get(clientId).put(field,permission);
+		if(permission == 0){//plaintext
+
+		}else if(permission == 1){//rnd
+			System.out.println("RND KEY: "+tuple[5]);
+		}else if(permission == 2){//det
+
+		}else if(permission == 3){//ope
+
+		}else if(permission == 4){//hom
+
+		}
+	}
+
 	public void setABEDecrypt(byte[] ABEKey){
 		//open file for writing, write key to priv_key, return
 		try{
@@ -232,6 +262,6 @@ public class Client implements AbstractOperator, Serializable {
 		}
 		return plainText;
 	}
-	
-	
+
+
 }
