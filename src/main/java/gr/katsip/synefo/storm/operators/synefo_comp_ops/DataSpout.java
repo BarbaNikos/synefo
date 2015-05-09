@@ -1,4 +1,6 @@
-package gr.katsip.synefo.storm.producers;
+package gr.katsip.synefo.storm.operators.synefo_comp_ops;
+
+import gr.katsip.synefo.storm.producers.AbstractTupleProducer;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;

@@ -109,7 +109,6 @@ public class Sum implements AbstractCrypefoOperator, Serializable {
 			counter = 0;
 			int sm = sum;
 			sum = 0;
-			//			System.out.println("Sum: "+sm);
 			return sm;
 		}else {
 			return -1;

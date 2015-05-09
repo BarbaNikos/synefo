@@ -177,7 +177,6 @@ public class Count implements AbstractCrypefoOperator, Serializable{
 			int ret = count;
 			count = 0;
 			counter=0;
-			//			System.out.println("Count: "+ret);
 			return ret;
 		}else {
 			return -1;
@@ -193,7 +192,6 @@ public class Count implements AbstractCrypefoOperator, Serializable{
 				int ret = count;
 				count = 0;
 				counter=0;
-				//				System.out.println("Count: "+ret);
 				return ret;
 			}else {
 				return -1;
@@ -206,7 +204,6 @@ public class Count implements AbstractCrypefoOperator, Serializable{
 				int ret = count;
 				count = 0;
 				counter=0;
-				//				System.out.println("Count: "+ret);
 				return ret;
 			}else {
 				return -1;
@@ -223,7 +220,6 @@ public class Count implements AbstractCrypefoOperator, Serializable{
 				int ret = count;
 				count = 0;
 				counter=0;
-//				System.out.println("Count: "+ret);
 				return ret;
 			}else {
 				return -1;
@@ -236,7 +232,6 @@ public class Count implements AbstractCrypefoOperator, Serializable{
 				int ret = count;
 				count = 0;
 				counter=0;
-//				System.out.println("Count: "+ret);
 				return ret;
 			}else {
 				return -1;
