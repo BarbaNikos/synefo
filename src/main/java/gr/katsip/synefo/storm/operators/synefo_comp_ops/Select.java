@@ -60,10 +60,10 @@ public class Select implements Serializable, AbstractOperator  {
 	 */
 	public Select(ArrayList<Integer> returnSet, String pred, int att, int typ, int client, 
 			int statReportPeriod, String ID, String zooIP, Integer zooPort) {
-		predicate=pred;
-		attribute=att;
+		predicate = pred;
+		attribute = att;
 		type = typ;
-		clientOwnerId=client;
+		clientOwnerId = client;
 		selections = new ArrayList<Integer>(returnSet);
 		encryptionData.put("pln",0);
 		encryptionData.put("RND",0);
@@ -71,6 +71,7 @@ public class Select implements Serializable, AbstractOperator  {
 		encryptionData.put("OPE",0);
 		encryptionData.put("HOM",0);
 		this.statReportPeriod = statReportPeriod;
+		statsCounter = 0;
 		this.ID = ID;
 		this.zooIP = zooIP;
 		this.zooPort = zooPort;
