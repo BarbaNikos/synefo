@@ -213,19 +213,6 @@ public class Select implements Serializable, AbstractCrypefoOperator  {
 	}
 
 	public void updateData(TaskStatistics stats) {
-		/**
-		 * `operator_id` INT NOT NULL,
-			`cpu` FLOAT NULL,
-			`memory` FLOAT NULL,
-		  `latency` INT NULL,
-		  `throughput` INT NULL,
-		  `selectivity` FLOAT NULL,
-		  `plain` INT NULL,
-		  `det` INT NULL,
-		  `rnd` INT NULL,
-		  `ope` INT NULL,
-		  `hom` INT NULL,
-		 */
 		int CPU = 0;
 		int memory = 0;
 		int latency = 0;
