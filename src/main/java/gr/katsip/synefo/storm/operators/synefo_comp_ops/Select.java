@@ -24,7 +24,7 @@ public class Select implements Serializable, AbstractOperator  {
 
 	int attribute;
 
-	private int statsCounter=0;
+	private int statsCounter = 0;
 
 	int type;//equi=0; "<" = 1; "<=" = 2...; 
 
@@ -36,7 +36,7 @@ public class Select implements Serializable, AbstractOperator  {
 
 	private HashMap<String, Integer> encryptionData = new HashMap<String,Integer>();
 	
-	private int stats;
+	private int statReportPeriod;
 
 	private dataCollector dataSender = null;
 
@@ -46,8 +46,20 @@ public class Select implements Serializable, AbstractOperator  {
 
 	private String ID;
 
+	/**
+	 * 
+	 * @param returnSet
+	 * @param pred
+	 * @param att
+	 * @param typ
+	 * @param client
+	 * @param statReportPeriod the period of reporting statistics (in tuples)
+	 * @param ID
+	 * @param zooIP
+	 * @param zooPort
+	 */
 	public Select(ArrayList<Integer> returnSet, String pred, int att, int typ, int client, 
-			int statBuffer, String ID, String zooIP, Integer zooPort) {
+			int statReportPeriod, String ID, String zooIP, Integer zooPort) {
 		predicate=pred;
 		attribute=att;
 		type = typ;
@@ -58,8 +70,8 @@ public class Select implements Serializable, AbstractOperator  {
 		encryptionData.put("DET",0);
 		encryptionData.put("OPE",0);
 		encryptionData.put("HOM",0);
-		stats = statBuffer;
-		this.ID=ID;
+		this.statReportPeriod = statReportPeriod;
+		this.ID = ID;
 		this.zooIP = zooIP;
 		this.zooPort = zooPort;
 		dataSender = null;
@@ -101,7 +113,7 @@ public class Select implements Serializable, AbstractOperator  {
 	
 	public List<Values> execute(Fields fields, Values values) {
 		if(dataSender == null) {
-			dataSender = new dataCollector(zooIP, zooPort, stats, ID);
+			dataSender = new dataCollector(zooIP, zooPort, statReportPeriod, ID);
 		}
 		if(!values.get(0).toString().contains("SPS")) {
 			String[] tuples = values.get(0).toString().split(",");
@@ -117,9 +129,11 @@ public class Select implements Serializable, AbstractOperator  {
 			}
 			//System.out.println(values.toString());
 			encryptionData.put(tuples[tuples.length-1], encryptionData.get(tuples[tuples.length-1])+1);
-			statsCounter++;
-			if(statsCounter > 1000) {
+			if(statsCounter >= statReportPeriod) {
 				updateData();
+				statsCounter = 0;
+			}else {
+				statsCounter += 1;
 			}
 			Values val = new Values(); val.addAll(values);
 			ArrayList<Values> valz = new ArrayList<Values>();
@@ -174,8 +188,8 @@ public class Select implements Serializable, AbstractOperator  {
 	public void updateData() {
 		/**
 		 * `operator_id` INT NOT NULL,
-				`cpu` FLOAT NULL,
-					`memory` FLOAT NULL,
+			`cpu` FLOAT NULL,
+			`memory` FLOAT NULL,
 		  `latency` INT NULL,
 		  `throughput` INT NULL,
 		  `selectivity` FLOAT NULL,
@@ -191,11 +205,13 @@ public class Select implements Serializable, AbstractOperator  {
 		int throughput = 0;
 		int sel = 0;
 		//////////////////////////replace 1 with id
-		String tuple = 	ID+","+CPU+","+memory+","+latency+","+throughput+","+sel+","+encryptionData.get("pln")+","
-				+encryptionData.get("RND")+","
-				+encryptionData.get("DET")+","
-				+encryptionData.get("OPE")+","
-				+encryptionData.get("HOM");
+		String tuple = 	ID + "," + CPU + "," + memory + "," + latency + "," + 
+				throughput + "," + sel + "," + 
+				encryptionData.get("pln") + "," + 
+				encryptionData.get("RND") + "," + 
+				encryptionData.get("DET") + "," + 
+				encryptionData.get("OPE") + ","  + 
+				encryptionData.get("HOM");
 		//	System.out.println("UPDATING STATS");
 		dataSender.addToBuffer(tuple);
 		encryptionData.put("pln",0);

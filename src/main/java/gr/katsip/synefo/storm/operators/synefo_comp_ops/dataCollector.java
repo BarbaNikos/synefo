@@ -2,7 +2,6 @@ package gr.katsip.synefo.storm.operators.synefo_comp_ops;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.Arrays;
 import org.apache.zookeeper.AsyncCallback.StringCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -17,24 +16,32 @@ public class dataCollector implements Serializable {
 	 */
 	private static final long serialVersionUID = 5782301300725371212L;
 	
-	private int byteCounter = 0;
-	
 	private int bufferSize;
 	
-	private String opId;
+	private int currentBufferSize;
 	
-	byte[] buffer;
+	private String opId;
 	
 	private String zooIP;
 	
 	private Integer zooPort;
 	
 	private ZooKeeper zk = null;
-
-	public dataCollector(String zooIP, Integer zooPort, int maxBuffer, String ID) {
-		bufferSize = maxBuffer;
+	
+	private StringBuilder strBuild;
+	
+	/**
+	 * The main class responsible for sending data to the Zookeeper cluster
+	 * @param zooIP Zookeeper IP
+	 * @param zooPort Zookeeper Port
+	 * @param bufferSize the maximum size of records that need to be buffered before they are sent out to the Zookeeper cluster
+	 * @param ID the operators ID
+	 */
+	public dataCollector(String zooIP, Integer zooPort, int bufferSize, String ID) {
+		this.bufferSize = bufferSize;
+		this.currentBufferSize = 0;
 		opId = ID;
-		buffer = new byte[maxBuffer];
+		strBuild = new StringBuilder();
 		this.zooIP = zooIP;
 		this.zooPort = zooPort;
 		try {
@@ -42,7 +49,8 @@ public class dataCollector implements Serializable {
 			if(zk.exists("/data/" + opId, false) != null ) {
 				zk.delete("/data/" + opId, -1);
 			}
-			zk.create("/data/"+ opId, buffer ,Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+			zk.create("/data/"+ opId, (new String("/data/"+ opId)).getBytes(), 
+					Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (InterruptedException e) {
@@ -53,22 +61,13 @@ public class dataCollector implements Serializable {
 	}
 
 	public void addToBuffer(String tuple) {
-		tuple = tuple + ";";
-		byte[] newArray = tuple.getBytes();
-		if(byteCounter + newArray.length > bufferSize) {
-			byteCounter=0;
-			byte[] statBuffer = Arrays.copyOf(buffer, buffer.length);
-			createChildNode(statBuffer);
-			buffer = new byte[bufferSize];
-			for(int i=0; i<newArray.length; i++) {
-				buffer[byteCounter]=newArray[i];
-				byteCounter++;
-			}
+		if(currentBufferSize < bufferSize) {
+			strBuild.append(tuple + ";");
+			currentBufferSize += 1;
 		}else {
-			for(int i=0; i<newArray.length; i++) {
-				buffer[byteCounter]=newArray[i];
-				byteCounter++;
-			}
+			createChildNode(strBuild.toString().getBytes());
+			currentBufferSize = 0;
+			strBuild = new StringBuilder();
 		}
 	}
 
