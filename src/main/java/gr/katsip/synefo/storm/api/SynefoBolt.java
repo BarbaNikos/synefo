@@ -22,6 +22,7 @@ import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.lib.SynefoMessage.Type;
 import gr.katsip.synefo.storm.operators.AbstractOperator;
+import gr.katsip.synefo.storm.operators.synefo_comp_ops.AbstractCrypefoOperator;
 import gr.katsip.synefo.utils.SynefoConstant;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -85,6 +86,8 @@ public class SynefoBolt extends BaseRichBolt {
 
 	private boolean warmFlag;
 	
+	private boolean crypefoOperatorFlag;
+	
 	private enum OpLatencyState {
 		na,
 		s_1,
@@ -128,6 +131,10 @@ public class SynefoBolt extends BaseRichBolt {
 		opLatencySendTimestamp = 0L;
 		opLatencyReceivedTimestamp = new long[3];
 		opLatencyLocalTimestamp = new long[3];
+		if(operator instanceof AbstractCrypefoOperator)
+			crypefoOperatorFlag = true;
+		else
+			crypefoOperatorFlag = false;
 	}
 
 	/**
@@ -322,7 +329,11 @@ public class SynefoBolt extends BaseRichBolt {
 		fieldList.remove(0);
 		Fields fields = new Fields(fieldList);
 		if(intActiveDownstreamTasks != null && intActiveDownstreamTasks.size() > 0) {
-			List<Values> returnedTuples = operator.execute(fields, values);
+			List<Values> returnedTuples = null;
+			if(crypefoOperatorFlag)
+				returnedTuples = ((AbstractCrypefoOperator) operator).execute(statistics, fields, values);
+			else
+				returnedTuples = operator.execute(fields, values);
 			if(returnedTuples != null && returnedTuples.size() > 0) {
 				for(Values v : returnedTuples) {
 					produced_values = new Values();
@@ -331,6 +342,7 @@ public class SynefoBolt extends BaseRichBolt {
 						produced_values.add(v.get(i));
 					}
 					collector.emitDirect(intActiveDownstreamTasks.get(downStreamIndex), produced_values);
+					//update selectivity statistics
 				}
 				if(downStreamIndex >= (intActiveDownstreamTasks.size() - 1)) {
 					downStreamIndex = 0;
@@ -338,6 +350,7 @@ public class SynefoBolt extends BaseRichBolt {
 					downStreamIndex += 1;
 				}
 			}
+			statistics.updateSelectivity(( (double) returnedTuples.size() / 1.0));
 			collector.ack(tuple);
 		}else {
 			if(queryLatencyFlag == true) {
@@ -374,6 +387,7 @@ public class SynefoBolt extends BaseRichBolt {
 								this.taskIP + ") emits: " + produced_values);
 					}
 				}
+				statistics.updateSelectivity(( (double) returnedTuples.size() / 1.0));
 			}
 			collector.ack(tuple);
 		}

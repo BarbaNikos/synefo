@@ -1,6 +1,6 @@
 package gr.katsip.synefo.storm.operators.synefo_comp_ops;
 
-import gr.katsip.synefo.storm.operators.AbstractOperator;
+import gr.katsip.synefo.metric.TaskStatistics;
 import java.io.Serializable;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
@@ -11,7 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class Select implements Serializable, AbstractOperator  {
+public class Select implements Serializable, AbstractCrypefoOperator  {
 
 	/**
 	 * 
@@ -28,9 +28,7 @@ public class Select implements Serializable, AbstractOperator  {
 
 	int attribute;
 
-//	private int statsCounter = 0;
-
-	int type;//equi=0; "<" = 1; "<=" = 2...; 
+	int type;	//equi=0; "<" = 1; "<=" = 2...; 
 
 	private List<Values> stateValues;
 
@@ -75,7 +73,6 @@ public class Select implements Serializable, AbstractOperator  {
 		encryptionData.put("OPE",0);
 		encryptionData.put("HOM",0);
 		this.statReportPeriod = statReportPeriod;
-//		statsCounter = 0;
 		this.ID = ID;
 		this.zooIP = zooIP;
 		this.zooPort = zooPort;
@@ -116,6 +113,38 @@ public class Select implements Serializable, AbstractOperator  {
 		this.stateSchema = new Fields(stateSchema.toList());
 	}
 	
+	@Override
+	public List<Values> execute(TaskStatistics statistics, Fields fields,
+			Values values) {
+		if(dataSender == null) {
+			dataSender = new dataCollector(zooIP, zooPort, statReportPeriod, ID);
+		}
+		if(!values.get(0).toString().contains("SPS")) {
+			String[] tuples = values.get(0).toString().split(",");
+			boolean matches  = false;
+			if(type == 0) {
+				matches = equiSelect(tuples);
+			}else if(type == 1 || type ==2 ) {
+				matches = lessSelect(tuples);
+			}else if(type == 3 || type == 4) {
+				matches = greaterSelect(tuples);
+			}else {
+				matches = false;
+			}
+			encryptionData.put(tuples[tuples.length-1], encryptionData.get(tuples[tuples.length-1])+1);
+			updateData(statistics);
+			Values val = new Values(); val.addAll(values);
+			ArrayList<Values> valz = new ArrayList<Values>();
+			valz.add(val);
+			if(matches)
+				return valz;
+			else
+				return new ArrayList<Values>();
+		}else {
+			return new ArrayList<Values>();
+		}
+	}
+	
 	public List<Values> execute(Fields fields, Values values) {
 		if(dataSender == null) {
 			dataSender = new dataCollector(zooIP, zooPort, statReportPeriod, ID);
@@ -132,16 +161,8 @@ public class Select implements Serializable, AbstractOperator  {
 			}else {
 				matches = false;
 			}
-			//System.out.println(values.toString());
 			encryptionData.put(tuples[tuples.length-1], encryptionData.get(tuples[tuples.length-1])+1);
-			updateData();
-//			
-//			if(statsCounter >= statReportPeriod) {
-//				updateData();
-//				statsCounter = 0;
-//			}else {
-//				statsCounter += 1;
-//			}
+			updateData(null);
 			Values val = new Values(); val.addAll(values);
 			ArrayList<Values> valz = new ArrayList<Values>();
 			valz.add(val);
@@ -150,7 +171,6 @@ public class Select implements Serializable, AbstractOperator  {
 			else
 				return new ArrayList<Values>();
 		}else {
-			//should not return null. Just an empty List<Values>
 			return new ArrayList<Values>();
 		}
 	}
@@ -192,7 +212,7 @@ public class Select implements Serializable, AbstractOperator  {
 		}
 	}
 
-	public void updateData() {
+	public void updateData(TaskStatistics stats) {
 		/**
 		 * `operator_id` INT NOT NULL,
 			`cpu` FLOAT NULL,
@@ -212,20 +232,37 @@ public class Select implements Serializable, AbstractOperator  {
 		int throughput = 0;
 		int sel = 0;
 		//////////////////////////replace 1 with id
-		String tuple = 	ID + "," + CPU + "," + memory + "," + latency + "," + 
-				throughput + "," + sel + "," + 
-				encryptionData.get("pln") + "," + 
-				encryptionData.get("RND") + "," + 
-				encryptionData.get("DET") + "," + 
-				encryptionData.get("OPE") + ","  + 
-				encryptionData.get("HOM");
-		//	System.out.println("UPDATING STATS");
-		dataSender.addToBuffer(tuple);
-		encryptionData.put("pln",0);
-		encryptionData.put("RND",0);
-		encryptionData.put("DET",0);
-		encryptionData.put("OPE",0);
-		encryptionData.put("HOM",0);
+		if(stats != null) {
+			String tuple = 	ID + "," + stats.getCpuLoad() + "," + stats.getMemory() + "," + stats.getWindowLatency() + "," + 
+					stats.getWindowThroughput() + "," + stats.getSelectivity() + "," + 
+					encryptionData.get("pln") + "," + 
+					encryptionData.get("RND") + "," + 
+					encryptionData.get("DET") + "," + 
+					encryptionData.get("OPE") + ","  + 
+					encryptionData.get("HOM");
+			
+			dataSender.addToBuffer(tuple);
+			encryptionData.put("pln",0);
+			encryptionData.put("RND",0);
+			encryptionData.put("DET",0);
+			encryptionData.put("OPE",0);
+			encryptionData.put("HOM",0);
+		}else {
+			String tuple = 	ID + "," + CPU + "," + memory + "," + latency + "," + 
+					throughput + "," + sel + "," + 
+					encryptionData.get("pln") + "," + 
+					encryptionData.get("RND") + "," + 
+					encryptionData.get("DET") + "," + 
+					encryptionData.get("OPE") + ","  + 
+					encryptionData.get("HOM");
+			
+			dataSender.addToBuffer(tuple);
+			encryptionData.put("pln",0);
+			encryptionData.put("RND",0);
+			encryptionData.put("DET",0);
+			encryptionData.put("OPE",0);
+			encryptionData.put("HOM",0);
+		}
 	}
 	
 }
