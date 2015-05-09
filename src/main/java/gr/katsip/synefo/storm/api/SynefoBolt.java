@@ -254,6 +254,7 @@ public class SynefoBolt extends BaseRichBolt {
 				String[] headerFields = synefoHeader.split("/");
 				if(headerFields[0].equals(SynefoConstant.PUNCT_TUPLE_TAG)) {
 					handlePunctuationTuple(tuple);
+					collector.ack(tuple);
 					return;
 				}
 			}else if(synefoHeader.contains(SynefoConstant.QUERY_LATENCY_METRIC) == true) {
@@ -269,8 +270,9 @@ public class SynefoBolt extends BaseRichBolt {
 					for(Integer d_task : intActiveDownstreamTasks) {
 						collector.emitDirect(d_task, v);
 					}
-					logger.info("+EFO-BOLT (" + taskName + ":" + taskID + "@" + taskIP + 
-							") just forwarded a QUERY-LATENCY-TUPLE.");
+//					logger.info("+EFO-BOLT (" + taskName + ":" + taskID + "@" + taskIP + 
+//							") just forwarded a QUERY-LATENCY-TUPLE.");
+					collector.ack(tuple);
 					return;
 				}
 			}else if(synefoHeader.contains(SynefoConstant.OP_LATENCY_METRIC)) {
@@ -301,9 +303,10 @@ public class SynefoBolt extends BaseRichBolt {
 					this.opLatencyReceiveState = OpLatencyState.na;
 					opLatencyLocalTimestamp = new long[3];
 					opLatencyReceivedTimestamp = new long[3];
-					logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + 
-							this.taskIP + ") calculated OPERATOR-LATENCY-METRIC: " + latency + ".");
+//					logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + 
+//							this.taskIP + ") calculated OPERATOR-LATENCY-METRIC: " + latency + ".");
 				}
+				collector.ack(tuple);
 				return;
 			}else {
 				synefoTimestamp = Long.parseLong(synefoHeader);
@@ -320,20 +323,22 @@ public class SynefoBolt extends BaseRichBolt {
 		Fields fields = new Fields(fieldList);
 		if(intActiveDownstreamTasks != null && intActiveDownstreamTasks.size() > 0) {
 			List<Values> returnedTuples = operator.execute(fields, values);
-			for(Values v : returnedTuples) {
-				produced_values = new Values();
-				produced_values.add((new Long(System.currentTimeMillis())).toString());
-				for(int i = 0; i < v.size(); i++) {
-					produced_values.add(v.get(i));
+			if(returnedTuples != null && returnedTuples.size() > 0) {
+				for(Values v : returnedTuples) {
+					produced_values = new Values();
+					produced_values.add((new Long(System.currentTimeMillis())).toString());
+					for(int i = 0; i < v.size(); i++) {
+						produced_values.add(v.get(i));
+					}
+					collector.emitDirect(intActiveDownstreamTasks.get(downStreamIndex), produced_values);
 				}
-				collector.emitDirect(intActiveDownstreamTasks.get(downStreamIndex), produced_values);
+				if(downStreamIndex >= (intActiveDownstreamTasks.size() - 1)) {
+					downStreamIndex = 0;
+				}else {
+					downStreamIndex += 1;
+				}
 			}
 			collector.ack(tuple);
-			if(downStreamIndex >= (intActiveDownstreamTasks.size() - 1)) {
-				downStreamIndex = 0;
-			}else {
-				downStreamIndex += 1;
-			}
 		}else {
 			if(queryLatencyFlag == true) {
 				long latency = -1;
@@ -358,14 +363,16 @@ public class SynefoBolt extends BaseRichBolt {
 				}
 			}else {
 				List<Values> returnedTuples = operator.execute(fields, values);
-				for(Values v : returnedTuples) {
-					produced_values = new Values();
-					produced_values.add((new Long(System.currentTimeMillis())).toString());
-					for(int i = 0; i < v.size(); i++) {
-						produced_values.add(v.get(i));
+				if(returnedTuples != null && returnedTuples.size() > 0) {
+					for(Values v : returnedTuples) {
+						produced_values = new Values();
+						produced_values.add((new Long(System.currentTimeMillis())).toString());
+						for(int i = 0; i < v.size(); i++) {
+							produced_values.add(v.get(i));
+						}
+						logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + 
+								this.taskIP + ") emits: " + produced_values);
 					}
-					logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + 
-							this.taskIP + ") emits: " + produced_values);
 				}
 			}
 			collector.ack(tuple);

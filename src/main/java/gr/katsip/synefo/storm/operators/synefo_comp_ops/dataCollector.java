@@ -8,6 +8,8 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.Code;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.ZooDefs.Ids;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class dataCollector implements Serializable {
 
@@ -15,21 +17,23 @@ public class dataCollector implements Serializable {
 	 * 
 	 */
 	private static final long serialVersionUID = 5782301300725371212L;
-	
+
+	Logger logger = LoggerFactory.getLogger(dataCollector.class);
+
 	private int bufferSize;
-	
+
 	private int currentBufferSize;
-	
+
 	private String opId;
-	
+
 	private String zooIP;
-	
+
 	private Integer zooPort;
-	
+
 	private ZooKeeper zk = null;
-	
+
 	private StringBuilder strBuild;
-	
+
 	/**
 	 * The main class responsible for sending data to the Zookeeper cluster
 	 * @param zooIP Zookeeper IP
@@ -65,9 +69,12 @@ public class dataCollector implements Serializable {
 			strBuild.append(tuple + ";");
 			currentBufferSize += 1;
 		}else {
+			logger.info("dataCollector.addToBuffer(): About to create new child node, buffer is full (buffer-size: " + 
+					strBuild.length() + ").");
 			createChildNode(strBuild.toString().getBytes());
 			currentBufferSize = 0;
 			strBuild = new StringBuilder();
+			strBuild.append(tuple);
 		}
 	}
 
@@ -75,12 +82,12 @@ public class dataCollector implements Serializable {
 
 	public void createChildNode(byte[] statBuffer) {
 		String newChildPath = "/data/" + opId + "/";
-//		String nodePath = "/data/" + opId;
-//TODO: Do we need the data twice?? Both in the /data/opId node and in the /data/opId/n node??
+		//		String nodePath = "/data/" + opId;
+		//TODO: Do we need the data twice?? Both in the /data/opId node and in the /data/opId/n node??
 		zk.create(newChildPath, statBuffer, Ids.OPEN_ACL_UNSAFE, 
 				CreateMode.PERSISTENT_SEQUENTIAL, createChildNodeCallback, statBuffer);
 	}
-	
+
 	private StringCallback createChildNodeCallback = new StringCallback() {
 		@Override
 		public void processResult(int rc, String path, Object ctx,
@@ -89,24 +96,24 @@ public class dataCollector implements Serializable {
 			case CONNECTIONLOSS:
 				byte[] statBuffer = (byte[]) ctx;
 				createChildNode(statBuffer);
-				System.err.println("dataCollector.createChildNodeCallback(): CONNECTIONLOSS for: " + path + ". Attempting again.");
+				logger.error("dataCollector.createChildNodeCallback(): CONNECTIONLOSS for: " + path + ". Attempting again.");
 				break;
 			case NONODE:
-				System.err.println("dataCollector.createChildNodeCallback(): NONODE with name: " + path);
+				logger.error("dataCollector.createChildNodeCallback(): NONODE with name: " + path);
 				break;
 			case NODEEXISTS:
-				System.err.println("dataCollector.createChildNodeCallback(): NODEEXISTS with name: " + path);
+				logger.error("dataCollector.createChildNodeCallback(): NODEEXISTS with name: " + path);
 				break;
 			case OK:
-				System.err.println("dataCollector.createChildNodeCallback(): OK buffer written successfully.");
+				logger.info("dataCollector.createChildNodeCallback(): OK buffer written successfully.");
 				break;
 			default:
-				System.err.println("dataCollector.createChildNodeCallback(): Unexpected scenario: " + 
+				logger.error("dataCollector.createChildNodeCallback(): Unexpected scenario: " + 
 						KeeperException.create(Code.get(rc), path));
 				break;
 			}
 		}
-		
+
 	};
 }
 //public void startStats(int id){

@@ -7,6 +7,8 @@ import backtype.storm.tuple.Values;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class Select implements Serializable, AbstractOperator  {
@@ -15,6 +17,8 @@ public class Select implements Serializable, AbstractOperator  {
 	 * 
 	 */
 	private static final long serialVersionUID = -7785533234885036231L;
+	
+	Logger logger = LoggerFactory.getLogger(Select.class);
 
 	ArrayList<Integer> selections;
 
@@ -24,7 +28,7 @@ public class Select implements Serializable, AbstractOperator  {
 
 	int attribute;
 
-	private int statsCounter = 0;
+//	private int statsCounter = 0;
 
 	int type;//equi=0; "<" = 1; "<=" = 2...; 
 
@@ -71,7 +75,7 @@ public class Select implements Serializable, AbstractOperator  {
 		encryptionData.put("OPE",0);
 		encryptionData.put("HOM",0);
 		this.statReportPeriod = statReportPeriod;
-		statsCounter = 0;
+//		statsCounter = 0;
 		this.ID = ID;
 		this.zooIP = zooIP;
 		this.zooPort = zooPort;
@@ -130,12 +134,14 @@ public class Select implements Serializable, AbstractOperator  {
 			}
 			//System.out.println(values.toString());
 			encryptionData.put(tuples[tuples.length-1], encryptionData.get(tuples[tuples.length-1])+1);
-			if(statsCounter >= statReportPeriod) {
-				updateData();
-				statsCounter = 0;
-			}else {
-				statsCounter += 1;
-			}
+			updateData();
+//			
+//			if(statsCounter >= statReportPeriod) {
+//				updateData();
+//				statsCounter = 0;
+//			}else {
+//				statsCounter += 1;
+//			}
 			Values val = new Values(); val.addAll(values);
 			ArrayList<Values> valz = new ArrayList<Values>();
 			valz.add(val);
