@@ -149,7 +149,7 @@ public class DemoTopologyOne {
 				.setNumTasks(1);
 
 		_tmp = new ArrayList<String>();
-		_tmp.add("client_bolt_1");
+		_tmp.add("client_bolt");
 		topology.put("spout_punctuation_tuples", new ArrayList<String>(_tmp));
 		_tmp = new ArrayList<String>();
 		_tmp.add("select_bolt_1");
@@ -183,7 +183,7 @@ public class DemoTopologyOne {
 						.setNumTasks(1)
 						.directGrouping("spout_data_tuples");
 		_tmp = new ArrayList<String>();
-		_tmp.add("client_bolt_1");
+		_tmp.add("client_bolt");
 		topology.put("select_bolt_1", new ArrayList<String>(_tmp));
 		topology.put("select_bolt_2", new ArrayList<String>(_tmp));
 
