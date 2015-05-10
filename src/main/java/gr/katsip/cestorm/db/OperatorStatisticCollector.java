@@ -71,7 +71,7 @@ public class OperatorStatisticCollector {
 	}
 
 		public void getChildrenAndWatch() {
-			zk.getChildren("/data/", 
+			zk.getChildren("/data", 
 					dataRetrieverWatcher, 
 					getChildrenCallback, 
 					"/data/".getBytes());
