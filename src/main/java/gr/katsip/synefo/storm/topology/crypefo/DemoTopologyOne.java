@@ -3,9 +3,8 @@ package gr.katsip.synefo.storm.topology.crypefo;
 import gr.katsip.synefo.storm.api.SynefoBolt;
 import gr.katsip.synefo.storm.api.SynefoSpout;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
-import gr.katsip.synefo.storm.operators.relational.ProjectOperator;
+import gr.katsip.synefo.storm.operators.synefo_comp_ops.Client;
 import gr.katsip.synefo.storm.operators.synefo_comp_ops.Select;
-import gr.katsip.synefo.storm.operators.synefo_comp_ops.valuesConverter;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -180,14 +179,13 @@ public class DemoTopologyOne {
 						.setNumTasks(1)
 						.directGrouping("spout_data_tuples");
 		_tmp = new ArrayList<String>();
-		_tmp.add("converter_bolt_1");
-		_tmp.add("converter_bolt_2");
+		_tmp.add("client_bolt_1");
 		topology.put("select_bolt_1", new ArrayList<String>(_tmp));
 		topology.put("select_bolt_2", new ArrayList<String>(_tmp));
 
 		/**
 		 * Middle Stage Checker
-		 */
+
 		String[] middleSchema = { "one", "two", "three", "four" };
 		valuesConverter converter = new valuesConverter(3);
 		converter.setStateSchema(new Fields(middleSchema));
@@ -211,20 +209,27 @@ public class DemoTopologyOne {
 		_tmp.add("client_bolt");
 		topology.put("converter_bolt_1", new ArrayList<String>(_tmp));
 		topology.put("converter_bolt_2", new ArrayList<String>(_tmp));
-
+		 */
 		/**
 		 * Stage 2: Client Bolt (project operator)
 		 */
-		ProjectOperator projectOperator = new ProjectOperator(new Fields(
-				converter.getOutputSchema().toList().toArray(new String[converter.getOutputSchema().size()])));
-		projectOperator.setOutputSchema(new Fields(
-				converter.getOutputSchema().toList().toArray(new String[converter.getOutputSchema().size()])));
+		ArrayList<Integer> dataPs = new ArrayList<Integer>();
+		dataPs.add(0);
+		String[] attributes = {"Doctor", "fit+app"};
+		Client clientOperator = new Client(0,"Fred", attributes, dataPs, 3);
+		String[] schema = {"tuple", "crap"};
+		clientOperator.setOutputSchema(new Fields(schema));
+		clientOperator.setStateSchema(new Fields(schema));
+		//	ProjectOperator projectOperator = new ProjectOperator(new Fields(
+		//			converter.getOutputSchema().toList().toArray(new String[converter.getOutputSchema().size()])));
+		//	projectOperator.setOutputSchema(new Fields(
+		//			converter.getOutputSchema().toList().toArray(new String[converter.getOutputSchema().size()])));
 		builder.setBolt("client_bolt", 
 				new SynefoBolt("client_bolt", synefoIP, synefoPort, 
-						projectOperator, zooIP, zooPort, false), 1)
+						clientOperator, zooIP, zooPort, false), 1)
 						.setNumTasks(1)
-						.directGrouping("converter_bolt_1")
-						.directGrouping("converter_bolt_2")
+						.directGrouping("select_bolt_1")
+						.directGrouping("select_bolt_2")
 						.directGrouping("spout_punctuation_tuples");
 		topology.put("client_bolt", new ArrayList<String>());
 

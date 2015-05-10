@@ -2,13 +2,7 @@ package gr.katsip.synefo.storm.operators.synefo_comp_ops;
 
 import gr.katsip.synefo.storm.operators.AbstractOperator;
 
-import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.Serializable;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -58,7 +52,7 @@ public class Client implements AbstractOperator, Serializable {
 
 	private int schemaSize;
 
-	public Client(int idd, String nme, String[] atts, String[] querie, HashMap<Integer, ArrayList<String>> schema, ArrayList<Integer> dataPs, int schemaSize){
+	public Client(int idd, String nme, String[] atts, ArrayList<Integer> dataPs, int schemaSize){
 		id = idd;
 		CPABEDecryptFile = nme+""+idd;
 		dataProviders = new ArrayList<Integer>(dataPs);
@@ -70,67 +64,6 @@ public class Client implements AbstractOperator, Serializable {
 			}
 		}
 
-	}
-
-	public void acceptSps(int perm, byte[] sp, String stream){
-		//decrypt with ABE
-		//subscriptions.put(Integer.parseInt(stream), perm);
-
-		System.out.println("UPDATED PERMISSION IN CLIENT"+id+" TO "+perm +" ON STREAM "+stream+ " CHECK "+subscriptions.get(Integer.parseInt(stream)));
-		//write to file, decryot, read file in, save as bytes
-		try{
-			// Create file 
-			FileOutputStream fstream = new FileOutputStream("tempKey"+id+".txt.cpabe");
-
-			fstream.write(sp);
-			//Close the output stream
-			fstream.close();
-		}catch (Exception e){//Catch exception if any
-			System.err.println("Error in client writitng temp key: " + e.getMessage());
-		}
-
-		//Decrypt
-		System.out.println("File: "+CPABEDecryptFile+" "+id);
-		String[] privKey= new String[4];//wrong
-		privKey[0]="/home/cpabe-0.11/cpabe-dec";
-		privKey[1]="pub_key";
-		privKey[2]=CPABEDecryptFile;
-		privKey[3]="tempKey"+id+".txt.cpabe";
-		//sendSps(1,determineKey,privKey);
-		try {
-			Process pr =Runtime.getRuntime().exec(privKey);
-			BufferedReader in = new BufferedReader(new InputStreamReader(pr.getErrorStream()));
-			System.out.println("DEC ERROR CLIENT "+in.readLine());
-		} catch (IOException e) {
-			System.out.println("Error in Data Provider: "+id+". CPABE command error, could not execute commands.");
-			e.printStackTrace();
-		}
-
-		//read new key
-		byte[] detainBytes={};
-		try {
-			FileInputStream fstream = new FileInputStream("tempKey"+id+".txt");
-			DataInputStream in = new DataInputStream(fstream);
-
-			detainBytes = new byte[in.available()];
-			System.out.println(in.available());
-			in.readFully(detainBytes);
-			in.close();
-
-		} catch (FileNotFoundException e) {
-			System.out.println("Error in Client: "+id+". File: tempKey.txt not found.");
-			e.printStackTrace();
-		} catch (IOException e) {
-			System.out.println("Error in Client: "+id+". Reading File: tempKey.txt error, good luck.");
-			e.printStackTrace();
-		}
-		if(detainBytes.length>0){
-			//	System.out.println("KEY IN CLIENT: "+(new String(detainBytes)));
-			keys.put(Integer.parseInt(stream), detainBytes);
-		}
-		else{
-			System.out.println("ERROR: new Key not read in client "+id);
-		}
 	}
 
 	@Override
@@ -153,14 +86,22 @@ public class Client implements AbstractOperator, Serializable {
 
 	@Override
 	public List<Values> execute(Fields fields, Values values) {
-		String reduce = values.get(2).toString().replaceAll("\\[", "").replaceAll("\\]","");
-		//System.out.println(reduce);
+		//error if coming form multiple sources
+		System.out.println(values.get(0));
+		String reduce = values.get(0).toString().replaceAll("\\[", "").replaceAll("\\]","");
+		System.out.println(reduce);
 		String[] tuples = reduce.split(",");
 		if(tuples[0].equalsIgnoreCase("SPS")){
-			//tuples[2]),key, tuples[3]);
 			processSps(tuples);
-			acceptSps(Integer.parseInt(tuples[1]), (byte[]) values.get(3), tuples[3] );
 		}
+//		if(values.get(0).toString().equalsIgnoreCase("SPS")){
+//			String tpls = values.get(0).toString();
+//			for(int i=1; i<values.size();i++){
+//				tpls = tpls +"," + values.get(i).toString();
+//			}
+//			String[] tupls =tpls.split(",");
+//			processSps(tupls);
+//		}
 		else{
 			if(counter>displayCount){
 				counter=0;
@@ -168,7 +109,7 @@ public class Client implements AbstractOperator, Serializable {
 			}
 		}
 		counter++;
-		return null;
+		return new ArrayList<Values>();
 	}
 
 	@Override
