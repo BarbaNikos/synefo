@@ -266,7 +266,7 @@ public class DemoTopologyOne {
 		StormSubmitter.submitTopology("crypefo-top-1", conf, builder.createTopology());
 //		LocalCluster cluster = new LocalCluster();
 //		cluster.submitTopology("debug-topology", conf, builder.createTopology());
-		Thread.sleep(200000);
+//		Thread.sleep(200000);
 		OperatorStatisticCollector statCollector = new OperatorStatisticCollector(zooIP + ":" + zooPort, 
 				"n/a", "n/a", "n/a", "n/a");
 		statCollector.init();
