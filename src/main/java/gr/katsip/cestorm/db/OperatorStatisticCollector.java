@@ -93,13 +93,15 @@ public class OperatorStatisticCollector {
 					/**
 					 * children received
 					 */
+					System.out.println("getChildrenCallback");
 					List<String> childrenDifference = new ArrayList<String>(children);
 					childrenDifference.retainAll(operators);
 					operators.addAllAbsent(children);
 					for(String child : childrenDifference) {
 						getDataAndWatch(child);
 					}
-					System.out.println("getChildrenCallback(): OK call");
+					System.out.println("getChildrenCallback(): OK call, received new children: " + childrenDifference.toArray() + 
+							", operators size: " + operators.size());
 					break;
 				default:
 					System.out.println("getChildrenCallback(): Unexpected scenario: " + 
