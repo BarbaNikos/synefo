@@ -61,20 +61,22 @@ public class CrypefoPunctuationTupleProducer implements AbstractTupleProducer, S
 		try {
 			String tuple = input.readLine();
 			if(tuple != null && tuple.length() > 0) {
-				String[] tupleTokens = tuple.split(",");
-				val.add(new Long(num));
-				for(int i = 0; i < tupleTokens.length; i++) {
-					if(val.size() < fields.size())
-						val.add(tupleTokens[i]);
-				}
-				if(val.size() < fields.size()) {
-					while(val.size() < fields.size()) {
-						val.add(new String("N/A"));
-					}
-				}
+//				String[] tupleTokens = tuple.split("!");
+//				val.add(new Long(num));
+//				for(int i = 0; i < tupleTokens.length; i++) {
+//					if(val.size() < fields.size())
+//						val.add(tupleTokens[i]);
+//				}
+//				if(val.size() < fields.size()) {
+//					while(val.size() < fields.size()) {
+//						val.add(new String("N/A"));
+//					}
+//				}
 				num += 1;
+				val.add(tuple);
 				return val;
 			}
+
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

@@ -145,7 +145,7 @@ public class DemoTopologyOne {
 				.setNumTasks(1);
 
 		_tmp = new ArrayList<String>();
-		_tmp.add("client_bolt");
+		_tmp.add("client_bolt_1");
 		topology.put("spout_punctuation_tuples", new ArrayList<String>(_tmp));
 		_tmp = new ArrayList<String>();
 		_tmp.add("select_bolt_1");
@@ -224,14 +224,14 @@ public class DemoTopologyOne {
 		//			converter.getOutputSchema().toList().toArray(new String[converter.getOutputSchema().size()])));
 		//	projectOperator.setOutputSchema(new Fields(
 		//			converter.getOutputSchema().toList().toArray(new String[converter.getOutputSchema().size()])));
-		builder.setBolt("client_bolt", 
-				new SynefoBolt("client_bolt", synefoIP, synefoPort, 
+		builder.setBolt("client_bolt_1", 
+				new SynefoBolt("client_bolt_1", synefoIP, synefoPort, 
 						clientOperator, zooIP, zooPort, false), 1)
 						.setNumTasks(1)
 						.directGrouping("select_bolt_1")
 						.directGrouping("select_bolt_2")
 						.directGrouping("spout_punctuation_tuples");
-		topology.put("client_bolt", new ArrayList<String>());
+		topology.put("client_bolt_1", new ArrayList<String>());
 
 		/**
 		 * Notify SynEFO server about the 
@@ -262,6 +262,8 @@ public class DemoTopologyOne {
 		conf.setDebug(false);
 		conf.setNumWorkers(7);
 		StormSubmitter.submitTopology("crypefo-top-1", conf, builder.createTopology());
+
+
 	}
 
 

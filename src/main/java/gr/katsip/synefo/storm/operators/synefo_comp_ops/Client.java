@@ -40,7 +40,7 @@ public class Client implements AbstractOperator, Serializable {
 
 	private ArrayList<Integer> dataProviders;
 
-	private HashMap<Integer, byte[]> keys = new HashMap<Integer, byte[]>();//maps data provider to key
+	private Map<Integer, HashMap<Integer,byte[]>> keys = new HashMap<Integer, HashMap<Integer,byte[]>>();//maps data provider to key
 
 	private Map<Integer, HashMap<Integer,Integer>> subscriptions = new Hashtable<Integer, HashMap<Integer, Integer>>(); //maps data provider to permission
 
@@ -52,15 +52,17 @@ public class Client implements AbstractOperator, Serializable {
 
 	private int schemaSize;
 
-	public Client(int idd, String nme, String[] atts, ArrayList<Integer> dataPs, int schemaSize){
+	public Client(int idd, String nme, String[] atts, ArrayList<Integer> dataPs, int schemaSiz){
 		id = idd;
 		CPABEDecryptFile = nme+""+idd;
 		dataProviders = new ArrayList<Integer>(dataPs);
-		this.schemaSize=schemaSize;
+		this.schemaSize=schemaSiz;
 		for(int i=0;i<dataProviders.size();i++){//initilize all to assume full access, until SPS says otheriwse
-			subscriptions.put(dataProviders.get(i), new HashMap<Integer,Integer>());
+			subscriptions.put((dataProviders.get(i)+1), new HashMap<Integer,Integer>());
+			keys.put((dataProviders.get(i)+1), new HashMap<Integer,byte[]>());
 			for(int y=0;y<schemaSize;y++){
-				subscriptions.get(dataProviders.get(i)).put(y,0);
+				subscriptions.get((dataProviders.get(i)+1)).put(y,0);
+				keys.get((dataProviders.get(i)+1)).put(y,"".getBytes());
 			}
 		}
 
@@ -87,21 +89,13 @@ public class Client implements AbstractOperator, Serializable {
 	@Override
 	public List<Values> execute(Fields fields, Values values) {
 		//error if coming form multiple sources
-		System.out.println(values.get(0));
+		System.out.println("fields "+values.get(0));
 		String reduce = values.get(0).toString().replaceAll("\\[", "").replaceAll("\\]","");
-		System.out.println(reduce);
+		//System.out.println(reduce);
 		String[] tuples = reduce.split(",");
 		if(tuples[0].equalsIgnoreCase("SPS")){
 			processSps(tuples);
 		}
-//		if(values.get(0).toString().equalsIgnoreCase("SPS")){
-//			String tpls = values.get(0).toString();
-//			for(int i=1; i<values.size();i++){
-//				tpls = tpls +"," + values.get(i).toString();
-//			}
-//			String[] tupls =tpls.split(",");
-//			processSps(tupls);
-//		}
 		else{
 			if(counter>displayCount){
 				counter=0;
@@ -142,15 +136,19 @@ public class Client implements AbstractOperator, Serializable {
 		System.out.println("Client "+id+" recieved permission "+permission+" for stream "+ clientId+".");
 		subscriptions.get(clientId).put(field,permission);
 		if(permission == 0){//plaintext
-
+			keys.get(clientId).put(field,"".getBytes());
 		}else if(permission == 1){//rnd
-			System.out.println("RND KEY: "+tuple[5]);
+			System.out.println("RND KEY: "+tuple[6]);
+			keys.get(clientId).put(field,tuple[6].getBytes());
 		}else if(permission == 2){//det
-
+			System.out.println("DET KEY: "+tuple[6]);
+			keys.get(clientId).put(field,tuple[6].getBytes());
 		}else if(permission == 3){//ope
-
+			System.out.println("OPE KEY: "+tuple[6]);
+			keys.get(clientId).put(field,tuple[6].getBytes());
 		}else if(permission == 4){//hom
-
+			System.out.println("HOM KEY: "+tuple[6]);
+			keys.get(clientId).put(field,tuple[6].getBytes());
 		}
 	}
 
