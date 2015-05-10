@@ -228,14 +228,14 @@ public class DemoTopologyOne {
 				converter.getOutputSchema().toList().toArray(new String[converter.getOutputSchema().size()])));
 		projectOperator.setOutputSchema(new Fields(
 				converter.getOutputSchema().toList().toArray(new String[converter.getOutputSchema().size()])));
-		builder.setBolt("client_bolt_1", 
-				new SynefoBolt("client_bolt_1", synefoIP, synefoPort, 
+		builder.setBolt("client_bolt", 
+				new SynefoBolt("client_bolt", synefoIP, synefoPort, 
 						projectOperator, zooIP, zooPort, false), 1)
 						.setNumTasks(1)
 						.directGrouping("select_bolt_1")
 						.directGrouping("select_bolt_2")
 						.directGrouping("spout_punctuation_tuples");
-		topology.put("client_bolt_1", new ArrayList<String>());
+		topology.put("client_bolt", new ArrayList<String>());
 
 		/**
 		 * Notify SynEFO server about the 

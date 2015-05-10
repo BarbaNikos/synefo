@@ -95,7 +95,7 @@ public class SynefoCoordinatorThread implements Runnable {
 				(int) resourceThresholds.get("latency").lowerBound, 
 				(int) resourceThresholds.get("throughput").lowerBound);
 
-		System.out.println("+efo coordinator thread: received tast name allocation from Storm cluster. Updating internal structures...");
+		System.out.println("+efo coordinator thread: received task name allocation from Storm cluster. Updating internal structures...");
 		HashMap<String, ArrayList<String>> updatedTopology = new HashMap<String, ArrayList<String>>();
 		HashMap<String, ArrayList<String>> activeUpdatedTopology = new HashMap<String, ArrayList<String>>();
 		synchronized(taskNameToIdMap) {
