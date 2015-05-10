@@ -21,6 +21,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
 
 import backtype.storm.Config;
+import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;
 import backtype.storm.generated.AlreadyAliveException;
 import backtype.storm.generated.InvalidTopologyException;
@@ -261,8 +262,10 @@ public class DemoTopologyOne {
 
 		conf.setDebug(false);
 		conf.setNumWorkers(7);
-		StormSubmitter.submitTopology("crypefo-top-1", conf, builder.createTopology());
-
+		//StormSubmitter.submitTopology("crypefo-top-1", conf, builder.createTopology());
+		LocalCluster cluster = new LocalCluster();
+		cluster.submitTopology("debug-topology", conf, builder.createTopology());        
+		Thread.sleep(200000);
 
 	}
 

@@ -99,7 +99,8 @@ public class Client implements AbstractOperator, Serializable {
 		else{
 			if(counter>displayCount){
 				counter=0;
-				currentTuple=values.get(2).toString();
+				currentTuple=values.get(0).toString();
+				processNormal(currentTuple);
 			}
 		}
 		counter++;
@@ -127,6 +128,26 @@ public class Client implements AbstractOperator, Serializable {
 		// TODO Auto-generated method stub
 
 	}
+	
+	public void processNormal(String tuple){
+		String[] tuples = tuple.split(",");
+		String finalTuple="";
+		int clientID= Integer.parseInt(tuples[0]);
+		for(int i=1;i<tuples.length;i++){
+			if(subscriptions.get(clientID).get(i)==0){
+				finalTuple=finalTuple+", "+tuples[i];
+			}else if(subscriptions.get(clientID).get(i)==1){
+				
+			}else if(subscriptions.get(clientID).get(i)==2){
+				String result = new String(decryptDetermine(tuples[i].getBytes(),keys.get(clientID).get(i)));
+				finalTuple=finalTuple+", "+result;
+			}else if(subscriptions.get(clientID).get(i)==3){
+				
+			}else if(subscriptions.get(clientID).get(i)==4){
+				
+			}
+		}
+	}
 
 	public void processSps(String[] tuple){
 		//String tuple = "SPS", StreamId, permission, clientID, field, key;
@@ -138,17 +159,17 @@ public class Client implements AbstractOperator, Serializable {
 		if(permission == 0){//plaintext
 			keys.get(clientId).put(field,"".getBytes());
 		}else if(permission == 1){//rnd
-			System.out.println("RND KEY: "+tuple[6]);
-			keys.get(clientId).put(field,tuple[6].getBytes());
+			System.out.println("RND KEY: "+tuple[5]);
+			keys.get(clientId).put(field,tuple[5].getBytes());
 		}else if(permission == 2){//det
-			System.out.println("DET KEY: "+tuple[6]);
-			keys.get(clientId).put(field,tuple[6].getBytes());
+			System.out.println("DET KEY: "+tuple[5]);
+			keys.get(clientId).put(field,tuple[5].getBytes());
 		}else if(permission == 3){//ope
-			System.out.println("OPE KEY: "+tuple[6]);
-			keys.get(clientId).put(field,tuple[6].getBytes());
+			System.out.println("OPE KEY: "+tuple[5]);
+			keys.get(clientId).put(field,tuple[5].getBytes());
 		}else if(permission == 4){//hom
-			System.out.println("HOM KEY: "+tuple[6]);
-			keys.get(clientId).put(field,tuple[6].getBytes());
+			System.out.println("HOM KEY: "+tuple[5]);
+			keys.get(clientId).put(field,tuple[5].getBytes());
 		}
 	}
 

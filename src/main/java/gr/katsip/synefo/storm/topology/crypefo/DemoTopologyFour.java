@@ -3,11 +3,10 @@ package gr.katsip.synefo.storm.topology.crypefo;
 import gr.katsip.synefo.storm.api.SynefoBolt;
 import gr.katsip.synefo.storm.api.SynefoSpout;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
-import gr.katsip.synefo.storm.operators.relational.JoinOperator;
-import gr.katsip.synefo.storm.operators.relational.ProjectOperator;
 import gr.katsip.synefo.storm.operators.relational.StringComparator;
+import gr.katsip.synefo.storm.operators.synefo_comp_ops.Client;
 import gr.katsip.synefo.storm.operators.synefo_comp_ops.Select;
-import gr.katsip.synefo.storm.operators.synefo_comp_ops.valuesConverter;
+import gr.katsip.synefo.storm.operators.synefo_comp_ops.modifiedJoinOperator;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -99,7 +98,7 @@ public class DemoTopologyFour {
 		builder.setSpout("spout_punctuation_tuples_1", 
 				new SynefoSpout("spout_punctuation_tuples_1", synefoIP, synefoPort, punctuationTupleProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
-		
+
 		String[] dataSpoutSchema = { "tuple" };
 		CrypefoDataTupleProducer dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[0]);
 		dataTupleProducer.setSchema(new Fields(dataSpoutSchema));
@@ -108,7 +107,7 @@ public class DemoTopologyFour {
 				.setNumTasks(1);
 
 		_tmp = new ArrayList<String>();
-		_tmp.add("client_bolt");
+		_tmp.add("client_bolt_1");
 		topology.put("spout_punctuation_tuples_1", new ArrayList<String>(_tmp));
 		_tmp = new ArrayList<String>();
 		_tmp.add("select_bolt_1a");
@@ -130,7 +129,7 @@ public class DemoTopologyFour {
 				.setNumTasks(1);
 
 		_tmp = new ArrayList<String>();
-		_tmp.add("client_bolt");
+		_tmp.add("client_bolt_1");
 		topology.put("spout_punctuation_tuples_2", new ArrayList<String>(_tmp));
 		_tmp = new ArrayList<String>();
 		_tmp.add("select_bolt_2a");
@@ -159,13 +158,13 @@ public class DemoTopologyFour {
 						zooIP, zooPort, false), 1)
 						.setNumTasks(1)
 						.directGrouping("spout_data_tuples_1");
-		
+
 		_tmp = new ArrayList<String>();
-		_tmp.add("converter_bolt_1a");
-		_tmp.add("converter_bolt_1b");
+		_tmp.add("join_bolt_1");
+		_tmp.add("join_bolt_2");
 		topology.put("select_bolt_1a", new ArrayList<String>(_tmp));
 		topology.put("select_bolt_1b", new ArrayList<String>(_tmp));
-		
+
 		selectOperator = new Select(returnSet, "50", 1, 3, 1, 1000, "select_bolt_2a", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt_2a", 
@@ -181,114 +180,66 @@ public class DemoTopologyFour {
 						.setNumTasks(1)
 						.directGrouping("spout_data_tuples_2");
 		_tmp = new ArrayList<String>();
-		_tmp.add("converter_bolt_2a");
-		_tmp.add("converter_bolt_2b");
+		_tmp.add("join_bolt_1");
+		_tmp.add("join_bolt_2");
 		_tmp = new ArrayList<String>();
-		_tmp.add("converter_bolt_2a");
-		_tmp.add("converter_bolt_2b");
+		_tmp.add("join_bolt_1");
+		_tmp.add("join_bolt_2");
 		topology.put("select_bolt_2a", new ArrayList<String>(_tmp));
 		topology.put("select_bolt_2b", new ArrayList<String>(_tmp));
-		
-		/**
-		 * Stage 1b: Converter stage
-		 */
-		String[] middleSchema = { "one", "two", "three", "four" };
-		valuesConverter converter = new valuesConverter(3);
-		converter.setStateSchema(new Fields(middleSchema));
-		converter.setOutputSchema(new Fields(middleSchema));
-		builder.setBolt("converter_bolt_1a", 
-				new SynefoBolt("converter_bolt_1a", synefoIP, synefoPort, converter, 
-						zooIP, zooPort, false), 1)
-						.setNumTasks(1)
-						.directGrouping("select_bolt_1a")
-						.directGrouping("select_bolt_1b");
-		converter = new valuesConverter(3);
-		converter.setStateSchema(new Fields(middleSchema));
-		converter.setOutputSchema(new Fields(middleSchema));
-		builder.setBolt("converter_bolt_1b", 
-				new SynefoBolt("converter_bolt_1b", synefoIP, synefoPort, converter, 
-						zooIP, zooPort, false), 1)
-						.setNumTasks(1)
-						.directGrouping("select_bolt_1a")
-						.directGrouping("select_bolt_1b");
-		
-		_tmp = new ArrayList<String>();
-		_tmp.add("join_bolt_1");
-		_tmp.add("join_bolt_2");
-		topology.put("converter_bolt_1a", new ArrayList<String>(_tmp));
-		topology.put("converter_bolt_1b", new ArrayList<String>(_tmp));
-		
-		converter = new valuesConverter(3);
-		converter.setStateSchema(new Fields(middleSchema));
-		converter.setOutputSchema(new Fields(middleSchema));
-		builder.setBolt("converter_bolt_2a", 
-				new SynefoBolt("converter_bolt_2a", synefoIP, synefoPort, converter, 
-						zooIP, zooPort, false), 1)
-						.setNumTasks(1)
-						.directGrouping("select_bolt_2a")
-						.directGrouping("select_bolt_2b");
-		
-		converter = new valuesConverter(3);
-		converter.setStateSchema(new Fields(middleSchema));
-		converter.setOutputSchema(new Fields(middleSchema));
-		builder.setBolt("converter_bolt_2b", 
-				new SynefoBolt("converter_bolt_2b", synefoIP, synefoPort, converter, 
-						zooIP, zooPort, false), 1)
-						.setNumTasks(1)
-						.directGrouping("select_bolt_2a")
-						.directGrouping("select_bolt_2b");
-		
-		_tmp = new ArrayList<String>();
-		_tmp.add("join_bolt_1");
-		_tmp.add("join_bolt_2");
-		topology.put("converter_bolt_2a", new ArrayList<String>(_tmp));
-		topology.put("converter_bolt_2b", new ArrayList<String>(_tmp));
-		
+
 		/**
 		 * Stage 2: Join Bolt
 		 */
-		JoinOperator<String> joinOperator = new JoinOperator<String>(new StringComparator(), 100, "two", 
-				new Fields(middleSchema), new Fields(middleSchema));
+		String[] vals = {"one","two","three","four"};
+		modifiedJoinOperator<String> joinOperator = new modifiedJoinOperator<String>(new StringComparator(), 100, "two", 
+				new Fields(vals), new Fields(vals));
 		builder.setBolt("join_bolt_1", 
 				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, 
 						joinOperator, zooIP, zooPort, false), 1)
 						.setNumTasks(1)
-						.directGrouping("converter_bolt_1a")
-						.directGrouping("converter_bolt_1b")
-						.directGrouping("converter_bolt_2a")
-						.directGrouping("converter_bolt_2b");
-		joinOperator = new JoinOperator<String>(new StringComparator(), 100, "two", 
-				new Fields(middleSchema), new Fields(middleSchema));
+						.directGrouping("select_bolt_1a")
+						.directGrouping("select_bolt_1b")
+						.directGrouping("select_bolt_2a")
+						.directGrouping("select_bolt_2b");
+		joinOperator = new modifiedJoinOperator<String>(new StringComparator(), 100, "two", 
+				new Fields("tuple"), new Fields("tuple"));
 		builder.setBolt("join_bolt_2", 
 				new SynefoBolt("join_bolt_2", synefoIP, synefoPort, 
 						joinOperator, zooIP, zooPort, false), 1)
 						.setNumTasks(1)
-						.directGrouping("converter_bolt_1a")
-						.directGrouping("converter_bolt_1b")
-						.directGrouping("converter_bolt_2a")
-						.directGrouping("converter_bolt_2b");
-		
+						.directGrouping("select_bolt_1a")
+						.directGrouping("select_bolt_1b")
+						.directGrouping("select_bolt_2a")
+						.directGrouping("select_bolt_2b");
+
 		_tmp = new ArrayList<String>();
-		_tmp.add("client_bolt");
+		_tmp.add("client_bolt_1");
 		topology.put("join_bolt_1", new ArrayList<String>(_tmp));
 		topology.put("join_bolt_2", new ArrayList<String>(_tmp));
 
 		/**
 		 * Stage 3: Client Bolt (project operator)
 		 */
-		ProjectOperator projectOperator = new ProjectOperator(new Fields(
-				joinOperator.getOutputSchema().toList().toArray(new String[joinOperator.getOutputSchema().size()])));
-		projectOperator.setOutputSchema(new Fields(
-				joinOperator.getOutputSchema().toList().toArray(new String[joinOperator.getOutputSchema().size()])));
-		builder.setBolt("client_bolt", 
-				new SynefoBolt("client_bolt", synefoIP, synefoPort, 
-						projectOperator, zooIP, zooPort, false), 1)
+
+
+		ArrayList<Integer> dataPs = new ArrayList<Integer>();
+		dataPs.add(0);
+		String[] attributes = {"Doctor", "fit+app"};
+		Client clientOperator = new Client(0,"Fred", attributes, dataPs, 3);
+		String[] schema = {"tuple", "crap"};
+		clientOperator.setOutputSchema(new Fields(schema));
+		clientOperator.setStateSchema(new Fields(schema));
+		builder.setBolt("client_bolt_1", 
+				new SynefoBolt("client_bolt_1", synefoIP, synefoPort, 
+						clientOperator, zooIP, zooPort, false), 1)
 						.setNumTasks(1)
 						.directGrouping("join_bolt_1")
 						.directGrouping("join_bolt_2")
 						.directGrouping("spout_punctuation_tuples_1")
 						.directGrouping("spout_punctuation_tuples_2");
-		topology.put("client_bolt", new ArrayList<String>());
+		topology.put("client_bolt_1", new ArrayList<String>());
+
 		/**
 		 * Notify SynEFO server about the 
 		 * Topology
@@ -318,5 +269,6 @@ public class DemoTopologyFour {
 		conf.setDebug(false);
 		conf.setNumWorkers(15);
 		StormSubmitter.submitTopology("crypefo-top-4", conf, builder.createTopology());
+
 	}
 }
