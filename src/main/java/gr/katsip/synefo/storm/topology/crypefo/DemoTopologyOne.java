@@ -1,5 +1,6 @@
 package gr.katsip.synefo.storm.topology.crypefo;
 
+import gr.katsip.cestorm.db.OperatorStatisticCollector;
 import gr.katsip.synefo.storm.api.SynefoBolt;
 import gr.katsip.synefo.storm.api.SynefoSpout;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
@@ -21,7 +22,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
 
 import backtype.storm.Config;
-import backtype.storm.LocalCluster;
+//import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;
 import backtype.storm.generated.AlreadyAliveException;
 import backtype.storm.generated.InvalidTopologyException;
@@ -262,11 +263,13 @@ public class DemoTopologyOne {
 
 		conf.setDebug(false);
 		conf.setNumWorkers(7);
-		//StormSubmitter.submitTopology("crypefo-top-1", conf, builder.createTopology());
-		LocalCluster cluster = new LocalCluster();
-		cluster.submitTopology("debug-topology", conf, builder.createTopology());        
+		StormSubmitter.submitTopology("crypefo-top-1", conf, builder.createTopology());
+//		LocalCluster cluster = new LocalCluster();
+//		cluster.submitTopology("debug-topology", conf, builder.createTopology());
 		Thread.sleep(200000);
-
+		OperatorStatisticCollector statCollector = new OperatorStatisticCollector(zooIP + ":" + zooPort, 
+				"n/a", "n/a", "n/a", "n/a");
+		statCollector.init();
 	}
 
 
