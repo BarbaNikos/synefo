@@ -2,6 +2,7 @@ package gr.katsip.cestorm.db;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 //import java.sql.Connection;
 //import java.sql.DriverManager;
 //import java.sql.SQLException;
@@ -100,8 +101,8 @@ public class OperatorStatisticCollector {
 					for(String child : childrenDifference) {
 						getDataAndWatch(child);
 					}
-					System.out.println("getChildrenCallback(): OK call, received new children: " + childrenDifference.toArray() + 
-							", operators size: " + operators.size());
+					System.out.println("getChildrenCallback(): OK call, received new children: " + Arrays.toString(childrenDifference.toArray()) + 
+							", operators size: " + Arrays.toString(operators.toArray()));
 					break;
 				default:
 					System.out.println("getChildrenCallback(): Unexpected scenario: " + 
