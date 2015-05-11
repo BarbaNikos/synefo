@@ -21,6 +21,8 @@ import java.util.List;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 
 import backtype.storm.Config;
@@ -94,8 +96,14 @@ public class DemoTopologyOne {
 		/**
 		 * Create the /data z-node once for all the bolts (also clean-up previous contents)
 		 */
+		Watcher sampleWatcher = new Watcher() {
+			@Override
+			public void process(WatchedEvent event) {
+				
+			}
+		};
 		try {
-			ZooKeeper zk = new ZooKeeper(zooIP + ":" + zooPort, 100000, null);
+			ZooKeeper zk = new ZooKeeper(zooIP + ":" + zooPort, 100000, sampleWatcher);
 			if(zk.exists("/data", false) != null) {
 				System.out.println("Z-Node \"/data\" exists so we need to clean it up...");
 				List<String> operators = zk.getChildren("/data", false);

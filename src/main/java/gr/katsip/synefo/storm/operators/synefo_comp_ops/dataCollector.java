@@ -8,6 +8,8 @@ import org.apache.zookeeper.AsyncCallback.StringCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.Code;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.data.Stat;
@@ -36,6 +38,13 @@ public class dataCollector implements Serializable {
 	private ZooKeeper zk = null;
 
 	private StringBuilder strBuild;
+	
+	private Watcher dataCollectorWatcher = new Watcher() {
+		@Override
+		public void process(WatchedEvent event) {
+			
+		}
+	};
 
 	/**
 	 * The main class responsible for sending data to the Zookeeper cluster
@@ -52,7 +61,7 @@ public class dataCollector implements Serializable {
 		this.zooIP = zooIP;
 		this.zooPort = zooPort;
 		try {
-			zk = new ZooKeeper(this.zooIP + ":" + this.zooPort, 100000, null);
+			zk = new ZooKeeper(this.zooIP + ":" + this.zooPort, 100000, dataCollectorWatcher);
 			if(zk.exists("/data/" + opId, false) != null ) {
 				zk.delete("/data/" + opId, -1);
 			}

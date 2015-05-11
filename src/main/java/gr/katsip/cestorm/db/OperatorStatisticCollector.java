@@ -34,9 +34,11 @@ public class OperatorStatisticCollector {
 			 * When you retrieve the path, call the getDataAndWatch() function to 
 			 * retrieve data and set watch again
 			 */
+			System.out.println("Received event type: " + event.getType());
 			if(event.getType() == Event.EventType.NodeDataChanged) {
 				//Retrieve operator
-				String operator = path.substring(path.lastIndexOf("/"), path.length());
+				System.out.println("NodeDataChanged event: " + path);
+				String operator = path.substring(path.lastIndexOf("/") + 1, path.length());
 				getDataAndWatch(operator);
 			}else if(event.getType() == Event.EventType.NodeChildrenChanged) {
 				//Retrieve new children
@@ -51,6 +53,8 @@ public class OperatorStatisticCollector {
 		try {
 			zk = new ZooKeeper(zookeeperAddress, 1000000, dataRetrieverWatcher);
 		} catch (IOException e) {
+			e.printStackTrace();
+		} catch(Exception e) {
 			e.printStackTrace();
 		}
 //		try {
@@ -73,7 +77,7 @@ public class OperatorStatisticCollector {
 
 		public void getChildrenAndWatch() {
 			zk.getChildren("/data", 
-					dataRetrieverWatcher, 
+					true, 
 					getChildrenCallback, 
 					"/data/".getBytes());
 		}
@@ -96,7 +100,7 @@ public class OperatorStatisticCollector {
 					 */
 					System.out.println("getChildrenCallback");
 					List<String> childrenDifference = new ArrayList<String>(children);
-					childrenDifference.retainAll(operators);
+					childrenDifference.removeAll(operators);
 					operators.addAllAbsent(children);
 					for(String child : childrenDifference) {
 						getDataAndWatch(child);
@@ -114,7 +118,7 @@ public class OperatorStatisticCollector {
 
 	public void getDataAndWatch(String operator) {
 		zk.getData("/data/" + operator, 
-				dataRetrieverWatcher, 
+				true, 
 				getDataCallback, 
 				operator);
 	}
