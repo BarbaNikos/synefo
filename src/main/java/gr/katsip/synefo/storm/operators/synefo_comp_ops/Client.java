@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -58,11 +59,12 @@ public class Client implements AbstractOperator, Serializable {
 		dataProviders = new ArrayList<Integer>(dataPs);
 		this.schemaSize=schemaSiz;
 		for(int i=0;i<dataProviders.size();i++){//initilize all to assume full access, until SPS says otheriwse
-			subscriptions.put((dataProviders.get(i)+1), new HashMap<Integer,Integer>());
-			keys.put((dataProviders.get(i)+1), new HashMap<Integer,byte[]>());
+			subscriptions.put(dataProviders.get(i), new HashMap<Integer,Integer>());
+			//System.out.println("made room for "+dataProviders.get(i));
+			keys.put((dataProviders.get(i)), new HashMap<Integer,byte[]>());
 			for(int y=0;y<schemaSize;y++){
-				subscriptions.get((dataProviders.get(i)+1)).put(y,0);
-				keys.get((dataProviders.get(i)+1)).put(y,"".getBytes());
+				subscriptions.get((dataProviders.get(i))).put(y,0);
+				keys.get((dataProviders.get(i))).put(y,"".getBytes());
 			}
 		}
 
@@ -130,8 +132,9 @@ public class Client implements AbstractOperator, Serializable {
 	}
 	
 	public void processNormal(String tuple){
-		String[] tuples = tuple.split(",");
+		String[] tuples = tuple.split(Pattern.quote("//$$$//"));
 		String finalTuple="";
+		System.out.println("pl: "+tuples.length);
 		int clientID= Integer.parseInt(tuples[0]);
 		for(int i=1;i<tuples.length;i++){
 			if(subscriptions.get(clientID).get(i)==0){

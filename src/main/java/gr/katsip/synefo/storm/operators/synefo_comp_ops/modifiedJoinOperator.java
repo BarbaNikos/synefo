@@ -1,10 +1,13 @@
 package gr.katsip.synefo.storm.operators.synefo_comp_ops;
 
 import gr.katsip.synefo.storm.operators.AbstractOperator;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Pattern;
+
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
@@ -66,7 +69,7 @@ public class modifiedJoinOperator<T extends Object> implements AbstractOperator,
 
 	@Override
 	public List<Values> execute(Fields fields, Values values) {
-		String[] tpl = values.get(0).toString().split(",");
+		String[] tpl = values.get(0).toString().split(Pattern.quote("//$$$//"));
 		values.remove(0);
 		for(int i=0;i<tpl.length;i++){
 			Values v = new Values(tpl[i]);
@@ -120,7 +123,7 @@ public class modifiedJoinOperator<T extends Object> implements AbstractOperator,
 			String res = ""+result.get(0);
 			result.remove(0);
 			for(int i=0;i<result.size();i++){
-				res = res + ","+ result.get(i);
+				res = res + "//$$$//"+ result.get(i);
 				result.remove(i);
 			}
 			result.add(0, new Values(res));

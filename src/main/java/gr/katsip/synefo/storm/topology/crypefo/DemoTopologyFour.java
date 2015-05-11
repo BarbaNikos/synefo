@@ -100,7 +100,7 @@ public class DemoTopologyFour {
 				.setNumTasks(1);
 
 		String[] dataSpoutSchema = { "tuple" };
-		CrypefoDataTupleProducer dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[0]);
+		CrypefoDataTupleProducer dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[0],0);
 		dataTupleProducer.setSchema(new Fields(dataSpoutSchema));
 		builder.setSpout("spout_data_tuples_1", 
 				new SynefoSpout("spout_data_tuples_1", synefoIP, synefoPort, dataTupleProducer, zooIP, zooPort), 1)
@@ -122,7 +122,7 @@ public class DemoTopologyFour {
 				.setNumTasks(1);
 
 		String[] dataSpoutTwoSchema = { "tuple" };
-		dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[1]);
+		dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[1],1);
 		dataTupleProducer.setSchema(new Fields(dataSpoutTwoSchema));
 		builder.setSpout("spout_data_tuples_2", 
 				new SynefoSpout("spout_data_tuples_2", synefoIP, synefoPort, dataTupleProducer, zooIP, zooPort), 1)

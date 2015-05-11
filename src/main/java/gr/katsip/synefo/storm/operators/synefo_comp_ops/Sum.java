@@ -6,6 +6,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
@@ -70,11 +71,15 @@ public class Sum implements AbstractCrypefoOperator, Serializable {
 			dataSender = new dataCollector(zooIP, zooPort, statReportPeriod, ID);
 		}
 		if(!values.get(0).toString().contains("SPS")) {
-			String[] tuples = values.get(0).toString().split(",");
+			String[] tuples = values.get(0).toString().split(Pattern.quote("//$$$//"));
 			List<Values> vals = new ArrayList<Values>();
 			Values summ = new Values();
 			summ.add(regSum(tuples));
 			vals.add(summ);
+			String[] encUse= tuples[tuples.length-1].split(" ");
+			for(int k =0;k<encUse.length;k++){
+				encryptionData.put(encUse[k], encryptionData.get(encUse[k])+1);
+			}
 			encryptionData.put(tuples[tuples.length-1], encryptionData.get(tuples[tuples.length-1])+1);
 			updateData(statistics);
 			return vals;
@@ -89,7 +94,7 @@ public class Sum implements AbstractCrypefoOperator, Serializable {
 			dataSender = new dataCollector(zooIP, zooPort, statReportPeriod, ID);
 		}
 		if(!values.get(0).toString().contains("SPS")) {
-			String[] tuples = values.get(0).toString().split(",");
+			String[] tuples = values.get(0).toString().split(Pattern.quote("//$$$//"));
 			List<Values> vals = new ArrayList<Values>();
 			Values summ = new Values();
 			summ.add(regSum(tuples));

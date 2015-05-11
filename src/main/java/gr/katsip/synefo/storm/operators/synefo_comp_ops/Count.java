@@ -1,12 +1,16 @@
 package gr.katsip.synefo.storm.operators.synefo_comp_ops;
 
 import gr.katsip.synefo.metric.TaskStatistics;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.regex.Pattern;
+
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,7 +97,7 @@ public class Count implements AbstractCrypefoOperator, Serializable{
 		if(!values.get(0).toString().contains("SPS")) {
 			List<Values> returnedTuples = new ArrayList<Values>();
 			System.out.println( values.get(0));
-			String[] tuples = values.get(0).toString().split(",");
+			String[] tuples = values.get(0).toString().split(Pattern.quote("//$$$//"));
 			if(type==0){
 				returnedTuples.add(new Values(equiCount(tuples)));
 			}
@@ -106,8 +110,10 @@ public class Count implements AbstractCrypefoOperator, Serializable{
 			else {
 				returnedTuples.add(new Values(-1));
 			}
-			encryptionData.put(tuples[tuples.length-1], encryptionData.get(tuples[tuples.length-1])+1);
-			updateData(statistics);
+			String[] encUse= tuples[tuples.length-1].split(" ");
+			for(int k =0;k<encUse.length;k++){
+				encryptionData.put(encUse[k], encryptionData.get(encUse[k])+1);
+			}updateData(statistics);
 			return returnedTuples;
 		}
 		else{
@@ -123,7 +129,7 @@ public class Count implements AbstractCrypefoOperator, Serializable{
 		if(!values.get(0).toString().contains("SPS")) {
 			List<Values> returnedTuples = new ArrayList<Values>();
 			System.out.println( values.get(0));
-			String[] tuples = values.get(0).toString().split(",");
+			String[] tuples = values.get(0).toString().split(Pattern.quote("//$$$//"));
 			if(type==0){
 				returnedTuples.add(new Values(equiCount(tuples)));
 			}

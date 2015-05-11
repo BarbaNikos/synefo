@@ -1,12 +1,17 @@
 package gr.katsip.synefo.storm.operators.synefo_comp_ops;
 
 import gr.katsip.synefo.metric.TaskStatistics;
+
 import java.io.Serializable;
+
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.regex.Pattern;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,7 +125,8 @@ public class Select implements Serializable, AbstractCrypefoOperator  {
 			dataSender = new dataCollector(zooIP, zooPort, statReportPeriod, ID);
 		}
 		if(!values.get(0).toString().contains("SPS")) {
-			String[] tuples = values.get(0).toString().split(",");
+			System.out.println("SELECTION: "+values.get(0).toString());
+			String[] tuples = values.get(0).toString().split(Pattern.quote("//$$$//"));
 			boolean matches  = false;
 			if(type == 0) {
 				matches = equiSelect(tuples);
@@ -131,7 +137,10 @@ public class Select implements Serializable, AbstractCrypefoOperator  {
 			}else {
 				matches = false;
 			}
-			encryptionData.put(tuples[tuples.length-1], encryptionData.get(tuples[tuples.length-1])+1);
+			String[] encUse= tuples[tuples.length-1].split(" ");
+			for(int k =0;k<encUse.length;k++){
+				encryptionData.put(encUse[k], encryptionData.get(encUse[k])+1);
+			}
 			updateData(statistics);
 			Values val = new Values(); val.addAll(values);
 			ArrayList<Values> valz = new ArrayList<Values>();
@@ -150,7 +159,7 @@ public class Select implements Serializable, AbstractCrypefoOperator  {
 			dataSender = new dataCollector(zooIP, zooPort, statReportPeriod, ID);
 		}
 		if(!values.get(0).toString().contains("SPS")) {
-			String[] tuples = values.get(0).toString().split(",");
+			String[] tuples = values.get(0).toString().split("//$$$//");
 			boolean matches  = false;
 			if(type == 0) {
 				matches = equiSelect(tuples);

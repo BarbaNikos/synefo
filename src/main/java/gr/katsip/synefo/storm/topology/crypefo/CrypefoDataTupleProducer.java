@@ -29,10 +29,13 @@ public class CrypefoDataTupleProducer implements AbstractTupleProducer, Serializ
 	private Fields fields;
 
 	private String dataProviderIP;
+	
+	private int uniqueId;
 
-	public CrypefoDataTupleProducer(String dataProviderIP) {
+	public CrypefoDataTupleProducer(String dataProviderIP, int unique) {
 		dataProvider = null;
 		this.dataProviderIP = dataProviderIP;
+		this.uniqueId=unique;
 	}
 
 	public void connect() {
@@ -52,24 +55,26 @@ public class CrypefoDataTupleProducer implements AbstractTupleProducer, Serializ
 
 	@Override
 	public Values nextTuple() {
+		
+		
 		if(dataProvider == null)
 			connect();
 		Values val = new Values();
 		try {
-			String tuple = input.readLine();
-			
+			String tuple = input.readLine();	
+			String newTuple = uniqueId+"//$$$//"+tuple;
 			if(tuple != null && tuple.length() > 0) {
-				String[] tupleTokens_1 = tuple.split(":");				
-				String[] tupleTokens = {tupleTokens_1[1]};
-				for(int i = 0; i < tupleTokens.length; i++) {
-					if(val.size() < fields.size())
-						val.add(tupleTokens[i]);
-				}
+				val.add(newTuple);
+//				for(int i = 0; i < tupleTokens.length; i++) {
+//					if(val.size() < fields.size())
+//						val.add(tupleTokens[i]);
+//				}
 				if(val.size() < fields.size()) {
 					while(val.size() < fields.size()) {
 						val.add(new String("N/A"));
 					}
 				}
+				//System.out.println("size "+ val.size()+ " "+tuple);
 				return val;
 			}
 		} catch (IOException e) {
