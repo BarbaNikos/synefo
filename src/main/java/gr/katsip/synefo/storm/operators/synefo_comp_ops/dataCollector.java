@@ -29,7 +29,7 @@ public class dataCollector implements Serializable {
 
 	private int currentBufferSize;
 
-	private String opId;
+	private String operatorIdentifier;
 
 	private String zooIP;
 
@@ -51,21 +51,21 @@ public class dataCollector implements Serializable {
 	 * @param zooIP Zookeeper IP
 	 * @param zooPort Zookeeper Port
 	 * @param bufferSize the maximum size of records that need to be buffered before they are sent out to the Zookeeper cluster
-	 * @param ID the operators ID
+	 * @param operatorIdentifier the operators ID
 	 */
-	public dataCollector(String zooIP, Integer zooPort, int bufferSize, String ID) {
+	public dataCollector(String zooIP, Integer zooPort, int bufferSize, String operatorIdentifier) {
 		this.bufferSize = bufferSize;
 		this.currentBufferSize = 0;
-		opId = ID;
+		this.operatorIdentifier = operatorIdentifier;
 		strBuild = new StringBuilder();
 		this.zooIP = zooIP;
 		this.zooPort = zooPort;
 		try {
 			zk = new ZooKeeper(this.zooIP + ":" + this.zooPort, 100000, dataCollectorWatcher);
-			if(zk.exists("/data/" + opId, false) != null ) {
-				zk.delete("/data/" + opId, -1);
+			if(zk.exists("/data/" + this.operatorIdentifier, false) != null ) {
+				zk.delete("/data/" + this.operatorIdentifier, -1);
 			}
-			zk.create("/data/"+ opId, (new String("/data/"+ opId)).getBytes(), 
+			zk.create("/data/"+ this.operatorIdentifier, (new String("/data/"+ this.operatorIdentifier)).getBytes(), 
 					Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -94,7 +94,7 @@ public class dataCollector implements Serializable {
 
 	public void createChildNode(byte[] statBuffer) {
 //		String newChildPath = "/data/" + opId + "/";
-		String nodePath = "/data/" + opId;
+		String nodePath = "/data/" + this.operatorIdentifier;
 		//TODO: Do we need the data twice?? Both in the /data/opId node and in the /data/opId/n node??
 //		zk.create(newChildPath, statBuffer, Ids.OPEN_ACL_UNSAFE, 
 //				CreateMode.PERSISTENT_SEQUENTIAL, createChildNodeCallback, statBuffer);
@@ -152,51 +152,3 @@ public class dataCollector implements Serializable {
 
 	};
 }
-//public void startStats(int id){
-//String path = "/crypto/"+id+"/plain_percent";
-//ZkConnector zkc = new ZkConnector();
-//try {
-//	zkc.connect("localhost");
-//	ZooKeeper zk = zkc.getZooKeeper();
-//	zk.create(path,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-//	zk.create(path5,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-//} catch (IOException e) {
-//	// TODO Auto-generated catch block
-//	e.printStackTrace();
-//} catch (InterruptedException e) {
-//	// TODO Auto-generated catch block
-//	e.printStackTrace();
-//} catch (KeeperException e) {
-//	// TODO Auto-generated catch block
-//	e.printStackTrace();
-//}
-//
-//}
-//
-//public void sendStats(int id, HashMap<String, Integer> encryptionMap){
-//String path = "/crypto/"+id+"/plain_percent";
-//String path2 = "/crypto/"+id+"/RND_percent";
-//String path3 = "/crypto/"+id+"/DET_percent";
-//String path4 = "/crypto/"+id+"/OPE_percent";
-//String path5 = "/crypto/"+id+"/HOM_percent";
-//
-//ZkConnector zkc = new ZkConnector();
-//try {
-//	zkc.connect("localhost");
-//	ZooKeeper zk = zkc.getZooKeeper();
-//	zk.setData(path, encryptionMap.get("PLN").toString().getBytes(), 0);
-//	zk.setData(path2, encryptionMap.get("RND").toString().getBytes(), 0);
-//	zk.setData(path3, encryptionMap.get("DET").toString().getBytes(), 0);
-//	zk.setData(path4, encryptionMap.get("OPE").toString().getBytes(), 0);
-//	zk.setData(path5, encryptionMap.get("RND").toString().getBytes(), 0);
-//} catch (IOException e) {
-//	// TODO Auto-generated catch block
-//	e.printStackTrace();
-//} catch (InterruptedException e) {
-//	// TODO Auto-generated catch block
-//	e.printStackTrace();
-//} catch (KeeperException e) {
-//	// TODO Auto-generated catch block
-//	e.printStackTrace();
-//}
-//}

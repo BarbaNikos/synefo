@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class SynEFOUserInterface implements Runnable {
 
@@ -18,14 +19,19 @@ public class SynEFOUserInterface implements Runnable {
 	
 	private ZooMaster beastMaster;
 	
-	private CEStormDatabaseManager ceDb;
+	private boolean demoMode;
 	
-	private HashMap<String, Integer> operatorNameToIdMap;
+	private AtomicInteger queryId;
+	
+	private CEStormDatabaseManager ceDb = null;
 
-	public SynEFOUserInterface(ZooMaster beastMaster, HashMap<String, ArrayList<String>> physicalTopology) {
+	public SynEFOUserInterface(ZooMaster beastMaster, HashMap<String, ArrayList<String>> physicalTopology, 
+			boolean demoMode, AtomicInteger queryId, CEStormDatabaseManager ceDb) {
 		this.beastMaster = beastMaster;
 		this.physicalTopology = new HashMap<String, ArrayList<String>>(physicalTopology);
-		ceDb = new CEStormDatabaseManager("","","");
+		this.demoMode = demoMode;
+		this.queryId = queryId;
+		this.ceDb = ceDb;
 	}
 
 	public void run() {
@@ -33,7 +39,6 @@ public class SynEFOUserInterface implements Runnable {
 		BufferedReader _input = new BufferedReader(new InputStreamReader(System.in));
 		String command = null;
 		System.out.println("+efo Server started (UI). Type help for the list of commands");
-		operatorNameToIdMap = ceDb.getOperatorNameToIdentifiersMap(queryId);
 		while(exitFlag == false) {
 			try {
 				System.out.print("+efo>");

@@ -310,11 +310,11 @@ public class StatJoinOperator<T extends Object> implements Serializable, Abstrac
 		int sel = 0;
 		//////////////////////////replace 1 with id
 		if(stats != null) {
-			String tuple = 	"join," + stats.getCpuLoad() + "," + stats.getMemory() + "," + stats.getWindowLatency() + "," + 
+			String tuple = 	stats.getCpuLoad() + "," + stats.getMemory() + "," + stats.getWindowLatency() + "," + 
 					stats.getWindowThroughput() + "," + stats.getSelectivity() + ",0,0,0,0,0";
 			dataSender.addToBuffer(tuple);
 		}else {
-			String tuple = "join," + CPU + "," + memory + "," + latency + "," + 
+			String tuple = CPU + "," + memory + "," + latency + "," + 
 					throughput + "," + sel + ",0,0,0,0,0";
 			dataSender.addToBuffer(tuple);
 		}

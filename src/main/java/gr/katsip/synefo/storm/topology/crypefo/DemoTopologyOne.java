@@ -277,9 +277,9 @@ public class DemoTopologyOne {
 //		LocalCluster cluster = new LocalCluster();
 //		cluster.submitTopology("debug-topology", conf, builder.createTopology());
 //		Thread.sleep(200000);
-		OperatorStatisticCollector statCollector = new OperatorStatisticCollector(zooIP + ":" + zooPort, 
-				"n/a", "n/a", "n/a", "n/a");
-		statCollector.init();
+//		OperatorStatisticCollector statCollector = new OperatorStatisticCollector(zooIP + ":" + zooPort, 
+//				"n/a", "n/a", "n/a", "n/a");
+//		statCollector.init();
 	}
 
 

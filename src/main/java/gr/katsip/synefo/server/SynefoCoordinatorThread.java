@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import gr.katsip.cestorm.db.CEStormDatabaseManager;
 import gr.katsip.synefo.server.time.TimeServer;
@@ -35,7 +36,11 @@ public class SynefoCoordinatorThread implements Runnable {
 
 	private AtomicBoolean operationFlag;
 	
-	private static final boolean demoMode = true;
+	private boolean demoMode;
+	
+	private AtomicInteger queryId;
+	
+	private CEStormDatabaseManager ceDb = null;
 
 	public SynefoCoordinatorThread(String zooHost, Integer zooPort, 
 			HashMap<String, Pair<Number, Number>> resourceThresholds, 
@@ -43,7 +48,10 @@ public class SynefoCoordinatorThread implements Runnable {
 			HashMap<String, ArrayList<String>> runningTopology, 
 			HashMap<String, Integer> taskNameToIdMap, 
 			HashMap<String, String> taskIPs,
-			AtomicBoolean operationFlag) {
+			AtomicBoolean operationFlag, 
+			boolean demoMode, 
+			AtomicInteger queryId, 
+			CEStormDatabaseManager ceDb) {
 		this.physicalTopology = physicalTopology;
 		this.activeTopology = runningTopology;
 		this.taskNameToIdMap = taskNameToIdMap;
@@ -52,6 +60,9 @@ public class SynefoCoordinatorThread implements Runnable {
 		this.zooHost = zooHost;
 		this.zooPort = zooPort;
 		this.operationFlag = operationFlag;
+		this.demoMode = demoMode;
+		this.queryId = queryId;
+		this.ceDb = ceDb;
 	}
 
 	public void run() {
@@ -154,9 +165,26 @@ public class SynefoCoordinatorThread implements Runnable {
 				System.out.println("}");
 			}
 
+			/**
+			 * If demoMode is true: Need to populate the database with the 
+			 * initial values.
+			 * 
+			 */
 			if(demoMode == true) {
 				CEStormDatabaseManager ceDb = new CEStormDatabaseManager("", "", "");
-				
+				/**
+				 * First update all operator information
+				 */
+				Iterator<Entry<String, ArrayList<String>>> operatorItr = 
+						physicalTopology.entrySet().iterator();
+				while(operatorItr.hasNext()) {
+					Entry<String, ArrayList<String>> operatorEntry = operatorItr.next();
+					String operatorName = operatorEntry.getKey();
+					String[] operatorNameTokens = operatorName.split(":@");
+					ceDb.updateOperatorInformation(queryId.get(), operatorNameTokens[0], 
+							operatorName, operatorNameTokens[2]);
+				}
+				ceDb.destroy();
 			}
 			operationFlag.set(true);
 
@@ -166,7 +194,7 @@ public class SynefoCoordinatorThread implements Runnable {
 		tamer.setScaleOutEventWatch();
 		tamer.setScaleInEventWatch();
 
-		userInterfaceThread = new Thread(new SynEFOUserInterface(tamer, physicalTopology));
+		userInterfaceThread = new Thread(new SynEFOUserInterface(tamer, physicalTopology, demoMode, queryId, ceDb));
 		userInterfaceThread.start();
 		(new Thread(new TimeServer(5556))).start();
 	}

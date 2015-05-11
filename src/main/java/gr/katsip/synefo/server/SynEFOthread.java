@@ -8,6 +8,8 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 
 
@@ -36,12 +38,18 @@ public class SynEFOthread implements Runnable {
 	private HashMap<String, String> taskIPs;
 	
 	private AtomicBoolean operationFlag;
+	
+	private boolean demoMode;
+	
+	private AtomicInteger queryId;
 
 	public SynEFOthread(HashMap<String, ArrayList<String>> physicalTopology, HashMap<String, ArrayList<String>> activeTopology, 
 			HashMap<String, Integer> taskNameToIdMap, 
 			InputStream in, OutputStream out,  
 			HashMap<String, String> taskIPs, 
-			AtomicBoolean operationFlag) {
+			AtomicBoolean operationFlag, 
+			boolean demoMode, 
+			AtomicInteger queryId) {
 		this.in = in;
 		this.out = out;
 		this.taskNameToIdMap = taskNameToIdMap;
@@ -55,6 +63,8 @@ public class SynEFOthread implements Runnable {
 		this.physicalTopology = physicalTopology;
 		this.activeTopology = activeTopology;
 		this.operationFlag = operationFlag;
+		this.demoMode = demoMode;
+		this.queryId = queryId;
 	}
 
 	public void run() {
@@ -75,6 +85,8 @@ public class SynEFOthread implements Runnable {
 				boltProcess(msg._values);
 				break;
 			case "TOPOLOGY":
+				if(demoMode)
+					queryId.set(Integer.parseInt(msg._values.get("QUERY_ID")));
 				topologyProcess();
 				break;
 			default:

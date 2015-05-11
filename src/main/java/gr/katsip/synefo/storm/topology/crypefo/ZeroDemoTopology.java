@@ -52,9 +52,15 @@ public class ZeroDemoTopology {
 			zooIP = args[2];
 			zooPort = Integer.parseInt(args[3]);
 		}
-		CEStormDatabaseManager ceDb = new CEStormDatabaseManager("", "", "");
+		/**
+		 * The following two lines need to be populated with the database information
+		 */
+		CEStormDatabaseManager ceDb = new CEStormDatabaseManager(
+				"jdbc:mysql://db10.cs.pitt.edu:3306/ce_storm", "stormxl_user", "bMWBdTdMyf7uuB69");
 		Integer queryId = ceDb.insertQuery(1, 
 				"SELECT * FROM Rstream AS R, Rstream AS S WHERE R.three = S.three");
+		OperatorStatisticCollector statCollector = new OperatorStatisticCollector(zooIP + ":" + zooPort, 
+				"jdbc:mysql://db10.cs.pitt.edu:3306/ce_storm", "stormxl_user", "bMWBdTdMyf7uuB69", queryId);
 		/**
 		 * Create the /data z-node once for all the bolts (also clean-up previous contents)
 		 */
@@ -168,6 +174,7 @@ public class ZeroDemoTopology {
 		SynefoMessage msg = new SynefoMessage();
 		msg._values = new HashMap<String, String>();
 		msg._values.put("TASK_TYPE", "TOPOLOGY");
+		msg._values.put("QUERY_ID", Integer.toString(queryId));
 		_out.writeObject(msg);
 		_out.flush();
 		Thread.sleep(100);
@@ -186,8 +193,6 @@ public class ZeroDemoTopology {
 		conf.setDebug(false);
 		conf.setNumWorkers(3);
 		StormSubmitter.submitTopology("zero-demo-top", conf, builder.createTopology());
-		OperatorStatisticCollector statCollector = new OperatorStatisticCollector(zooIP + ":" + zooPort, 
-				"n/a", "n/a", "n/a", "n/a");
 		statCollector.init();
 	}
 

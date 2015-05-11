@@ -44,6 +44,8 @@ public class CEStormDatabaseManager {
 	private static final String insertOperator = "INSERT INTO operator (name, ip_address, query_id, x_coord, y_coord, type) VALUES (?,?,?,?,?,?)";
 	
 	private static final String insertOperatorAdjacencyRecord = "INSERT INTO operator_adjacency_list (query_id, parent_id, child_id) values(?,?,?)";
+	
+	private static final String updateOperatorInformation = "UPDATE operator SET name = ?, ip_address = ? WHERE query_id = ? AND name = ?";
 
 	public CEStormDatabaseManager(String url, String user, String password) {
 		this.url = url;
@@ -117,6 +119,30 @@ public class CEStormDatabaseManager {
 			connection.setAutoCommit(true);
 		} catch(SQLException e) {
 			System.err.println("CEStormDatabaseManager encountered error when inserting operator: " + e.getMessage());
+			e.printStackTrace();
+			try {
+				connection.rollback();
+				connection.setAutoCommit(true);
+			} catch (SQLException e1) {
+				e1.printStackTrace();
+			}
+		}
+	}
+	
+	public void updateOperatorInformation(Integer queryId, String currentName, String newName, String ipAddress) {
+		try {
+			connection.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
+			connection.setAutoCommit(false);
+			PreparedStatement prepStatement = connection.prepareStatement(updateOperatorInformation);
+			prepStatement.setString(1, newName);
+			prepStatement.setString(2, ipAddress);
+			prepStatement.setInt(3, queryId);
+			prepStatement.setString(4, currentName);
+			prepStatement.executeUpdate();
+			connection.commit();
+			connection.setAutoCommit(true);
+		} catch(SQLException e) {
+			System.err.println("CEStormDatabaseManager encountered error when updating operator: " + e.getMessage());
 			e.printStackTrace();
 			try {
 				connection.rollback();

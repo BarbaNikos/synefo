@@ -58,9 +58,9 @@ public class StatCollectorTest {
 			e.printStackTrace();
 		}
 
-		OperatorStatisticCollector statCollector = new OperatorStatisticCollector("localhost:2181", 
-				"n/a", "n/a", "n/a", "n/a");
-		statCollector.init();
+//		OperatorStatisticCollector statCollector = new OperatorStatisticCollector("localhost:2181", 
+//				"n/a", "n/a", "n/a", "n/a");
+//		statCollector.init();
 	}
 
 }

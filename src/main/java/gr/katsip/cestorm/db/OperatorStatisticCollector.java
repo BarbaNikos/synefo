@@ -1,6 +1,9 @@
 package gr.katsip.cestorm.db;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 //import java.sql.Connection;
@@ -22,7 +25,9 @@ public class OperatorStatisticCollector {
 
 	private ZooKeeper zk;
 
-	//	private Connection connection;
+	private Connection connection;
+	
+	private Integer queryId;
 
 	private CopyOnWriteArrayList<String> operators;
 
@@ -48,7 +53,7 @@ public class OperatorStatisticCollector {
 	};
 
 	public OperatorStatisticCollector(String zookeeperAddress, 
-			String dbIP, String user, String password, String dbName) {
+			String dbIP, String user, String password, Integer queryId) {
 		operators = new CopyOnWriteArrayList<String>();
 		try {
 			zk = new ZooKeeper(zookeeperAddress, 1000000, dataRetrieverWatcher);
@@ -57,11 +62,12 @@ public class OperatorStatisticCollector {
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
-		//		try {
-		//			connection = DriverManager.getConnection(dbIP, user, password);
-		//		} catch (SQLException e) {
-		//			e.printStackTrace();
-		//		}
+		try {
+			connection = DriverManager.getConnection(dbIP, user, password);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		this.queryId = queryId;
 	}
 
 	public void init() {

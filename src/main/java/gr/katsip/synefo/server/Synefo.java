@@ -1,17 +1,16 @@
 package gr.katsip.synefo.server;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import gr.katsip.cestorm.db.CEStormDatabaseManager;
 import gr.katsip.synefo.storm.api.Pair;
 
 public class Synefo {
@@ -37,8 +36,14 @@ public class Synefo {
 	private Integer zooIP;
 	
 	private AtomicBoolean operationFlag;
+	
+	private boolean demoMode = false;
+	
+	private AtomicInteger queryId;
+	
+	private CEStormDatabaseManager ceDb = null;
 
-	public Synefo(String zooHost, Integer zooIP, HashMap<String, Pair<Number, Number>> _resource_thresholds) {
+	public Synefo(String zooHost, Integer zooIP, HashMap<String, Pair<Number, Number>> _resource_thresholds, CEStormDatabaseManager ceDb) {
 		physicalTopology = new HashMap<String, ArrayList<String>>();
 		activeTopology = new HashMap<String, ArrayList<String>>();
 		nameToIdMap = new HashMap<String, Integer>();
@@ -49,19 +54,6 @@ public class Synefo {
 			serverSocket = new ServerSocket(5555);
 			serverPort = serverSocket.getLocalPort();
 			System.out.println("+efo-INFO#" + serverSocket.getInetAddress().getHostAddress() + ":" + serverPort);
-			File f = new File("synefoserver.conf");
-			if(f.exists()) {
-				f.delete();
-			}
-			try {
-				f.createNewFile();
-				PrintWriter writer = new PrintWriter(new FileOutputStream(f));
-				writer.println(serverSocket.getInetAddress().getHostAddress() + ":" + serverSocket.getLocalPort());
-				writer.flush();
-				writer.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -70,19 +62,30 @@ public class Synefo {
 		this.zooHost = zooHost;
 		this.zooIP = zooIP;
 		operationFlag = new AtomicBoolean(false);
+		if(ceDb != null) {
+			this.demoMode = true;
+			queryId = new AtomicInteger(-1);
+			this.ceDb = ceDb;
+		}else {
+			this.demoMode = false;
+			queryId = new AtomicInteger(-1);
+			this.ceDb = null;
+		}
 	}
 
 	public void runServer() {
 		Socket _stormComponent = null;
 		OutputStream _out = null;
 		InputStream _in = null;
-		(new Thread(new SynefoCoordinatorThread(zooHost, zooIP, resourceThresholds, physicalTopology, activeTopology, nameToIdMap, taskIPs, operationFlag))).start();
+		(new Thread(new SynefoCoordinatorThread(zooHost, zooIP, resourceThresholds, physicalTopology, 
+				activeTopology, nameToIdMap, taskIPs, operationFlag, demoMode, queryId, ceDb))).start();
 		while(killCommand == false) {
 			try {
 				_stormComponent = serverSocket.accept();
 				_out = _stormComponent.getOutputStream();
 				_in = _stormComponent.getInputStream();
-				(new Thread(new SynEFOthread(physicalTopology, activeTopology, nameToIdMap, _in, _out, taskIPs, operationFlag))).start();
+				(new Thread(new SynEFOthread(physicalTopology, activeTopology, nameToIdMap, _in, _out, taskIPs, 
+						operationFlag, demoMode, queryId))).start();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
