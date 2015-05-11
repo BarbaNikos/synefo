@@ -171,7 +171,6 @@ public class SynefoCoordinatorThread implements Runnable {
 			 * 
 			 */
 			if(demoMode == true) {
-				CEStormDatabaseManager ceDb = new CEStormDatabaseManager("", "", "");
 				/**
 				 * First update all operator information
 				 */
@@ -181,10 +180,10 @@ public class SynefoCoordinatorThread implements Runnable {
 					Entry<String, ArrayList<String>> operatorEntry = operatorItr.next();
 					String operatorName = operatorEntry.getKey();
 					String[] operatorNameTokens = operatorName.split(":@");
-					ceDb.updateOperatorInformation(queryId.get(), operatorNameTokens[0], 
+					this.ceDb.updateOperatorInformation(queryId.get(), operatorNameTokens[0], 
 							operatorName, operatorNameTokens[2]);
 				}
-				ceDb.destroy();
+				this.ceDb.destroy();
 			}
 			operationFlag.set(true);
 
