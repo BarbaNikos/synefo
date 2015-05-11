@@ -57,11 +57,7 @@ public class SPSUpdater implements Serializable {
 	}
 	
 	public void createChildNode(byte[] statBuffer) {
-//		String newChildPath = "/data/" + opId + "/";
 		String nodePath = "/SPS";
-		//TODO: Do we need the data twice?? Both in the /data/opId node and in the /data/opId/n node??
-//		zk.create(newChildPath, statBuffer, Ids.OPEN_ACL_UNSAFE, 
-//				CreateMode.PERSISTENT_SEQUENTIAL, createChildNodeCallback, statBuffer);
 		zk.setData(nodePath, statBuffer, -1, setSPSCallback, statBuffer);
 	}
 	

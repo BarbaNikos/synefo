@@ -2,6 +2,7 @@ package gr.katsip.synefo.storm.operators.synefo_comp_ops;
 
 import gr.katsip.synefo.metric.TaskStatistics;
 
+import java.io.IOException;
 import java.io.Serializable;
 
 import backtype.storm.tuple.Fields;
@@ -12,6 +13,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.AsyncCallback.DataCallback;
+import org.apache.zookeeper.KeeperException.Code;
+import org.apache.zookeeper.Watcher.Event;
+import org.apache.zookeeper.ZooDefs.Ids;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +63,26 @@ public class Select implements Serializable, AbstractCrypefoOperator  {
 	private Integer zooPort;
 
 	private String ID;
+	private ZooKeeper zk = null;
 
+	private Watcher SPSRetrieverWatcher = new Watcher() {
+		@Override
+		public void process(WatchedEvent event) {
+			String path = event.getPath();
+			/**
+			 * When you retrieve the path, call the getDataAndWatch() function to 
+			 * retrieve data and set watch again
+			 */
+			System.out.println("Received event type: " + event.getType());
+			if(event.getType() == Event.EventType.NodeDataChanged) {
+				//Retrieve operator
+				System.out.println("NodeDataChanged event: " + path);
+				getDataAndWatch();
+			}else if(event.getType() == Event.EventType.NodeChildrenChanged) {
+				//Retrieve new children
+			}
+		}
+	};
 	/**
 	 * 
 	 * @param returnSet
@@ -82,6 +112,22 @@ public class Select implements Serializable, AbstractCrypefoOperator  {
 		this.zooIP = zooIP;
 		this.zooPort = zooPort;
 		dataSender = null;
+		this.zooIP = zooIP;
+		this.zooPort = zooPort;
+		try {
+			zk = new ZooKeeper(this.zooIP + ":" + this.zooPort, 100000, SPSRetrieverWatcher);
+			if(zk.exists("/SPS", false) != null ) {
+				zk.delete("/SPS", -1);
+			}
+			zk.create("/SPS", (new String("/SPS")).getBytes(), 
+					Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} catch (KeeperException e) {
+			e.printStackTrace();
+		}
 	}
 
 	@Override
@@ -260,5 +306,45 @@ public class Select implements Serializable, AbstractCrypefoOperator  {
 			encryptionData.put("HOM",0);
 		}
 	}
+	
+	public void getDataAndWatch() {
+		zk.getData("/SPS", 
+				true, 
+				getSPSCallback, 
+				"SPS");
+	}
+	
+	private void handleUpdate(String data){
+		String[] sp = data.split(",");
+		if(sp[0].equalsIgnoreCase("select")){
+			predicate = sp[1];
+		}
+	}
+
+	private DataCallback getSPSCallback = new DataCallback() {
+		@Override
+		public void processResult(int rc, String path, Object ctx, byte[] data,
+				Stat stat) {
+			switch(Code.get(rc)) {
+			case CONNECTIONLOSS:
+				System.out.println("getSPSCallback(): CONNECTIONLOSS");
+				getDataAndWatch();
+				break;
+			case NONODE:
+				System.out.println("getSPSCallback(): NONODE");
+				break;
+			case OK:
+				System.out.println("getSPSCallback(): Successfully retrieved new predicate: " + 
+						new String(data));
+						handleUpdate(new String(data));
+				break;
+			default:
+				System.out.println("getDataCallback(): Unexpected scenario: " + 
+						KeeperException.create(Code.get(rc), path) );
+				break;
+			}
+		}
+
+	};
 	
 }
