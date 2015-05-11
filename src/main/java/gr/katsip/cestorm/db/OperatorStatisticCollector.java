@@ -1,14 +1,8 @@
 package gr.katsip.cestorm.db;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
-//import java.sql.Connection;
-//import java.sql.DriverManager;
-//import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -25,11 +19,11 @@ public class OperatorStatisticCollector {
 
 	private ZooKeeper zk;
 
-	private Connection connection;
-	
 	private Integer queryId;
 
 	private CopyOnWriteArrayList<String> operators;
+	
+	private CEStormDatabaseManager ceDb;
 
 	private Watcher dataRetrieverWatcher = new Watcher() {
 		@Override
@@ -62,11 +56,7 @@ public class OperatorStatisticCollector {
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
-		try {
-			connection = DriverManager.getConnection(dbIP, user, password);
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
+		ceDb = new CEStormDatabaseManager(dbIP, user, password);
 		this.queryId = queryId;
 	}
 
@@ -77,6 +67,12 @@ public class OperatorStatisticCollector {
 		try {
 			System.in.read();
 		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		ceDb.destroy();
+		try {
+			zk.close();
+		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 	}
@@ -111,7 +107,8 @@ public class OperatorStatisticCollector {
 				for(String child : childrenDifference) {
 					getDataAndWatch(child);
 				}
-				System.out.println("getChildrenCallback(): OK call, received new children: " + Arrays.toString(childrenDifference.toArray()) + 
+				System.out.println("getChildrenCallback(): OK call, received new children: " + 
+						Arrays.toString(childrenDifference.toArray()) + 
 						", operators size: " + Arrays.toString(operators.toArray()));
 				break;
 			default:
@@ -135,7 +132,7 @@ public class OperatorStatisticCollector {
 				Stat stat) {
 			switch(Code.get(rc)) {
 			case CONNECTIONLOSS:
-				String operator = new String(data);
+				String operator = new String((String) ctx);
 				System.out.println("getDataCallback(): CONNECTIONLOSS");
 				getDataAndWatch(operator);
 				break;
@@ -145,9 +142,8 @@ public class OperatorStatisticCollector {
 			case OK:
 				System.out.println("getDataCallback(): Successfully retrieved stats: " + 
 						new String(data));
-				/**
-				 * TODO: Insert them to database
-				 */
+				String operatorIdentifier = new String(data);
+				commitToDatabase(queryId, operatorIdentifier, new String(data));
 				break;
 			default:
 				System.out.println("getDataCallback(): Unexpected scenario: " + 
@@ -157,5 +153,18 @@ public class OperatorStatisticCollector {
 		}
 
 	};
+	
+	private void commitToDatabase(Integer queryId, String operator, String data) {
+		String[] statisticTuples = data.split(";");
+		for(int i = 0; i < statisticTuples.length; ++i) {
+			String[] stats = statisticTuples[i].split(",");
+			ceDb.insertStatistics(queryId, operator, 
+					Float.parseFloat(stats[0]), Float.parseFloat(stats[1]), 
+					Integer.parseInt(stats[2]), Integer.parseInt(stats[3]), 
+					Float.parseFloat(stats[4]), Integer.parseInt(stats[5]), 
+					Integer.parseInt(stats[6]), Integer.parseInt(stats[7]), 
+					Integer.parseInt(stats[8]), Integer.parseInt(stats[9]));
+		}
+	}
 
 }

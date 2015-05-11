@@ -1,13 +1,13 @@
-import gr.katsip.synefo.storm.operators.synefo_comp_ops.dataCollector;
+import gr.katsip.synefo.storm.operators.synefo_comp_ops.DataCollector;
 
 
 public class StatCollectorClient {
 
 	public static void main(String[] args) {
-		dataCollector collector = new dataCollector("localhost", 2181, 1000, "select_bolt_1");
-		dataCollector collector2 = new dataCollector("localhost", 2181, 1000, "select_bolt_2");
-		dataCollector collector3 = new dataCollector("localhost", 2181, 1000, "select_bolt_3");
-		dataCollector collector4 = new dataCollector("localhost", 2181, 1000, "select_bolt_4");
+		DataCollector collector = new DataCollector("localhost", 2181, 1000, "select_bolt_1");
+		DataCollector collector2 = new DataCollector("localhost", 2181, 1000, "select_bolt_2");
+		DataCollector collector3 = new DataCollector("localhost", 2181, 1000, "select_bolt_3");
+		DataCollector collector4 = new DataCollector("localhost", 2181, 1000, "select_bolt_4");
 		
 		for(int i = 0; i < 100000; ++i) {
 //			try {

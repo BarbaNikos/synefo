@@ -20,6 +20,8 @@ public class CEStormDatabaseManager {
 	private String password = null;
 
 	private Connection connection = null;
+	
+	private HashMap<String, Integer> nameToIdentifierMap;
 
 	private static final String retrieveLatestActiveTopologyTimestamp = "SELECT MAX(start_time) FROM topology_operator WHERE end_time IS NULL";
 
@@ -46,6 +48,8 @@ public class CEStormDatabaseManager {
 	private static final String insertOperatorAdjacencyRecord = "INSERT INTO operator_adjacency_list (query_id, parent_id, child_id) values(?,?,?)";
 	
 	private static final String updateOperatorInformation = "UPDATE operator SET name = ?, ip_address = ? WHERE query_id = ? AND name = ?";
+	
+	private static final String insertStatisticTuple = "INSERT INTO statistic (operator_id, timestamp, cpu, memory, latency, throughput, selectivity, plain, det, rnd, ope, hom) VALUES(?,unix_timestamp(),?,?,?,?,?,?,?,?,?,?)";
 
 	public CEStormDatabaseManager(String url, String user, String password) {
 		this.url = url;
@@ -57,6 +61,7 @@ public class CEStormDatabaseManager {
 			System.err.println("CEStormDatabaseManager failed to connect to MySQL DBMS: " + e.getMessage());
 			e.printStackTrace();
 		}
+		nameToIdentifierMap = null;
 	}
 
 	public void destroy() {
@@ -213,6 +218,7 @@ public class CEStormDatabaseManager {
 		} catch(SQLException e) {
 			e.printStackTrace();
 		}
+		nameToIdentifierMap = new HashMap<String, Integer>(map);
 		return map;
 	}
 
@@ -343,6 +349,44 @@ public class CEStormDatabaseManager {
 				connection.setAutoCommit(true);
 			} catch (SQLException e1) {
 				System.err.println("CEStormDatabaseManager encountered error when rolling-back insert scale-event-transcation: " + e.getMessage());
+				e1.printStackTrace();
+			}
+		}
+	}
+	
+	public void insertStatistics(Integer queryId, String operator, float cpu, float memory, 
+			int latency, int throughput, float selectivity, 
+			int plain, int det, int rnd, int ope, int hom) {
+		if(nameToIdentifierMap == null)
+			this.getOperatorNameToIdentifiersMap(queryId);
+		try {
+			connection.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
+			connection.setAutoCommit(false);
+			/**
+			 * Populate the insert
+			 */
+			PreparedStatement prepStatement = connection.prepareStatement(insertStatisticTuple);
+			prepStatement.setInt(1, nameToIdentifierMap.get(operator));
+			prepStatement.setFloat(2, cpu);
+			prepStatement.setFloat(3, memory);
+			prepStatement.setInt(4, latency);
+			prepStatement.setInt(5, throughput);
+			prepStatement.setFloat(6, selectivity);
+			prepStatement.setInt(7, plain);
+			prepStatement.setInt(8, det);
+			prepStatement.setInt(9, rnd);
+			prepStatement.setInt(10, ope);
+			prepStatement.setInt(11, hom);
+			prepStatement.executeUpdate();
+			connection.commit();
+			connection.setAutoCommit(true);
+		}catch (SQLException e) {
+			System.err.println("CEStormDatabaseManager encountered error when inserting statistic tuple: " + e.getMessage());
+			try {
+				connection.rollback();
+				connection.setAutoCommit(true);
+			} catch (SQLException e1) {
+				System.err.println("CEStormDatabaseManager encountered error when rolling-back insert stat-tuple-transcation: " + e.getMessage());
 				e1.printStackTrace();
 			}
 		}

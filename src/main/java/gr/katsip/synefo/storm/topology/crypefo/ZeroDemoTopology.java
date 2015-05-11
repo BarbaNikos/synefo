@@ -132,14 +132,14 @@ public class ZeroDemoTopology {
 				new Fields(spoutSchema), new Fields(spoutSchema), zooIP + ":" + zooPort, 1000);
 		builder.setBolt("join_bolt_1", 
 				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, 
-						joinOperator, zooIP, zooPort, true), 1)
+						joinOperator, zooIP, zooPort, false), 1)
 						.setNumTasks(1)
 						.directGrouping("spout");
 		joinOperator = new StatJoinOperator<String>(new StringComparator(), 500, "three", 
 				new Fields(spoutSchema), new Fields(spoutSchema), zooIP + ":" + zooPort, 1000);
 		builder.setBolt("join_bolt_2", 
 				new SynefoBolt("join_bolt_2", synefoIP, synefoPort, 
-						joinOperator, zooIP, zooPort, true), 1)
+						joinOperator, zooIP, zooPort, false), 1)
 						.setNumTasks(1)
 						.directGrouping("spout");
 		_tmp = new ArrayList<String>();

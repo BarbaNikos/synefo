@@ -16,14 +16,14 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class dataCollector implements Serializable {
+public class DataCollector implements Serializable {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 5782301300725371212L;
 
-	Logger logger = LoggerFactory.getLogger(dataCollector.class);
+	Logger logger = LoggerFactory.getLogger(DataCollector.class);
 
 	private int bufferSize;
 
@@ -53,7 +53,7 @@ public class dataCollector implements Serializable {
 	 * @param bufferSize the maximum size of records that need to be buffered before they are sent out to the Zookeeper cluster
 	 * @param operatorIdentifier the operators ID
 	 */
-	public dataCollector(String zooIP, Integer zooPort, int bufferSize, String operatorIdentifier) {
+	public DataCollector(String zooIP, Integer zooPort, int bufferSize, String operatorIdentifier) {
 		this.bufferSize = bufferSize;
 		this.currentBufferSize = 0;
 		this.operatorIdentifier = operatorIdentifier;
@@ -124,6 +124,7 @@ public class dataCollector implements Serializable {
 		}
 	};
 
+	@SuppressWarnings("unused")
 	private StringCallback createChildNodeCallback = new StringCallback() {
 		@Override
 		public void processResult(int rc, String path, Object ctx,

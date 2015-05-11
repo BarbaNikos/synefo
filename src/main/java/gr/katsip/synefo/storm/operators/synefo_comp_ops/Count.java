@@ -45,7 +45,7 @@ public class Count implements AbstractCrypefoOperator, Serializable{
 
 	private HashMap<String, Integer> encryptionData = new HashMap<String,Integer>();
 
-	private dataCollector dataSender = null;
+	private DataCollector dataSender = null;
 
 	private String zooIP;
 
@@ -92,7 +92,7 @@ public class Count implements AbstractCrypefoOperator, Serializable{
 	public List<Values> execute(TaskStatistics statistics, Fields fields,
 			Values values) {
 		if(dataSender == null) {
-			dataSender = new dataCollector(zooIP, zooPort, statReportPeriod, ID);
+			dataSender = new DataCollector(zooIP, zooPort, statReportPeriod, ID);
 		}
 		if(!values.get(0).toString().contains("SPS")) {
 			List<Values> returnedTuples = new ArrayList<Values>();
@@ -124,7 +124,7 @@ public class Count implements AbstractCrypefoOperator, Serializable{
 	@Override
 	public List<Values> execute(Fields fields, Values values) {
 		if(dataSender == null) {
-			dataSender = new dataCollector(zooIP, zooPort, statReportPeriod, ID);
+			dataSender = new DataCollector(zooIP, zooPort, statReportPeriod, ID);
 		}
 		if(!values.get(0).toString().contains("SPS")) {
 			List<Values> returnedTuples = new ArrayList<Values>();

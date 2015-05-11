@@ -2,7 +2,7 @@ package gr.katsip.synefo.storm.operators.relational;
 
 import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.operators.synefo_comp_ops.AbstractCrypefoOperator;
-import gr.katsip.synefo.storm.operators.synefo_comp_ops.dataCollector;
+import gr.katsip.synefo.storm.operators.synefo_comp_ops.DataCollector;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -45,7 +45,7 @@ public class StatJoinOperator<T extends Object> implements Serializable, Abstrac
 	
 	private int statReportPeriod;
 
-	private dataCollector dataSender = null;
+	private DataCollector dataSender = null;
 
 	private String zooConnectionInfo;
 
@@ -82,7 +82,7 @@ public class StatJoinOperator<T extends Object> implements Serializable, Abstrac
 			Values values) {
 		if(dataSender == null) {
 			String[] zooTokens = this.zooConnectionInfo.split(":");
-			dataSender = new dataCollector(zooTokens[0], Integer.parseInt(zooTokens[1]), statReportPeriod, "join");
+			dataSender = new DataCollector(zooTokens[0], Integer.parseInt(zooTokens[1]), statReportPeriod, "join");
 		}
 		List<Values> result = new ArrayList<Values>();
 		if(fields.toList().equals(leftFieldSchema.toList())) {
@@ -135,7 +135,7 @@ public class StatJoinOperator<T extends Object> implements Serializable, Abstrac
 	public List<Values> execute(Fields fields, Values values) {
 		if(dataSender == null) {
 			String[] zooTokens = this.zooConnectionInfo.split(":");
-			dataSender = new dataCollector(zooTokens[0], Integer.parseInt(zooTokens[1]), statReportPeriod, "join");
+			dataSender = new DataCollector(zooTokens[0], Integer.parseInt(zooTokens[1]), statReportPeriod, "join");
 		}
 		List<Values> result = new ArrayList<Values>();
 		if(fields.toList().equals(leftFieldSchema.toList())) {

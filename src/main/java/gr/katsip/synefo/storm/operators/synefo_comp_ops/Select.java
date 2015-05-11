@@ -56,7 +56,7 @@ public class Select implements Serializable, AbstractCrypefoOperator  {
 	
 	private int statReportPeriod;
 
-	private dataCollector dataSender = null;
+	private DataCollector dataSender = null;
 
 	private String zooIP;
 
@@ -168,7 +168,7 @@ public class Select implements Serializable, AbstractCrypefoOperator  {
 	public List<Values> execute(TaskStatistics statistics, Fields fields,
 			Values values) {
 		if(dataSender == null) {
-			dataSender = new dataCollector(zooIP, zooPort, statReportPeriod, ID);
+			dataSender = new DataCollector(zooIP, zooPort, statReportPeriod, ID);
 		}
 		if(!values.get(0).toString().contains("SPS")) {
 			System.out.println("SELECTION: "+values.get(0).toString());
@@ -202,7 +202,7 @@ public class Select implements Serializable, AbstractCrypefoOperator  {
 	
 	public List<Values> execute(Fields fields, Values values) {
 		if(dataSender == null) {
-			dataSender = new dataCollector(zooIP, zooPort, statReportPeriod, ID);
+			dataSender = new DataCollector(zooIP, zooPort, statReportPeriod, ID);
 		}
 		if(!values.get(0).toString().contains("SPS")) {
 			String[] tuples = values.get(0).toString().split("//$$$//");

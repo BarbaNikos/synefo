@@ -28,7 +28,7 @@ public class SPSUpdater implements Serializable {
 
 	private ZooKeeper zk = null;
 	
-	Logger logger = LoggerFactory.getLogger(dataCollector.class);
+	Logger logger = LoggerFactory.getLogger(DataCollector.class);
 
 	private Watcher dataCollectorWatcher = new Watcher() {
 		@Override

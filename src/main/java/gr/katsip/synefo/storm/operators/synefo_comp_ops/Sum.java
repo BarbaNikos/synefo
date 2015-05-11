@@ -37,7 +37,7 @@ public class Sum implements AbstractCrypefoOperator, Serializable {
 
 	private int statReportPeriod;
 
-	private dataCollector dataSender = null;
+	private DataCollector dataSender = null;
 
 	private String zooIP;
 
@@ -68,7 +68,7 @@ public class Sum implements AbstractCrypefoOperator, Serializable {
 	public List<Values> execute(TaskStatistics statistics, Fields fields,
 			Values values) {
 		if(dataSender == null) {
-			dataSender = new dataCollector(zooIP, zooPort, statReportPeriod, ID);
+			dataSender = new DataCollector(zooIP, zooPort, statReportPeriod, ID);
 		}
 		if(!values.get(0).toString().contains("SPS")) {
 			String[] tuples = values.get(0).toString().split(Pattern.quote("//$$$//"));
@@ -91,7 +91,7 @@ public class Sum implements AbstractCrypefoOperator, Serializable {
 	@Override
 	public  List<Values> execute(Fields fields, Values values) {
 		if(dataSender == null) {
-			dataSender = new dataCollector(zooIP, zooPort, statReportPeriod, ID);
+			dataSender = new DataCollector(zooIP, zooPort, statReportPeriod, ID);
 		}
 		if(!values.get(0).toString().contains("SPS")) {
 			String[] tuples = values.get(0).toString().split(Pattern.quote("//$$$//"));
