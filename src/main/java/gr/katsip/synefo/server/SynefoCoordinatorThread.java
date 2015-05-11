@@ -179,7 +179,7 @@ public class SynefoCoordinatorThread implements Runnable {
 				while(operatorItr.hasNext()) {
 					Entry<String, ArrayList<String>> operatorEntry = operatorItr.next();
 					String operatorName = operatorEntry.getKey();
-					String[] operatorNameTokens = operatorName.split(":@");
+					String[] operatorNameTokens = operatorName.split("[:@]");
 					this.ceDb.updateOperatorInformation(queryId.get(), operatorNameTokens[0], 
 							operatorName, operatorNameTokens[2]);
 				}
