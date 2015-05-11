@@ -162,7 +162,7 @@ public class Client implements AbstractOperator, Serializable {
 		if(permission == 0){//plaintext
 			keys.get(clientId).put(field,"".getBytes());
 		}else if(permission == 1){//rnd
-			System.out.println("RND KEY: "+tuple[5]);
+			System.out.println("RND KEY: "+tuple[5]);			
 			keys.get(clientId).put(field,tuple[5].getBytes());
 		}else if(permission == 2){//det
 			System.out.println("DET KEY: "+tuple[5]);
