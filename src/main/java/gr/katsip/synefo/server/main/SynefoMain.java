@@ -15,7 +15,8 @@ public class SynefoMain {
 		String zooIP = args[1];
 		Integer zooPort = Integer.parseInt(args[2]);
 		CEStormDatabaseManager ceDb = new CEStormDatabaseManager(
-				"jdbc:mysql://db10.cs.pitt.edu:3306/ce_storm", "stormxl_user", "bMWBdTdMyf7uuB69");
+				"jdbc:mysql://ec2-52-24-254-134.us-west-2.compute.amazonaws.com/ce_storm", 
+				"root", "myCQl_Is_#1");
 		Synefo synEFO = new Synefo(zooIP, zooPort, parser.get_thresholds(), ceDb);
 		synEFO.runServer();
 	}

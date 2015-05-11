@@ -56,11 +56,13 @@ public class ZeroDemoTopology {
 		 * The following two lines need to be populated with the database information
 		 */
 		CEStormDatabaseManager ceDb = new CEStormDatabaseManager(
-				"jdbc:mysql://db10.cs.pitt.edu:3306/ce_storm", "stormxl_user", "bMWBdTdMyf7uuB69");
+				"jdbc:mysql://ec2-52-24-254-134.us-west-2.compute.amazonaws.com/ce_storm", 
+				"root", "myCQl_Is_#1");
 		Integer queryId = ceDb.insertQuery(1, 
 				"SELECT * FROM Rstream AS R, Rstream AS S WHERE R.three = S.three");
 		OperatorStatisticCollector statCollector = new OperatorStatisticCollector(zooIP + ":" + zooPort, 
-				"jdbc:mysql://db10.cs.pitt.edu:3306/ce_storm", "stormxl_user", "bMWBdTdMyf7uuB69", queryId);
+				"jdbc:mysql://ec2-52-24-254-134.us-west-2.compute.amazonaws.com/ce_storm", 
+				"root", "myCQl_Is_#1", queryId);
 		/**
 		 * Create the /data z-node once for all the bolts (also clean-up previous contents)
 		 */

@@ -60,9 +60,9 @@
 					<archive>
 						<manifest>
 							<!-- <mainClass>gr.katsip.synefo.storm.topology.SynefoSerialTopology</mainClass> -->
-							<mainClass>gr.katsip.synefo.storm.topology.MinimalTopology</mainClass>
+							<!-- <mainClass>gr.katsip.synefo.storm.topology.MinimalTopology</mainClass> -->
 							<!-- <mainClass>gr.katsip.synefo.storm.topology.DistributedTopology</mainClass> -->
-							<!-- <mainClass>gr.katsip.synefo.server.main.SynefoMain</mainClass> -->
+							<mainClass>gr.katsip.synefo.server.main.SynefoMain</mainClass>
 						</manifest>
 					</archive>
 				</configuration>
