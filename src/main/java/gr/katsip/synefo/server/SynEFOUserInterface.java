@@ -1,5 +1,7 @@
 package gr.katsip.synefo.server;
 
+import gr.katsip.cestorm.db.CEStormDatabaseManager;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -15,10 +17,15 @@ public class SynEFOUserInterface implements Runnable {
 	private HashMap<String, ArrayList<String>> physicalTopology;
 	
 	private ZooMaster beastMaster;
+	
+	private CEStormDatabaseManager ceDb;
+	
+	private HashMap<String, Integer> operatorNameToIdMap;
 
 	public SynEFOUserInterface(ZooMaster beastMaster, HashMap<String, ArrayList<String>> physicalTopology) {
 		this.beastMaster = beastMaster;
 		this.physicalTopology = new HashMap<String, ArrayList<String>>(physicalTopology);
+		ceDb = new CEStormDatabaseManager("","","");
 	}
 
 	public void run() {
@@ -26,6 +33,7 @@ public class SynEFOUserInterface implements Runnable {
 		BufferedReader _input = new BufferedReader(new InputStreamReader(System.in));
 		String command = null;
 		System.out.println("+efo Server started (UI). Type help for the list of commands");
+		operatorNameToIdMap = ceDb.getOperatorNameToIdentifiersMap(queryId);
 		while(exitFlag == false) {
 			try {
 				System.out.print("+efo>");

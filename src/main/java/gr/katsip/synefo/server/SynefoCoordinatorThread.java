@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import gr.katsip.cestorm.db.CEStormDatabaseManager;
 import gr.katsip.synefo.server.time.TimeServer;
 import gr.katsip.synefo.storm.api.Pair;
 
@@ -33,6 +34,8 @@ public class SynefoCoordinatorThread implements Runnable {
 	private Thread userInterfaceThread;
 
 	private AtomicBoolean operationFlag;
+	
+	private static final boolean demoMode = true;
 
 	public SynefoCoordinatorThread(String zooHost, Integer zooPort, 
 			HashMap<String, Pair<Number, Number>> resourceThresholds, 
@@ -151,6 +154,10 @@ public class SynefoCoordinatorThread implements Runnable {
 				System.out.println("}");
 			}
 
+			if(demoMode == true) {
+				CEStormDatabaseManager ceDb = new CEStormDatabaseManager("", "", "");
+				
+			}
 			operationFlag.set(true);
 
 			taskNameToIdMap.clear();

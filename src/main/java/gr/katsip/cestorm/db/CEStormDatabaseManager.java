@@ -45,7 +45,7 @@ public class CEStormDatabaseManager {
 	
 	private static final String insertOperatorAdjacencyRecord = "INSERT INTO operator_adjacency_list (query_id, parent_id, child_id) values(?,?,?)";
 
-	CEStormDatabaseManager(String url, String user, String password) {
+	public CEStormDatabaseManager(String url, String user, String password) {
 		this.url = url;
 		this.user = user;
 		this.password = password;
@@ -127,12 +127,12 @@ public class CEStormDatabaseManager {
 		}
 	}
 	
-	public void insertOperatorAdjacencyList(Integer queryId, HashMap<String, List<String>> topology) {
+	public void insertOperatorAdjacencyList(Integer queryId, HashMap<String, ArrayList<String>> topology) {
 		HashMap<String, Integer> nameToIdMap = getOperatorNameToIdentifiersMap(queryId);
 		HashMap<Integer, List<Integer>> numericalTopology = new HashMap<Integer, List<Integer>>();
-		Iterator<Entry<String, List<String>>> itr = topology.entrySet().iterator();
+		Iterator<Entry<String, ArrayList<String>>> itr = topology.entrySet().iterator();
 		while(itr.hasNext()) {
-			Entry<String, List<String>> pair = itr.next();
+			Entry<String, ArrayList<String>> pair = itr.next();
 			String operatorName = pair.getKey();
 			List<String> childrenNames = pair.getValue();
 			List<Integer> childrenIdentifiers = new ArrayList<Integer>();

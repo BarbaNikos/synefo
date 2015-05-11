@@ -22,8 +22,8 @@ public class OperatorStatisticCollector {
 
 	private ZooKeeper zk;
 
-//	private Connection connection;
-	
+	//	private Connection connection;
+
 	private CopyOnWriteArrayList<String> operators;
 
 	private Watcher dataRetrieverWatcher = new Watcher() {
@@ -57,11 +57,11 @@ public class OperatorStatisticCollector {
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
-//		try {
-//			connection = DriverManager.getConnection(dbIP, user, password);
-//		} catch (SQLException e) {
-//			e.printStackTrace();
-//		}
+		//		try {
+		//			connection = DriverManager.getConnection(dbIP, user, password);
+		//		} catch (SQLException e) {
+		//			e.printStackTrace();
+		//		}
 	}
 
 	public void init() {
@@ -75,46 +75,46 @@ public class OperatorStatisticCollector {
 		}
 	}
 
-		public void getChildrenAndWatch() {
-			zk.getChildren("/data", 
-					true, 
-					getChildrenCallback, 
-					"/data/".getBytes());
-		}
-		
-		private Children2Callback getChildrenCallback = new Children2Callback() {
-			@Override
-			public void processResult(int rc, String path, Object ctx,
-					List<String> children, Stat stat) {
-				switch(Code.get(rc)) {
-				case CONNECTIONLOSS:
-					System.out.println("getChildrenCallback(): CONNECTIONLOSS");
-					getChildrenAndWatch();
-					break;
-				case NONODE:
-					System.out.println("getChildrenCallback(): NONODE");
-					break;
-				case OK:
-					/**
-					 * children received
-					 */
-					System.out.println("getChildrenCallback");
-					List<String> childrenDifference = new ArrayList<String>(children);
-					childrenDifference.removeAll(operators);
-					operators.addAllAbsent(children);
-					for(String child : childrenDifference) {
-						getDataAndWatch(child);
-					}
-					System.out.println("getChildrenCallback(): OK call, received new children: " + Arrays.toString(childrenDifference.toArray()) + 
-							", operators size: " + Arrays.toString(operators.toArray()));
-					break;
-				default:
-					System.out.println("getChildrenCallback(): Unexpected scenario: " + 
-							KeeperException.create(Code.get(rc), path) );
-					break;
+	public void getChildrenAndWatch() {
+		zk.getChildren("/data", 
+				true, 
+				getChildrenCallback, 
+				"/data/".getBytes());
+	}
+
+	private Children2Callback getChildrenCallback = new Children2Callback() {
+		@Override
+		public void processResult(int rc, String path, Object ctx,
+				List<String> children, Stat stat) {
+			switch(Code.get(rc)) {
+			case CONNECTIONLOSS:
+				System.out.println("getChildrenCallback(): CONNECTIONLOSS");
+				getChildrenAndWatch();
+				break;
+			case NONODE:
+				System.out.println("getChildrenCallback(): NONODE");
+				break;
+			case OK:
+				/**
+				 * children received
+				 */
+				System.out.println("getChildrenCallback");
+				List<String> childrenDifference = new ArrayList<String>(children);
+				childrenDifference.removeAll(operators);
+				operators.addAllAbsent(children);
+				for(String child : childrenDifference) {
+					getDataAndWatch(child);
 				}
+				System.out.println("getChildrenCallback(): OK call, received new children: " + Arrays.toString(childrenDifference.toArray()) + 
+						", operators size: " + Arrays.toString(operators.toArray()));
+				break;
+			default:
+				System.out.println("getChildrenCallback(): Unexpected scenario: " + 
+						KeeperException.create(Code.get(rc), path) );
+				break;
 			}
-		};
+		}
+	};
 
 	public void getDataAndWatch(String operator) {
 		zk.getData("/data/" + operator, 
