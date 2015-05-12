@@ -359,8 +359,6 @@ public class CEStormDatabaseManager {
 	
 	private static final String getLastTopologyOperatorIdentifiers = "SELECT operator_id, status FROM topology_operator WHERE start_time = ? && end_time IS NULL";
 	
-	
-	
 	public void updateActiveTopology(Integer queryId, String operatorName, String action) {
 		try {
 			connection.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);

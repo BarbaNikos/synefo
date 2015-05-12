@@ -186,7 +186,7 @@ public class SynefoCoordinatorThread implements Runnable {
 				/**
 				 * Insert initial Topology information (topology_operator table)
 				 */
-				this.ceDb.insertInitialActiveTopology(queryId.get(), activeTopology, physicalTopology);
+				this.ceDb.insertInitialActiveTopology(queryId.get(), physicalTopology, activeTopology);
 			}
 			operationFlag.set(true);
 
