@@ -135,7 +135,7 @@ public class TestTopology {
 		returnSet.add(0);
 		returnSet.add(1);
 		returnSet.add(2);
-		Select selectOperator = new Select(returnSet, "50", 2, 3, 0, 3000, "select_bolt_1", zooIP, zooPort);
+		Select selectOperator = new Select(returnSet, "50", 2, 0, 0, 3000, "select_bolt_1", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt_1", 
 				new SynefoBolt("select_bolt_1", synefoIP, synefoPort, selectOperator, 
@@ -146,7 +146,7 @@ public class TestTopology {
 		returnSet.add(0);
 		returnSet.add(1);
 		returnSet.add(2);
-		selectOperator = new Select(returnSet, "50", 2, 3, 0, 3000, "select_bolt_2", zooIP, zooPort);
+		selectOperator = new Select(returnSet, "50", 2, 0, 0, 3000, "select_bolt_2", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt_2", 
 				new SynefoBolt("select_bolt_2", synefoIP, synefoPort, selectOperator, 
@@ -162,9 +162,9 @@ public class TestTopology {
 		 * Stage 2: Client Bolt (project operator)
 		 */
 		ArrayList<Integer> dataPs = new ArrayList<Integer>();
-		dataPs.add(0);
+		dataPs.add(1);
 		String[] attributes = {"Doctor", "fit+app"};
-		Client clientOperator = new Client(0,"Fred", attributes, dataPs, 3);
+		Client clientOperator = new Client(0,"Fred", attributes, dataPs, 4, zooIP, zooPort);
 		String[] schema = {"tuple", "crap"};
 		clientOperator.setOutputSchema(new Fields(schema));
 		clientOperator.setStateSchema(new Fields(schema));
@@ -192,6 +192,7 @@ public class TestTopology {
 		SynefoMessage msg = new SynefoMessage();
 		msg._values = new HashMap<String, String>();
 		msg._values.put("TASK_TYPE", "TOPOLOGY");
+		msg._values.put("QUERY_ID", Integer.toString(0));
 		_out.writeObject(msg);
 		_out.flush();
 		Thread.sleep(100);

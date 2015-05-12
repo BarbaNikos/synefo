@@ -52,12 +52,20 @@ public class Client implements AbstractOperator, Serializable {
 	private Fields output_schema;
 
 	private int schemaSize;
+	
+	private String zooIP;
+	
+	private int zooPort;
+	
+	private SPSUpdater spsUpdate =null;
 
-	public Client(int idd, String nme, String[] atts, ArrayList<Integer> dataPs, int schemaSiz){
+	public Client(int idd, String nme, String[] atts, ArrayList<Integer> dataPs, int schemaSiz, String zooIP, int zooPort){
 		id = idd;
 		CPABEDecryptFile = nme+""+idd;
 		dataProviders = new ArrayList<Integer>(dataPs);
 		this.schemaSize=schemaSiz;
+		this.zooIP=zooIP;
+		this.zooPort=zooPort;
 		for(int i=0;i<dataProviders.size();i++){//initilize all to assume full access, until SPS says otheriwse
 			subscriptions.put(dataProviders.get(i), new HashMap<Integer,Integer>());
 			//System.out.println("made room for "+dataProviders.get(i));
@@ -90,6 +98,9 @@ public class Client implements AbstractOperator, Serializable {
 
 	@Override
 	public List<Values> execute(Fields fields, Values values) {
+		if (spsUpdate == null){
+			spsUpdate = new SPSUpdater(zooIP,zooPort);
+		}
 		//error if coming form multiple sources
 		System.out.println("fields "+values.get(0));
 		String reduce = values.get(0).toString().replaceAll("\\[", "").replaceAll("\\]","");
@@ -157,7 +168,7 @@ public class Client implements AbstractOperator, Serializable {
 		int clientId = Integer.parseInt(tuple[3]);
 		int field = Integer.parseInt(tuple[4]);
 		int permission = Integer.parseInt(tuple[2]);
-		System.out.println("Client "+id+" recieved permission "+permission+" for stream "+ clientId+".");
+		System.out.println("Client "+id+" recieved permission "+permission+" for stream "+ clientId+"."+" field "+field);
 		subscriptions.get(clientId).put(field,permission);
 		if(permission == 0){//plaintext
 			keys.get(clientId).put(field,"".getBytes());
@@ -165,6 +176,8 @@ public class Client implements AbstractOperator, Serializable {
 			System.out.println("RND KEY: "+tuple[5]);			
 			keys.get(clientId).put(field,tuple[5].getBytes());
 		}else if(permission == 2){//det
+			String newUpdate = "select, predicate";
+			spsUpdate.createChildNode(newUpdate.getBytes());
 			System.out.println("DET KEY: "+tuple[5]);
 			keys.get(clientId).put(field,tuple[5].getBytes());
 		}else if(permission == 3){//ope

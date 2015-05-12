@@ -44,9 +44,11 @@ public class SPSUpdater implements Serializable {
 			zk = new ZooKeeper(this.zooIP + ":" + this.zooPort, 100000, dataCollectorWatcher);
 			if(zk.exists("/SPS", false) != null ) {
 				zk.delete("/SPS", -1);
+				System.out.println("znode /sps deleted");
 			}
 			zk.create("/SPS", (new String("/SPS")).getBytes(), 
 					Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+			System.out.println("znode /sps created");
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (InterruptedException e) {
@@ -59,6 +61,7 @@ public class SPSUpdater implements Serializable {
 	public void createChildNode(byte[] statBuffer) {
 		String nodePath = "/SPS";
 		zk.setData(nodePath, statBuffer, -1, setSPSCallback, statBuffer);
+		System.out.println("znode created for SPS");
 	}
 	
 	StatCallback setSPSCallback = new StatCallback() {
@@ -69,15 +72,20 @@ public class SPSUpdater implements Serializable {
 				byte[] statBuffer = (byte[]) ctx;
 				createChildNode(statBuffer);
 				logger.error("SPSUpdater.getDataCallback(): CONNECTIONLOSS for: " + path + ". Attempting again.");
+				System.out.println("SPSUpdater.getDataCallback(): CONNECTIONLOSS for: " + path + ". Attempting again.");
 				break;
 			case NONODE:
 				logger.error("SPSUpdater.getDataCallback(): NONODE with name: " + path);
+				System.out.println("SPSUpdater.getDataCallback(): NONODE with name: " + path);
 				break;
 			case OK:
 				logger.info("SPSUpdater.getDataCallback(): OK data have been set successfully.");
+				System.out.println("SPSUpdater.getDataCallback(): OK data have been set successfully.");
 				break;
 			default:
 				logger.error("SPSUpdater.getDataCallback(): Unexpected scenario: " + 
+						KeeperException.create(Code.get(rc), path));
+				System.out.println("SPSUpdater.getDataCallback(): Unexpected scenario: " + 
 						KeeperException.create(Code.get(rc), path));
 				break;
 			}
