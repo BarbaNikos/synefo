@@ -303,15 +303,16 @@ public class StatJoinOperator<T extends Object> implements Serializable, Abstrac
 	}
 	
 	public void updateData(TaskStatistics stats) {
-		int CPU = 0;
-		int memory = 0;
+		float CPU = (float) 0.0;
+		float memory = (float) 0.0;
 		int latency = 0;
 		int throughput = 0;
-		int sel = 0;
+		float sel = (float) 0.0;
 		//////////////////////////replace 1 with id
 		if(stats != null) {
-			String tuple = 	stats.getCpuLoad() + "," + stats.getMemory() + "," + stats.getWindowLatency() + "," + 
-					stats.getWindowThroughput() + "," + stats.getSelectivity() + ",0,0,0,0,0";
+			String tuple = 	(float) stats.getCpuLoad() + "," + (float) stats.getMemory() + "," + 
+					(int) stats.getWindowLatency() + "," + (int) stats.getWindowThroughput() + "," + 
+					(float) stats.getSelectivity() + ",0,0,0,0,0";
 			dataSender.addToBuffer(tuple);
 		}else {
 			String tuple = CPU + "," + memory + "," + latency + "," + 
