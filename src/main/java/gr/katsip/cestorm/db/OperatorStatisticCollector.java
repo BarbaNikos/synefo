@@ -139,9 +139,9 @@ public class OperatorStatisticCollector {
 				System.out.println("getDataCallback(): NONODE");
 				break;
 			case OK:
-//				System.out.println("getDataCallback(): Successfully retrieved stats: " + 
-//						new String(data));
-				String operatorIdentifier = new String(data);
+				System.out.println("getDataCallback(): Successfully retrieved stats { " + 
+						new String(data) + " } for operator: " + (String) ctx);
+				String operatorIdentifier = (String) ctx;
 				commitToDatabase(queryId, operatorIdentifier, new String(data));
 				break;
 			default:
