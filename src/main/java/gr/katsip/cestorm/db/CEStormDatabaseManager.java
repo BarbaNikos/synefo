@@ -47,7 +47,7 @@ public class CEStormDatabaseManager {
 	
 	private static final String updateOperatorInformation = "UPDATE operator SET name = ?, ip_address = ? WHERE query_id = ? AND name = ?";
 	
-	private static final String insertStatisticTuple = "INSERT INTO statistic (operator_id, timestamp, cpu, memory, latency, throughput, selectivity, plain, det, rnd, ope, hom) VALUES(?,unix_timestamp(),?,?,?,?,?,?,?,?,?,?)";
+	private static final String insertStatisticTuple = "INSERT INTO statistic (operator_id, timestamp, cpu, memory, latency, throughput, selectivity, plain, det, rnd, ope, hom) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)";
 
 	public CEStormDatabaseManager(String url, String user, String password) {
 		this.url = url;
@@ -379,6 +379,7 @@ public class CEStormDatabaseManager {
 			 * Get operator identifiers
 			 */
 			prepStatement = connection.prepareStatement(getLastTopologyOperatorIdentifiers);
+			prepStatement.setLong(1, previousStartTime);
 			result = prepStatement.executeQuery();
 			HashMap<Integer, String> operatorStatus = new HashMap<Integer, String>();
 			while(result.next()) {
@@ -506,21 +507,30 @@ public class CEStormDatabaseManager {
 		try {
 			connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
 			connection.setAutoCommit(false);
+			PreparedStatement prepStatement = connection.prepareStatement("select unix_timestamp()");
+			Long assignedTimestamp = -1L;
+			ResultSet result = prepStatement.executeQuery();
+			while(result.next()) {
+				if(!result.wasNull())
+					assignedTimestamp = result.getLong(1);
+			}
+			result.close();
 			/**
 			 * Populate the insert
 			 */
-			PreparedStatement prepStatement = connection.prepareStatement(insertStatisticTuple);
+			prepStatement = connection.prepareStatement(insertStatisticTuple);
 			prepStatement.setInt(1, nameToIdentifierMap.get(operator));
-			prepStatement.setFloat(2, cpu);
-			prepStatement.setFloat(3, memory);
-			prepStatement.setInt(4, latency);
-			prepStatement.setInt(5, throughput);
-			prepStatement.setFloat(6, selectivity);
-			prepStatement.setInt(7, plain);
-			prepStatement.setInt(8, det);
-			prepStatement.setInt(9, rnd);
-			prepStatement.setInt(10, ope);
-			prepStatement.setInt(11, hom);
+			prepStatement.setLong(2, assignedTimestamp);
+			prepStatement.setFloat(3, cpu);
+			prepStatement.setFloat(4, memory);
+			prepStatement.setInt(5, latency);
+			prepStatement.setInt(6, throughput);
+			prepStatement.setFloat(7, selectivity);
+			prepStatement.setInt(8, plain);
+			prepStatement.setInt(9, det);
+			prepStatement.setInt(10, rnd);
+			prepStatement.setInt(11, ope);
+			prepStatement.setInt(12, hom);
 			prepStatement.executeUpdate();
 			connection.commit();
 			connection.setAutoCommit(true);
