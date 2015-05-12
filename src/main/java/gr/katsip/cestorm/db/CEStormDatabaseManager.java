@@ -313,9 +313,51 @@ public class CEStormDatabaseManager {
 		}
 	}
 	
+	private static final String insertOperatorActivityStatus = "INSERT INTO topology_operator (operator_id, status, start_time, end_time) VALUES(?,?,?,?)";
+	
+	public void insertInitialActiveTopology(Integer queryId, HashMap<String, ArrayList<String>> physicalTopology, 
+			HashMap<String, ArrayList<String>> activeTopology) {
+		if(nameToIdentifierMap == null)
+			this.getOperatorNameToIdentifiersMap(queryId);
+		try {
+			PreparedStatement prepStatement = connection.prepareStatement(insertOperatorActivityStatus);
+			Long currentTimestamp = System.currentTimeMillis();
+			Iterator<Entry<String, ArrayList<String>>> itr = physicalTopology.entrySet().iterator();
+			while(itr.hasNext()) {
+				Entry<String, ArrayList<String>> pair = itr.next();
+				if(activeTopology.containsKey(pair.getKey())) {
+					prepStatement.setInt(1, nameToIdentifierMap.get(pair.getKey()));
+					prepStatement.setString(2, "ACTIVE");
+					prepStatement.setLong(3, currentTimestamp);
+					prepStatement.setNull(4, java.sql.Types.BIGINT);
+					prepStatement.addBatch();
+				}else {
+					prepStatement.setInt(1, nameToIdentifierMap.get(pair.getKey()));
+					prepStatement.setString(2, "INACTIVE");
+					prepStatement.setLong(3, currentTimestamp);
+					prepStatement.setNull(4, java.sql.Types.BIGINT);
+					prepStatement.addBatch();
+				}
+			}
+			prepStatement.executeBatch();
+			connection.commit();
+			connection.setAutoCommit(true);
+		}catch(SQLException e) {
+			System.err.println("CEStormDatabaseManager encountered error when inserting initial active topology: " + e.getMessage());
+			e.printStackTrace();
+			try {
+				System.err.println("CEStormDatabaseManager encountered error when rolling-back transcation on inserting initial active topology: " + e.getMessage());
+				connection.rollback();
+				connection.setAutoCommit(true);
+			} catch (SQLException e1) {
+				e1.printStackTrace();
+			}
+		}
+	}
+	
 	private static final String getLastTopologyOperatorIdentifiers = "SELECT operator_id, status FROM topology_operator WHERE start_time = ? && end_time IS NULL";
 	
-	private static final String insertOperatorActivityStatus = "INSERT INTO topology_operator (operator_id, status, start_time, end_time) VALUES(?,?,?,?)";
+	
 	
 	public void updateActiveTopology(Integer queryId, String operatorName, String action) {
 		try {
@@ -454,7 +496,7 @@ public class CEStormDatabaseManager {
 		if(nameToIdentifierMap == null)
 			this.getOperatorNameToIdentifiersMap(queryId);
 		try {
-			connection.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
+			connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
 			connection.setAutoCommit(false);
 			/**
 			 * Populate the insert
