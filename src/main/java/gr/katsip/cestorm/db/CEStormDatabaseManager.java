@@ -320,6 +320,8 @@ public class CEStormDatabaseManager {
 		if(nameToIdentifierMap == null)
 			this.getOperatorNameToIdentifiersMap(queryId);
 		try {
+			connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+			connection.setAutoCommit(false);
 			PreparedStatement prepStatement = connection.prepareStatement(insertOperatorActivityStatus);
 			Long currentTimestamp = System.currentTimeMillis();
 			Iterator<Entry<String, ArrayList<String>>> itr = physicalTopology.entrySet().iterator();
@@ -493,6 +495,12 @@ public class CEStormDatabaseManager {
 	public void insertStatistics(Integer queryId, String operator, float cpu, float memory, 
 			int latency, int throughput, float selectivity, 
 			int plain, int det, int rnd, int ope, int hom) {
+		//Had to add the following so I do not end up with the same timestamp for a stat
+		try {
+			Thread.sleep(1);
+		} catch (InterruptedException e2) {
+			e2.printStackTrace();
+		}
 		if(nameToIdentifierMap == null)
 			this.getOperatorNameToIdentifiersMap(queryId);
 		try {
