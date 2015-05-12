@@ -14,10 +14,10 @@ public class SynefoMain {
 		parser.parseThresholds(args[0]);
 		String zooIP = args[1];
 		Integer zooPort = Integer.parseInt(args[2]);
-		//CEStormDatabaseManager ceDb = new CEStormDatabaseManager(
-		//		"jdbc:mysql://ec2-52-24-254-134.us-west-2.compute.amazonaws.com/ce_storm", 
-		//		"root", "myCQl_Is_#1");
-		Synefo synEFO = new Synefo(zooIP, zooPort, parser.get_thresholds(), null);
+		CEStormDatabaseManager ceDb = new CEStormDatabaseManager(
+				"jdbc:mysql://ec2-52-24-102-134.us-west-2.compute.amazonaws.com/ce_storm", 
+				"root", "myCQl_Is_#1");
+		Synefo synEFO = new Synefo(zooIP, zooPort, parser.get_thresholds(), ceDb);
 		synEFO.runServer();
 	}
 }

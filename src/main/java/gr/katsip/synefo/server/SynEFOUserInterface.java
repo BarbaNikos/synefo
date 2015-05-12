@@ -98,6 +98,13 @@ public class SynEFOUserInterface implements Runnable {
 					ArrayList<String> peerParents = new ArrayList<String>(ScaleFunction.getInverseTopology(physicalTopology).get(compTwo));
 					peerParents.remove(peerParents.indexOf(compOne));
 					beastMaster.setScaleCommand(compOne, scaleOutCommand, peerParents, activateCommand);
+					if(demoMode == true && queryId.get() != -1 && ceDb != null) {
+						/**
+						 * Add scale_event and update topology_operator (add compoTwo to the topology_operator)
+						 */
+						ceDb.insertScaleEvent(compTwo, "ADD");
+						ceDb.updateActiveTopology(queryId.get(), compTwo, "ADD");
+					}
 				}
 			}
 		}else if(command.equals("scale-in")) {
@@ -146,6 +153,13 @@ public class SynEFOUserInterface implements Runnable {
 					if(peerParents.indexOf(compOne) != -1) {
 						peerParents.remove(peerParents.indexOf(compOne));
 						beastMaster.setScaleCommand(compOne, scaleInCommand, peerParents, deActivateCommand);
+						if(demoMode == true && queryId.get() != -1 && ceDb != null) {
+							/**
+							 * Add scale_event and update topology_operator (remove compoTwo to the topology_operator)
+							 */
+							ceDb.insertScaleEvent(compTwo, "REMOVE");
+							ceDb.updateActiveTopology(queryId.get(), compTwo, "REMOVE");
+						}
 					}
 				}
 			}

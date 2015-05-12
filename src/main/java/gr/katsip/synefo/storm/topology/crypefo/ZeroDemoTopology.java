@@ -56,7 +56,7 @@ public class ZeroDemoTopology {
 		 * The following two lines need to be populated with the database information
 		 */
 		CEStormDatabaseManager ceDb = new CEStormDatabaseManager(
-				"jdbc:mysql://ec2-52-24-254-134.us-west-2.compute.amazonaws.com/ce_storm", 
+				"jdbc:mysql://ec2-52-24-102-134.us-west-2.compute.amazonaws.com/ce_storm", 
 				"root", "myCQl_Is_#1");
 		Integer queryId = ceDb.insertQuery(1, 
 				"SELECT * FROM Rstream AS R, Rstream AS S WHERE R.three = S.three");
