@@ -19,6 +19,8 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.apache.commons.codec.binary.Hex;
+
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
@@ -176,7 +178,7 @@ public class Client implements AbstractOperator, Serializable {
 			System.out.println("RND KEY: "+tuple[5]);			
 			keys.get(clientId).put(field,tuple[5].getBytes());
 		}else if(permission == 2){//det
-			String newUpdate = "select, predicate";
+			String newUpdate = "select,"+encryptDetermine("50",tuple[5]);
 			spsUpdate.createChildNode(newUpdate.getBytes());
 			System.out.println("DET KEY: "+tuple[5]);
 			keys.get(clientId).put(field,tuple[5].getBytes());
@@ -189,6 +191,61 @@ public class Client implements AbstractOperator, Serializable {
 		}
 	}
 
+	public String encryptDetermine(String plnText, String key){
+		boolean isSize=true;
+		byte[] newPlainText=null;
+		byte[] plainText = plnText.getBytes();
+		if(plainText.length%16!=0){
+			isSize=false;
+			int diff =16-plainText.length%16;
+			newPlainText = new byte[plainText.length+(diff)];
+			for(int i=0;i<plainText.length;i++){
+				newPlainText[i]=plainText[i];
+			}
+			int counter=0;
+			while(counter!=diff){
+				if(counter==diff-1){
+					newPlainText[plainText.length+counter]=(byte) diff;
+				}
+				newPlainText[plainText.length+counter]=0;
+				counter++;
+			}
+		}
+		byte[] cipherText=null;
+		Cipher c=null;
+		try {
+			c = Cipher.getInstance("AES/ECB/NoPadding");
+		} catch (NoSuchAlgorithmException e) {
+			System.out.println("Encryption Error 1 at Determine Data Provider: ");
+			e.printStackTrace();
+		} catch (NoSuchPaddingException e) {
+			System.out.println("Encryption Error 2 at Determine Data Provider: ");
+			e.printStackTrace();
+		}
+		SecretKeySpec k =  new SecretKeySpec(key.getBytes(), "AES");
+		try {
+			c.init(Cipher.ENCRYPT_MODE, k);
+		} catch (InvalidKeyException e) {
+			System.out.println("Encryption Error 3 at Determine Data Provider: ");
+			e.printStackTrace();
+		}
+		try {
+			if(isSize){
+				cipherText = c.doFinal(plainText);
+			}else{
+				cipherText = c.doFinal(newPlainText);
+			}
+		} catch (IllegalBlockSizeException e) {
+			System.out.println("Encryption Error 4 at Determine Data Provider: ");
+			e.printStackTrace();
+		} catch (BadPaddingException e) {
+			System.out.println("Encryption Error 5 at Determine Data Provider: ");
+			e.printStackTrace();
+		}
+		return Hex.encodeHexString(cipherText);
+	}
+
+	
 	public void setABEDecrypt(byte[] ABEKey){
 		//open file for writing, write key to priv_key, return
 		try{
