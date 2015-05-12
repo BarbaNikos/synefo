@@ -31,8 +31,6 @@ public class CEStormDatabaseManager {
 	
 	private static final String retrieveOperatorNamesIdentifiers = "SELECT id, name FROM operator WHERE query_id = ?";
 
-	
-
 	private static final String updateActiveTopologyEndTime = "UPDATE topology_operator SET end_time = ? where start_time = ?";
 	
 	private static final String retrieveOperatorId = "SELECT id FROM operator WHERE name = ?";

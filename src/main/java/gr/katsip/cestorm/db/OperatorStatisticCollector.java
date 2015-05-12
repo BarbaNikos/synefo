@@ -141,8 +141,11 @@ public class OperatorStatisticCollector {
 			case OK:
 				System.out.println("getDataCallback(): Successfully retrieved stats { " + 
 						new String(data) + " } for operator: " + (String) ctx);
+				String readableData = new String(data);
 				String operatorIdentifier = (String) ctx;
-				commitToDatabase(queryId, operatorIdentifier, new String(data));
+				if(readableData.contains(";") == false || readableData.contains(",") == false)
+					return;
+				commitToDatabase(queryId, operatorIdentifier, readableData);
 				break;
 			default:
 				System.out.println("getDataCallback(): Unexpected scenario: " + 

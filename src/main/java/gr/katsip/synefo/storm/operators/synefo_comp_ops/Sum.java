@@ -194,5 +194,10 @@ public class Sum implements AbstractCrypefoOperator, Serializable {
 			encryptionData.put("HOM",0);
 		}
 	}
+
+	@Override
+	public void updateOperatorName(String operatorName) {
+		this.ID = operatorName;
+	}
 	
 }

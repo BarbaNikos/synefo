@@ -348,5 +348,9 @@ public class Select implements Serializable, AbstractCrypefoOperator  {
 		}
 
 	};
+	@Override
+	public void updateOperatorName(String operatorName) {
+		this.ID = operatorName;
+	}
 
 }

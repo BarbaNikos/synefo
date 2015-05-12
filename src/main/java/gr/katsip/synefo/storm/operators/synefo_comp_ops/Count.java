@@ -286,4 +286,9 @@ public class Count implements AbstractCrypefoOperator, Serializable{
 		}
 	}
 
+	@Override
+	public void updateOperatorName(String operatorName) {
+		this.ID = operatorName;
+	}
+
 }

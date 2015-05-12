@@ -48,6 +48,8 @@ public class StatJoinOperator<T extends Object> implements Serializable, Abstrac
 	private DataCollector dataSender = null;
 
 	private String zooConnectionInfo;
+	
+	private String operatorName = null;
 
 	public StatJoinOperator(Comparator<T> comparator, int window, String joinAttribute, 
 			Fields leftFieldSchema, Fields rightFieldSchema, String zooConnectionInfo, int statReportPeriod) {
@@ -82,7 +84,7 @@ public class StatJoinOperator<T extends Object> implements Serializable, Abstrac
 			Values values) {
 		if(dataSender == null) {
 			String[] zooTokens = this.zooConnectionInfo.split(":");
-			dataSender = new DataCollector(zooTokens[0], Integer.parseInt(zooTokens[1]), statReportPeriod, "join");
+			dataSender = new DataCollector(zooTokens[0], Integer.parseInt(zooTokens[1]), statReportPeriod, this.operatorName);
 		}
 		List<Values> result = new ArrayList<Values>();
 		if(fields.toList().equals(leftFieldSchema.toList())) {
@@ -135,7 +137,7 @@ public class StatJoinOperator<T extends Object> implements Serializable, Abstrac
 	public List<Values> execute(Fields fields, Values values) {
 		if(dataSender == null) {
 			String[] zooTokens = this.zooConnectionInfo.split(":");
-			dataSender = new DataCollector(zooTokens[0], Integer.parseInt(zooTokens[1]), statReportPeriod, "join");
+			dataSender = new DataCollector(zooTokens[0], Integer.parseInt(zooTokens[1]), statReportPeriod, this.operatorName);
 		}
 		List<Values> result = new ArrayList<Values>();
 		if(fields.toList().equals(leftFieldSchema.toList())) {
@@ -319,6 +321,11 @@ public class StatJoinOperator<T extends Object> implements Serializable, Abstrac
 					throughput + "," + sel + ",0,0,0,0,0";
 			dataSender.addToBuffer(tuple);
 		}
+	}
+
+	@Override
+	public void updateOperatorName(String operatorName) {
+		this.operatorName = operatorName;
 	}
 
 }
