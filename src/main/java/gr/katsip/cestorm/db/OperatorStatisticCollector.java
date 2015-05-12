@@ -80,7 +80,7 @@ public class OperatorStatisticCollector {
 		zk.getChildren("/data", 
 				true, 
 				getChildrenCallback, 
-				"/data/".getBytes());
+				"/data".getBytes());
 	}
 
 	private Children2Callback getChildrenCallback = new Children2Callback() {
@@ -109,6 +109,7 @@ public class OperatorStatisticCollector {
 //				System.out.println("getChildrenCallback(): OK call, received new children: " + 
 //						Arrays.toString(childrenDifference.toArray()) + 
 //						", operators size: " + Arrays.toString(operators.toArray()));
+				getChildrenAndWatch();
 				break;
 			default:
 				System.out.println("getChildrenCallback(): Unexpected scenario: " + 
