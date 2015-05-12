@@ -25,7 +25,8 @@ public class SynefoMain {
 		Integer zooPort = Integer.parseInt(args[2]);
 		CEStormDatabaseManager ceDb = null;
 		if(args.length == 4) {
-			try(BufferedReader br = new BufferedReader(new FileReader(new File(args[4])))) {
+			System.out.println("Database Configuration file provided. Parsing connection information...");
+			try(BufferedReader br = new BufferedReader(new FileReader(new File(args[3])))) {
 			    for(String line; (line = br.readLine()) != null;) {
 			    	String[] lineTokens = line.split(":");
 			    	if(line.contains("db-server-ip:"))

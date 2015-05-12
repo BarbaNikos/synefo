@@ -57,6 +57,7 @@ public class ZeroDemoTopology {
 			streamIPs = args[1].split(",");
 			zooIP = args[2];
 			zooPort = Integer.parseInt(args[3]);
+			System.out.println("Database Configuration file provided. Parsing connection information...");
 			try(BufferedReader br = new BufferedReader(new FileReader(new File(args[4])))) {
 				for(String line; (line = br.readLine()) != null;) {
 					String[] lineTokens = line.split(":");
