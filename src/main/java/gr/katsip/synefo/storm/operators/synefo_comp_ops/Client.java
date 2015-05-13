@@ -110,7 +110,7 @@ public class Client implements AbstractOperator, Serializable {
 			spsUpdate = new SPSUpdater(zooIP,zooPort);
 		}
 		//error if coming form multiple sources
-		System.out.println("fields "+values.get(0));
+	//	System.out.println("fields "+values.get(0));
 		String reduce = values.get(0).toString().replaceAll("\\[", "").replaceAll("\\]","");
 		//System.out.println(reduce);
 		String[] tuples = reduce.split(",");
@@ -121,7 +121,7 @@ public class Client implements AbstractOperator, Serializable {
 			if(counter>0){
 				counter=0;
 				currentTuple=values.get(0).toString();
-				System.out.println(currentTuple);
+				//System.out.println(currentTuple);
 				processNormal(currentTuple);
 			}
 		}
@@ -159,6 +159,7 @@ public class Client implements AbstractOperator, Serializable {
 		for(int i=1;i<tuples.length;i++){
 			if(subscriptions.get(clientID).get(i)==0){
 				finalTuple=finalTuple+", "+tuples[i];
+				System.out.println(finalTuple);
 			}else if(subscriptions.get(clientID).get(i)==1){
 				
 			}else if(subscriptions.get(clientID).get(i)==2){

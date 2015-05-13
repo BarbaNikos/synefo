@@ -133,7 +133,7 @@ public class TestTopology {
 			String zooIP, Integer zooPort
 		 */
 		
-		Sum sumOperator = new Sum(1000,2,"sum_bolt_1",3000,zooIP,zooPort);
+		Sum sumOperator = new Sum(100,3,"sum_bolt_1",3000,zooIP,zooPort);
 		String[] selectionOutputSchema = dataSpoutSchema;
 	sumOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("sum_bolt_1", 
@@ -141,7 +141,7 @@ public class TestTopology {
 						zooIP, zooPort, false), 1)
 						.setNumTasks(1)
 						.directGrouping("spout_data_tuples");
-		sumOperator = new Sum(1000,2,"sum_bolt_2",3000,zooIP,zooPort);
+		sumOperator = new Sum(100,3,"sum_bolt_2",3000,zooIP,zooPort);
 		sumOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("sum_bolt_2", 
 				new SynefoBolt("sum_bolt_2", synefoIP, synefoPort, sumOperator, 

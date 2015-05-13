@@ -150,13 +150,13 @@ public class Sum implements AbstractCrypefoOperator, Serializable {
 		}
 		if(!values.get(0).toString().contains("SPS")) {
 			String[] tuples = values.get(0).toString().split(Pattern.quote("//$$$//"));
+			//System.out.println(values.get(0));
 			List<Values> vals = new ArrayList<Values>();
 			Values summ = new Values();
 			String[] encUse= tuples[tuples.length-1].split(" ");
 			for(int k =0;k<encUse.length;k++){
 				encryptionData.put(encUse[k], encryptionData.get(encUse[k])+1);
 			}
-			encryptionData.put(tuples[tuples.length-1], encryptionData.get(tuples[tuples.length-1])+1);
 			updateData(statistics);
 			if(type==0){
 				int ret = regSum(tuples);
@@ -197,9 +197,10 @@ public class Sum implements AbstractCrypefoOperator, Serializable {
 			}
 			else{
 				multBigInt(tuples);
-			}
-			encryptionData.put(tuples[tuples.length-1], encryptionData.get(tuples[tuples.length-1])+1);
-			updateData(null);
+			}String[] encUse= tuples[tuples.length-1].split(" ");
+			for(int k =0;k<encUse.length;k++){
+				encryptionData.put(encUse[k], encryptionData.get(encUse[k])+1);
+			}updateData(null);
 			return vals;
 		}else {
 			return new ArrayList<Values>();
@@ -208,7 +209,9 @@ public class Sum implements AbstractCrypefoOperator, Serializable {
 
 	public BigInteger multBigInt(String[] tuples){
 		counter++;
+		//System.out.println("Value: "+tuples[attribute]);
 		if(counter==size){
+			counter = 0;
 			BigInteger ret = cryptoSum.multiply(new BigInteger(tuples[attribute]));
 			cryptoSum=BigInteger.ONE;
 			return ret;
@@ -314,7 +317,7 @@ public class Sum implements AbstractCrypefoOperator, Serializable {
 		String[] sp = data.split(",");
 		if(sp[0].equalsIgnoreCase("sum")&&sp[1].equalsIgnoreCase("paillier")){
 			type = 1;
-			System.out.println("Sum set to paillier");
+			//System.out.println("Sum set to paillier");
 		}
 	}
 
