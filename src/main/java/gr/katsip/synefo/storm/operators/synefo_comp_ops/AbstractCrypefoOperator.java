@@ -10,4 +10,6 @@ public interface AbstractCrypefoOperator extends AbstractOperator {
 
 	public List<Values> execute(TaskStatistics statistics, Fields fields, Values values);
 	
+	public void updateOperatorName(String operatorName);
+	
 }

@@ -225,6 +225,11 @@ public class SynefoBolt extends BaseRichBolt {
 		logger.info("+EFO-BOLT (" + 
 				taskName + ":" + taskID + 
 				") registered to synEFO successfully, timestamp: " + System.currentTimeMillis() + ".");
+		/**
+		 * Updating operator name for saving the statistics data in the database accordingly
+		 */
+		if(crypefoOperatorFlag == true)
+			((AbstractCrypefoOperator) operator).updateOperatorName(taskName + ":" + taskID + "@" + taskIP);
 	}
 
 	public void prepare(@SuppressWarnings("rawtypes") Map conf, TopologyContext context, OutputCollector collector) {

@@ -350,10 +350,8 @@ public class Count implements AbstractCrypefoOperator, Serializable{
 			int latency = 0;
 			int throughput = 0;
 			int sel = 0;
-			//////////////////////////replace 1 with id
 			if(stats != null) {
-				String tuple = 	ID + "," + stats.getCpuLoad() + "," + stats.getMemory() + "," + 
-						stats.getWindowLatency() + "," + 
+				String tuple = 	ID + "," + stats.getCpuLoad() + "," + stats.getMemory() + "," + stats.getWindowLatency() + "," + 
 						stats.getWindowThroughput() + "," + stats.getSelectivity() + "," + 
 						encryptionData.get("pln") + "," + 
 						encryptionData.get("RND") + "," + 
@@ -398,6 +396,12 @@ public class Count implements AbstractCrypefoOperator, Serializable{
 				predicate = sp[1];
 				System.out.println("Predicate in "+ID+" changed to: "+predicate);
 			}
+		}
+
+		@Override
+		public void updateOperatorName(String operatorName) {
+			// TODO Auto-generated method stub
+			
 		}
 
 	}

@@ -67,7 +67,7 @@ public class Select implements Serializable, AbstractCrypefoOperator  {
 	private ZooKeeper zk = null;
 
 	private  Watcher SPSRetrieverWatcher =null;
-
+	
 	private  DataCallback getSPSCallback = null;
 	/**
 	 * 
@@ -142,60 +142,57 @@ public class Select implements Serializable, AbstractCrypefoOperator  {
 		if(dataSender == null) {
 			dataSender = new DataCollector(zooIP, zooPort, statReportPeriod, ID);
 		}
-		if(SPSRetrieverWatcher==null){
-			SPSRetrieverWatcher = new Watcher() {
-				@Override
-				public void process(WatchedEvent event) {
-					String path = event.getPath();
-					System.out.println("Select "+ID+" Received event type: " + event.getType()+ " path "+event.getPath());
-					if(event.getType() == Event.EventType.NodeDataChanged) {
-						//Retrieve operator
-						getDataAndWatch();
-						System.out.println("NodeDataChanged event: " + path);
-						try {
-							byte[] data =zk.getData(path,false,null);
-							handleUpdate(new String(data));
-						} catch (KeeperException | InterruptedException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-					}else if(event.getType() == null) {
-						//Retrieve new children
-						getDataAndWatch();
-					}else{
-						getDataAndWatch();
-					}
-				}
-			};
-		}
-		if(getSPSCallback==null){
-			getSPSCallback = new DataCallback() {
-				@Override
-				public void processResult(int rc, String path, Object ctx, byte[] data,
-						Stat stat) {
-					switch(Code.get(rc)) {
-					case CONNECTIONLOSS:
-						System.out.println("getSPSCallback(): CONNECTIONLOSS");
-						getDataAndWatch();
-						break;
-					case NONODE:
-						System.out.println("getSPSCallback(): NONODE");
-						break;
-					case OK:
-						System.out.println("getSPSCallback(): Successfully retrieved new predicate: " + 
-								new String(data));
+		if(SPSRetrieverWatcher==null)
+		SPSRetrieverWatcher = new Watcher() {
+			@Override
+			public void process(WatchedEvent event) {
+				String path = event.getPath();
+				System.out.println("Select "+ID+" Received event type: " + event.getType()+ " path "+event.getPath());
+				if(event.getType() == Event.EventType.NodeDataChanged) {
+					//Retrieve operator
+					getDataAndWatch();
+					System.out.println("NodeDataChanged event: " + path);
+					try {
+						byte[] data =zk.getData(path,false,null);
 						handleUpdate(new String(data));
-						getDataAndWatch();
-						break;
-					default:
-						System.out.println("getDataCallback(): Unexpected scenario: " + 
-								KeeperException.create(Code.get(rc), path) );
-						break;
+					} catch (KeeperException | InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
 					}
+				}else if(event.getType() == null) {
+					//Retrieve new children
+					getDataAndWatch();
+				}else{
+					getDataAndWatch();
 				}
+			}
+		};
+		getSPSCallback = new DataCallback() {
+			@Override
+			public void processResult(int rc, String path, Object ctx, byte[] data,
+					Stat stat) {
+				switch(Code.get(rc)) {
+				case CONNECTIONLOSS:
+					System.out.println("getSPSCallback(): CONNECTIONLOSS");
+					getDataAndWatch();
+					break;
+				case NONODE:
+					System.out.println("getSPSCallback(): NONODE");
+					break;
+				case OK:
+					System.out.println("getSPSCallback(): Successfully retrieved new predicate: " + 
+							new String(data));
+					handleUpdate(new String(data));
+					getDataAndWatch();
+					break;
+				default:
+					System.out.println("getDataCallback(): Unexpected scenario: " + 
+							KeeperException.create(Code.get(rc), path) );
+					break;
+				}
+			}
 
-			};
-		}
+		};
 		if(zk==null){
 			try {
 				zk = new ZooKeeper(this.zooIP + ":" + this.zooPort, 100000, SPSRetrieverWatcher);
@@ -352,5 +349,11 @@ public class Select implements Serializable, AbstractCrypefoOperator  {
 			predicate = sp[1];
 			System.out.println("Predicate in "+ID+" changed to: "+predicate);
 		}
+	}
+
+	@Override
+	public void updateOperatorName(String operatorName) {
+		// TODO Auto-generated method stub
+		
 	}
 }

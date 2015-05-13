@@ -2,7 +2,6 @@ package gr.katsip.cestorm.db;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -36,7 +35,7 @@ public class OperatorStatisticCollector {
 			System.out.println("Received event type: " + event.getType());
 			if(event.getType() == Event.EventType.NodeDataChanged) {
 				//Retrieve operator
-				System.out.println("NodeDataChanged event: " + path);
+//				System.out.println("NodeDataChanged event: " + path);
 				String operator = path.substring(path.lastIndexOf("/") + 1, path.length());
 				getDataAndWatch(operator);
 			}else if(event.getType() == Event.EventType.NodeChildrenChanged) {
@@ -81,7 +80,7 @@ public class OperatorStatisticCollector {
 		zk.getChildren("/data", 
 				true, 
 				getChildrenCallback, 
-				"/data/".getBytes());
+				"/data".getBytes());
 	}
 
 	private Children2Callback getChildrenCallback = new Children2Callback() {
@@ -107,9 +106,9 @@ public class OperatorStatisticCollector {
 				for(String child : childrenDifference) {
 					getDataAndWatch(child);
 				}
-				System.out.println("getChildrenCallback(): OK call, received new children: " + 
-						Arrays.toString(childrenDifference.toArray()) + 
-						", operators size: " + Arrays.toString(operators.toArray()));
+//				System.out.println("getChildrenCallback(): OK call, received new children: " + 
+//						Arrays.toString(childrenDifference.toArray()) + 
+//						", operators size: " + Arrays.toString(operators.toArray()));
 				break;
 			default:
 				System.out.println("getChildrenCallback(): Unexpected scenario: " + 
@@ -140,10 +139,15 @@ public class OperatorStatisticCollector {
 				System.out.println("getDataCallback(): NONODE");
 				break;
 			case OK:
-				System.out.println("getDataCallback(): Successfully retrieved stats: " + 
-						new String(data));
-				String operatorIdentifier = new String(data);
-				commitToDatabase(queryId, operatorIdentifier, new String(data));
+//				System.out.println("getDataCallback(): Successfully retrieved stats { " + 
+//						new String(data) + " } for operator: " + (String) ctx);
+				String readableData = new String(data);
+				String operatorIdentifier = (String) ctx;
+//				if(readableData.contains(";") == false || readableData.contains(",") == false)
+//					return;
+				if(readableData.contains("/data") == true)
+					return;
+				commitToDatabase(queryId, operatorIdentifier, readableData);
 				break;
 			default:
 				System.out.println("getDataCallback(): Unexpected scenario: " + 
@@ -155,16 +159,37 @@ public class OperatorStatisticCollector {
 	};
 	
 	private void commitToDatabase(Integer queryId, String operator, String data) {
-		String[] statisticTuples = data.split(";");
-		for(int i = 0; i < statisticTuples.length; ++i) {
-			String[] stats = statisticTuples[i].split(",");
-			ceDb.insertStatistics(queryId, operator, 
-					Float.parseFloat(stats[0]), Float.parseFloat(stats[1]), 
-					Integer.parseInt(stats[2]), Integer.parseInt(stats[3]), 
-					Float.parseFloat(stats[4]), Integer.parseInt(stats[5]), 
-					Integer.parseInt(stats[6]), Integer.parseInt(stats[7]), 
-					Integer.parseInt(stats[8]), Integer.parseInt(stats[9]));
-		}
+//		String[] statisticTuples = data.split(";");
+//		for(int i = 0; i < statisticTuples.length; ++i) {
+//			String[] stats = statisticTuples[i].split(",");
+//			float cpu = Float.parseFloat(stats[0]);
+//			float memory = Float.parseFloat(stats[1]);
+//			int latency = Integer.parseInt(stats[2]);
+//			int throughput = Integer.parseInt(stats[3]);
+//			float selectivity = Float.parseFloat(stats[4]);
+//			int plain = Integer.parseInt(stats[5]);
+//			int det = Integer.parseInt(stats[6]);
+//			int rnd = Integer.parseInt(stats[7]);
+//			int ope = Integer.parseInt(stats[8]);
+//			int hom = Integer.parseInt(stats[9]);
+//			ceDb.insertStatistics(queryId, operator, cpu, memory, 
+//					latency, throughput, selectivity, 
+//					plain, det, rnd, ope, hom);
+//		}
+		String[] stats = data.split(",");
+		float cpu = Float.parseFloat(stats[0]);
+		float memory = Float.parseFloat(stats[1]);
+		int latency = Integer.parseInt(stats[2]);
+		int throughput = Integer.parseInt(stats[3]);
+		float selectivity = Float.parseFloat(stats[4]);
+		int plain = Integer.parseInt(stats[5]);
+		int det = Integer.parseInt(stats[6]);
+		int rnd = Integer.parseInt(stats[7]);
+		int ope = Integer.parseInt(stats[8]);
+		int hom = Integer.parseInt(stats[9]);
+		ceDb.insertStatistics(queryId, operator, cpu, memory, 
+				latency, throughput, selectivity, 
+				plain, det, rnd, ope, hom);
 	}
 
 }

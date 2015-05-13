@@ -31,13 +31,11 @@ public class CEStormDatabaseManager {
 	
 	private static final String retrieveOperatorNamesIdentifiers = "SELECT id, name FROM operator WHERE query_id = ?";
 
-	private static final String insertOperatorActivityStatus = "INSERT INTO topology_operator (operator_id, status, start_time, end_time) VALUES(?,?,?,?)";
-
 	private static final String updateActiveTopologyEndTime = "UPDATE topology_operator SET end_time = ? where start_time = ?";
 	
 	private static final String retrieveOperatorId = "SELECT id FROM operator WHERE name = ?";
 
-	private static final String insertScaleEvent = "INSERT INTO scale_event (operator_id, action, timestamp) VALUES (?,?,?)";
+	private static final String insertScaleEvent = "INSERT INTO scale_event (operator_id, action, timestamp) VALUES (?,?,unix_timestamp())";
 	
 	private static final String insertQuery = "INSERT INTO query (client_id, query) VALUES(?,?)";
 	
@@ -49,7 +47,7 @@ public class CEStormDatabaseManager {
 	
 	private static final String updateOperatorInformation = "UPDATE operator SET name = ?, ip_address = ? WHERE query_id = ? AND name = ?";
 	
-	private static final String insertStatisticTuple = "INSERT INTO statistic (operator_id, timestamp, cpu, memory, latency, throughput, selectivity, plain, det, rnd, ope, hom) VALUES(?,unix_timestamp(),?,?,?,?,?,?,?,?,?,?)";
+	private static final String insertStatisticTuple = "INSERT INTO statistic (operator_id, timestamp, cpu, memory, latency, throughput, selectivity, plain, det, rnd, ope, hom) VALUES(?,UNIX_TIMESTAMP(),?,?,?,?,?,?,?,?,?,?)";
 
 	public CEStormDatabaseManager(String url, String user, String password) {
 		this.url = url;
@@ -314,9 +312,149 @@ public class CEStormDatabaseManager {
 			}
 		}
 	}
+	
+	private static final String insertOperatorActivityStatus = "INSERT INTO topology_operator (operator_id, status, start_time, end_time) VALUES(?,?,?,?)";
+	
+	public void insertInitialActiveTopology(Integer queryId, HashMap<String, ArrayList<String>> physicalTopology, 
+			HashMap<String, ArrayList<String>> activeTopology) {
+		if(nameToIdentifierMap == null)
+			this.getOperatorNameToIdentifiersMap(queryId);
+		try {
+			connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+			connection.setAutoCommit(false);
+			PreparedStatement prepStatement = connection.prepareStatement(insertOperatorActivityStatus);
+			Long currentTimestamp = System.currentTimeMillis();
+			Iterator<Entry<String, ArrayList<String>>> itr = physicalTopology.entrySet().iterator();
+			while(itr.hasNext()) {
+				Entry<String, ArrayList<String>> pair = itr.next();
+				if(activeTopology.containsKey(pair.getKey())) {
+					prepStatement.setInt(1, nameToIdentifierMap.get(pair.getKey()));
+					prepStatement.setString(2, "ACTIVE");
+					prepStatement.setLong(3, currentTimestamp);
+					prepStatement.setNull(4, java.sql.Types.BIGINT);
+					prepStatement.addBatch();
+				}else {
+					prepStatement.setInt(1, nameToIdentifierMap.get(pair.getKey()));
+					prepStatement.setString(2, "INACTIVE");
+					prepStatement.setLong(3, currentTimestamp);
+					prepStatement.setNull(4, java.sql.Types.BIGINT);
+					prepStatement.addBatch();
+				}
+			}
+			prepStatement.executeBatch();
+			connection.commit();
+			connection.setAutoCommit(true);
+		}catch(SQLException e) {
+			System.err.println("CEStormDatabaseManager encountered error when inserting initial active topology: " + e.getMessage());
+			e.printStackTrace();
+			try {
+				System.err.println("CEStormDatabaseManager encountered error when rolling-back transcation on inserting initial active topology: " + e.getMessage());
+				connection.rollback();
+				connection.setAutoCommit(true);
+			} catch (SQLException e1) {
+				e1.printStackTrace();
+			}
+		}
+	}
+	
+	private static final String getLastTopologyOperatorIdentifiers = "SELECT operator_id, status FROM topology_operator WHERE start_time = ? && end_time IS NULL";
+	
+	public void updateActiveTopology(Integer queryId, String operatorName, String action) {
+		try {
+			connection.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
+			connection.setAutoCommit(false);
+			PreparedStatement prepStatement = connection.prepareStatement(retrieveLatestActiveTopologyTimestamp);
+			ResultSet result = prepStatement.executeQuery();
+			result.setFetchSize(1);
+			Long previousStartTime = -1L;
+			while(result.next()) {
+				if(!result.wasNull()) {
+					previousStartTime = result.getLong(1);
+				}
+			}
+			result.close();
+			/**
+			 * Get operator identifiers
+			 */
+			prepStatement = connection.prepareStatement(getLastTopologyOperatorIdentifiers);
+			prepStatement.setLong(1, previousStartTime);
+			result = prepStatement.executeQuery();
+			HashMap<Integer, String> operatorStatus = new HashMap<Integer, String>();
+			while(result.next()) {
+				if(!result.wasNull())
+					operatorStatus.put(result.getInt(1), result.getString(2));
+			}
+			result.close();
+			/**
+			 * Get operator's identifier
+			 */
+			prepStatement = connection.prepareStatement(retrieveOperatorId);
+			prepStatement.setString(1, operatorName);
+			Integer operatorId = -1;
+			result = prepStatement.executeQuery();
+			while(result.next()) {
+				if(result.wasNull() == false)
+					operatorId = result.getInt(1);
+			}
+			result.close();
+			/**
+			 * Update the new topology
+			 */
+			prepStatement = connection.prepareStatement(insertOperatorActivityStatus);
+			Long currentTimestamp = System.currentTimeMillis();
+			Iterator<Entry<Integer, String>> itr = operatorStatus.entrySet().iterator();
+			while(itr.hasNext()) {
+				Entry<Integer, String> pair = itr.next();
+				if(pair.getKey().equals(operatorId)) {
+					if(action.equals("ADD") && pair.getValue().equals("INACTIVE")) {
+						prepStatement.setInt(1, operatorId);
+						prepStatement.setString(2, "ACTIVE");
+						prepStatement.setLong(3, currentTimestamp);
+						prepStatement.setNull(4, java.sql.Types.BIGINT);
+						prepStatement.addBatch();
+					}else if(action.equals("REMOVE") && pair.getValue().equals("ACTIVE")) {
+						prepStatement.setInt(1, operatorId);
+						prepStatement.setString(2, "INACTIVE");
+						prepStatement.setLong(3, currentTimestamp);
+						prepStatement.setNull(4, java.sql.Types.BIGINT);
+						prepStatement.addBatch();
+					}else {
+						throw new SQLException();
+					}
+				}else {
+					prepStatement.setInt(1, pair.getKey());
+					prepStatement.setString(2, pair.getValue());
+					prepStatement.setLong(3, currentTimestamp);
+					prepStatement.setNull(4, java.sql.Types.BIGINT);
+					prepStatement.addBatch();
+				}
+			}
+			prepStatement.executeBatch();
+			/**
+			 * Update previous values with endTime equal to currentTimestamp
+			 */
+			if(previousStartTime != -1L) {
+				prepStatement = connection.prepareStatement(updateActiveTopologyEndTime);
+				prepStatement.setLong(1, currentTimestamp);
+				prepStatement.setLong(2, previousStartTime);
+				prepStatement.executeUpdate();
+			}
+			connection.commit();
+			connection.setAutoCommit(true);
+		} catch(SQLException e) {
+			System.err.println("CEStormDatabaseManager encountered error when updating topology: " + e.getMessage());
+			e.printStackTrace();
+			try {
+				System.err.println("CEStormDatabaseManager encountered error when rolling-back transcation: " + e.getMessage());
+				connection.rollback();
+				connection.setAutoCommit(true);
+			} catch (SQLException e1) {
+				e1.printStackTrace();
+			}
+		}
+	}
 
 	public void insertScaleEvent(String operatorName, String action) {
-		Long timestamp = System.currentTimeMillis();
 		try{
 			connection.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
 			connection.setAutoCommit(false);
@@ -338,7 +476,6 @@ public class CEStormDatabaseManager {
 			prepStatement = connection.prepareStatement(insertScaleEvent);
 			prepStatement.setInt(1, operatorId);
 			prepStatement.setString(2, action);
-			prepStatement.setLong(3, timestamp);
 			prepStatement.executeUpdate();
 			connection.commit();
 			connection.setAutoCommit(true);

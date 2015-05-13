@@ -7,7 +7,6 @@ import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.operators.relational.ProjectOperator;
 import gr.katsip.synefo.storm.operators.synefo_comp_ops.Client;
 import gr.katsip.synefo.storm.operators.synefo_comp_ops.Select;
-import gr.katsip.synefo.storm.operators.synefo_comp_ops.valuesConverter;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -195,32 +194,6 @@ public class DemoTopologyOne {
 		topology.put("select_bolt_1", new ArrayList<String>(_tmp));
 		topology.put("select_bolt_2", new ArrayList<String>(_tmp));
 
-		/**
-		 * Middle Stage Checker
-		 */
-		String[] middleSchema = { "one", "two", "three", "four" };
-		valuesConverter converter = new valuesConverter(3);
-		converter.setStateSchema(new Fields(middleSchema));
-		converter.setOutputSchema(new Fields(middleSchema));
-		builder.setBolt("converter_bolt_1", 
-				new SynefoBolt("converter_bolt_1", synefoIP, synefoPort, converter, 
-						zooIP, zooPort, false), 1)
-						.setNumTasks(1)
-						.directGrouping("select_bolt_1")
-						.directGrouping("select_bolt_2");
-		converter = new valuesConverter(3);
-		converter.setStateSchema(new Fields(middleSchema));
-		converter.setOutputSchema(new Fields(middleSchema));
-		builder.setBolt("converter_bolt_2", 
-				new SynefoBolt("converter_bolt_2", synefoIP, synefoPort, converter, 
-						zooIP, zooPort, false), 1)
-						.setNumTasks(1)
-						.directGrouping("select_bolt_1")
-						.directGrouping("select_bolt_2");
-		_tmp = new ArrayList<String>();
-		_tmp.add("client_bolt");
-		topology.put("converter_bolt_1", new ArrayList<String>(_tmp));
-		topology.put("converter_bolt_2", new ArrayList<String>(_tmp));
 		 
 		/**
 		 * Stage 2: Client Bolt (project operator)
@@ -233,9 +206,9 @@ public class DemoTopologyOne {
 //		clientOperator.setOutputSchema(new Fields(schema));
 //		clientOperator.setStateSchema(new Fields(schema));
 		ProjectOperator projectOperator = new ProjectOperator(new Fields(
-				converter.getOutputSchema().toList().toArray(new String[converter.getOutputSchema().size()])));
+				selectOperator.getOutputSchema().toList().toArray(new String[selectOperator.getOutputSchema().size()])));
 		projectOperator.setOutputSchema(new Fields(
-				converter.getOutputSchema().toList().toArray(new String[converter.getOutputSchema().size()])));
+				selectOperator.getOutputSchema().toList().toArray(new String[selectOperator.getOutputSchema().size()])));
 		builder.setBolt("client_bolt", 
 				new SynefoBolt("client_bolt", synefoIP, synefoPort, 
 						projectOperator, zooIP, zooPort, false), 1)

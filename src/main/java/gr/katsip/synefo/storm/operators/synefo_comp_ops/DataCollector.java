@@ -78,26 +78,23 @@ public class DataCollector implements Serializable {
 
 	public void addToBuffer(String tuple) {
 		if(currentBufferSize < bufferSize) {
-			strBuild.append(tuple + ";");
+//			strBuild.append(tuple + ";");
 			currentBufferSize += 1;
 		}else {
 			logger.info("dataCollector.addToBuffer(): About to create new child node, buffer is full (buffer-size: " + 
 					strBuild.length() + ").");
-			createChildNode(strBuild.toString().getBytes());
+//			pushStatisticData(strBuild.toString().getBytes());
+			pushStatisticData(tuple.getBytes());
 			currentBufferSize = 0;
-			strBuild = new StringBuilder();
-			strBuild.append(tuple);
+//			strBuild = new StringBuilder();
+//			strBuild.append(tuple);
 		}
 	}
 
 
 
-	public void createChildNode(byte[] statBuffer) {
-//		String newChildPath = "/data/" + opId + "/";
+	public void pushStatisticData(byte[] statBuffer) {
 		String nodePath = "/data/" + this.operatorIdentifier;
-		//TODO: Do we need the data twice?? Both in the /data/opId node and in the /data/opId/n node??
-//		zk.create(newChildPath, statBuffer, Ids.OPEN_ACL_UNSAFE, 
-//				CreateMode.PERSISTENT_SEQUENTIAL, createChildNodeCallback, statBuffer);
 		zk.setData(nodePath, statBuffer, -1, setDataCallback, statBuffer);
 	}
 	
@@ -107,7 +104,7 @@ public class DataCollector implements Serializable {
 			switch(Code.get(rc)) {
 			case CONNECTIONLOSS:
 				byte[] statBuffer = (byte[]) ctx;
-				createChildNode(statBuffer);
+				pushStatisticData(statBuffer);
 				logger.error("dataCollector.getDataCallback(): CONNECTIONLOSS for: " + path + ". Attempting again.");
 				break;
 			case NONODE:
@@ -132,7 +129,7 @@ public class DataCollector implements Serializable {
 			switch(Code.get(rc)) {
 			case CONNECTIONLOSS:
 				byte[] statBuffer = (byte[]) ctx;
-				createChildNode(statBuffer);
+				pushStatisticData(statBuffer);
 				logger.error("dataCollector.createChildNodeCallback(): CONNECTIONLOSS for: " + path + ". Attempting again.");
 				break;
 			case NONODE:

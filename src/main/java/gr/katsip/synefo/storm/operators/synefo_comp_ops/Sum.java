@@ -271,10 +271,8 @@ public class Sum implements AbstractCrypefoOperator, Serializable {
 		int latency = 0;
 		int throughput = 0;
 		int sel = 0;
-		//////////////////////////replace 1 with id
 		if(stats != null) {
-			String tuple = 	ID + "," + stats.getCpuLoad() + "," + stats.getMemory() + "," + 
-					stats.getWindowLatency() + "," + 
+			String tuple = 	ID + "," + stats.getCpuLoad() + "," + stats.getMemory() + "," + stats.getWindowLatency() + "," + 
 					stats.getWindowThroughput() + "," + stats.getSelectivity() + "," + 
 					encryptionData.get("pln") + "," + 
 					encryptionData.get("RND") + "," + 
@@ -316,7 +314,13 @@ public class Sum implements AbstractCrypefoOperator, Serializable {
 		String[] sp = data.split(",");
 		if(sp[0].equalsIgnoreCase("sum")&&sp[1].equalsIgnoreCase("paillier")){
 			type = 1;
-		//	System.out.println("Sum set to paillier");
+			System.out.println("Sum set to paillier");
 		}
+	}
+
+	@Override
+	public void updateOperatorName(String operatorName) {
+		// TODO Auto-generated method stub
+
 	}
 }

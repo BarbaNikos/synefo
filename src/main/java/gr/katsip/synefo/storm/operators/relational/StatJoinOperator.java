@@ -48,6 +48,8 @@ public class StatJoinOperator<T extends Object> implements Serializable, Abstrac
 	private DataCollector dataSender = null;
 
 	private String zooConnectionInfo;
+	
+	private String operatorName = null;
 
 	public StatJoinOperator(Comparator<T> comparator, int window, String joinAttribute, 
 			Fields leftFieldSchema, Fields rightFieldSchema, String zooConnectionInfo, int statReportPeriod) {
@@ -82,7 +84,7 @@ public class StatJoinOperator<T extends Object> implements Serializable, Abstrac
 			Values values) {
 		if(dataSender == null) {
 			String[] zooTokens = this.zooConnectionInfo.split(":");
-			dataSender = new DataCollector(zooTokens[0], Integer.parseInt(zooTokens[1]), statReportPeriod, "join");
+			dataSender = new DataCollector(zooTokens[0], Integer.parseInt(zooTokens[1]), statReportPeriod, this.operatorName);
 		}
 		List<Values> result = new ArrayList<Values>();
 		if(fields.toList().equals(leftFieldSchema.toList())) {
@@ -135,7 +137,7 @@ public class StatJoinOperator<T extends Object> implements Serializable, Abstrac
 	public List<Values> execute(Fields fields, Values values) {
 		if(dataSender == null) {
 			String[] zooTokens = this.zooConnectionInfo.split(":");
-			dataSender = new DataCollector(zooTokens[0], Integer.parseInt(zooTokens[1]), statReportPeriod, "join");
+			dataSender = new DataCollector(zooTokens[0], Integer.parseInt(zooTokens[1]), statReportPeriod, this.operatorName);
 		}
 		List<Values> result = new ArrayList<Values>();
 		if(fields.toList().equals(leftFieldSchema.toList())) {
@@ -303,21 +305,27 @@ public class StatJoinOperator<T extends Object> implements Serializable, Abstrac
 	}
 	
 	public void updateData(TaskStatistics stats) {
-		int CPU = 0;
-		int memory = 0;
+		float CPU = (float) 0.0;
+		float memory = (float) 0.0;
 		int latency = 0;
 		int throughput = 0;
-		int sel = 0;
+		float sel = (float) 0.0;
 		//////////////////////////replace 1 with id
 		if(stats != null) {
-			String tuple = 	stats.getCpuLoad() + "," + stats.getMemory() + "," + stats.getWindowLatency() + "," + 
-					stats.getWindowThroughput() + "," + stats.getSelectivity() + ",0,0,0,0,0";
+			String tuple = 	(float) stats.getCpuLoad() + "," + (float) stats.getMemory() + "," + 
+					(int) stats.getWindowLatency() + "," + (int) stats.getWindowThroughput() + "," + 
+					(float) stats.getSelectivity() + ",0,0,0,0,0";
 			dataSender.addToBuffer(tuple);
 		}else {
 			String tuple = CPU + "," + memory + "," + latency + "," + 
 					throughput + "," + sel + ",0,0,0,0,0";
 			dataSender.addToBuffer(tuple);
 		}
+	}
+
+	@Override
+	public void updateOperatorName(String operatorName) {
+		this.operatorName = operatorName;
 	}
 
 }

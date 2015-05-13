@@ -7,7 +7,7 @@ import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.operators.relational.ProjectOperator;
 import gr.katsip.synefo.storm.operators.synefo_comp_ops.Client;
 import gr.katsip.synefo.storm.operators.synefo_comp_ops.Select;
-import gr.katsip.synefo.storm.operators.synefo_comp_ops.valuesConverter;
+import gr.katsip.synefo.storm.operators.synefo_comp_ops.Sum;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -123,40 +123,35 @@ public class TestTopology {
 		_tmp.add("client_bolt");
 		topology.put("spout_punctuation_tuples", new ArrayList<String>(_tmp));
 		_tmp = new ArrayList<String>();
-		_tmp.add("select_bolt_1");
-		_tmp.add("select_bolt_2");
+		_tmp.add("sum_bolt_1");
+		_tmp.add("sum_bolt_2");
 		topology.put("spout_data_tuples", new ArrayList<String>(_tmp));
 
 		/**
 		 * Stage 1: Select operator
+		 * int buff, int attr, String ID, int statReportPeriod, 
+			String zooIP, Integer zooPort
 		 */
+		
+		Sum sumOperator = new Sum(1000,2,"sum_bolt_1",3000,zooIP,zooPort);
 		String[] selectionOutputSchema = dataSpoutSchema;
-		ArrayList<Integer> returnSet = new ArrayList<Integer>();
-		returnSet.add(0);
-		returnSet.add(1);
-		returnSet.add(2);
-		Select selectOperator = new Select(returnSet, "50", 2, 0, 0, 3000, "select_bolt_1", zooIP, zooPort);
-		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
-		builder.setBolt("select_bolt_1", 
-				new SynefoBolt("select_bolt_1", synefoIP, synefoPort, selectOperator, 
+	sumOperator.setOutputSchema(new Fields(selectionOutputSchema));
+		builder.setBolt("sum_bolt_1", 
+				new SynefoBolt("sum_bolt_1", synefoIP, synefoPort, sumOperator, 
 						zooIP, zooPort, false), 1)
 						.setNumTasks(1)
 						.directGrouping("spout_data_tuples");
-		returnSet = new ArrayList<Integer>();
-		returnSet.add(0);
-		returnSet.add(1);
-		returnSet.add(2);
-		selectOperator = new Select(returnSet, "50", 2, 0, 0, 3000, "select_bolt_2", zooIP, zooPort);
-		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
-		builder.setBolt("select_bolt_2", 
-				new SynefoBolt("select_bolt_2", synefoIP, synefoPort, selectOperator, 
+		sumOperator = new Sum(1000,2,"sum_bolt_2",3000,zooIP,zooPort);
+		sumOperator.setOutputSchema(new Fields(selectionOutputSchema));
+		builder.setBolt("sum_bolt_2", 
+				new SynefoBolt("sum_bolt_2", synefoIP, synefoPort, sumOperator, 
 						zooIP, zooPort, false), 1)
 						.setNumTasks(1)
 						.directGrouping("spout_data_tuples");
 		_tmp = new ArrayList<String>();
 		_tmp.add("client_bolt");
-		topology.put("select_bolt_1", new ArrayList<String>(_tmp));
-		topology.put("select_bolt_2", new ArrayList<String>(_tmp));
+		topology.put("sum_bolt_1", new ArrayList<String>(_tmp));
+		topology.put("sum_bolt_2", new ArrayList<String>(_tmp));
 
 		/**
 		 * Stage 2: Client Bolt (project operator)
@@ -176,8 +171,8 @@ public class TestTopology {
 				new SynefoBolt("client_bolt", synefoIP, synefoPort, 
 						clientOperator, zooIP, zooPort, false), 1)
 						.setNumTasks(1)
-						.directGrouping("select_bolt_1")
-						.directGrouping("select_bolt_2")
+						.directGrouping("sum_bolt_1")
+						.directGrouping("sum_bolt_2")
 						.directGrouping("spout_punctuation_tuples");
 		topology.put("client_bolt", new ArrayList<String>());
 

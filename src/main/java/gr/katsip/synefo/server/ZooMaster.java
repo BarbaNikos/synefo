@@ -175,23 +175,31 @@ public class ZooMaster {
 		}
 		try {
 			if(zk.exists("/synefo", false) != null) {
-				zk.delete("/synefo/physical-top", -1);
-				zk.delete("/synefo/active-top", -1);
-				List<String> children = zk.getChildren("/synefo/scale-out-event", false);
-				for(String child : children) {
-					zk.delete("/synefo/scale-out-event/" + child, -1);
+				if(zk.exists("/synefo/physical-top", false) != null)
+					zk.delete("/synefo/physical-top", -1);
+				if(zk.exists("/synefo/active-top", false) != null)
+					zk.delete("/synefo/active-top", -1);
+				if(zk.exists("/synefo/scale-out-event", false) != null) {
+					List<String> children = zk.getChildren("/synefo/scale-out-event", false);
+					for(String child : children) {
+						zk.delete("/synefo/scale-out-event/" + child, -1);
+					}
+					zk.delete("/synefo/scale-out-event", -1);
 				}
-				zk.delete("/synefo/scale-out-event", -1);
-				children = zk.getChildren("/synefo/scale-in-event", false);
-				for(String child : children) {
-					zk.delete("/synefo/scale-in-event/" + child, -1);
+				if(zk.exists("/synefo/scale-in-event", false) != null) {
+					List<String> children = zk.getChildren("/synefo/scale-in-event", false);
+					for(String child : children) {
+						zk.delete("/synefo/scale-in-event/" + child, -1);
+					}
+					zk.delete("/synefo/scale-in-event", -1);
 				}
-				zk.delete("/synefo/scale-in-event", -1);
-				children = zk.getChildren("/synefo/bolt-tasks", false);
-				for(String child : children) {
-					zk.delete("/synefo/bolt-tasks/" + child, -1);
+				if(zk.exists("/synefo/bolt-tasks", false) != null) {
+					List<String> children = zk.getChildren("/synefo/bolt-tasks", false);
+					for(String child : children) {
+						zk.delete("/synefo/bolt-tasks/" + child, -1);
+					}
+					zk.delete("/synefo/bolt-tasks", -1);
 				}
-				zk.delete("/synefo/bolt-tasks", -1);
 				zk.delete("/synefo", -1);
 			}
 			zk.create("/synefo", "/synefo".getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);

@@ -10,6 +10,9 @@ import gr.katsip.synefo.storm.operators.relational.StatJoinOperator;
 import gr.katsip.synefo.storm.operators.relational.StringComparator;
 import gr.katsip.synefo.storm.producers.StreamgenTupleProducer;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -41,35 +44,59 @@ public class ZeroDemoTopology {
 		String[] streamIPs = null;
 		String zooIP = "";
 		Integer zooPort = -1;
+		String dbServerIp = null;
+		String dbServerUser = null;
+		String dbServerPass = null;
 		HashMap<String, ArrayList<String>> topology = new HashMap<String, ArrayList<String>>();
 		ArrayList<String> _tmp;
-		if(args.length < 4) {
-			System.err.println("Arguments: <synefo-IP> <stream-IP> <zoo-IP> <zoo-port>");
+		if(args.length < 5) {
+			System.err.println("Arguments: <synefo-IP> <stream-IP> <zoo-IP> <zoo-port> <db-info-file>");
 			System.exit(1);
 		}else {
 			synefoIP = args[0];
 			streamIPs = args[1].split(",");
 			zooIP = args[2];
 			zooPort = Integer.parseInt(args[3]);
+			System.out.println("Database Configuration file provided. Parsing connection information...");
+			try(BufferedReader br = new BufferedReader(new FileReader(new File(args[4])))) {
+				for(String line; (line = br.readLine()) != null;) {
+					String[] lineTokens = line.split(":");
+					if(line.contains("db-server-ip:"))
+						dbServerIp = "jdbc:mysql://" + lineTokens[1] + "/";
+					else if(line.contains("db-schema-name:")) 
+						dbServerIp = dbServerIp + lineTokens[1];
+					else if(line.contains("db-user:"))
+						dbServerUser = lineTokens[1];
+					else if(line.contains("db-password:"))
+						dbServerPass = lineTokens[1];
+					else {
+						System.err.println("Invalid db-info file provided. Please use proper formatted file. Format: ");
+			    		System.err.println("db-server-ip:\"proper-ip-here\"");
+			    		System.err.println("db-schema-name:\"proper-schema-name-here\"");
+			    		System.err.println("db-user:\"proper-username-here\"");
+			    		System.err.println("db-password:\"proper-user-password-here\"");
+						System.exit(1);
+					}
+				}
+			}
 		}
 		/**
 		 * The following two lines need to be populated with the database information
 		 */
-		CEStormDatabaseManager ceDb = new CEStormDatabaseManager(
-				"jdbc:mysql://ec2-52-24-254-134.us-west-2.compute.amazonaws.com/ce_storm", 
-				"root", "myCQl_Is_#1");
+		CEStormDatabaseManager ceDb = new CEStormDatabaseManager(dbServerIp, 
+				dbServerUser, dbServerPass);
 		Integer queryId = ceDb.insertQuery(1, 
 				"SELECT * FROM Rstream AS R, Rstream AS S WHERE R.three = S.three");
 		OperatorStatisticCollector statCollector = new OperatorStatisticCollector(zooIP + ":" + zooPort, 
-				"jdbc:mysql://ec2-52-24-254-134.us-west-2.compute.amazonaws.com/ce_storm", 
-				"root", "myCQl_Is_#1", queryId);
+				dbServerIp, 
+				dbServerUser, dbServerPass, queryId);
 		/**
 		 * Create the /data z-node once for all the bolts (also clean-up previous contents)
 		 */
 		Watcher sampleWatcher = new Watcher() {
 			@Override
 			public void process(WatchedEvent event) {
-				
+
 			}
 		};
 		try {
@@ -109,12 +136,11 @@ public class ZeroDemoTopology {
 		 */
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
-		
+
 		/**
 		 * Stage 0: Data Sources
 		 */
 		String[] spoutSchema = { "num", "one", "two", "three", "four" };
-//		String[] spoutTwoSchema = { "num", "1", "2", "three", "5" };
 		StreamgenTupleProducer tupleProducer = new StreamgenTupleProducer(streamIPs[0]);
 		tupleProducer.setSchema(new Fields(spoutSchema));
 		builder.setSpout("spout", 
@@ -128,15 +154,15 @@ public class ZeroDemoTopology {
 		/**
 		 * Stage 1: Join operators
 		 */
-		StatJoinOperator<String> joinOperator = new StatJoinOperator<String>(new StringComparator(), 500, "three", 
-				new Fields(spoutSchema), new Fields(spoutSchema), zooIP + ":" + zooPort, 1000);
+		StatJoinOperator<String> joinOperator = new StatJoinOperator<String>(new StringComparator(), 50, "three", 
+				new Fields(spoutSchema), new Fields(spoutSchema), zooIP + ":" + zooPort, 500);
 		builder.setBolt("join_bolt_1", 
 				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, 
 						joinOperator, zooIP, zooPort, false), 1)
 						.setNumTasks(1)
 						.directGrouping("spout");
-		joinOperator = new StatJoinOperator<String>(new StringComparator(), 500, "three", 
-				new Fields(spoutSchema), new Fields(spoutSchema), zooIP + ":" + zooPort, 1000);
+		joinOperator = new StatJoinOperator<String>(new StringComparator(), 50, "three", 
+				new Fields(spoutSchema), new Fields(spoutSchema), zooIP + ":" + zooPort, 500);
 		builder.setBolt("join_bolt_2", 
 				new SynefoBolt("join_bolt_2", synefoIP, synefoPort, 
 						joinOperator, zooIP, zooPort, false), 1)
