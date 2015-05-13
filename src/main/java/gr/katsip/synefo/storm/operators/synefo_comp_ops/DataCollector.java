@@ -78,15 +78,16 @@ public class DataCollector implements Serializable {
 
 	public void addToBuffer(String tuple) {
 		if(currentBufferSize < bufferSize) {
-			strBuild.append(tuple + ";");
+//			strBuild.append(tuple + ";");
 			currentBufferSize += 1;
 		}else {
 			logger.info("dataCollector.addToBuffer(): About to create new child node, buffer is full (buffer-size: " + 
 					strBuild.length() + ").");
-			pushStatisticData(strBuild.toString().getBytes());
+//			pushStatisticData(strBuild.toString().getBytes());
+			pushStatisticData(tuple.getBytes());
 			currentBufferSize = 0;
-			strBuild = new StringBuilder();
-			strBuild.append(tuple);
+//			strBuild = new StringBuilder();
+//			strBuild.append(tuple);
 		}
 	}
 

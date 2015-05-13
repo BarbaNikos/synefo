@@ -141,7 +141,6 @@ public class ZeroDemoTopology {
 		 * Stage 0: Data Sources
 		 */
 		String[] spoutSchema = { "num", "one", "two", "three", "four" };
-		//		String[] spoutTwoSchema = { "num", "1", "2", "three", "5" };
 		StreamgenTupleProducer tupleProducer = new StreamgenTupleProducer(streamIPs[0]);
 		tupleProducer.setSchema(new Fields(spoutSchema));
 		builder.setSpout("spout", 
@@ -156,14 +155,14 @@ public class ZeroDemoTopology {
 		 * Stage 1: Join operators
 		 */
 		StatJoinOperator<String> joinOperator = new StatJoinOperator<String>(new StringComparator(), 50, "three", 
-				new Fields(spoutSchema), new Fields(spoutSchema), zooIP + ":" + zooPort, 1000);
+				new Fields(spoutSchema), new Fields(spoutSchema), zooIP + ":" + zooPort, 500);
 		builder.setBolt("join_bolt_1", 
 				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, 
 						joinOperator, zooIP, zooPort, false), 1)
 						.setNumTasks(1)
 						.directGrouping("spout");
 		joinOperator = new StatJoinOperator<String>(new StringComparator(), 50, "three", 
-				new Fields(spoutSchema), new Fields(spoutSchema), zooIP + ":" + zooPort, 1000);
+				new Fields(spoutSchema), new Fields(spoutSchema), zooIP + ":" + zooPort, 500);
 		builder.setBolt("join_bolt_2", 
 				new SynefoBolt("join_bolt_2", synefoIP, synefoPort, 
 						joinOperator, zooIP, zooPort, false), 1)

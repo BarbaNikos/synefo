@@ -143,8 +143,8 @@ public class OperatorStatisticCollector {
 //						new String(data) + " } for operator: " + (String) ctx);
 				String readableData = new String(data);
 				String operatorIdentifier = (String) ctx;
-				if(readableData.contains(";") == false || readableData.contains(",") == false)
-					return;
+//				if(readableData.contains(";") == false || readableData.contains(",") == false)
+//					return;
 				commitToDatabase(queryId, operatorIdentifier, readableData);
 				break;
 			default:
@@ -157,23 +157,37 @@ public class OperatorStatisticCollector {
 	};
 	
 	private void commitToDatabase(Integer queryId, String operator, String data) {
-		String[] statisticTuples = data.split(";");
-		for(int i = 0; i < statisticTuples.length; ++i) {
-			String[] stats = statisticTuples[i].split(",");
-			float cpu = Float.parseFloat(stats[0]);
-			float memory = Float.parseFloat(stats[1]);
-			int latency = Integer.parseInt(stats[2]);
-			int throughput = Integer.parseInt(stats[3]);
-			float selectivity = Float.parseFloat(stats[4]);
-			int plain = Integer.parseInt(stats[5]);
-			int det = Integer.parseInt(stats[6]);
-			int rnd = Integer.parseInt(stats[7]);
-			int ope = Integer.parseInt(stats[8]);
-			int hom = Integer.parseInt(stats[9]);
-			ceDb.insertStatistics(queryId, operator, cpu, memory, 
-					latency, throughput, selectivity, 
-					plain, det, rnd, ope, hom);
-		}
+//		String[] statisticTuples = data.split(";");
+//		for(int i = 0; i < statisticTuples.length; ++i) {
+//			String[] stats = statisticTuples[i].split(",");
+//			float cpu = Float.parseFloat(stats[0]);
+//			float memory = Float.parseFloat(stats[1]);
+//			int latency = Integer.parseInt(stats[2]);
+//			int throughput = Integer.parseInt(stats[3]);
+//			float selectivity = Float.parseFloat(stats[4]);
+//			int plain = Integer.parseInt(stats[5]);
+//			int det = Integer.parseInt(stats[6]);
+//			int rnd = Integer.parseInt(stats[7]);
+//			int ope = Integer.parseInt(stats[8]);
+//			int hom = Integer.parseInt(stats[9]);
+//			ceDb.insertStatistics(queryId, operator, cpu, memory, 
+//					latency, throughput, selectivity, 
+//					plain, det, rnd, ope, hom);
+//		}
+		String[] stats = data.split(",");
+		float cpu = Float.parseFloat(stats[0]);
+		float memory = Float.parseFloat(stats[1]);
+		int latency = Integer.parseInt(stats[2]);
+		int throughput = Integer.parseInt(stats[3]);
+		float selectivity = Float.parseFloat(stats[4]);
+		int plain = Integer.parseInt(stats[5]);
+		int det = Integer.parseInt(stats[6]);
+		int rnd = Integer.parseInt(stats[7]);
+		int ope = Integer.parseInt(stats[8]);
+		int hom = Integer.parseInt(stats[9]);
+		ceDb.insertStatistics(queryId, operator, cpu, memory, 
+				latency, throughput, selectivity, 
+				plain, det, rnd, ope, hom);
 	}
 
 }
