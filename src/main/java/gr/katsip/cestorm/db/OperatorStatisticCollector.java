@@ -145,6 +145,8 @@ public class OperatorStatisticCollector {
 				String operatorIdentifier = (String) ctx;
 //				if(readableData.contains(";") == false || readableData.contains(",") == false)
 //					return;
+				if(readableData.contains("/data") == true)
+					return;
 				commitToDatabase(queryId, operatorIdentifier, readableData);
 				break;
 			default:
