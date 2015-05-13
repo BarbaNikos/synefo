@@ -147,11 +147,11 @@ public class Select implements Serializable, AbstractCrypefoOperator  {
 			@Override
 			public void process(WatchedEvent event) {
 				String path = event.getPath();
-				System.out.println("Select "+ID+" Received event type: " + event.getType()+ " path "+event.getPath());
+			//	System.out.println("Select "+ID+" Received event type: " + event.getType()+ " path "+event.getPath());
 				if(event.getType() == Event.EventType.NodeDataChanged) {
 					//Retrieve operator
 					getDataAndWatch();
-					System.out.println("NodeDataChanged event: " + path);
+					//System.out.println("NodeDataChanged event: " + path);
 					try {
 						byte[] data =zk.getData(path,false,null);
 						handleUpdate(new String(data));
@@ -180,8 +180,8 @@ public class Select implements Serializable, AbstractCrypefoOperator  {
 					System.out.println("getSPSCallback(): NONODE");
 					break;
 				case OK:
-					System.out.println("getSPSCallback(): Successfully retrieved new predicate: " + 
-							new String(data));
+					//System.out.println("getSPSCallback(): Successfully retrieved new predicate: " + 
+					//		new String(data));
 					handleUpdate(new String(data));
 					getDataAndWatch();
 					break;
@@ -217,7 +217,7 @@ public class Select implements Serializable, AbstractCrypefoOperator  {
 				encryptionData.put(encUse[k], encryptionData.get(encUse[k])+1);
 			}
 			updateData(statistics);
-			Values val = new Values(); val.addAll(values);
+			Values val = new Values(); val.add(values.get(0).toString());
 			ArrayList<Values> valz = new ArrayList<Values>();
 			valz.add(val);
 			if(matches)
@@ -336,7 +336,7 @@ public class Select implements Serializable, AbstractCrypefoOperator  {
 	}
 
 	public void getDataAndWatch() {
-		System.out.println("Select watch reset in select "+ID);
+	//	System.out.println("Select watch reset in select "+ID);
 		zk.getData("/SPS", 
 				true, 
 				getSPSCallback, 
@@ -347,7 +347,7 @@ public class Select implements Serializable, AbstractCrypefoOperator  {
 		String[] sp = data.split(",");
 		if(sp[0].equalsIgnoreCase("select")){
 			predicate = sp[1];
-			System.out.println("Predicate in "+ID+" changed to: "+predicate);
+		//	System.out.println("Predicate in "+ID+" changed to: "+predicate);
 		}
 	}
 

@@ -160,7 +160,7 @@ public class Sum implements AbstractCrypefoOperator, Serializable {
 			updateData(statistics);
 			if(type==0){
 				int ret = regSum(tuples);
-				summ.add(tuples[0]+",SUM,"+ret);
+				summ.add(tuples[0]+"//$$$//SUM//$$$//"+ret);
 				if(ret>0){
 					vals.add(summ);
 				}
@@ -169,7 +169,7 @@ public class Sum implements AbstractCrypefoOperator, Serializable {
 				BigInteger z = multBigInt(tuples);
 				if (z.compareTo(BigInteger.ZERO)==1){
 					Values v = new Values();
-					v.add(tuples[0]+",SUM,"+z);
+					v.add(tuples[0]+"//$$$//SUM//$$$//"+z);
 					vals.add(v);
 				}
 			}

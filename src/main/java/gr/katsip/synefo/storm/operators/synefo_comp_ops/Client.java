@@ -20,6 +20,7 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 
 import backtype.storm.tuple.Fields;
@@ -152,19 +153,21 @@ public class Client implements AbstractOperator, Serializable {
 	}
 	
 	public void processNormal(String tuple){
-		String[] tuples = tuple.split(Pattern.quote(","));
+		String[] tuples = tuple.split(Pattern.quote("//$$$//"));
 		String finalTuple="";
 		//System.out.println("pl: "+tuples.length);
 		int clientID= Integer.parseInt(tuples[0]);
+		//System.out.println("tup: "+tuple +"size "+tuples.length);
 		for(int i=1;i<tuples.length;i++){
 			if(subscriptions.get(clientID).get(i)==0){
 				finalTuple=finalTuple+", "+tuples[i];
-				System.out.println(finalTuple);
+			//	System.out.println(finalTuple);
 			}else if(subscriptions.get(clientID).get(i)==1){
 				
 			}else if(subscriptions.get(clientID).get(i)==2){
-				String result = new String(decryptDetermine(tuples[i].getBytes(),keys.get(clientID).get(i)));
+			 String result = new String(decryptDetermine(tuples[i].getBytes(),keys.get(clientID).get(i)));
 				finalTuple=finalTuple+", "+result;
+				System.out.println(finalTuple);
 			}else if(subscriptions.get(clientID).get(i)==3){
 				
 			}else if(subscriptions.get(clientID).get(i)==4){
@@ -186,10 +189,17 @@ public class Client implements AbstractOperator, Serializable {
 			System.out.println("RND KEY: "+tuple[5]);			
 			keys.get(clientId).put(field,tuple[5].getBytes());
 		}else if(permission == 2){//det
-			String newUpdate = "select,"+encryptDetermine("50",tuple[5]);
+			String newUpdate = "select,"+encryptDetermine("2",tuple[5]);
 			spsUpdate.createChildNode(newUpdate.getBytes());
 			System.out.println("DET KEY: "+tuple[5]);
-			keys.get(clientId).put(field,tuple[5].getBytes());
+			byte[] newK = null;
+			try {
+				newK = Hex.decodeHex(tuple[5].toCharArray());
+			} catch (DecoderException e) {
+				System.out.println("Failed to decode DET key in Client");
+				e.printStackTrace();
+			} 
+			keys.get(clientId).put(field,newK);
 		}else if(permission == 3){//ope
 			System.out.println("OPE KEY: "+tuple[5]);
 			keys.get(clientId).put(field,tuple[5].getBytes());
@@ -281,7 +291,7 @@ public class Client implements AbstractOperator, Serializable {
 	}
 
 	public byte[] decryptDetermine(byte[] cipherText, byte[] determineKey){//select, project, equijoin, count, distinct...
-		byte[] plainText=null;
+		byte[] plainText=new byte[16];
 		Cipher c=null;
 		try {
 			c = Cipher.getInstance("AES/ECB/NoPadding");
@@ -308,11 +318,11 @@ public class Client implements AbstractOperator, Serializable {
 			System.out.println("Decryption Error 5 at Determine Data Provider: "+id);
 			e.printStackTrace();
 		}
-		int remove  = plainText[plainText.length-2];
-		byte[] ret = new byte[plainText.length-remove];
-		for(int i=0;i<ret.length;i++){
-			ret[i]=plainText[i];
-		}
+		//int remove  = plainText[plainText.length-2];
+		//byte[] ret = new byte[plainText.length-remove];
+		//for(int i=0;i<ret.length;i++){
+	//		ret[i]=plainText[i];
+	//	}
 		return plainText;
 	}
 
