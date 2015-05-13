@@ -4,6 +4,7 @@ import gr.katsip.synefo.storm.operators.AbstractOperator;
 
 import java.io.FileOutputStream;
 import java.io.Serializable;
+import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -60,6 +61,11 @@ public class Client implements AbstractOperator, Serializable {
 	private int zooPort;
 	
 	private SPSUpdater spsUpdate =null;
+	
+	private BigInteger n;
+	private BigInteger nsquare;
+	private BigInteger g;
+	private BigInteger lambda;
 
 	public Client(int idd, String nme, String[] atts, ArrayList<Integer> dataPs, int schemaSiz, String zooIP, int zooPort){
 		id = idd;
@@ -112,9 +118,10 @@ public class Client implements AbstractOperator, Serializable {
 			processSps(tuples);
 		}
 		else{
-			if(counter>displayCount){
+			if(counter>0){
 				counter=0;
 				currentTuple=values.get(0).toString();
+				System.out.println(currentTuple);
 				processNormal(currentTuple);
 			}
 		}
@@ -145,9 +152,9 @@ public class Client implements AbstractOperator, Serializable {
 	}
 	
 	public void processNormal(String tuple){
-		String[] tuples = tuple.split(Pattern.quote("//$$$//"));
+		String[] tuples = tuple.split(Pattern.quote(","));
 		String finalTuple="";
-		System.out.println("pl: "+tuples.length);
+		//System.out.println("pl: "+tuples.length);
 		int clientID= Integer.parseInt(tuples[0]);
 		for(int i=1;i<tuples.length;i++){
 			if(subscriptions.get(clientID).get(i)==0){
@@ -160,7 +167,7 @@ public class Client implements AbstractOperator, Serializable {
 			}else if(subscriptions.get(clientID).get(i)==3){
 				
 			}else if(subscriptions.get(clientID).get(i)==4){
-				
+				System.out.println("SUM: "+Decryption(new BigInteger(tuples[i])));
 			}
 		}
 	}
@@ -188,9 +195,21 @@ public class Client implements AbstractOperator, Serializable {
 		}else if(permission == 4){//hom
 			System.out.println("HOM KEY: "+tuple[5]);
 			keys.get(clientId).put(field,tuple[5].getBytes());
+//			/String ret = n.toString()+","+nsquare.toString()+","+g.toString()+","+lambda.toString();
+			n = new BigInteger(tuple[5]);
+			nsquare = new BigInteger(tuple[6]);
+			g = new BigInteger(tuple[7]);
+			lambda = new BigInteger(tuple[8]);
+			String newUpdate = "sum,paillier";
+			spsUpdate.createChildNode(newUpdate.getBytes());
 		}
 	}
 
+	public BigInteger Decryption(BigInteger c) {
+		BigInteger u = g.modPow(lambda, nsquare).subtract(BigInteger.ONE).divide(n).modInverse(n);
+		return c.modPow(lambda, nsquare).subtract(BigInteger.ONE).divide(n).multiply(u).mod(n);
+	}
+	
 	public String encryptDetermine(String plnText, String key){
 		boolean isSize=true;
 		byte[] newPlainText=null;

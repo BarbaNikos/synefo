@@ -67,6 +67,8 @@ public class Select implements Serializable, AbstractCrypefoOperator  {
 	private ZooKeeper zk = null;
 
 	private  Watcher SPSRetrieverWatcher =null;
+
+	private  DataCallback getSPSCallback = null;
 	/**
 	 * 
 	 * @param returnSet
@@ -140,30 +142,60 @@ public class Select implements Serializable, AbstractCrypefoOperator  {
 		if(dataSender == null) {
 			dataSender = new DataCollector(zooIP, zooPort, statReportPeriod, ID);
 		}
-		SPSRetrieverWatcher = new Watcher() {
-			@Override
-			public void process(WatchedEvent event) {
-				String path = event.getPath();
-				System.out.println("Select Received event type: " + event.getType()+ " path "+event.getPath());
-				if(event.getType() == Event.EventType.NodeDataChanged) {
-					//Retrieve operator
-					getDataAndWatch();
-					System.out.println("NodeDataChanged event: " + path);
-					try {
-						byte[] data =zk.getData(path,false,null);
-						handleUpdate(new String(data));
-					} catch (KeeperException | InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+		if(SPSRetrieverWatcher==null){
+			SPSRetrieverWatcher = new Watcher() {
+				@Override
+				public void process(WatchedEvent event) {
+					String path = event.getPath();
+					System.out.println("Select "+ID+" Received event type: " + event.getType()+ " path "+event.getPath());
+					if(event.getType() == Event.EventType.NodeDataChanged) {
+						//Retrieve operator
+						getDataAndWatch();
+						System.out.println("NodeDataChanged event: " + path);
+						try {
+							byte[] data =zk.getData(path,false,null);
+							handleUpdate(new String(data));
+						} catch (KeeperException | InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}else if(event.getType() == null) {
+						//Retrieve new children
+						getDataAndWatch();
+					}else{
+						getDataAndWatch();
 					}
-				}else if(event.getType() == null) {
-					//Retrieve new children
-					getDataAndWatch();
-				}else{
-					getDataAndWatch();
 				}
-			}
-		};
+			};
+		}
+		if(getSPSCallback==null){
+			getSPSCallback = new DataCallback() {
+				@Override
+				public void processResult(int rc, String path, Object ctx, byte[] data,
+						Stat stat) {
+					switch(Code.get(rc)) {
+					case CONNECTIONLOSS:
+						System.out.println("getSPSCallback(): CONNECTIONLOSS");
+						getDataAndWatch();
+						break;
+					case NONODE:
+						System.out.println("getSPSCallback(): NONODE");
+						break;
+					case OK:
+						System.out.println("getSPSCallback(): Successfully retrieved new predicate: " + 
+								new String(data));
+						handleUpdate(new String(data));
+						getDataAndWatch();
+						break;
+					default:
+						System.out.println("getDataCallback(): Unexpected scenario: " + 
+								KeeperException.create(Code.get(rc), path) );
+						break;
+					}
+				}
+
+			};
+		}
 		if(zk==null){
 			try {
 				zk = new ZooKeeper(this.zooIP + ":" + this.zooPort, 100000, SPSRetrieverWatcher);
@@ -171,7 +203,7 @@ public class Select implements Serializable, AbstractCrypefoOperator  {
 				e.printStackTrace();}
 		}
 		if(!values.get(0).toString().contains("SPS")) {
-			System.out.println("Predicate: "+predicate+ " SELECTION: "+values.get(0).toString());
+			System.out.println("ID: "+ID+" Predicate: "+predicate+ " SELECTION: "+values.get(0).toString());
 			String[] tuples = values.get(0).toString().split(Pattern.quote("//$$$//"));
 			boolean matches  = false;
 			if(type == 0) {
@@ -307,7 +339,7 @@ public class Select implements Serializable, AbstractCrypefoOperator  {
 	}
 
 	public void getDataAndWatch() {
-		System.out.println("Select watch reset");
+		System.out.println("Select watch reset in select "+ID);
 		zk.getData("/SPS", 
 				true, 
 				getSPSCallback, 
@@ -318,35 +350,7 @@ public class Select implements Serializable, AbstractCrypefoOperator  {
 		String[] sp = data.split(",");
 		if(sp[0].equalsIgnoreCase("select")){
 			predicate = sp[1];
-			System.out.println("Predicate changed to: "+predicate);
+			System.out.println("Predicate in "+ID+" changed to: "+predicate);
 		}
 	}
-
-	private transient DataCallback getSPSCallback = new DataCallback() {
-		@Override
-		public void processResult(int rc, String path, Object ctx, byte[] data,
-				Stat stat) {
-			switch(Code.get(rc)) {
-			case CONNECTIONLOSS:
-				System.out.println("getSPSCallback(): CONNECTIONLOSS");
-				getDataAndWatch();
-				break;
-			case NONODE:
-				System.out.println("getSPSCallback(): NONODE");
-				break;
-			case OK:
-				System.out.println("getSPSCallback(): Successfully retrieved new predicate: " + 
-						new String(data));
-				handleUpdate(new String(data));
-				getDataAndWatch();
-				break;
-			default:
-				System.out.println("getDataCallback(): Unexpected scenario: " + 
-						KeeperException.create(Code.get(rc), path) );
-				break;
-			}
-		}
-
-	};
-
 }
