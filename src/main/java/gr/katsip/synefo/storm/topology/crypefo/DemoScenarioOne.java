@@ -91,7 +91,7 @@ public class DemoScenarioOne {
 		CEStormDatabaseManager ceDb = new CEStormDatabaseManager(dbServerIp, 
 				dbServerUser, dbServerPass);
 		Integer queryId = ceDb.insertQuery(1, 
-				"SELECT * FROM Rstream AS R, Rstream AS S WHERE R.three = S.three");
+				"SELECT SUM(steps) FROM D1 WHERE lon=x AND lat=y");
 		OperatorStatisticCollector statCollector = new OperatorStatisticCollector(zooIP + ":" + zooPort, 
 				dbServerIp, 
 				dbServerUser, dbServerPass, queryId);
@@ -165,8 +165,8 @@ public class DemoScenarioOne {
 		_tmp.add("select_bolt_1");
 		_tmp.add("select_bolt_2");
 		topology.put("spout_data_tuples", new ArrayList<String>(_tmp));
-		ceDb.insertOperator("punctuation-spout", "n/a", queryId, 0, 1, "SPOUT");
-		ceDb.insertOperator("data-spout", "n/a", queryId, 0, 2, "SPOUT");
+		ceDb.insertOperator("spout_punctuation_tuples", "n/a", queryId, 0, 1, "SPOUT");
+		ceDb.insertOperator("spout_data_tuples", "n/a", queryId, 0, 2, "SPOUT");
 
 		/**
 		 * Stage 1: Select operator
