@@ -71,7 +71,6 @@ public class Sum implements AbstractCrypefoOperator, Serializable {
 		size = buff;
 		attribute = attr;
 		encryptionData.put("pln",0);
-		encryptionData.put("RND",0);
 		encryptionData.put("DET",0);
 		encryptionData.put("OPE",0);
 		encryptionData.put("HOM",0);
@@ -278,14 +277,12 @@ public class Sum implements AbstractCrypefoOperator, Serializable {
 			String tuple = 	ID + "," + stats.getCpuLoad() + "," + stats.getMemory() + "," + stats.getWindowLatency() + "," + 
 					stats.getWindowThroughput() + "," + stats.getSelectivity() + "," + 
 					encryptionData.get("pln") + "," + 
-					encryptionData.get("RND") + "," + 
 					encryptionData.get("DET") + "," + 
 					encryptionData.get("OPE") + ","  + 
 					encryptionData.get("HOM");
 
 			dataSender.addToBuffer(tuple);
 			encryptionData.put("pln",0);
-			encryptionData.put("RND",0);
 			encryptionData.put("DET",0);
 			encryptionData.put("OPE",0);
 			encryptionData.put("HOM",0);
@@ -293,14 +290,12 @@ public class Sum implements AbstractCrypefoOperator, Serializable {
 			String tuple = 	ID + "," + CPU + "," + memory + "," + latency + "," + 
 					throughput + "," + sel + "," + 
 					encryptionData.get("pln") + "," + 
-					encryptionData.get("RND") + "," + 
 					encryptionData.get("DET") + "," + 
 					encryptionData.get("OPE") + ","  + 
 					encryptionData.get("HOM");
 
 			dataSender.addToBuffer(tuple);
 			encryptionData.put("pln",0);
-			encryptionData.put("RND",0);
 			encryptionData.put("DET",0);
 			encryptionData.put("OPE",0);
 			encryptionData.put("HOM",0);

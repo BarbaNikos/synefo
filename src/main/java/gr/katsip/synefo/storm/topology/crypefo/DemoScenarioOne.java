@@ -146,7 +146,7 @@ public class DemoScenarioOne {
 		returnSet.add(0);
 		returnSet.add(1);
 		returnSet.add(2);
-		selectOperator = new Select(returnSet, "50", 3, 0, 0, 3000, "select_bolt_2", zooIP, zooPort);
+		selectOperator = new Select(returnSet, "2", 3, 0, 0, 3000, "select_bolt_2", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt_2", 
 				new SynefoBolt("select_bolt_2", synefoIP, synefoPort, selectOperator, 

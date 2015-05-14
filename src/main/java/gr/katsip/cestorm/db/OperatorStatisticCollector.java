@@ -184,12 +184,11 @@ public class OperatorStatisticCollector {
 		float selectivity = Float.parseFloat(stats[4]);
 		int plain = Integer.parseInt(stats[5]);
 		int det = Integer.parseInt(stats[6]);
-		int rnd = Integer.parseInt(stats[7]);
 		int ope = Integer.parseInt(stats[8]);
 		int hom = Integer.parseInt(stats[9]);
 		ceDb.insertStatistics(queryId, operator, cpu, memory, 
 				latency, throughput, selectivity, 
-				plain, det, rnd, ope, hom);
+				plain, det, ope, hom);
 	}
 
 }
