@@ -180,6 +180,7 @@ public class SynefoCoordinatorThread implements Runnable {
 					Entry<String, ArrayList<String>> operatorEntry = operatorItr.next();
 					String operatorName = operatorEntry.getKey();
 					String[] operatorNameTokens = operatorName.split("[:@]");
+					System.out.println("About to update opName "+operatorNameTokens[0]+ " with "+operatorName);
 					this.ceDb.updateOperatorInformation(queryId.get(), operatorNameTokens[0], 
 							operatorName, operatorNameTokens[2]);
 				}

@@ -5,7 +5,6 @@ import gr.katsip.cestorm.db.OperatorStatisticCollector;
 import gr.katsip.synefo.storm.api.SynefoBolt;
 import gr.katsip.synefo.storm.api.SynefoSpout;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
-import gr.katsip.synefo.storm.operators.relational.ProjectOperator;
 import gr.katsip.synefo.storm.operators.synefo_comp_ops.Client;
 import gr.katsip.synefo.storm.operators.synefo_comp_ops.Select;
 import gr.katsip.synefo.storm.operators.synefo_comp_ops.Sum;
@@ -76,10 +75,10 @@ public class DemoScenarioOne {
 						dbServerPass = lineTokens[1];
 					else {
 						System.err.println("Invalid db-info file provided. Please use proper formatted file. Format: ");
-			    		System.err.println("db-server-ip:\"proper-ip-here\"");
-			    		System.err.println("db-schema-name:\"proper-schema-name-here\"");
-			    		System.err.println("db-user:\"proper-username-here\"");
-			    		System.err.println("db-password:\"proper-user-password-here\"");
+						System.err.println("db-server-ip:\"proper-ip-here\"");
+						System.err.println("db-schema-name:\"proper-schema-name-here\"");
+						System.err.println("db-user:\"proper-username-here\"");
+						System.err.println("db-password:\"proper-user-password-here\"");
 						System.exit(1);
 					}
 				}
@@ -151,6 +150,11 @@ public class DemoScenarioOne {
 				new SynefoSpout("spout_punctuation_tuples", synefoIP, synefoPort, punctuationTupleProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
 
+		_tmp = new ArrayList<String>();
+		_tmp.add("client_bolt");
+		topology.put("spout_punctuation_tuples", new ArrayList<String>(_tmp));
+		ceDb.insertOperator("spout_punctuation_tuples", "n/a", queryId, 0, 1, "SPOUT");
+
 		String[] dataSpoutSchema = { "tuple" };
 		CrypefoDataTupleProducer dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[0],1);
 		dataTupleProducer.setSchema(new Fields(dataSpoutSchema));
@@ -159,13 +163,9 @@ public class DemoScenarioOne {
 				.setNumTasks(1);
 
 		_tmp = new ArrayList<String>();
-		_tmp.add("client_bolt");
-		topology.put("spout_punctuation_tuples", new ArrayList<String>(_tmp));
-		_tmp = new ArrayList<String>();
 		_tmp.add("select_bolt_1");
 		_tmp.add("select_bolt_2");
-		topology.put("spout_data_tuples", new ArrayList<String>(_tmp));
-		ceDb.insertOperator("spout_punctuation_tuples", "n/a", queryId, 0, 1, "SPOUT");
+		topology.put("spout_data_tuples", new ArrayList<String>(_tmp));	
 		ceDb.insertOperator("spout_data_tuples", "n/a", queryId, 0, 2, "SPOUT");
 
 		/**
@@ -183,10 +183,12 @@ public class DemoScenarioOne {
 						zooIP, zooPort, false), 1)
 						.setNumTasks(1)
 						.directGrouping("spout_data_tuples");
-		returnSet = new ArrayList<Integer>();
-		returnSet.add(0);
-		returnSet.add(1);
-		returnSet.add(2);
+		_tmp = new ArrayList<String>();
+		_tmp.add("sum_operator_1");
+		_tmp.add("sum_operator_2");
+		topology.put("select_bolt_1", new ArrayList<String>(_tmp));
+		ceDb.insertOperator("select_bolt_1", "n/a", queryId, 1, 1, "BOLT");
+
 		selectOperator = new Select(returnSet, "2", 3, 0, 0, 3000, "select_bolt_2", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt_2", 
@@ -197,9 +199,7 @@ public class DemoScenarioOne {
 		_tmp = new ArrayList<String>();
 		_tmp.add("sum_operator_1");
 		_tmp.add("sum_operator_2");
-		topology.put("select_bolt_1", new ArrayList<String>(_tmp));
 		topology.put("select_bolt_2", new ArrayList<String>(_tmp));
-		ceDb.insertOperator("select_bolt_1", "n/a", queryId, 1, 1, "BOLT");
 		ceDb.insertOperator("select_bolt_2", "n/a", queryId, 1, 2, "BOLT");
 		/**
 		 * Stage 2: Aggregate Operator
@@ -227,7 +227,7 @@ public class DemoScenarioOne {
 		topology.put("sum_operator_2", new ArrayList<String>(_tmp));
 		ceDb.insertOperator("sum_operator_1", "n/a", queryId, 3, 1, "BOLT");
 		ceDb.insertOperator("sum_operator_2", "n/a", queryId, 3, 2, "BOLT");
-		
+
 		/**
 		 * Stage 3: Client Bolt (project operator)
 		 */
@@ -277,11 +277,11 @@ public class DemoScenarioOne {
 		ceDb.destroy();
 		conf.setDebug(false);
 		conf.setNumWorkers(7);
-			StormSubmitter.submitTopology("crypefo-top-1", conf, builder.createTopology());
-			statCollector.init();
-	//	LocalCluster cluster = new LocalCluster();
-	//cluster.submitTopology("debug-topology", conf, builder.createTopology());
-//		Thread.sleep(200000);
+		StormSubmitter.submitTopology("crypefo-top-1", conf, builder.createTopology());
+		statCollector.init();
+		//	LocalCluster cluster = new LocalCluster();
+		//cluster.submitTopology("debug-topology", conf, builder.createTopology());
+		//		Thread.sleep(200000);
 		//		OperatorStatisticCollector statCollector = new OperatorStatisticCollector(zooIP + ":" + zooPort, 
 		//				"n/a", "n/a", "n/a", "n/a");
 		//		statCollector.init();
