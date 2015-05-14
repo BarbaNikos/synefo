@@ -72,6 +72,7 @@ public class Sum implements AbstractCrypefoOperator, Serializable {
 		attribute = attr;
 		encryptionData.put("pln",0);
 		encryptionData.put("DET",0);
+		encryptionData.put("RND",0);
 		encryptionData.put("OPE",0);
 		encryptionData.put("HOM",0);
 		this.statReportPeriod = statReportPeriod;
@@ -276,14 +277,16 @@ public class Sum implements AbstractCrypefoOperator, Serializable {
 		if(stats != null) {
 			String tuple = 	ID + "," + stats.getCpuLoad() + "," + stats.getMemory() + "," + stats.getWindowLatency() + "," + 
 					stats.getWindowThroughput() + "," + stats.getSelectivity() + "," + 
-					encryptionData.get("pln") + "," + 
-					encryptionData.get("DET") + "," + 
+					encryptionData.get("pln") + "," +
+					encryptionData.get("DET") + "," +
+					encryptionData.get("RND") + "," +
 					encryptionData.get("OPE") + ","  + 
 					encryptionData.get("HOM");
 
 			dataSender.addToBuffer(tuple);
 			encryptionData.put("pln",0);
 			encryptionData.put("DET",0);
+			encryptionData.put("RND",0);
 			encryptionData.put("OPE",0);
 			encryptionData.put("HOM",0);
 		}else {
@@ -291,12 +294,14 @@ public class Sum implements AbstractCrypefoOperator, Serializable {
 					throughput + "," + sel + "," + 
 					encryptionData.get("pln") + "," + 
 					encryptionData.get("DET") + "," + 
+					encryptionData.get("RND") + "," +
 					encryptionData.get("OPE") + ","  + 
 					encryptionData.get("HOM");
 
 			dataSender.addToBuffer(tuple);
 			encryptionData.put("pln",0);
 			encryptionData.put("DET",0);
+			encryptionData.put("RND",0);
 			encryptionData.put("OPE",0);
 			encryptionData.put("HOM",0);
 		}
