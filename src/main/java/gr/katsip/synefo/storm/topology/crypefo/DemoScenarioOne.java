@@ -259,7 +259,7 @@ public class DemoScenarioOne {
 		SynefoMessage msg = new SynefoMessage();
 		msg._values = new HashMap<String, String>();
 		msg._values.put("TASK_TYPE", "TOPOLOGY");
-		msg._values.put("QUERY_ID", Integer.toString(0));
+		msg._values.put("QUERY_ID", Integer.toString(queryId));
 		_out.writeObject(msg);
 		_out.flush();
 		Thread.sleep(100);
