@@ -276,8 +276,9 @@ public class Sum implements AbstractStatOperator, Serializable {
 		int throughput = 0;
 		int sel = 0;
 		if(stats != null) {
-			String tuple = 	stats.getCpuLoad() + "," + stats.getMemory() + "," + stats.getWindowLatency() + "," + 
-					stats.getWindowThroughput() + "," + stats.getSelectivity() + "," + 
+			String tuple = 	(float) stats.getCpuLoad() + "," + (float) stats.getMemory() + "," + 
+					(int) stats.getWindowLatency() + "," + (int) stats.getWindowThroughput() + "," + 
+					(float) stats.getSelectivity() +"," + 
 					encryptionData.get("pln") + "," +
 					encryptionData.get("DET") + "," +
 					encryptionData.get("RND") + "," +
