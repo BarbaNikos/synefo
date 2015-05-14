@@ -67,6 +67,8 @@ public class Client implements AbstractOperator, Serializable {
 	private BigInteger nsquare;
 	private BigInteger g;
 	private BigInteger lambda;
+	
+	private int count;
 
 	public Client(int idd, String nme, String[] atts, ArrayList<Integer> dataPs, int schemaSiz, String zooIP, int zooPort){
 		id = idd;
@@ -189,7 +191,14 @@ public class Client implements AbstractOperator, Serializable {
 			System.out.println("RND KEY: "+tuple[5]);			
 			keys.get(clientId).put(field,tuple[5].getBytes());
 		}else if(permission == 2){//det
-			String newUpdate = "select,"+encryptDetermine("2",tuple[5]);
+			byte[] newDetKey = null;
+			try {
+				 newDetKey = Hex.decodeHex(tuple[5].toCharArray());
+			} catch (DecoderException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			String newUpdate = "select,"+new String(Hex.encodeHex(encryptDetermine("2",newDetKey)));
 			spsUpdate.createChildNode(newUpdate.getBytes());
 			System.out.println("DET KEY: "+tuple[5]);
 			byte[] newK = null;
@@ -221,7 +230,7 @@ public class Client implements AbstractOperator, Serializable {
 		return c.modPow(lambda, nsquare).subtract(BigInteger.ONE).divide(n).multiply(u).mod(n);
 	}
 	
-	public String encryptDetermine(String plnText, String key){
+	public byte[] encryptDetermine(String plnText, byte[] key){
 		boolean isSize=true;
 		byte[] newPlainText=null;
 		byte[] plainText = plnText.getBytes();
@@ -240,6 +249,7 @@ public class Client implements AbstractOperator, Serializable {
 				newPlainText[plainText.length+counter]=0;
 				counter++;
 			}
+			count=counter;
 		}
 		byte[] cipherText=null;
 		Cipher c=null;
@@ -252,7 +262,7 @@ public class Client implements AbstractOperator, Serializable {
 			System.out.println("Encryption Error 2 at Determine Data Provider: ");
 			e.printStackTrace();
 		}
-		SecretKeySpec k =  new SecretKeySpec(key.getBytes(), "AES");
+		SecretKeySpec k =  new SecretKeySpec(key, "AES");
 		try {
 			c.init(Cipher.ENCRYPT_MODE, k);
 		} catch (InvalidKeyException e) {
@@ -272,7 +282,7 @@ public class Client implements AbstractOperator, Serializable {
 			System.out.println("Encryption Error 5 at Determine Data Provider: ");
 			e.printStackTrace();
 		}
-		return Hex.encodeHexString(cipherText);
+		return cipherText;
 	}
 
 	
