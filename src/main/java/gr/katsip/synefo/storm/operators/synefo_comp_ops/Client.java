@@ -1,6 +1,8 @@
 package gr.katsip.synefo.storm.operators.synefo_comp_ops;
 
+import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.operators.AbstractOperator;
+import gr.katsip.synefo.storm.operators.AbstractStatOperator;
 
 import java.io.FileOutputStream;
 import java.io.Serializable;
@@ -26,24 +28,28 @@ import org.apache.commons.codec.binary.Hex;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
-public class Client implements AbstractOperator, Serializable {
+public class Client implements AbstractStatOperator, Serializable {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -8137112194881808673L;
 
-	private int id;
+	private String ID;
 
 	private String CPABEDecryptFile;
 
 	private int counter=0;
 
 	private int displayCount=1000;
+	
+	private int statReportPeriod;
 
 	public String currentTuple;
 
 	private ArrayList<Integer> dataProviders;
+	
+	private HashMap<String, Integer> encryptionData = new HashMap<String,Integer>();
 
 	private Map<Integer, HashMap<Integer,byte[]>> keys = new HashMap<Integer, HashMap<Integer,byte[]>>();//maps data provider to key
 
@@ -55,6 +61,8 @@ public class Client implements AbstractOperator, Serializable {
 
 	private Fields output_schema;
 
+	private DataCollector dataSender = null;
+	
 	private int schemaSize;
 	
 	private String zooIP;
@@ -70,10 +78,15 @@ public class Client implements AbstractOperator, Serializable {
 	
 	private int count;
 
-	public Client(int idd, String nme, String[] atts, ArrayList<Integer> dataPs, int schemaSiz, String zooIP, int zooPort){
-		id = idd;
+	public Client(String idd, String nme, String[] atts, ArrayList<Integer> dataPs, int schemaSiz, String zooIP, int zooPort){
+		ID = idd;
 		CPABEDecryptFile = nme+""+idd;
 		dataProviders = new ArrayList<Integer>(dataPs);
+		encryptionData.put("pln",0);
+		encryptionData.put("DET",0);
+		encryptionData.put("RND",0);
+		encryptionData.put("OPE",0);
+		encryptionData.put("HOM",0);
 		this.schemaSize=schemaSiz;
 		this.zooIP=zooIP;
 		this.zooPort=zooPort;
@@ -183,7 +196,7 @@ public class Client implements AbstractOperator, Serializable {
 		int clientId = Integer.parseInt(tuple[3]);
 		int field = Integer.parseInt(tuple[4]);
 		int permission = Integer.parseInt(tuple[2]);
-		System.out.println("Client "+id+" recieved permission "+permission+" for stream "+ clientId+"."+" field "+field);
+		System.out.println("Client "+ID+" recieved permission "+permission+" for stream "+ clientId+"."+" field "+field);
 		subscriptions.get(clientId).put(field,permission);
 		if(permission == 0){//plaintext
 			keys.get(clientId).put(field,"".getBytes());
@@ -306,26 +319,26 @@ public class Client implements AbstractOperator, Serializable {
 		try {
 			c = Cipher.getInstance("AES/ECB/NoPadding");
 		} catch (NoSuchAlgorithmException e) {
-			System.out.println("Decryption Error 1 at Determine Data Provider: "+id);
+			System.out.println("Decryption Error 1 at Determine Data Provider: "+ID);
 			e.printStackTrace();
 		} catch (NoSuchPaddingException e) {
-			System.out.println("Decryption Error 2 at Determine Data Provider: "+id);
+			System.out.println("Decryption Error 2 at Determine Data Provider: "+ID);
 			e.printStackTrace();
 		}
 		SecretKeySpec k =  new SecretKeySpec(determineKey, "AES");
 		try {
 			c.init(Cipher.DECRYPT_MODE, k);
 		} catch (InvalidKeyException e) {
-			System.out.println("Decryption Error 3 at Determine Data Provider: "+id);
+			System.out.println("Decryption Error 3 at Determine Data Provider: "+ID);
 			e.printStackTrace();
 		}
 		try {
 			plainText = c.doFinal(plainText);
 		} catch (IllegalBlockSizeException e) {
-			System.out.println("Decryption Error 4 at Determine Data Provider: "+id);
+			System.out.println("Decryption Error 4 at Determine Data Provider: "+ID);
 			e.printStackTrace();
 		} catch (BadPaddingException e) {
-			System.out.println("Decryption Error 5 at Determine Data Provider: "+id);
+			System.out.println("Decryption Error 5 at Determine Data Provider: "+ID);
 			e.printStackTrace();
 		}
 		//int remove  = plainText[plainText.length-2];
@@ -334,6 +347,84 @@ public class Client implements AbstractOperator, Serializable {
 	//		ret[i]=plainText[i];
 	//	}
 		return plainText;
+	}
+
+	@Override
+	public List<Values> execute(TaskStatistics statistics, Fields fields,
+			Values values) {
+		if (spsUpdate == null){
+			spsUpdate = new SPSUpdater(zooIP,zooPort);
+		}	if(dataSender == null) {
+			dataSender = new DataCollector(zooIP, zooPort, statReportPeriod, ID);
+		}
+		//error if coming form multiple sources
+	//	System.out.println("fields "+values.get(0));
+		String reduce = values.get(0).toString().replaceAll("\\[", "").replaceAll("\\]","");
+		//System.out.println(reduce);
+		String[] tuples = reduce.split(",");
+		if(tuples[0].equalsIgnoreCase("SPS")){
+			processSps(tuples);
+		}
+		else{
+			if(counter>0){
+				counter=0;
+				currentTuple=values.get(0).toString();
+				//System.out.println(currentTuple);
+				processNormal(currentTuple);
+				String[] encUse= tuples[tuples.length-1].split(" ");
+				for(int k =0;k<encUse.length;k++){
+					encryptionData.put(encUse[k], encryptionData.get(encUse[k])+1);
+				}
+				updateData(statistics);
+			}
+		}
+		counter++;
+		return new ArrayList<Values>();
+	}
+
+	@Override
+	public void updateOperatorName(String operatorName) {
+		this.ID=operatorName;
+		
+	}
+	public void updateData(TaskStatistics stats) {
+		int CPU = 0;
+		int memory = 0;
+		int latency = 0;
+		int throughput = 0;
+		int sel = 0;
+		if(stats != null) {
+			String tuple = 	(float) stats.getCpuLoad() + "," + (float) stats.getMemory() + "," + 
+					(int) stats.getWindowLatency() + "," + (int) stats.getWindowThroughput() + "," + 
+					(float) stats.getSelectivity() +"," + 
+					encryptionData.get("pln") + "," +
+					encryptionData.get("DET") + "," +
+					encryptionData.get("RND") + "," +
+					encryptionData.get("OPE") + ","  + 
+					encryptionData.get("HOM");
+
+			dataSender.addToBuffer(tuple);
+			encryptionData.put("pln",0);
+			encryptionData.put("DET",0);
+			encryptionData.put("RND",0);
+			encryptionData.put("OPE",0);
+			encryptionData.put("HOM",0);
+		}else {
+			String tuple = 	CPU + "," + memory + "," + latency + "," + 
+					throughput + "," + sel + "," + 
+					encryptionData.get("pln") + "," + 
+					encryptionData.get("DET") + "," + 
+					encryptionData.get("RND") + "," +
+					encryptionData.get("OPE") + ","  + 
+					encryptionData.get("HOM");
+
+			dataSender.addToBuffer(tuple);
+			encryptionData.put("pln",0);
+			encryptionData.put("DET",0);
+			encryptionData.put("RND",0);
+			encryptionData.put("OPE",0);
+			encryptionData.put("HOM",0);
+		}
 	}
 
 

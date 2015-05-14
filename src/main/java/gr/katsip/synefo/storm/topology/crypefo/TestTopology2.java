@@ -231,7 +231,7 @@ public class TestTopology2{
 		dataPs.add(1);
 		dataPs.add(2);
 		String[] attributes = {"Doctor", "fit+app"};
-		Client clientOperator = new Client(0,"Fred", attributes, dataPs, 3, zooIP, zooPort);
+		Client clientOperator = new Client("client_bolt","Fred", attributes, dataPs, 3, zooIP, zooPort);
 		String[] schema = {"tuple", "crap"};
 		clientOperator.setOutputSchema(new Fields(schema));
 		clientOperator.setStateSchema(new Fields(schema));
