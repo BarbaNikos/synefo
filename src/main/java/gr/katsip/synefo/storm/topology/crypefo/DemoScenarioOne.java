@@ -155,6 +155,7 @@ public class DemoScenarioOne {
 						.directGrouping("spout_data_tuples");
 		_tmp = new ArrayList<String>();
 		_tmp.add("sum_operator_1");
+		_tmp.add("sum_operator_2");
 		topology.put("select_bolt_1", new ArrayList<String>(_tmp));
 		topology.put("select_bolt_2", new ArrayList<String>(_tmp));
 
@@ -192,10 +193,6 @@ public class DemoScenarioOne {
 		String[] schema = {"tuple", "crap"};
 		clientOperator.setOutputSchema(new Fields(schema));
 		clientOperator.setStateSchema(new Fields(schema));
-		//		ProjectOperator projectOperator = new ProjectOperator(new Fields(
-		//				converter.getOutputSchema().toList().toArray(new String[converter.getOutputSchema().size()])));
-		//		projectOperator.setOutputSchema(new Fields(
-		//				converter.getOutputSchema().toList().toArray(new String[converter.getOutputSchema().size()])));
 		builder.setBolt("client_bolt", 
 				new SynefoBolt("client_bolt", synefoIP, synefoPort, 
 						clientOperator, zooIP, zooPort, false), 1)
@@ -235,8 +232,8 @@ public class DemoScenarioOne {
 		conf.setDebug(false);
 		conf.setNumWorkers(7);
 			StormSubmitter.submitTopology("crypefo-top-1", conf, builder.createTopology());
-//		LocalCluster cluster = new LocalCluster();
-//		cluster.submitTopology("debug-topology", conf, builder.createTopology());
+	//	LocalCluster cluster = new LocalCluster();
+	//cluster.submitTopology("debug-topology", conf, builder.createTopology());
 //		Thread.sleep(200000);
 		//		OperatorStatisticCollector statCollector = new OperatorStatisticCollector(zooIP + ":" + zooPort, 
 		//				"n/a", "n/a", "n/a", "n/a");
