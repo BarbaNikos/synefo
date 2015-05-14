@@ -146,27 +146,27 @@ public class DemoScenarioOne {
 		String[] punctuationSpoutSchema = { "punct" };
 		CrypefoPunctuationTupleProducer punctuationTupleProducer = new CrypefoPunctuationTupleProducer(streamIPs[0]);
 		punctuationTupleProducer.setSchema(new Fields(punctuationSpoutSchema));
-		builder.setSpout("spout_punctuation_tuples", 
-				new SynefoSpout("spout_punctuation_tuples", synefoIP, synefoPort, punctuationTupleProducer, zooIP, zooPort), 1)
+		builder.setSpout("spout_sps", 
+				new SynefoSpout("spout_sps", synefoIP, synefoPort, punctuationTupleProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
 
 		_tmp = new ArrayList<String>();
 		_tmp.add("client_bolt");
-		topology.put("spout_punctuation_tuples", new ArrayList<String>(_tmp));
-		ceDb.insertOperator("spout_punctuation_tuples", "n/a", queryId, 0, 1, "SPOUT");
+		topology.put("spout_sps", new ArrayList<String>(_tmp));
+		ceDb.insertOperator("spout_sps", "n/a", queryId, 0, 1, "SPOUT");
 
 		String[] dataSpoutSchema = { "tuple" };
 		CrypefoDataTupleProducer dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[0],1);
 		dataTupleProducer.setSchema(new Fields(dataSpoutSchema));
-		builder.setSpout("spout_data_tuples", 
-				new SynefoSpout("spout_data_tuples", synefoIP, synefoPort, dataTupleProducer, zooIP, zooPort), 1)
+		builder.setSpout("spout_data", 
+				new SynefoSpout("spout_data", synefoIP, synefoPort, dataTupleProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
 
 		_tmp = new ArrayList<String>();
 		_tmp.add("select_bolt_1");
 		_tmp.add("select_bolt_2");
-		topology.put("spout_data_tuples", new ArrayList<String>(_tmp));	
-		ceDb.insertOperator("spout_data_tuples", "n/a", queryId, 0, 2, "SPOUT");
+		topology.put("spout_data", new ArrayList<String>(_tmp));	
+		ceDb.insertOperator("spout_data", "n/a", queryId, 0, 2, "SPOUT");
 
 		/**
 		 * Stage 1: Select operator
@@ -182,10 +182,10 @@ public class DemoScenarioOne {
 				new SynefoBolt("select_bolt_1", synefoIP, synefoPort, selectOperator, 
 						zooIP, zooPort, false), 1)
 						.setNumTasks(1)
-						.directGrouping("spout_data_tuples");
+						.directGrouping("spout_data");
 		_tmp = new ArrayList<String>();
-		_tmp.add("sum_operator_1");
-		_tmp.add("sum_operator_2");
+		_tmp.add("sum_bolt_1");
+		_tmp.add("sum_bolt_2");
 		topology.put("select_bolt_1", new ArrayList<String>(_tmp));
 		ceDb.insertOperator("select_bolt_1", "n/a", queryId, 1, 1, "BOLT");
 
@@ -195,38 +195,38 @@ public class DemoScenarioOne {
 				new SynefoBolt("select_bolt_2", synefoIP, synefoPort, selectOperator, 
 						zooIP, zooPort, false), 1)
 						.setNumTasks(1)
-						.directGrouping("spout_data_tuples");
+						.directGrouping("spout_data");
 		_tmp = new ArrayList<String>();
-		_tmp.add("sum_operator_1");
-		_tmp.add("sum_operator_2");
+		_tmp.add("sum_bolt_1");
+		_tmp.add("sum_bolt_2");
 		topology.put("select_bolt_2", new ArrayList<String>(_tmp));
 		ceDb.insertOperator("select_bolt_2", "n/a", queryId, 1, 2, "BOLT");
 		/**
 		 * Stage 2: Aggregate Operator
 		 */
-		Sum sumOperator = new Sum(50, 2, "sum_operator_1", 50,zooIP, zooPort);
+		Sum sumOperator = new Sum(50, 2, "sum_bolt_1", 50,zooIP, zooPort);
 		sumOperator.setOutputSchema(new Fields(selectionOutputSchema));
-		builder.setBolt("sum_operator_1", 
-				new SynefoBolt("sum_operator_1", synefoIP, synefoPort, sumOperator, 
+		builder.setBolt("sum_bolt_1", 
+				new SynefoBolt("sum_bolt_1", synefoIP, synefoPort, sumOperator, 
 						zooIP, zooPort, false), 1)
 						.setNumTasks(1)
 						.directGrouping("select_bolt_1")
 						.directGrouping("select_bolt_2");
 		_tmp = new ArrayList<String>();
-		sumOperator = new Sum(50, 2, "sum_operator_2", 50,zooIP, zooPort);
+		sumOperator = new Sum(50, 2, "sum_bolt_2", 50,zooIP, zooPort);
 		sumOperator.setOutputSchema(new Fields(selectionOutputSchema));
-		builder.setBolt("sum_operator_2", 
-				new SynefoBolt("sum_operator_2", synefoIP, synefoPort, sumOperator, 
+		builder.setBolt("sum_bolt_2", 
+				new SynefoBolt("sum_bolt_2", synefoIP, synefoPort, sumOperator, 
 						zooIP, zooPort, false), 1)
 						.setNumTasks(1)
 						.directGrouping("select_bolt_1")
 						.directGrouping("select_bolt_2");
 		_tmp = new ArrayList<String>();
 		_tmp.add("client_bolt");
-		topology.put("sum_operator_1", new ArrayList<String>(_tmp));
-		topology.put("sum_operator_2", new ArrayList<String>(_tmp));
-		ceDb.insertOperator("sum_operator_1", "n/a", queryId, 3, 1, "BOLT");
-		ceDb.insertOperator("sum_operator_2", "n/a", queryId, 3, 2, "BOLT");
+		topology.put("sum_bolt_1", new ArrayList<String>(_tmp));
+		topology.put("sum_bolt_2", new ArrayList<String>(_tmp));
+		ceDb.insertOperator("sum_bolt_1", "n/a", queryId, 3, 1, "BOLT");
+		ceDb.insertOperator("sum_bolt_2", "n/a", queryId, 3, 2, "BOLT");
 
 		/**
 		 * Stage 3: Client Bolt (project operator)
@@ -242,9 +242,9 @@ public class DemoScenarioOne {
 				new SynefoBolt("client_bolt", synefoIP, synefoPort, 
 						clientOperator, zooIP, zooPort, false), 1)
 						.setNumTasks(1)
-						.directGrouping("sum_operator_1")
-						.directGrouping("sum_operator_2")
-						.directGrouping("spout_punctuation_tuples");
+						.directGrouping("sum_bolt_1")
+						.directGrouping("sum_bolt_2")
+						.directGrouping("spout_sps");
 		topology.put("client_bolt", new ArrayList<String>());
 		ceDb.insertOperator("client_bolt", "n/a", queryId, 4, 1, "BOLT");
 		ceDb.insertOperatorAdjacencyList(queryId, topology);
