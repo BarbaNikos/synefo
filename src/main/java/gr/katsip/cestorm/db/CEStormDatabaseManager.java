@@ -47,8 +47,8 @@ public class CEStormDatabaseManager {
 	
 	private static final String updateOperatorInformation = "UPDATE operator SET name = ?, ip_address = ? WHERE query_id = ? AND name = ?";
 	
-	private static final String insertStatisticTuple = "INSERT INTO statistic (operator_id, timestamp, cpu, memory, latency, throughput, selectivity, plain, det, ope, hom) VALUES(?,UNIX_TIMESTAMP(),?,?,?,?,?,?,?,?,?,?)";
-
+	private static final String insertStatisticTuple = "INSERT INTO statistic (operator_id, timestamp, cpu, memory, latency, throughput, selectivity, plain, det, rnd, ope, hom) VALUES(?,UNIX_TIMESTAMP(),?,?,?,?,?,?,?,?,?,?)";
+	
 	public CEStormDatabaseManager(String url, String user, String password) {
 		this.url = url;
 		this.user = user;
@@ -493,7 +493,7 @@ public class CEStormDatabaseManager {
 	
 	public void insertStatistics(Integer queryId, String operator, float cpu, float memory, 
 			int latency, int throughput, float selectivity, 
-			int plain, int det, int ope, int hom) {
+			int plain, int det, int rnd, int ope, int hom) {
 		if(nameToIdentifierMap == null)
 			this.getOperatorNameToIdentifiersMap(queryId);
 		try {
@@ -511,8 +511,9 @@ public class CEStormDatabaseManager {
 			prepStatement.setFloat(6, selectivity);
 			prepStatement.setInt(7, plain);
 			prepStatement.setInt(8, det);
-			prepStatement.setInt(9, ope);
-			prepStatement.setInt(10, hom);
+			prepStatement.setInt(9, rnd);
+			prepStatement.setInt(10, ope);
+			prepStatement.setInt(11, hom);
 			prepStatement.executeUpdate();
 			connection.commit();
 			connection.setAutoCommit(true);
