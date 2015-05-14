@@ -200,7 +200,7 @@ public class Select implements Serializable, AbstractCrypefoOperator  {
 				e.printStackTrace();}
 		}
 		if(!values.get(0).toString().contains("SPS")) {
-			System.out.println("ID: "+ID+" Predicate: "+predicate+ " SELECTION: "+values.get(0).toString());
+			//System.out.println("ID: "+ID+" Predicate: "+predicate+ " SELECTION: "+values.get(0).toString());
 			String[] tuples = values.get(0).toString().split(Pattern.quote("//$$$//"));
 			boolean matches  = false;
 			if(type == 0) {

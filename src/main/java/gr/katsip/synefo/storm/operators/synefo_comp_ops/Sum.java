@@ -317,7 +317,7 @@ public class Sum implements AbstractCrypefoOperator, Serializable {
 		String[] sp = data.split(",");
 		if(sp[0].equalsIgnoreCase("sum")&&sp[1].equalsIgnoreCase("paillier")){
 			type = 1;
-			//System.out.println("Sum set to paillier");
+			System.out.println("Sum set to paillier");
 		}
 	}
 

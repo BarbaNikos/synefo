@@ -159,21 +159,21 @@ public class Client implements AbstractOperator, Serializable {
 		String finalTuple="";
 		//System.out.println("pl: "+tuples.length);
 		int clientID= Integer.parseInt(tuples[0]);
-		//System.out.println("tup: "+tuple +"size "+tuples.length);
+		System.out.println("tup: "+tuple);
 		for(int i=1;i<tuples.length;i++){
+				//System.out.println(subscriptions.get(clientID).get(i)+" "+i);
 			if(subscriptions.get(clientID).get(i)==0){
 				finalTuple=finalTuple+", "+tuples[i];
-			//	System.out.println(finalTuple);
 			}else if(subscriptions.get(clientID).get(i)==1){
 				
 			}else if(subscriptions.get(clientID).get(i)==2){
 			 String result = new String(decryptDetermine(tuples[i].getBytes(),keys.get(clientID).get(i)));
 				finalTuple=finalTuple+", "+result;
-				System.out.println(finalTuple);
+				//System.out.println(finalTuple);
 			}else if(subscriptions.get(clientID).get(i)==3){
 				
 			}else if(subscriptions.get(clientID).get(i)==4){
-				System.out.println("SUM: "+Decryption(new BigInteger(tuples[i])));
+				//System.out.println("SUM: "+Decryption(new BigInteger(tuples[i])));
 			}
 		}
 	}

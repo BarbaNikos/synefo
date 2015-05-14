@@ -135,7 +135,7 @@ public class DemoScenarioOne {
 		returnSet.add(0);
 		returnSet.add(1);
 		returnSet.add(2);
-		Select selectOperator = new Select(returnSet, "50", 2, 0, 0, 3000, "select_bolt_1", zooIP, zooPort);
+		Select selectOperator = new Select(returnSet, "2", 3, 0, 0, 3000, "select_bolt_1", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt_1", 
 				new SynefoBolt("select_bolt_1", synefoIP, synefoPort, selectOperator, 
@@ -146,7 +146,7 @@ public class DemoScenarioOne {
 		returnSet.add(0);
 		returnSet.add(1);
 		returnSet.add(2);
-		selectOperator = new Select(returnSet, "50", 2, 0, 0, 3000, "select_bolt_2", zooIP, zooPort);
+		selectOperator = new Select(returnSet, "50", 3, 0, 0, 3000, "select_bolt_2", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt_2", 
 				new SynefoBolt("select_bolt_2", synefoIP, synefoPort, selectOperator, 
@@ -170,6 +170,7 @@ public class DemoScenarioOne {
 						.directGrouping("select_bolt_1")
 						.directGrouping("select_bolt_2");
 		_tmp = new ArrayList<String>();
+		sumOperator = new Sum(50, 2, "sum_operator_2", 50,zooIP, zooPort);
 		sumOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("sum_operator_2", 
 				new SynefoBolt("sum_operator_2", synefoIP, synefoPort, sumOperator, 
@@ -199,8 +200,8 @@ public class DemoScenarioOne {
 				new SynefoBolt("client_bolt", synefoIP, synefoPort, 
 						clientOperator, zooIP, zooPort, false), 1)
 						.setNumTasks(1)
-						.directGrouping("select_bolt_1")
-						.directGrouping("select_bolt_2")
+						.directGrouping("sum_operator_1")
+						.directGrouping("sum_operator_2")
 						.directGrouping("spout_punctuation_tuples");
 		topology.put("client_bolt", new ArrayList<String>());
 
