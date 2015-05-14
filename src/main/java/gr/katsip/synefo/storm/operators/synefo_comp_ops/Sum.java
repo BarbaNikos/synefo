@@ -1,6 +1,7 @@
 package gr.katsip.synefo.storm.operators.synefo_comp_ops;
 
 import gr.katsip.synefo.metric.TaskStatistics;
+import gr.katsip.synefo.storm.operators.AbstractStatOperator;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -23,7 +24,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
 
-public class Sum implements AbstractCrypefoOperator, Serializable {
+public class Sum implements AbstractStatOperator, Serializable {
 
 	/**
 	 * 
