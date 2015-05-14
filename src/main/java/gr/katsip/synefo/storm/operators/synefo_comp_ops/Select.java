@@ -304,7 +304,7 @@ public class Select implements Serializable, AbstractStatOperator  {
 		int throughput = 0;
 		int sel = 0;
 		if(stats != null) {
-			String tuple = 	ID + "," + stats.getCpuLoad() + "," + stats.getMemory() + "," + stats.getWindowLatency() + "," + 
+			String tuple = 	stats.getCpuLoad() + "," + stats.getMemory() + "," + stats.getWindowLatency() + "," + 
 					stats.getWindowThroughput() + "," + stats.getSelectivity() + "," + 
 					encryptionData.get("pln") + "," +
 					encryptionData.get("DET") + "," +
@@ -319,7 +319,7 @@ public class Select implements Serializable, AbstractStatOperator  {
 			encryptionData.put("OPE",0);
 			encryptionData.put("HOM",0);
 		}else {
-			String tuple = 	ID + "," + CPU + "," + memory + "," + latency + "," + 
+			String tuple = 	CPU + "," + memory + "," + latency + "," + 
 					throughput + "," + sel + "," + 
 					encryptionData.get("pln") + "," + 
 					encryptionData.get("DET") + "," + 
@@ -354,7 +354,7 @@ public class Select implements Serializable, AbstractStatOperator  {
 
 	@Override
 	public void updateOperatorName(String operatorName) {
-		// TODO Auto-generated method stub
+		this.ID = operatorName;
 		
 	}
 }

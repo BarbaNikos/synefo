@@ -247,7 +247,7 @@ public class DemoScenarioOne {
 						.directGrouping("spout_punctuation_tuples");
 		topology.put("client_bolt", new ArrayList<String>());
 		ceDb.insertOperator("client_bolt", "n/a", queryId, 4, 1, "BOLT");
-
+		ceDb.insertOperatorAdjacencyList(queryId, topology);
 		/**
 		 * Notify SynEFO server about the 
 		 * Topology
