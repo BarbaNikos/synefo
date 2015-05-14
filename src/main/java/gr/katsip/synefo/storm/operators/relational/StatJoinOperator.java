@@ -1,7 +1,7 @@
 package gr.katsip.synefo.storm.operators.relational;
 
 import gr.katsip.synefo.metric.TaskStatistics;
-import gr.katsip.synefo.storm.operators.synefo_comp_ops.AbstractCrypefoOperator;
+import gr.katsip.synefo.storm.operators.AbstractStatOperator;
 import gr.katsip.synefo.storm.operators.synefo_comp_ops.DataCollector;
 
 import java.io.Serializable;
@@ -12,7 +12,7 @@ import java.util.List;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
-public class StatJoinOperator<T extends Object> implements Serializable, AbstractCrypefoOperator {
+public class StatJoinOperator<T extends Object> implements Serializable, AbstractStatOperator {
 
 	/**
 	 * 

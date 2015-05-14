@@ -22,7 +22,7 @@ import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.lib.SynefoMessage.Type;
 import gr.katsip.synefo.storm.operators.AbstractOperator;
-import gr.katsip.synefo.storm.operators.synefo_comp_ops.AbstractCrypefoOperator;
+import gr.katsip.synefo.storm.operators.AbstractStatOperator;
 import gr.katsip.synefo.utils.SynefoConstant;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -131,7 +131,7 @@ public class SynefoBolt extends BaseRichBolt {
 		opLatencySendTimestamp = 0L;
 		opLatencyReceivedTimestamp = new long[3];
 		opLatencyLocalTimestamp = new long[3];
-		if(operator instanceof AbstractCrypefoOperator)
+		if(operator instanceof AbstractStatOperator)
 			crypefoOperatorFlag = true;
 		else
 			crypefoOperatorFlag = false;
@@ -229,7 +229,7 @@ public class SynefoBolt extends BaseRichBolt {
 		 * Updating operator name for saving the statistics data in the database accordingly
 		 */
 		if(crypefoOperatorFlag == true)
-			((AbstractCrypefoOperator) operator).updateOperatorName(taskName + ":" + taskID + "@" + taskIP);
+			((AbstractStatOperator) operator).updateOperatorName(taskName + ":" + taskID + "@" + taskIP);
 	}
 
 	public void prepare(@SuppressWarnings("rawtypes") Map conf, TopologyContext context, OutputCollector collector) {
@@ -336,7 +336,7 @@ public class SynefoBolt extends BaseRichBolt {
 		if(intActiveDownstreamTasks != null && intActiveDownstreamTasks.size() > 0) {
 			List<Values> returnedTuples = null;
 			if(crypefoOperatorFlag)
-				returnedTuples = ((AbstractCrypefoOperator) operator).execute(statistics, fields, values);
+				returnedTuples = ((AbstractStatOperator) operator).execute(statistics, fields, values);
 			else
 				returnedTuples = operator.execute(fields, values);
 			if(returnedTuples != null && returnedTuples.size() > 0) {

@@ -1,6 +1,7 @@
 package gr.katsip.synefo.storm.operators.synefo_comp_ops;
 
 import gr.katsip.synefo.metric.TaskStatistics;
+import gr.katsip.synefo.storm.operators.AbstractStatOperator;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -27,7 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class Select implements Serializable, AbstractCrypefoOperator  {
+public class Select implements Serializable, AbstractStatOperator  {
 
 	/**
 	 * 
