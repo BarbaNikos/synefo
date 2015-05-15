@@ -61,9 +61,9 @@ public class Select implements Serializable, AbstractStatOperator  {
 	private ZooKeeper zk = null;
 
 	private  Watcher SPSRetrieverWatcher =null;
-	
+
 	private  DataCallback getSPSCallback = null;
-	
+
 	private int statReportCount=0;
 	/**
 	 * 
@@ -101,11 +101,11 @@ public class Select implements Serializable, AbstractStatOperator  {
 	public int getAttribute(){
 		return attribute;
 	}
-	
+
 	public String getPredicate(){
 		return predicate;
 	}
-	
+
 	@Override
 	public void init(List<Values> stateValues) {
 		this.stateValues = stateValues;
@@ -147,11 +147,11 @@ public class Select implements Serializable, AbstractStatOperator  {
 			dataSender = new DataCollector(zooIP, zooPort, statReportPeriod, ID);
 		}
 		if(SPSRetrieverWatcher==null)
-		SPSRetrieverWatcher = new Watcher() {
+			SPSRetrieverWatcher = new Watcher() {
 			@Override
 			public void process(WatchedEvent event) {
 				String path = event.getPath();
-			//	System.out.println("Select "+ID+" Received event type: " + event.getType()+ " path "+event.getPath());
+				//	System.out.println("Select "+ID+" Received event type: " + event.getType()+ " path "+event.getPath());
 				if(event.getType() == Event.EventType.NodeDataChanged) {
 					//Retrieve operator
 					getDataAndWatch();
@@ -319,11 +319,14 @@ public class Select implements Serializable, AbstractStatOperator  {
 
 			System.out.println(tuple);
 			dataSender.addToBuffer(tuple);
-			encryptionData.put("pln",0);
-			encryptionData.put("DET",0);
-			encryptionData.put("RND",0);
-			encryptionData.put("OPE",0);
-			encryptionData.put("HOM",0);
+			if(statReportCount>statReportPeriod-2){
+				encryptionData.put("pln",0);
+				encryptionData.put("DET",0);
+				encryptionData.put("RND",0);
+				encryptionData.put("OPE",0);
+				encryptionData.put("HOM",0);
+			}
+			statReportCount++;
 		}else {
 			String tuple = 	CPU + "," + memory + "," + latency + "," + 
 					throughput + "," + sel + "," + 
@@ -343,7 +346,7 @@ public class Select implements Serializable, AbstractStatOperator  {
 	}
 
 	public void getDataAndWatch() {
-	//	System.out.println("Select watch reset in select "+ID);
+		//	System.out.println("Select watch reset in select "+ID);
 		zk.getData("/SPS", 
 				true, 
 				getSPSCallback, 
@@ -351,18 +354,18 @@ public class Select implements Serializable, AbstractStatOperator  {
 	}
 
 	private void handleUpdate(String data){
-	//	System.out.println("sps sid: "+ streamId+ " att: "+attribute+" tpl: "+ data);
+		//	System.out.println("sps sid: "+ streamId+ " att: "+attribute+" tpl: "+ data);
 		String[] sp = data.split(",");
-	//	System.out.println("new sps: "+sp[0]+" new ID "+sp[1]+ " new att "+sp[2]);
+		//	System.out.println("new sps: "+sp[0]+" new ID "+sp[1]+ " new att "+sp[2]);
 		if(sp[0].equalsIgnoreCase("select")&&Integer.parseInt(sp[1])==streamId && Integer.parseInt(sp[2])==attribute){
 			predicate = sp[3];
-	//		System.out.println("Predicate in "+ID+" changed to: "+predicate);
+			//		System.out.println("Predicate in "+ID+" changed to: "+predicate);
 		}
 	}
 
 	@Override
 	public void updateOperatorName(String operatorName) {
 		this.ID = operatorName;
-		
+
 	}
 }
