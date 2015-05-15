@@ -157,12 +157,7 @@ public class Sum implements AbstractStatOperator, Serializable {
 			} catch (IOException e) {
 				e.printStackTrace();}
 		}
-		if(statReportCount > statReportPeriod) {
-			updateData(statistics);
-			statReportCount = 0;
-		}else {
-			statReportCount += 1;
-		}
+		updateData(statistics);
 		if(!values.get(0).toString().contains("SPS")) {
 			String[] tuples = values.get(0).toString().split(Pattern.quote("//$$$//"));
 			//System.out.println(values.get(0));

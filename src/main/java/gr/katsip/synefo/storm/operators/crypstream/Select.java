@@ -203,12 +203,7 @@ public class Select implements Serializable, AbstractStatOperator  {
 			} catch (IOException e) {
 				e.printStackTrace();}
 		}
-		if(statReportCount > statReportPeriod) {
-			updateData(statistics);
-			statReportCount = 0;
-		}else {
-			statReportCount += 1;
-		}
+		updateData(statistics);
 		if(!values.get(0).toString().contains("SPS")) {
 			//System.out.println("ID: "+ID+" Predicate: "+predicate+ " SELECTION: "+values.get(0).toString());
 			String[] tuples = values.get(0).toString().split(Pattern.quote("//$$$//"));
