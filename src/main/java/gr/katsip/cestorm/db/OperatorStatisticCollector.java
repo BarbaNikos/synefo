@@ -2,6 +2,7 @@ package gr.katsip.cestorm.db;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -124,7 +125,8 @@ public class OperatorStatisticCollector {
 				/**
 				 * children received
 				 */
-				System.out.println("getChildrenCallback");
+				System.out.println("getChildrenCallback: " + Arrays.toString(children.toArray()));
+				
 				List<String> childrenDifference = new ArrayList<String>(children);
 				childrenDifference.removeAll(operators);
 				operators.addAllAbsent(children);
