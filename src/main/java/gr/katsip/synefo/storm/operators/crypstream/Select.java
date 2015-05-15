@@ -2,14 +2,19 @@ package gr.katsip.synefo.storm.operators.crypstream;
 
 import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.operators.AbstractStatOperator;
+
 import java.io.IOException;
 import java.io.Serializable;
+
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Pattern;
+
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -267,6 +272,7 @@ public class Select implements Serializable, AbstractStatOperator  {
 	}
 
 	public boolean equiSelect(String[] tuple) {
+		System.out.println("Attribute: "+attribute+" predicate: "+predicate+" Tuple: "+ Arrays.toString(tuple));
 		if(predicate.equals("*") && predicate == null)
 			return true;
 		if(tuple[attribute].equalsIgnoreCase(predicate))
