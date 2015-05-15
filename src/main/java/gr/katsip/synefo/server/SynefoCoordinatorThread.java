@@ -138,32 +138,32 @@ public class SynefoCoordinatorThread implements Runnable {
 			activeUpdatedTopology = ScaleFunction.getInitialActiveTopology(updatedTopology, 
 					ScaleFunction.getInverseTopology(updatedTopology));
 			itr = activeUpdatedTopology.entrySet().iterator();
-			System.out.println("Initial active topology:");
-			while(itr.hasNext()) {
-				Entry<String, ArrayList<String>> pair = itr.next();
-				System.out.print(pair.getKey() + " -> {");
-				for(String downTask : pair.getValue()) {
-					System.out.print(downTask + " ");
-				}
-				System.out.println("}");
-			}
+//			System.out.println("Initial active topology:");
+//			while(itr.hasNext()) {
+//				Entry<String, ArrayList<String>> pair = itr.next();
+//				System.out.print(pair.getKey() + " -> {");
+//				for(String downTask : pair.getValue()) {
+//					System.out.print(downTask + " ");
+//				}
+//				System.out.println("}");
+//			}
 			physicalTopology.clear();
 			physicalTopology.putAll(updatedTopology);
 			activeTopology.clear();
 			activeTopology.putAll(activeUpdatedTopology);
 			tamer.setPhysicalTopology();
 			tamer.setActiveTopology();
-			System.out.println("ZooMaster initial active topology: ");
-			itr = (new HashMap<String, ArrayList<String>>(
-					tamer.scaleFunction.getActiveTopology())).entrySet().iterator();
-			while(itr.hasNext()) {
-				Entry<String, ArrayList<String>> pair = itr.next();
-				System.out.print(pair.getKey() + " -> {");
-				for(String downTask : pair.getValue()) {
-					System.out.print(downTask + " ");
-				}
-				System.out.println("}");
-			}
+//			System.out.println("ZooMaster initial active topology: ");
+//			itr = (new HashMap<String, ArrayList<String>>(
+//					tamer.scaleFunction.getActiveTopology())).entrySet().iterator();
+//			while(itr.hasNext()) {
+//				Entry<String, ArrayList<String>> pair = itr.next();
+//				System.out.print(pair.getKey() + " -> {");
+//				for(String downTask : pair.getValue()) {
+//					System.out.print(downTask + " ");
+//				}
+//				System.out.println("}");
+//			}
 
 			/**
 			 * If demoMode is true: Need to populate the database with the 

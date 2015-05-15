@@ -85,9 +85,9 @@ public class SynefoBolt extends BaseRichBolt {
 	private boolean autoScale;
 
 	private boolean warmFlag;
-	
-	private boolean crypefoOperatorFlag;
-	
+
+	private boolean statOperatorFlag;
+
 	private enum OpLatencyState {
 		na,
 		s_1,
@@ -97,15 +97,15 @@ public class SynefoBolt extends BaseRichBolt {
 		r_2,
 		r_3
 	}
-	
+
 	private OpLatencyState opLatencySendState;
-	
+
 	private OpLatencyState opLatencyReceiveState;
-	
+
 	private long[] opLatencyReceivedTimestamp = new long[3];
-	
+
 	private long[] opLatencyLocalTimestamp = new long[3];
-	
+
 	private long opLatencySendTimestamp;
 
 	public SynefoBolt(String task_name, String synEFO_ip, Integer synEFO_port, 
@@ -132,9 +132,9 @@ public class SynefoBolt extends BaseRichBolt {
 		opLatencyReceivedTimestamp = new long[3];
 		opLatencyLocalTimestamp = new long[3];
 		if(operator instanceof AbstractStatOperator)
-			crypefoOperatorFlag = true;
+			statOperatorFlag = true;
 		else
-			crypefoOperatorFlag = false;
+			statOperatorFlag = false;
 	}
 
 	/**
@@ -228,7 +228,7 @@ public class SynefoBolt extends BaseRichBolt {
 		/**
 		 * Updating operator name for saving the statistics data in the database accordingly
 		 */
-		if(crypefoOperatorFlag == true)
+		if(statOperatorFlag == true)
 			((AbstractStatOperator) operator).updateOperatorName(taskName + ":" + taskID + "@" + taskIP);
 	}
 
@@ -282,8 +282,8 @@ public class SynefoBolt extends BaseRichBolt {
 					for(Integer d_task : intActiveDownstreamTasks) {
 						collector.emitDirect(d_task, v);
 					}
-//					logger.info("+EFO-BOLT (" + taskName + ":" + taskID + "@" + taskIP + 
-//							") just forwarded a QUERY-LATENCY-TUPLE.");
+					//					logger.info("+EFO-BOLT (" + taskName + ":" + taskID + "@" + taskIP + 
+					//							") just forwarded a QUERY-LATENCY-TUPLE.");
 					collector.ack(tuple);
 					return;
 				}
@@ -315,8 +315,8 @@ public class SynefoBolt extends BaseRichBolt {
 					this.opLatencyReceiveState = OpLatencyState.na;
 					opLatencyLocalTimestamp = new long[3];
 					opLatencyReceivedTimestamp = new long[3];
-//					logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + 
-//							this.taskIP + ") calculated OPERATOR-LATENCY-METRIC: " + latency + ".");
+					//					logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + 
+					//							this.taskIP + ") calculated OPERATOR-LATENCY-METRIC: " + latency + ".");
 				}
 				collector.ack(tuple);
 				return;
@@ -335,7 +335,7 @@ public class SynefoBolt extends BaseRichBolt {
 		Fields fields = new Fields(fieldList);
 		if(intActiveDownstreamTasks != null && intActiveDownstreamTasks.size() > 0) {
 			List<Values> returnedTuples = null;
-			if(crypefoOperatorFlag)
+			if(statOperatorFlag)
 				returnedTuples = ((AbstractStatOperator) operator).execute(statistics, fields, values);
 			else
 				returnedTuples = operator.execute(fields, values);
@@ -426,14 +426,15 @@ public class SynefoBolt extends BaseRichBolt {
 				collector.emitDirect(d_task, v);
 			}
 		}
-		
+
 		if(reportCounter >= 10000) {
-			logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
-					") timestamp: " + System.currentTimeMillis() + ", " + 
-					"cpu: " + statistics.getCpuLoad() + 
-					", memory: " + statistics.getMemory() + 
-					", latency: " + statistics.getWindowLatency() + 
-					", throughput: " + statistics.getWindowThroughput());
+			if(statOperatorFlag == false)
+				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+						") timestamp: " + System.currentTimeMillis() + ", " + 
+						"cpu: " + statistics.getCpuLoad() + 
+						", memory: " + statistics.getMemory() + 
+						", latency: " + statistics.getWindowLatency() + 
+						", throughput: " + statistics.getWindowThroughput());
 			reportCounter = 0;
 			if(warmFlag == false)
 				warmFlag = true;

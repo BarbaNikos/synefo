@@ -4,12 +4,12 @@ import gr.katsip.cestorm.db.OperatorStatisticCollector;
 import gr.katsip.synefo.storm.api.SynefoBolt;
 import gr.katsip.synefo.storm.api.SynefoSpout;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
+import gr.katsip.synefo.storm.operators.crypstream.Client;
+import gr.katsip.synefo.storm.operators.crypstream.Select;
+import gr.katsip.synefo.storm.operators.crypstream.Sum;
+import gr.katsip.synefo.storm.operators.crypstream.modifiedJoinOperator;
 import gr.katsip.synefo.storm.operators.relational.ProjectOperator;
 import gr.katsip.synefo.storm.operators.relational.StringComparator;
-import gr.katsip.synefo.storm.operators.synefo_comp_ops.Client;
-import gr.katsip.synefo.storm.operators.synefo_comp_ops.Select;
-import gr.katsip.synefo.storm.operators.synefo_comp_ops.Sum;
-import gr.katsip.synefo.storm.operators.synefo_comp_ops.modifiedJoinOperator;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;

@@ -24,6 +24,14 @@ public class OperatorStatisticCollector {
 	
 	private CEStormDatabaseManager ceDb;
 
+	/**
+	 * The default watcher for capturing events on the /data 
+	 * path. The two main events captured are (a) the creation of 
+	 * a child z-node under the "/data" z-node, (b) the change of 
+	 * the data in a child z-node under the "/data" z-node. Every time 
+	 * one the aforementioned events take place, the corresponding 
+	 * action is taken (and the watch is renewed)
+	 */
 	private Watcher dataRetrieverWatcher = new Watcher() {
 		@Override
 		public void process(WatchedEvent event) {
@@ -32,7 +40,7 @@ public class OperatorStatisticCollector {
 			 * When you retrieve the path, call the getDataAndWatch() function to 
 			 * retrieve data and set watch again
 			 */
-			System.out.println("Received event type: " + event.getType());
+//			System.out.println("Received event type: " + event.getType());
 			if(event.getType() == Event.EventType.NodeDataChanged) {
 				//Retrieve operator
 //				System.out.println("NodeDataChanged event: " + path);
@@ -45,6 +53,15 @@ public class OperatorStatisticCollector {
 		}
 	};
 
+	/**
+	 * The default constructor of the OperatorStatisticCollector class
+	 * @param zookeeperAddress the ZooKeeper IP followed by a colon and the Port
+	 * @param dbIP the MySQL server's IP
+	 * @param user the MySQL username
+	 * @param password the MySQL password
+	 * @param queryId the Query-ID for which data from operators are accumulated
+	 * @see CEStormDatabaseManager
+	 */
 	public OperatorStatisticCollector(String zookeeperAddress, 
 			String dbIP, String user, String password, Integer queryId) {
 		operators = new CopyOnWriteArrayList<String>();
@@ -59,6 +76,10 @@ public class OperatorStatisticCollector {
 		this.queryId = queryId;
 	}
 
+	/**
+	 * The main function of the OperatorStatisticCollector for 
+	 * gathering data and renewing the watches on the appropriate z-nodes
+	 */
 	public void init() {
 		getChildrenAndWatch();
 		System.out.println("Operators received...");
@@ -76,6 +97,10 @@ public class OperatorStatisticCollector {
 		}
 	}
 
+	/**
+	 * Main function for retrieving children of the "/data" z-node
+	 * and setting a watch.
+	 */
 	public void getChildrenAndWatch() {
 		zk.getChildren("/data", 
 				true, 
@@ -99,13 +124,12 @@ public class OperatorStatisticCollector {
 				/**
 				 * children received
 				 */
-				System.out.println("getChildrenCallback");
+//				System.out.println("getChildrenCallback");
 				List<String> childrenDifference = new ArrayList<String>(children);
 				childrenDifference.removeAll(operators);
 				operators.addAllAbsent(children);
-				for(String child : childrenDifference) {
+				for(String child : childrenDifference)
 					getDataAndWatch(child);
-				}
 				break;
 			default:
 				System.out.println("getChildrenCallback(): Unexpected scenario: " + 
@@ -136,8 +160,8 @@ public class OperatorStatisticCollector {
 				System.out.println("getDataCallback(): NONODE");
 				break;
 			case OK:
-				System.out.println("getDataCallback(): Successfully retrieved stats { " + 
-						new String(data) + " } for operator: " + (String) ctx);
+//				System.out.println("getDataCallback(): Successfully retrieved stats { " + 
+//						new String(data) + " } for operator: " + (String) ctx);
 				String readableData = new String(data);
 				String operatorIdentifier = (String) ctx;
 				if(readableData.contains("/data") == true)

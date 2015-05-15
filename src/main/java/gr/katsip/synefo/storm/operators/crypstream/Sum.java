@@ -1,8 +1,7 @@
-package gr.katsip.synefo.storm.operators.synefo_comp_ops;
+package gr.katsip.synefo.storm.operators.crypstream;
 
 import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.operators.AbstractStatOperator;
-
 import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigInteger;
@@ -10,14 +9,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Pattern;
-
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.AsyncCallback.DataCallback;
 import org.apache.zookeeper.KeeperException.Code;
-import org.apache.zookeeper.Watcher.Event;
 import org.apache.zookeeper.data.Stat;
 
 import backtype.storm.tuple.Fields;

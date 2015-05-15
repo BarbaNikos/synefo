@@ -1,4 +1,4 @@
-package gr.katsip.synefo.storm.operators.synefo_comp_ops;
+package gr.katsip.synefo.storm.operators.crypstream;
 
 
 import java.sql.Connection;

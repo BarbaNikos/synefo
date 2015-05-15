@@ -3,10 +3,11 @@ package gr.katsip.synefo.storm.topology.crypefo;
 import gr.katsip.synefo.storm.api.SynefoBolt;
 import gr.katsip.synefo.storm.api.SynefoSpout;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
+import gr.katsip.synefo.storm.operators.crypstream.Client;
+import gr.katsip.synefo.storm.operators.crypstream.Select;
 import gr.katsip.synefo.storm.operators.relational.StringComparator;
-import gr.katsip.synefo.storm.operators.synefo_comp_ops.Client;
-import gr.katsip.synefo.storm.operators.synefo_comp_ops.Select;
 //import gr.katsip.synefo.storm.operators.synefo_comp_ops.modifiedJoinOperator;
+
 
 import java.io.IOException;
 import java.io.ObjectInputStream;

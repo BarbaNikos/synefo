@@ -20,6 +20,7 @@ import backtype.storm.LocalCluster;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 
+@SuppressWarnings("deprecation")
 public class DebugTopology {
 	public static void main(String[] args) throws Exception {
 		String synefoIP = "";

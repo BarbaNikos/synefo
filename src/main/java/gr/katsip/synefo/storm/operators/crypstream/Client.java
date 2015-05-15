@@ -1,9 +1,7 @@
-package gr.katsip.synefo.storm.operators.synefo_comp_ops;
+package gr.katsip.synefo.storm.operators.crypstream;
 
 import gr.katsip.synefo.metric.TaskStatistics;
-import gr.katsip.synefo.storm.operators.AbstractOperator;
 import gr.katsip.synefo.storm.operators.AbstractStatOperator;
-
 import java.io.FileOutputStream;
 import java.io.Serializable;
 import java.math.BigInteger;
@@ -15,16 +13,13 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
-
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
-
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
@@ -39,16 +34,16 @@ public class Client implements AbstractStatOperator, Serializable {
 
 	private String CPABEDecryptFile;
 
-	private int counter=0;
+	private int counter = 0;
 
-	private int displayCount=1000;
-	
+	private int displayCount = 1000;
+
 	private int statReportPeriod;
 
 	public String currentTuple;
 
 	private ArrayList<Integer> dataProviders;
-	
+
 	private HashMap<String, Integer> encryptionData = new HashMap<String,Integer>();
 
 	private Map<Integer, HashMap<Integer,byte[]>> keys = new HashMap<Integer, HashMap<Integer,byte[]>>();//maps data provider to key
@@ -62,23 +57,26 @@ public class Client implements AbstractStatOperator, Serializable {
 	private Fields output_schema;
 
 	private DataCollector dataSender = null;
-	
+
 	private int schemaSize;
-	
+
 	private String zooIP;
-	
+
 	private int zooPort;
-	
+
 	private SPSUpdater spsUpdate =null;
-	
+
 	private BigInteger n;
+
 	private BigInteger nsquare;
+
 	private BigInteger g;
+
 	private BigInteger lambda;
-	
+
 	private int count;
 
-	public Client(String idd, String nme, String[] atts, ArrayList<Integer> dataPs, int schemaSiz, String zooIP, int zooPort){
+	public Client(String idd, String nme, String[] atts, ArrayList<Integer> dataPs, int schemaSiz, String zooIP, int zooPort) {
 		ID = idd;
 		CPABEDecryptFile = nme+""+idd;
 		dataProviders = new ArrayList<Integer>(dataPs);
@@ -126,7 +124,7 @@ public class Client implements AbstractStatOperator, Serializable {
 			spsUpdate = new SPSUpdater(zooIP,zooPort);
 		}
 		//error if coming form multiple sources
-	//	System.out.println("fields "+values.get(0));
+		//	System.out.println("fields "+values.get(0));
 		String reduce = values.get(0).toString().replaceAll("\\[", "").replaceAll("\\]","");
 		//System.out.println(reduce);
 		String[] tuples = reduce.split(",");
@@ -166,7 +164,7 @@ public class Client implements AbstractStatOperator, Serializable {
 		// TODO Auto-generated method stub
 
 	}
-	
+
 	public void processNormal(String tuple){
 		String[] tuples = tuple.split(Pattern.quote("//$$$//"));
 		String finalTuple="";
@@ -174,17 +172,17 @@ public class Client implements AbstractStatOperator, Serializable {
 		int clientID= Integer.parseInt(tuples[0]);
 		System.out.println("tup: "+tuple);
 		for(int i=1;i<tuples.length;i++){
-				//System.out.println(subscriptions.get(clientID).get(i)+" "+i);
+			//System.out.println(subscriptions.get(clientID).get(i)+" "+i);
 			if(subscriptions.get(clientID).get(i)==0){
 				finalTuple=finalTuple+", "+tuples[i];
 			}else if(subscriptions.get(clientID).get(i)==1){
-				
+
 			}else if(subscriptions.get(clientID).get(i)==2){
-			 String result = new String(decryptDetermine(tuples[i].getBytes(),keys.get(clientID).get(i)));
+				String result = new String(decryptDetermine(tuples[i].getBytes(),keys.get(clientID).get(i)));
 				finalTuple=finalTuple+", "+result;
 				//System.out.println(finalTuple);
 			}else if(subscriptions.get(clientID).get(i)==3){
-				
+
 			}else if(subscriptions.get(clientID).get(i)==4){
 				//System.out.println("SUM: "+Decryption(new BigInteger(tuples[i])));
 			}
@@ -206,7 +204,7 @@ public class Client implements AbstractStatOperator, Serializable {
 		}else if(permission == 2){//det
 			byte[] newDetKey = null;
 			try {
-				 newDetKey = Hex.decodeHex(tuple[5].toCharArray());
+				newDetKey = Hex.decodeHex(tuple[5].toCharArray());
 			} catch (DecoderException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
@@ -228,7 +226,7 @@ public class Client implements AbstractStatOperator, Serializable {
 		}else if(permission == 4){//hom
 			System.out.println("HOM KEY: "+tuple[5]);
 			keys.get(clientId).put(field,tuple[5].getBytes());
-//			/String ret = n.toString()+","+nsquare.toString()+","+g.toString()+","+lambda.toString();
+			//			/String ret = n.toString()+","+nsquare.toString()+","+g.toString()+","+lambda.toString();
 			n = new BigInteger(tuple[5]);
 			nsquare = new BigInteger(tuple[6]);
 			g = new BigInteger(tuple[7]);
@@ -242,7 +240,7 @@ public class Client implements AbstractStatOperator, Serializable {
 		BigInteger u = g.modPow(lambda, nsquare).subtract(BigInteger.ONE).divide(n).modInverse(n);
 		return c.modPow(lambda, nsquare).subtract(BigInteger.ONE).divide(n).multiply(u).mod(n);
 	}
-	
+
 	public byte[] encryptDetermine(String plnText, byte[] key){
 		boolean isSize=true;
 		byte[] newPlainText=null;
@@ -298,7 +296,7 @@ public class Client implements AbstractStatOperator, Serializable {
 		return cipherText;
 	}
 
-	
+
 	public void setABEDecrypt(byte[] ABEKey){
 		//open file for writing, write key to priv_key, return
 		try{
@@ -344,8 +342,8 @@ public class Client implements AbstractStatOperator, Serializable {
 		//int remove  = plainText[plainText.length-2];
 		//byte[] ret = new byte[plainText.length-remove];
 		//for(int i=0;i<ret.length;i++){
-	//		ret[i]=plainText[i];
-	//	}
+		//		ret[i]=plainText[i];
+		//	}
 		return plainText;
 	}
 
@@ -358,7 +356,7 @@ public class Client implements AbstractStatOperator, Serializable {
 			dataSender = new DataCollector(zooIP, zooPort, statReportPeriod, ID);
 		}
 		//error if coming form multiple sources
-	//	System.out.println("fields "+values.get(0));
+		//	System.out.println("fields "+values.get(0));
 		String reduce = values.get(0).toString().replaceAll("\\[", "").replaceAll("\\]","");
 		//System.out.println(reduce);
 		String[] tuples = reduce.split(",");
@@ -385,7 +383,7 @@ public class Client implements AbstractStatOperator, Serializable {
 	@Override
 	public void updateOperatorName(String operatorName) {
 		this.ID=operatorName;
-		
+
 	}
 	public void updateData(TaskStatistics stats) {
 		int CPU = 0;

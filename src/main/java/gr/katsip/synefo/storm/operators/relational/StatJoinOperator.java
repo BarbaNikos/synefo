@@ -2,7 +2,7 @@ package gr.katsip.synefo.storm.operators.relational;
 
 import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.operators.AbstractStatOperator;
-import gr.katsip.synefo.storm.operators.synefo_comp_ops.DataCollector;
+import gr.katsip.synefo.storm.operators.crypstream.DataCollector;
 
 import java.io.Serializable;
 import java.util.ArrayList;

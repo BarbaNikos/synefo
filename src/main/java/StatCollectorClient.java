@@ -2,7 +2,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import gr.katsip.cestorm.db.CEStormDatabaseManager;
-import gr.katsip.synefo.storm.operators.synefo_comp_ops.DataCollector;
+import gr.katsip.synefo.storm.operators.crypstream.DataCollector;
 
 
 public class StatCollectorClient {
