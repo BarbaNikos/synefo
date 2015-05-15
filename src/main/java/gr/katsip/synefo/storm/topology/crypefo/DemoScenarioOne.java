@@ -8,6 +8,7 @@ import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.operators.crypstream.Client;
 import gr.katsip.synefo.storm.operators.crypstream.Select;
 import gr.katsip.synefo.storm.operators.crypstream.Sum;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -19,12 +20,14 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+
 import backtype.storm.Config;
 import backtype.storm.StormSubmitter;
 import backtype.storm.generated.AlreadyAliveException;
@@ -98,6 +101,10 @@ public class DemoScenarioOne {
 		};
 		try {
 			ZooKeeper zk = new ZooKeeper(zooIP + ":" + zooPort, 100000, sampleWatcher);
+			if(zk.exists("/SPS", false) != null ) {
+				zk.delete("/SPS", -1);
+				System.out.println("znode /sps deleted");
+			}
 			if(zk.exists("/data", false) != null) {
 				System.out.println("Z-Node \"/data\" exists so we need to clean it up...");
 				List<String> operators = zk.getChildren("/data", false);

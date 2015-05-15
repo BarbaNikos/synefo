@@ -238,7 +238,7 @@ public class Client implements AbstractStatOperator, Serializable {
 		int clientId = Integer.parseInt(tuple[3]);
 		int field = Integer.parseInt(tuple[4]);
 		int permission = Integer.parseInt(tuple[2]);
-//		System.out.println("Client "+ ID +" recieved permission "+permission+" for stream "+ clientId+"."+" field "+field);
+		System.out.println("Client "+ ID +" recieved permission "+permission+" for stream "+ clientId+"."+" field "+field);
 		subscriptions.get(clientId).put(field,permission);
 		if(permission == 0) {
 			//plaintext
