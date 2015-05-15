@@ -310,7 +310,6 @@ public class StatJoinOperator<T extends Object> implements Serializable, Abstrac
 		int latency = 0;
 		int throughput = 0;
 		float sel = (float) 0.0;
-		//////////////////////////replace 1 with id
 		if(stats != null) {
 			String tuple = 	(float) stats.getCpuLoad() + "," + (float) stats.getMemory() + "," + 
 					(int) stats.getWindowLatency() + "," + (int) stats.getWindowThroughput() + "," + 

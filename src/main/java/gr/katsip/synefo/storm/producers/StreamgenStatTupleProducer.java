@@ -1,8 +1,5 @@
-package gr.katsip.synefo.storm.topology.crypefo;
+package gr.katsip.synefo.storm.producers;
 
-import gr.katsip.synefo.metric.TaskStatistics;
-import gr.katsip.synefo.storm.operators.crypstream.DataCollector;
-import gr.katsip.synefo.storm.producers.AbstractStatTupleProducer;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -12,49 +9,45 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
+import gr.katsip.synefo.metric.TaskStatistics;
+import gr.katsip.synefo.storm.operators.crypstream.DataCollector;
 
-public class CrypefoDataTupleProducer implements AbstractStatTupleProducer, Serializable {
-
+public class StreamgenStatTupleProducer implements AbstractStatTupleProducer, Serializable {
+	
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = -3531218023323197721L;
+	private static final long serialVersionUID = 5118357122275755409L;
 
 	private transient Socket dataProvider;
 
 	private transient BufferedReader input;
 
-	@SuppressWarnings("unused")
 	private transient PrintWriter output;
 
 	private Fields fields;
 
 	private String dataProviderIP;
-
-	private int uniqueId;
-
+	
 	private String producerName;
-
+	
 	private DataCollector dataSender = null;
 
 	private String zooConnectionInfo;
-
+	
 	private int statReportPeriod;
 
-	public CrypefoDataTupleProducer(String dataProviderIP, int unique, String producerName, String zooConnectionInfo, int statReportPeriod) {
+	public StreamgenStatTupleProducer(String dataProviderIP, String producerName, String zooConnectionInfo, int statReportPeriod) {
 		dataProvider = null;
 		this.dataProviderIP = dataProviderIP;
-		this.uniqueId = unique;
+		this.producerName = producerName;
 		this.zooConnectionInfo = zooConnectionInfo;
 		this.dataSender = null;
 		this.statReportPeriod = statReportPeriod;
 	}
-
+	
 	public void connect() {
 		try {
-			/**
-			 * Connects to port 6666 using CryptStreamProvider for data tuples
-			 */
 			dataProvider = new Socket(dataProviderIP, 6666);
 			output = new PrintWriter(dataProvider.getOutputStream(), true);
 			input = new BufferedReader(new InputStreamReader(dataProvider.getInputStream()));
@@ -64,7 +57,7 @@ public class CrypefoDataTupleProducer implements AbstractStatTupleProducer, Seri
 			e.printStackTrace();
 		}
 	}
-
+	
 	@Override
 	public Values nextTuple() {
 		if(dataProvider == null)
@@ -76,20 +69,36 @@ public class CrypefoDataTupleProducer implements AbstractStatTupleProducer, Seri
 		}
 		Values val = new Values();
 		try {
-			String tuple = input.readLine();	
-			String newTuple = uniqueId + "//$$$//" + tuple;
-			if(tuple != null && tuple.length() > 0) {
-				val.add(newTuple);
-				if(val.size() < fields.size()) {
-					while(val.size() < fields.size()) {
-						val.add(new String("N/A"));
+			if(dataProvider.isClosed() == false) {
+				String tuple = input.readLine();
+				if(tuple != null && tuple.length() > 0) {
+					String[] tupleTokens = tuple.split(",");
+					for(int i = 0; i < tupleTokens.length; i++) {
+						if(val.size() < fields.size())
+							val.add(tupleTokens[i]);
 					}
+					if(val.size() < fields.size()) {
+						while(val.size() < fields.size()) {
+							val.add(new String("N/A"));
+						}
+					}
+					return val;
 				}
-				//System.out.println("size "+ val.size()+ " "+tuple);
-				return val;
+			}else {
+				return null;
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
+			try {
+				input.close();
+				output.close();
+				dataProvider.close();
+				return val;
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+		} catch (NullPointerException e) {
+			return val;
 		}
 		updateData(null);
 		return null;
@@ -116,20 +125,36 @@ public class CrypefoDataTupleProducer implements AbstractStatTupleProducer, Seri
 		}
 		Values val = new Values();
 		try {
-			String tuple = input.readLine();	
-			String newTuple = uniqueId + "//$$$//" + tuple;
-			if(tuple != null && tuple.length() > 0) {
-				val.add(newTuple);
-				if(val.size() < fields.size()) {
-					while(val.size() < fields.size()) {
-						val.add(new String("N/A"));
+			if(dataProvider.isClosed() == false) {
+				String tuple = input.readLine();
+				if(tuple != null && tuple.length() > 0) {
+					String[] tupleTokens = tuple.split(",");
+					for(int i = 0; i < tupleTokens.length; i++) {
+						if(val.size() < fields.size())
+							val.add(tupleTokens[i]);
 					}
+					if(val.size() < fields.size()) {
+						while(val.size() < fields.size()) {
+							val.add(new String("N/A"));
+						}
+					}
+					return val;
 				}
-				//System.out.println("size "+ val.size()+ " "+tuple);
-				return val;
+			}else {
+				return null;
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
+			try {
+				input.close();
+				output.close();
+				dataProvider.close();
+				return val;
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+		} catch (NullPointerException e) {
+			return val;
 		}
 		updateData(statistics);
 		return null;

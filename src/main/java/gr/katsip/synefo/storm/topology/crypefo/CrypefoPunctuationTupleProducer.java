@@ -1,7 +1,8 @@
 package gr.katsip.synefo.storm.topology.crypefo;
 
-import gr.katsip.synefo.storm.producers.AbstractTupleProducer;
-
+import gr.katsip.synefo.metric.TaskStatistics;
+import gr.katsip.synefo.storm.operators.crypstream.DataCollector;
+import gr.katsip.synefo.storm.producers.AbstractStatTupleProducer;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -12,7 +13,7 @@ import java.net.UnknownHostException;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
-public class CrypefoPunctuationTupleProducer implements AbstractTupleProducer, Serializable {
+public class CrypefoPunctuationTupleProducer implements AbstractStatTupleProducer, Serializable {
 	
 	/**
 	 * 
@@ -29,13 +30,21 @@ public class CrypefoPunctuationTupleProducer implements AbstractTupleProducer, S
 	private Fields fields;
 
 	private String dataProviderIP;
+	
+	private String producerName;
 
-	private long num;
+	private DataCollector dataSender = null;
 
-	public CrypefoPunctuationTupleProducer(String dataProviderIP) {
+	private String zooConnectionInfo;
+
+	private int statReportPeriod;
+
+	public CrypefoPunctuationTupleProducer(String dataProviderIP, String producerName, String zooConnectionInfo, int statReportPeriod) {
 		dataProvider = null;
 		this.dataProviderIP = dataProviderIP;
-		num = 0;
+		this.zooConnectionInfo = zooConnectionInfo;
+		this.dataSender = null;
+		this.statReportPeriod = statReportPeriod;
 	}
 
 	public void connect() {
@@ -57,22 +66,15 @@ public class CrypefoPunctuationTupleProducer implements AbstractTupleProducer, S
 	public Values nextTuple() {
 		if(dataProvider == null)
 			connect();
+		if(dataSender == null) {
+			String[] zooTokens = this.zooConnectionInfo.split(":");
+			dataSender = new DataCollector(zooTokens[0], Integer.parseInt(zooTokens[1]), 
+					statReportPeriod, producerName);
+		}
 		Values val = new Values();
 		try {
 			String tuple = input.readLine();
 			if(tuple != null && tuple.length() > 0) {
-//				String[] tupleTokens = tuple.split("!");
-//				val.add(new Long(num));
-//				for(int i = 0; i < tupleTokens.length; i++) {
-//					if(val.size() < fields.size())
-//						val.add(tupleTokens[i]);
-//				}
-//				if(val.size() < fields.size()) {
-//					while(val.size() < fields.size()) {
-//						val.add(new String("N/A"));
-//					}
-//				}
-				num += 1;
 				val.add(tuple);
 				return val;
 			}
@@ -80,6 +82,7 @@ public class CrypefoPunctuationTupleProducer implements AbstractTupleProducer, S
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		updateData(null);
 		return null;
 	}
 
@@ -91,6 +94,53 @@ public class CrypefoPunctuationTupleProducer implements AbstractTupleProducer, S
 	@Override
 	public Fields getSchema() {
 		return fields;
+	}
+
+	@Override
+	public Values nextTuple(TaskStatistics statistics) {
+		if(dataProvider == null)
+			connect();
+		if(dataSender == null) {
+			String[] zooTokens = this.zooConnectionInfo.split(":");
+			dataSender = new DataCollector(zooTokens[0], Integer.parseInt(zooTokens[1]), 
+					statReportPeriod, producerName);
+		}
+		Values val = new Values();
+		try {
+			String tuple = input.readLine();
+			if(tuple != null && tuple.length() > 0) {
+				val.add(tuple);
+				return val;
+			}
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		updateData(null);
+		return null;
+	}
+
+	@Override
+	public void updateProducerName(String producerName) {
+		this.producerName = producerName;
+	}
+	
+	public void updateData(TaskStatistics stats) {
+		float CPU = (float) 0.0;
+		float memory = (float) 0.0;
+		int latency = 0;
+		int throughput = 0;
+		float sel = (float) 0.0;
+		if(stats != null) {
+			String tuple = 	(float) stats.getCpuLoad() + "," + (float) stats.getMemory() + "," + 
+					(int) stats.getWindowLatency() + "," + (int) stats.getWindowThroughput() + "," + 
+					(float) stats.getSelectivity() + ",0,0,0,0,0";
+			dataSender.addToBuffer(tuple);
+		}else {
+			String tuple = CPU + "," + memory + "," + latency + "," + 
+					throughput + "," + sel + ",0,0,0,0,0";
+			dataSender.addToBuffer(tuple);
+		}
 	}
 
 }

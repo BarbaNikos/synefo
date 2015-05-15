@@ -38,10 +38,6 @@ public class Client implements AbstractStatOperator, Serializable {
 
 	private String CPABEDecryptFile;
 
-	private int counter = 0;
-
-	private int displayCount = 1000;
-
 	private int statReportPeriod;
 
 	public String currentTuple;
@@ -78,11 +74,11 @@ public class Client implements AbstractStatOperator, Serializable {
 
 	private BigInteger lambda;
 
-	private int count;
-	
+	private int statReportCount;
+
 	ArrayList<String> predicates = null;
 
-	public Client(String idd, String nme, String[] atts, ArrayList<Integer> dataPs, int schemaSiz, String zooIP, int zooPort, ArrayList<String> preds) {
+	public Client(String idd, String nme, String[] atts, ArrayList<Integer> dataPs, int schemaSiz, String zooIP, int zooPort, ArrayList<String> preds, int statReportPeriod) {
 		ID = idd;
 		CPABEDecryptFile = nme+""+idd;
 		dataProviders = new ArrayList<Integer>(dataPs);
@@ -104,7 +100,8 @@ public class Client implements AbstractStatOperator, Serializable {
 				keys.get((dataProviders.get(i))).put(y,"".getBytes());
 			}
 		}
-
+		this.statReportPeriod = statReportPeriod;
+		this.statReportCount = 0;
 	}
 
 	@Override
@@ -130,23 +127,63 @@ public class Client implements AbstractStatOperator, Serializable {
 		if (spsUpdate == null){
 			spsUpdate = new SPSUpdater(zooIP,zooPort);
 		}
-		//error if coming form multiple sources
-		//	System.out.println("fields "+values.get(0));
-		String reduce = values.get(0).toString().replaceAll("\\[", "").replaceAll("\\]","");
-		//System.out.println(reduce);
-		String[] tuples = reduce.split(",");
-		if(tuples[0].equalsIgnoreCase("SPS")){
-			processSps(tuples);
+		if(dataSender == null) {
+			dataSender = new DataCollector(zooIP, zooPort, statReportPeriod, ID);
 		}
-		else{
-			if(counter>0){
-				counter=0;
+		String reduce = values.get(0).toString().replaceAll("\\[", "").replaceAll("\\]","");
+		String[] tuples = reduce.split(",");
+		if(tuples[0].equalsIgnoreCase("SPS")) {
+			processSps(tuples);
+		}else {
+			if(statReportCount > statReportPeriod) {
 				currentTuple=values.get(0).toString();
 				//System.out.println(currentTuple);
 				processNormal(currentTuple);
+				String[] encUse= tuples[tuples.length-1].split(" ");
+				for(int k = 0; k < encUse.length; k++) {
+					encryptionData.put(encUse[k], encryptionData.get(encUse[k])+1);
+				}
 			}
 		}
-		counter++;
+		if(statReportCount > statReportPeriod) {
+			updateData(null);
+			statReportCount = 0;
+		}else {
+			statReportCount += 1;
+		}
+		return new ArrayList<Values>();
+	}
+	
+	@Override
+	public List<Values> execute(TaskStatistics statistics, Fields fields,
+			Values values) {
+		if (spsUpdate == null) {
+			spsUpdate = new SPSUpdater(zooIP,zooPort);
+		}
+		if(dataSender == null) {
+			dataSender = new DataCollector(zooIP, zooPort, statReportPeriod, ID);
+		}
+		String reduce = values.get(0).toString().replaceAll("\\[", "").replaceAll("\\]","");
+		String[] tuples = reduce.split(",");
+		if(tuples[0].equalsIgnoreCase("SPS")) {
+			processSps(tuples);
+		}else {
+			if(statReportCount > statReportPeriod) {
+				currentTuple=values.get(0).toString();
+				//System.out.println(currentTuple);
+				processNormal(currentTuple);
+				String[] encUse= tuples[tuples.length-1].split(" ");
+				for(int k = 0; k < encUse.length; k++){
+					encryptionData.put(encUse[k], encryptionData.get(encUse[k])+1);
+				}
+			}
+		}
+		if(statReportCount > statReportPeriod) {
+			updateData(statistics);
+			statReportCount = 0;
+		}else {
+			statReportCount += 1;
+		}
 		return new ArrayList<Values>();
 	}
 
@@ -168,84 +205,87 @@ public class Client implements AbstractStatOperator, Serializable {
 	@Override
 	public void mergeState(Fields receivedStateSchema,
 			List<Values> receivedStateValues) {
-		// TODO Auto-generated method stub
-
+		/**
+		 * Only one client exists per query and is not allowed to scale-out/in
+		 */
 	}
 
-	public void processNormal(String tuple){
+	public void processNormal(String tuple) {
 		String[] tuples = tuple.split(Pattern.quote("//$$$//"));
 		String finalTuple="";
-		//System.out.println("pl: "+tuples.length);
-		int clientID= Integer.parseInt(tuples[0]);
-		System.out.println("tup: "+tuple);
-		for(int i=1;i<tuples.length;i++){
+		int clientID = Integer.parseInt(tuples[0]);
+//		System.out.println("tup: "+tuple);
+		for(int i=1;i<tuples.length;i++) {
 			//System.out.println(subscriptions.get(clientID).get(i)+" "+i);
-			if(subscriptions.get(clientID).get(i)==0){
+			if(subscriptions.get(clientID).get(i) == 0) {
 				finalTuple=finalTuple+", "+tuples[i];
-			}else if(subscriptions.get(clientID).get(i)==1){
+			}else if(subscriptions.get(clientID).get(i) == 1) {
 
-			}else if(subscriptions.get(clientID).get(i)==2){
+			}else if(subscriptions.get(clientID).get(i) == 2) {
 				String result = new String(decryptDetermine(tuples[i].getBytes(),keys.get(clientID).get(i)));
-				finalTuple=finalTuple+", "+result;
+				finalTuple = finalTuple + ", " + result;
 				//System.out.println(finalTuple);
-			}else if(subscriptions.get(clientID).get(i)==3){
+			}else if(subscriptions.get(clientID).get(i) == 3) {
 
-			}else if(subscriptions.get(clientID).get(i)==4){
+			}else if(subscriptions.get(clientID).get(i) == 4) {
 				//System.out.println("SUM: "+Decryption(new BigInteger(tuples[i])));
 			}
 		}
 	}
 
-	public void processSps(String[] tuple){
+	public void processSps(String[] tuple) {
 		//String tuple = "SPS", StreamId, permission, clientID, field, key;
 		int clientId = Integer.parseInt(tuple[3]);
 		int field = Integer.parseInt(tuple[4]);
 		int permission = Integer.parseInt(tuple[2]);
-		System.out.println("Client "+ID+" recieved permission "+permission+" for stream "+ clientId+"."+" field "+field);
+//		System.out.println("Client "+ ID +" recieved permission "+permission+" for stream "+ clientId+"."+" field "+field);
 		subscriptions.get(clientId).put(field,permission);
-		if(permission == 0){//plaintext
+		if(permission == 0) {
+			//plaintext
 			keys.get(clientId).put(field,"".getBytes());
-		}else if(permission == 1){//rnd
-			System.out.println("RND KEY: "+tuple[5]);			
+		}else if(permission == 1) {
+			//rnd
+//			System.out.println("RND KEY: "+tuple[5]);			
 			keys.get(clientId).put(field,tuple[5].getBytes());
-		}else if(permission == 2){//det
+		}else if(permission == 2) {
+			//det
 			byte[] newDetKey = null;
 			try {
 				newDetKey = Hex.decodeHex(tuple[5].toCharArray());
 			} catch (DecoderException e1) {
-				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
 			//predicates clientID,attribute,predicate
-			for(int i=0;i<predicates.size();i++){
+			for(int i=0;i<predicates.size();i++) {
 				String[] pred = predicates.get(i).split(",");
 				if(clientId==Integer.parseInt(pred[0])&& field==Integer.parseInt(pred[1])){
-					String newUpdate ="select,"+pred[0]+","+pred[1]+","+new String(Hex.encodeHex(encryptDetermine(pred[2],newDetKey)));
+					String newUpdate = "select,"+pred[0]+","+pred[1]+"," + new String(Hex.encodeHex(encryptDetermine(pred[2],newDetKey)));
 					spsUpdate.createChildNode(newUpdate.getBytes());
-					try {
-						Thread.sleep(100);
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-					newUpdate ="count,"+pred[0]+","+pred[1]+","+new String(Hex.encodeHex(encryptDetermine(pred[2],newDetKey)));
+//					try {
+//						Thread.sleep(10);
+//					} catch (InterruptedException e) {
+//						e.printStackTrace();
+//					}
+					newUpdate = "count," + pred[0] + "," + pred[1] + "," + new String(Hex.encodeHex(encryptDetermine(pred[2],newDetKey)));
 					spsUpdate.createChildNode(newUpdate.getBytes());
 				}
 			}
-			System.out.println("DET KEY: "+tuple[5]);
+//			System.out.println("DET KEY: "+tuple[5]);
 			byte[] newK = null;
 			try {
 				newK = Hex.decodeHex(tuple[5].toCharArray());
 			} catch (DecoderException e) {
-				System.out.println("Failed to decode DET key in Client");
+				System.err.println("Failed to decode DET key in Client");
 				e.printStackTrace();
 			} 
 			keys.get(clientId).put(field,newK);
-		}else if(permission == 3){//ope
-			System.out.println("OPE KEY: "+tuple[5]);
+		}else if(permission == 3) {
+			//ope
+//			System.out.println("OPE KEY: "+tuple[5]);
 			keys.get(clientId).put(field,tuple[5].getBytes());
-		}else if(permission == 4){//hom
-			System.out.println("HOM KEY: "+tuple[5]);
+		}else if(permission == 4) {
+			//hom
+//			System.out.println("HOM KEY: "+tuple[5]);
 			keys.get(clientId).put(field,tuple[5].getBytes());
 			//			/String ret = n.toString()+","+nsquare.toString()+","+g.toString()+","+lambda.toString();
 			n = new BigInteger(tuple[5]);
@@ -253,7 +293,7 @@ public class Client implements AbstractStatOperator, Serializable {
 			g = new BigInteger(tuple[7]);
 			lambda = new BigInteger(tuple[8]);
 			//Stream ID, BoltID, predicate
-			for(int i=0;i<predicates.size();i++){
+			for(int i=0;i<predicates.size();i++) {
 				String[] pred = predicates.get(i).split(",");
 				if(clientId==Integer.parseInt(pred[0])&& field==Integer.parseInt(pred[2])){
 					String newUpdate ="sum,"+pred[0]+","+pred[1]+",paillier";
@@ -268,7 +308,7 @@ public class Client implements AbstractStatOperator, Serializable {
 		return c.modPow(lambda, nsquare).subtract(BigInteger.ONE).divide(n).multiply(u).mod(n);
 	}
 
-	public byte[] encryptDetermine(String plnText, byte[] key){
+	public byte[] encryptDetermine(String plnText, byte[] key) {
 		boolean isSize=true;
 		byte[] newPlainText=null;
 		byte[] plainText = plnText.getBytes();
@@ -287,24 +327,23 @@ public class Client implements AbstractStatOperator, Serializable {
 				newPlainText[plainText.length+counter]=0;
 				counter++;
 			}
-			count=counter;
 		}
 		byte[] cipherText=null;
 		Cipher c=null;
 		try {
 			c = Cipher.getInstance("AES/ECB/NoPadding");
 		} catch (NoSuchAlgorithmException e) {
-			System.out.println("Encryption Error 1 at Determine Data Provider: ");
+			System.err.println("Encryption Error 1 at Determine Data Provider: ");
 			e.printStackTrace();
 		} catch (NoSuchPaddingException e) {
-			System.out.println("Encryption Error 2 at Determine Data Provider: ");
+			System.err.println("Encryption Error 2 at Determine Data Provider: ");
 			e.printStackTrace();
 		}
 		SecretKeySpec k =  new SecretKeySpec(key, "AES");
 		try {
 			c.init(Cipher.ENCRYPT_MODE, k);
 		} catch (InvalidKeyException e) {
-			System.out.println("Encryption Error 3 at Determine Data Provider: ");
+			System.err.println("Encryption Error 3 at Determine Data Provider: ");
 			e.printStackTrace();
 		}
 		try {
@@ -314,17 +353,17 @@ public class Client implements AbstractStatOperator, Serializable {
 				cipherText = c.doFinal(newPlainText);
 			}
 		} catch (IllegalBlockSizeException e) {
-			System.out.println("Encryption Error 4 at Determine Data Provider: ");
+			System.err.println("Encryption Error 4 at Determine Data Provider: ");
 			e.printStackTrace();
 		} catch (BadPaddingException e) {
-			System.out.println("Encryption Error 5 at Determine Data Provider: ");
+			System.err.println("Encryption Error 5 at Determine Data Provider: ");
 			e.printStackTrace();
 		}
 		return cipherText;
 	}
 
 
-	public void setABEDecrypt(byte[] ABEKey){
+	public void setABEDecrypt(byte[] ABEKey) {
 		//open file for writing, write key to priv_key, return
 		try{
 			// Create file 
@@ -338,32 +377,33 @@ public class Client implements AbstractStatOperator, Serializable {
 		}
 	}
 
-	public byte[] decryptDetermine(byte[] cipherText, byte[] determineKey){//select, project, equijoin, count, distinct...
+	public byte[] decryptDetermine(byte[] cipherText, byte[] determineKey){
+		//select, project, equijoin, count, distinct...
 		byte[] plainText=new byte[16];
 		Cipher c=null;
 		try {
 			c = Cipher.getInstance("AES/ECB/NoPadding");
 		} catch (NoSuchAlgorithmException e) {
-			System.out.println("Decryption Error 1 at Determine Data Provider: "+ID);
+			System.err.println("Decryption Error 1 at Determine Data Provider: "+ID);
 			e.printStackTrace();
 		} catch (NoSuchPaddingException e) {
-			System.out.println("Decryption Error 2 at Determine Data Provider: "+ID);
+			System.err.println("Decryption Error 2 at Determine Data Provider: "+ID);
 			e.printStackTrace();
 		}
 		SecretKeySpec k =  new SecretKeySpec(determineKey, "AES");
 		try {
 			c.init(Cipher.DECRYPT_MODE, k);
 		} catch (InvalidKeyException e) {
-			System.out.println("Decryption Error 3 at Determine Data Provider: "+ID);
+			System.err.println("Decryption Error 3 at Determine Data Provider: "+ID);
 			e.printStackTrace();
 		}
 		try {
 			plainText = c.doFinal(plainText);
 		} catch (IllegalBlockSizeException e) {
-			System.out.println("Decryption Error 4 at Determine Data Provider: "+ID);
+			System.err.println("Decryption Error 4 at Determine Data Provider: "+ID);
 			e.printStackTrace();
 		} catch (BadPaddingException e) {
-			System.out.println("Decryption Error 5 at Determine Data Provider: "+ID);
+			System.err.println("Decryption Error 5 at Determine Data Provider: "+ID);
 			e.printStackTrace();
 		}
 		//int remove  = plainText[plainText.length-2];
@@ -375,41 +415,8 @@ public class Client implements AbstractStatOperator, Serializable {
 	}
 
 	@Override
-	public List<Values> execute(TaskStatistics statistics, Fields fields,
-			Values values) {
-		if (spsUpdate == null){
-			spsUpdate = new SPSUpdater(zooIP,zooPort);
-		}	if(dataSender == null) {
-			dataSender = new DataCollector(zooIP, zooPort, statReportPeriod, ID);
-		}
-		//error if coming form multiple sources
-		//	System.out.println("fields "+values.get(0));
-		String reduce = values.get(0).toString().replaceAll("\\[", "").replaceAll("\\]","");
-		//System.out.println(reduce);
-		String[] tuples = reduce.split(",");
-		if(tuples[0].equalsIgnoreCase("SPS")){
-			processSps(tuples);
-		}
-		else{
-			if(counter>0){
-				counter=0;
-				currentTuple=values.get(0).toString();
-				//System.out.println(currentTuple);
-				processNormal(currentTuple);
-				String[] encUse= tuples[tuples.length-1].split(" ");
-				for(int k =0;k<encUse.length;k++){
-					encryptionData.put(encUse[k], encryptionData.get(encUse[k])+1);
-				}
-				updateData(statistics);
-			}
-		}
-		counter++;
-		return new ArrayList<Values>();
-	}
-
-	@Override
 	public void updateOperatorName(String operatorName) {
-		this.ID=operatorName;
+		this.ID = operatorName;
 
 	}
 	public void updateData(TaskStatistics stats) {

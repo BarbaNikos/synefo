@@ -8,7 +8,6 @@ import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.operators.crypstream.Client;
 import gr.katsip.synefo.storm.operators.crypstream.Select;
 import gr.katsip.synefo.storm.operators.crypstream.Sum;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -20,18 +19,13 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
-
 import backtype.storm.Config;
-import backtype.storm.LocalCluster;
-//import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;
 import backtype.storm.generated.AlreadyAliveException;
 import backtype.storm.generated.InvalidTopologyException;
@@ -39,8 +33,6 @@ import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 
 public class DemoScenarioOne {
-
-
 
 	public static void main(String[] args) throws UnknownHostException, IOException, 
 	InterruptedException, ClassNotFoundException, AlreadyAliveException, InvalidTopologyException {
@@ -149,7 +141,7 @@ public class DemoScenarioOne {
 		ArrayList<String> preds = new ArrayList<String>();
 		
 		String[] punctuationSpoutSchema = { "punct" };
-		CrypefoPunctuationTupleProducer punctuationTupleProducer = new CrypefoPunctuationTupleProducer(streamIPs[0]);
+		CrypefoPunctuationTupleProducer punctuationTupleProducer = new CrypefoPunctuationTupleProducer(streamIPs[0], "spout_sps", zooIP + ":" + zooPort, 500);
 		punctuationTupleProducer.setSchema(new Fields(punctuationSpoutSchema));
 		builder.setSpout("spout_sps", 
 				new SynefoSpout("spout_sps", synefoIP, synefoPort, punctuationTupleProducer, zooIP, zooPort), 1)
@@ -161,7 +153,7 @@ public class DemoScenarioOne {
 		ceDb.insertOperator("spout_sps", "n/a", queryId, 0, 1, "SPOUT");
 
 		String[] dataSpoutSchema = { "tuple" };
-		CrypefoDataTupleProducer dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[0],1);
+		CrypefoDataTupleProducer dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[0], 1, "spout_data", zooIP + ":" + zooPort, 500);
 		dataTupleProducer.setSchema(new Fields(dataSpoutSchema));
 		builder.setSpout("spout_data", 
 				new SynefoSpout("spout_data", synefoIP, synefoPort, dataTupleProducer, zooIP, zooPort), 1)
@@ -181,7 +173,7 @@ public class DemoScenarioOne {
 		returnSet.add(0);
 		returnSet.add(1);
 		returnSet.add(2);
-		Select selectOperator = new Select(returnSet, "2", 3, 0, 1, 3000, "select_bolt_1", zooIP, zooPort);
+		Select selectOperator = new Select(returnSet, "2", 3, 0, 1, 500, "select_bolt_1", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		preds.add("1,"+selectOperator.getAttribute()+","+ selectOperator.getPredicate());
 		builder.setBolt("select_bolt_1", 
@@ -195,7 +187,7 @@ public class DemoScenarioOne {
 		topology.put("select_bolt_1", new ArrayList<String>(_tmp));
 		ceDb.insertOperator("select_bolt_1", "n/a", queryId, 1, 1, "BOLT");
 
-		selectOperator = new Select(returnSet, "2", 3, 0, 1, 3000, "select_bolt_2", zooIP, zooPort);
+		selectOperator = new Select(returnSet, "2", 3, 0, 1, 500, "select_bolt_2", zooIP, zooPort);
 		preds.add("1,"+selectOperator.getAttribute()+","+ selectOperator.getPredicate());
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt_2", 
@@ -211,7 +203,7 @@ public class DemoScenarioOne {
 		/**
 		 * Stage 2: Aggregate Operator
 		 */
-		Sum sumOperator = new Sum(1,50, 2, "sum_bolt_1", 50,zooIP, zooPort);
+		Sum sumOperator = new Sum(1, 50, 2, "sum_bolt_1", 500, zooIP, zooPort);
 		preds.add("1,"+sumOperator.getAttribute()+",none" );
 		sumOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("sum_bolt_1", 
@@ -221,7 +213,7 @@ public class DemoScenarioOne {
 						.directGrouping("select_bolt_1")
 						.directGrouping("select_bolt_2");
 		_tmp = new ArrayList<String>();
-		sumOperator = new Sum(1,50, 2, "sum_bolt_2", 50,zooIP, zooPort);
+		sumOperator = new Sum(1, 50, 2, "sum_bolt_2", 500, zooIP, zooPort);
 		preds.add("1,"+sumOperator.getAttribute()+",none" );
 		sumOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("sum_bolt_2", 
@@ -243,7 +235,7 @@ public class DemoScenarioOne {
 		ArrayList<Integer> dataPs = new ArrayList<Integer>();
 		dataPs.add(1);
 		String[] attributes = {"Doctor", "fit+app"};
-		Client clientOperator = new Client("client_bolt","Fred", attributes, dataPs, 4, zooIP, zooPort, preds);
+		Client clientOperator = new Client("client_bolt","Fred", attributes, dataPs, 4, zooIP, zooPort, preds, 500);
 		String[] schema = {"tuple", "crap"};
 		clientOperator.setOutputSchema(new Fields(schema));
 		clientOperator.setStateSchema(new Fields(schema));
@@ -288,12 +280,6 @@ public class DemoScenarioOne {
 		conf.setNumWorkers(7);
 		StormSubmitter.submitTopology("crypefo-top-1", conf, builder.createTopology());
 		statCollector.init();
-		//	LocalCluster cluster = new LocalCluster();
-		//cluster.submitTopology("debug-topology", conf, builder.createTopology());
-		//		Thread.sleep(200000);
-		//		OperatorStatisticCollector statCollector = new OperatorStatisticCollector(zooIP + ":" + zooPort, 
-		//				"n/a", "n/a", "n/a", "n/a");
-		//		statCollector.init();
 	}
 
 

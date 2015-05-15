@@ -1,5 +1,6 @@
 package gr.katsip.synefo.storm.topology.crypefo;
 
+import gr.katsip.cestorm.db.CEStormDatabaseManager;
 import gr.katsip.cestorm.db.OperatorStatisticCollector;
 import gr.katsip.synefo.storm.api.SynefoBolt;
 import gr.katsip.synefo.storm.api.SynefoSpout;
@@ -11,6 +12,9 @@ import gr.katsip.synefo.storm.operators.crypstream.modifiedJoinOperator;
 import gr.katsip.synefo.storm.operators.relational.ProjectOperator;
 import gr.katsip.synefo.storm.operators.relational.StringComparator;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -47,17 +51,52 @@ public class DemoScenario2 {
 		String[] streamIPs = null;
 		String zooIP = "";
 		Integer zooPort = -1;
+		String dbServerIp = null;
+		String dbServerUser = null;
+		String dbServerPass = null;
 		HashMap<String, ArrayList<String>> topology = new HashMap<String, ArrayList<String>>();
 		ArrayList<String> _tmp;
-		if(args.length < 4) {
-			System.err.println("Arguments: <synefo-IP> <stream-IP> <zoo-IP> <zoo-port>");
+		if(args.length < 5) {
+			System.err.println("Arguments: <synefo-IP> <stream-IP> <zoo-IP> <zoo-port> <db-info-file>");
 			System.exit(1);
 		}else {
 			synefoIP = args[0];
 			streamIPs = args[1].split(",");
 			zooIP = args[2];
 			zooPort = Integer.parseInt(args[3]);
+			System.out.println("Database Configuration file provided. Parsing connection information...");
+			try(BufferedReader br = new BufferedReader(new FileReader(new File(args[4])))) {
+				for(String line; (line = br.readLine()) != null;) {
+					String[] lineTokens = line.split(":");
+					if(line.contains("db-server-ip:"))
+						dbServerIp = "jdbc:mysql://" + lineTokens[1] + "/";
+					else if(line.contains("db-schema-name:")) 
+						dbServerIp = dbServerIp + lineTokens[1];
+					else if(line.contains("db-user:"))
+						dbServerUser = lineTokens[1];
+					else if(line.contains("db-password:"))
+						dbServerPass = lineTokens[1];
+					else {
+						System.err.println("Invalid db-info file provided. Please use proper formatted file. Format: ");
+						System.err.println("db-server-ip:\"proper-ip-here\"");
+						System.err.println("db-schema-name:\"proper-schema-name-here\"");
+						System.err.println("db-user:\"proper-username-here\"");
+						System.err.println("db-password:\"proper-user-password-here\"");
+						System.exit(1);
+					}
+				}
+			}
 		}
+		/**
+		 * The following two lines need to be populated with the database information
+		 */
+		CEStormDatabaseManager ceDb = new CEStormDatabaseManager(dbServerIp, 
+				dbServerUser, dbServerPass);
+		Integer queryId = ceDb.insertQuery(1, 
+				"SELECT D1.name, D1.steps FROM D1, D2 WHERE D1.name = D2.name AND D1.steps > 100 AND D2.city = 'Pittsburgh'");
+		OperatorStatisticCollector statCollector = new OperatorStatisticCollector(zooIP + ":" + zooPort, 
+				dbServerIp, 
+				dbServerUser, dbServerPass, queryId);
 		/**
 		 * Create the /data z-node once for all the bolts (also clean-up previous contents)
 		 */
@@ -67,6 +106,7 @@ public class DemoScenario2 {
 
 			}
 		};
+		
 		try {
 			ZooKeeper zk = new ZooKeeper(zooIP + ":" + zooPort, 100000, sampleWatcher);
 			if(zk.exists("/data", false) != null) {
@@ -104,59 +144,55 @@ public class DemoScenario2 {
 		 */
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
-		
 		ArrayList<String> preds = new ArrayList<String>();
-		/*
-		 * TODO:
-		 * Add predicates to preds
-		 */
-		
+		//TODO: Fill out predicates
 		/**
 		 * Stage 0: Data Sources Spouts
 		 */
 		String[] punctuationSpoutSchema = { "punct" };
-		CrypefoPunctuationTupleProducer punctuationTupleProducer = new CrypefoPunctuationTupleProducer(streamIPs[0]);
+		CrypefoPunctuationTupleProducer punctuationTupleProducer = new CrypefoPunctuationTupleProducer(streamIPs[0], "spout_sps_1", zooIP + ":" + zooPort, 500);
 		punctuationTupleProducer.setSchema(new Fields(punctuationSpoutSchema));
-		builder.setSpout("spout_punctuation_tuples_1", 
-				new SynefoSpout("spout_punctuation_tuples_1", synefoIP, synefoPort, punctuationTupleProducer, zooIP, zooPort), 1)
+		builder.setSpout("spout_sps_1", 
+				new SynefoSpout("spout_sps_1", synefoIP, synefoPort, punctuationTupleProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
-
-		String[] dataSpoutSchema = { "tuple" };
-		CrypefoDataTupleProducer dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[0],1);
-		dataTupleProducer.setSchema(new Fields(dataSpoutSchema));
-		builder.setSpout("spout_data_tuples_1", 
-				new SynefoSpout("spout_data_tuples_1", synefoIP, synefoPort, dataTupleProducer, zooIP, zooPort), 1)
-				.setNumTasks(1);
-
 		_tmp = new ArrayList<String>();
 		_tmp.add("client_bolt");
-		topology.put("spout_punctuation_tuples_1", new ArrayList<String>(_tmp));
+		topology.put("spout_sps_1", new ArrayList<String>(_tmp));
+		ceDb.insertOperator("spout_sps_1", "n/a", queryId, 0, 0, "SPOUT");
+
+		String[] dataSpoutSchema = { "tuple" };
+		CrypefoDataTupleProducer dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[0], 1, "spout_data_1", zooIP + ":" + zooPort, 500);
+		dataTupleProducer.setSchema(new Fields(dataSpoutSchema));
+		builder.setSpout("spout_data_1", 
+				new SynefoSpout("spout_data_1", synefoIP, synefoPort, dataTupleProducer, zooIP, zooPort), 1)
+				.setNumTasks(1);
+		
 		_tmp = new ArrayList<String>();
 		_tmp.add("select_bolt_1");
 		_tmp.add("select_bolt_2");
-		topology.put("spout_data_tuples_1", new ArrayList<String>(_tmp));
+		topology.put("spout_data_1", new ArrayList<String>(_tmp));
+		ceDb.insertOperator("spout_data_1", "n/a", queryId, 1, 0, "SPOUT");
 
-		//For Stream 2
-		
-		punctuationTupleProducer = new CrypefoPunctuationTupleProducer(streamIPs[0]);
+		punctuationTupleProducer = new CrypefoPunctuationTupleProducer(streamIPs[0], "spout_sps_2", zooIP + ":" + zooPort, 500);
 		punctuationTupleProducer.setSchema(new Fields(punctuationSpoutSchema));
-		builder.setSpout("spout_punctuation_tuples_2", 
-				new SynefoSpout("spout_punctuation_tuples_2", synefoIP, synefoPort, punctuationTupleProducer, zooIP, zooPort), 1)
+		builder.setSpout("spout_sps_2", 
+				new SynefoSpout("spout_sps_2", synefoIP, synefoPort, punctuationTupleProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
-		
-		dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[0],1);
-		dataTupleProducer.setSchema(new Fields(dataSpoutSchema));
-		builder.setSpout("spout_data_tuples_2", 
-				new SynefoSpout("spout_data_tuples_2", synefoIP, synefoPort, dataTupleProducer, zooIP, zooPort), 1)
-				.setNumTasks(1);
-
 		_tmp = new ArrayList<String>();
 		_tmp.add("client_bolt");
-		topology.put("spout_punctuation_tuples_2", new ArrayList<String>(_tmp));
+		topology.put("spout_sps_2", new ArrayList<String>(_tmp));
+		
+		dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[0], 1, "spout_data_2", zooIP + ":" + zooPort, 500);
+		dataTupleProducer.setSchema(new Fields(dataSpoutSchema));
+		builder.setSpout("spout_data_2", 
+				new SynefoSpout("spout_data_2", synefoIP, synefoPort, dataTupleProducer, zooIP, zooPort), 1)
+				.setNumTasks(1);
+
+		
 		_tmp = new ArrayList<String>();
 		_tmp.add("select_bolt_3");
 		_tmp.add("select_bolt_4");
-		topology.put("spout_data_tuples_2", new ArrayList<String>(_tmp));
+		topology.put("spout_data_2", new ArrayList<String>(_tmp));
 
 		
 		/**
@@ -167,20 +203,20 @@ public class DemoScenario2 {
 		returnSet.add(0);
 		returnSet.add(1);
 		returnSet.add(2);
-		Select selectOperator = new Select(returnSet, "2", 3, 0, 0, 3000, "select_bolt_1", zooIP, zooPort);
+		Select selectOperator = new Select(returnSet, "2", 3, 0, 0, 500, "select_bolt_1", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt_1", 
 				new SynefoBolt("select_bolt_1", synefoIP, synefoPort, selectOperator, 
 						zooIP, zooPort, false), 1)
 						.setNumTasks(1)
-						.directGrouping("spout_data_tuples_1");
-		selectOperator = new Select(returnSet, "2", 3, 0, 0, 3000, "select_bolt_2", zooIP, zooPort);
+						.directGrouping("spout_data_1");
+		selectOperator = new Select(returnSet, "2", 3, 0, 0, 500, "select_bolt_2", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt_2", 
 				new SynefoBolt("select_bolt_2", synefoIP, synefoPort, selectOperator, 
 						zooIP, zooPort, false), 1)
 						.setNumTasks(1)
-						.directGrouping("spout_data_tuples_1");
+						.directGrouping("spout_data_1");
 		_tmp = new ArrayList<String>();
 		_tmp.add("join_bolt_1");
 		_tmp.add("join_bolt_2");
@@ -189,21 +225,21 @@ public class DemoScenario2 {
 		
 		//From Stream 2
 		
-		selectOperator = new Select(returnSet, "2", 3, 0, 0, 3000, "select_bolt_3", zooIP, zooPort);
+		selectOperator = new Select(returnSet, "2", 3, 0, 0, 500, "select_bolt_3", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt_3", 
 				new SynefoBolt("select_bolt_3", synefoIP, synefoPort, selectOperator, 
 						zooIP, zooPort, false), 1)
 						.setNumTasks(1)
-						.directGrouping("spout_data_tuples_2");
+						.directGrouping("spout_data_2");
 		returnSet = new ArrayList<Integer>();
-		selectOperator = new Select(returnSet, "2", 3, 0, 0, 3000, "select_bolt_4", zooIP, zooPort);
+		selectOperator = new Select(returnSet, "2", 3, 0, 0, 500, "select_bolt_4", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt_4", 
 				new SynefoBolt("select_bolt_4", synefoIP, synefoPort, selectOperator, 
 						zooIP, zooPort, false), 1)
 						.setNumTasks(1)
-						.directGrouping("spout_data_tuples_2");
+						.directGrouping("spout_data_2");
 		_tmp = new ArrayList<String>();
 		_tmp.add("join_bolt_1");
 		_tmp.add("join_bolt_2");
@@ -237,7 +273,7 @@ public class DemoScenario2 {
 						.directGrouping("select_bolt_4");
 
 		_tmp = new ArrayList<String>();
-		_tmp.add("client_bolt_1");
+		_tmp.add("client_bolt");
 		topology.put("join_bolt_1", new ArrayList<String>(_tmp));
 		topology.put("join_bolt_2", new ArrayList<String>(_tmp));
 		
@@ -249,7 +285,7 @@ public class DemoScenario2 {
 		String[] attributes = {"Doctor", "fit+app"};
 		
 		//////fix below to match this scenario
-		Client clientOperator = new Client("client_bolt","Fred", attributes, dataPs, 4, zooIP, zooPort,preds);
+		Client clientOperator = new Client("client_bolt", "Fred", attributes, dataPs, 4, zooIP, zooPort, preds, 500);
 		String[] schema = {"tuple", "crap"};
 		clientOperator.setOutputSchema(new Fields(schema));
 		clientOperator.setStateSchema(new Fields(schema));
@@ -257,9 +293,10 @@ public class DemoScenario2 {
 				new SynefoBolt("client_bolt", synefoIP, synefoPort, 
 						clientOperator, zooIP, zooPort, false), 1)
 						.setNumTasks(1)
-						.directGrouping("sum_operator_1")
-						.directGrouping("sum_operator_2")
-						.directGrouping("spout_punctuation_tuples");
+						.directGrouping("join_bolt_1")
+						.directGrouping("join_bolt_2")
+						.directGrouping("spout_sps_1")
+						.directGrouping("spout_sps_2");
 		topology.put("client_bolt", new ArrayList<String>());
 
 		/**
@@ -273,7 +310,7 @@ public class DemoScenario2 {
 		SynefoMessage msg = new SynefoMessage();
 		msg._values = new HashMap<String, String>();
 		msg._values.put("TASK_TYPE", "TOPOLOGY");
-		msg._values.put("QUERY_ID", Integer.toString(0));
+		msg._values.put("QUERY_ID", Integer.toString(queryId));
 		_out.writeObject(msg);
 		_out.flush();
 		Thread.sleep(100);

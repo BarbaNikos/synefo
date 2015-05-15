@@ -81,7 +81,7 @@ public class Sum implements AbstractStatOperator, Serializable {
 		this.zooIP = zooIP;
 		this.zooPort = zooPort;
 		dataSender = null;
-		type=0;
+		type = 0;
 		this.streamId=stream;
 	}
 	
