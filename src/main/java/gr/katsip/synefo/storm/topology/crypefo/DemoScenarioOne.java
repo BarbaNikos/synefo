@@ -150,7 +150,7 @@ public class DemoScenarioOne {
 		_tmp = new ArrayList<String>();
 		_tmp.add("client_bolt");
 		topology.put("spout_sps", new ArrayList<String>(_tmp));
-		ceDb.insertOperator("spout_sps", "n/a", queryId, 0, 1, "SPOUT");
+		ceDb.insertOperator("spout_sps", "n/a", queryId, 0, 0, "SPOUT");
 
 		String[] dataSpoutSchema = { "tuple" };
 		CrypefoDataTupleProducer dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[0], 1, "spout_data", zooIP + ":" + zooPort, 500);
