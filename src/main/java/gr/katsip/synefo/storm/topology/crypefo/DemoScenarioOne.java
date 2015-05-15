@@ -286,10 +286,10 @@ public class DemoScenarioOne {
 		ceDb.destroy();
 		conf.setDebug(false);
 		conf.setNumWorkers(7);
-		//StormSubmitter.submitTopology("crypefo-top-1", conf, builder.createTopology());
+		StormSubmitter.submitTopology("crypefo-top-1", conf, builder.createTopology());
 		statCollector.init();
-			LocalCluster cluster = new LocalCluster();
-		cluster.submitTopology("debug-topology", conf, builder.createTopology());
+		//	LocalCluster cluster = new LocalCluster();
+		//cluster.submitTopology("debug-topology", conf, builder.createTopology());
 		//		Thread.sleep(200000);
 		//		OperatorStatisticCollector statCollector = new OperatorStatisticCollector(zooIP + ":" + zooPort, 
 		//				"n/a", "n/a", "n/a", "n/a");
