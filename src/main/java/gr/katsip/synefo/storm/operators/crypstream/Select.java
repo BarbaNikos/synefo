@@ -319,7 +319,7 @@ public class Select implements Serializable, AbstractStatOperator  {
 					encryptionData.get("OPE") + ","  + 
 					encryptionData.get("HOM");
 
-			System.out.println(tuple);
+			//System.out.println(tuple);
 			dataSender.addToBuffer(tuple);
 			if(statReportCount>statReportPeriod){
 				encryptionData.put("pln",0);
