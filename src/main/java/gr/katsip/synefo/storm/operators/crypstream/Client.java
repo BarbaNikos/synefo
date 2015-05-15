@@ -266,8 +266,8 @@ public class Client implements AbstractStatOperator, Serializable {
 //					} catch (InterruptedException e) {
 //						e.printStackTrace();
 //					}
-					newUpdate = "count," + pred[0] + "," + pred[1] + "," + new String(Hex.encodeHex(encryptDetermine(pred[2],newDetKey)));
-					spsUpdate.createChildNode(newUpdate.getBytes());
+				//	newUpdate = "count," + pred[0] + "," + pred[1] + "," + new String(Hex.encodeHex(encryptDetermine(pred[2],newDetKey)));
+				//	spsUpdate.createChildNode(newUpdate.getBytes());
 				}
 			}
 //			System.out.println("DET KEY: "+tuple[5]);
