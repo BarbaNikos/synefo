@@ -503,6 +503,7 @@ public class CEStormDatabaseManager {
 			 * Populate the insert
 			 */
 			PreparedStatement prepStatement = connection.prepareStatement(insertStatisticTuple);
+			System.out.println("Operator Name: " + operator + ", operator id: " + nameToIdentifierMap.get(operator));
 			prepStatement.setInt(1, nameToIdentifierMap.get(operator));
 			prepStatement.setFloat(2, cpu);
 			prepStatement.setFloat(3, memory);
