@@ -252,11 +252,13 @@ public class Select implements Serializable, AbstractStatOperator  {
 			}
 			encryptionData.put(tuples[tuples.length-1], encryptionData.get(tuples[tuples.length-1])+1);
 			updateData(null);
-			Values val = new Values(); val.addAll(values);
+			Values val = new Values(); val.add(values.get(0));
 			ArrayList<Values> valz = new ArrayList<Values>();
 			valz.add(val);
-			if(matches)
+			if(matches){
+				System.out.println("MAtched: "+values.get(0).toString());
 				return valz;
+			}
 			else
 				return new ArrayList<Values>();
 		}else {
