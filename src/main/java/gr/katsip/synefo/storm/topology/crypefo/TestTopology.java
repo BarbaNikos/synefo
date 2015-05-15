@@ -187,7 +187,8 @@ public class TestTopology {
 		ArrayList<Integer> dataPs = new ArrayList<Integer>();
 		dataPs.add(1);
 		String[] attributes = {"Doctor", "fit+app"};
-		Client clientOperator = new Client("client_bolt","Fred", attributes, dataPs, 5, zooIP, zooPort);
+		ArrayList<String> preds = new ArrayList<String>();
+		Client clientOperator = new Client("client_bolt","Fred", attributes, dataPs, 5, zooIP, zooPort, preds);
 		String[] schema = {"tuple", "crap"};
 		clientOperator.setOutputSchema(new Fields(schema));
 		clientOperator.setStateSchema(new Fields(schema));

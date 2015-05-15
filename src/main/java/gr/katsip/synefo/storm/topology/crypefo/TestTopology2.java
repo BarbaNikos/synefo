@@ -11,6 +11,8 @@ import gr.katsip.synefo.storm.operators.relational.StringComparator;
 
 
 
+
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -231,7 +233,8 @@ public class TestTopology2{
 		dataPs.add(1);
 		dataPs.add(2);
 		String[] attributes = {"Doctor", "fit+app"};
-		Client clientOperator = new Client("client_bolt","Fred", attributes, dataPs, 3, zooIP, zooPort);
+		ArrayList<String> preds = new ArrayList<String>();
+		Client clientOperator = new Client("client_bolt","Fred", attributes, dataPs, 3, zooIP, zooPort, preds);
 		String[] schema = {"tuple", "crap"};
 		clientOperator.setOutputSchema(new Fields(schema));
 		clientOperator.setStateSchema(new Fields(schema));

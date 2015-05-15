@@ -20,6 +20,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.CreateMode;
@@ -135,6 +136,7 @@ public class DemoScenarioOne {
 		} catch (KeeperException e) {
 			e.printStackTrace();
 		}
+		
 		/**
 		 * Start building the topology
 		 */
@@ -143,6 +145,9 @@ public class DemoScenarioOne {
 		/**
 		 * Stage 0: Data Sources Spouts
 		 */
+		
+		ArrayList<String> preds = new ArrayList<String>();
+		
 		String[] punctuationSpoutSchema = { "punct" };
 		CrypefoPunctuationTupleProducer punctuationTupleProducer = new CrypefoPunctuationTupleProducer(streamIPs[0]);
 		punctuationTupleProducer.setSchema(new Fields(punctuationSpoutSchema));
@@ -176,8 +181,9 @@ public class DemoScenarioOne {
 		returnSet.add(0);
 		returnSet.add(1);
 		returnSet.add(2);
-		Select selectOperator = new Select(returnSet, "2", 3, 0, 0, 3000, "select_bolt_1", zooIP, zooPort);
+		Select selectOperator = new Select(returnSet, "2", 3, 0, 1, 3000, "select_bolt_1", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
+		preds.add("1,"+selectOperator.getAttribute()+","+ selectOperator.getPredicate());
 		builder.setBolt("select_bolt_1", 
 				new SynefoBolt("select_bolt_1", synefoIP, synefoPort, selectOperator, 
 						zooIP, zooPort, false), 1)
@@ -189,7 +195,8 @@ public class DemoScenarioOne {
 		topology.put("select_bolt_1", new ArrayList<String>(_tmp));
 		ceDb.insertOperator("select_bolt_1", "n/a", queryId, 1, 1, "BOLT");
 
-		selectOperator = new Select(returnSet, "2", 3, 0, 0, 3000, "select_bolt_2", zooIP, zooPort);
+		selectOperator = new Select(returnSet, "2", 3, 0, 1, 3000, "select_bolt_2", zooIP, zooPort);
+		preds.add("1,"+selectOperator.getAttribute()+","+ selectOperator.getPredicate());
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt_2", 
 				new SynefoBolt("select_bolt_2", synefoIP, synefoPort, selectOperator, 
@@ -204,7 +211,8 @@ public class DemoScenarioOne {
 		/**
 		 * Stage 2: Aggregate Operator
 		 */
-		Sum sumOperator = new Sum(50, 2, "sum_bolt_1", 50,zooIP, zooPort);
+		Sum sumOperator = new Sum(1,50, 2, "sum_bolt_1", 50,zooIP, zooPort);
+		preds.add("1,"+sumOperator.getAttribute()+",none" );
 		sumOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("sum_bolt_1", 
 				new SynefoBolt("sum_bolt_1", synefoIP, synefoPort, sumOperator, 
@@ -213,7 +221,8 @@ public class DemoScenarioOne {
 						.directGrouping("select_bolt_1")
 						.directGrouping("select_bolt_2");
 		_tmp = new ArrayList<String>();
-		sumOperator = new Sum(50, 2, "sum_bolt_2", 50,zooIP, zooPort);
+		sumOperator = new Sum(1,50, 2, "sum_bolt_2", 50,zooIP, zooPort);
+		preds.add("1,"+sumOperator.getAttribute()+",none" );
 		sumOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("sum_bolt_2", 
 				new SynefoBolt("sum_bolt_2", synefoIP, synefoPort, sumOperator, 
@@ -234,7 +243,7 @@ public class DemoScenarioOne {
 		ArrayList<Integer> dataPs = new ArrayList<Integer>();
 		dataPs.add(1);
 		String[] attributes = {"Doctor", "fit+app"};
-		Client clientOperator = new Client("client_bolt","Fred", attributes, dataPs, 4, zooIP, zooPort);
+		Client clientOperator = new Client("client_bolt","Fred", attributes, dataPs, 4, zooIP, zooPort, preds);
 		String[] schema = {"tuple", "crap"};
 		clientOperator.setOutputSchema(new Fields(schema));
 		clientOperator.setStateSchema(new Fields(schema));
@@ -277,10 +286,10 @@ public class DemoScenarioOne {
 		ceDb.destroy();
 		conf.setDebug(false);
 		conf.setNumWorkers(7);
-		StormSubmitter.submitTopology("crypefo-top-1", conf, builder.createTopology());
+		//StormSubmitter.submitTopology("crypefo-top-1", conf, builder.createTopology());
 		statCollector.init();
-		//	LocalCluster cluster = new LocalCluster();
-		//cluster.submitTopology("debug-topology", conf, builder.createTopology());
+			LocalCluster cluster = new LocalCluster();
+		cluster.submitTopology("debug-topology", conf, builder.createTopology());
 		//		Thread.sleep(200000);
 		//		OperatorStatisticCollector statCollector = new OperatorStatisticCollector(zooIP + ":" + zooPort, 
 		//				"n/a", "n/a", "n/a", "n/a");

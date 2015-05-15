@@ -34,7 +34,7 @@ public class Select implements Serializable, AbstractStatOperator  {
 
 	String predicate;
 
-	int clientOwnerId;
+	int streamId;
 
 	int attribute;
 
@@ -80,7 +80,7 @@ public class Select implements Serializable, AbstractStatOperator  {
 		predicate = pred;
 		attribute = att;
 		type = typ;
-		clientOwnerId = client;
+		streamId = client;
 		selections = new ArrayList<Integer>(returnSet);
 		encryptionData.put("pln",0);
 		encryptionData.put("DET",0);
@@ -96,6 +96,14 @@ public class Select implements Serializable, AbstractStatOperator  {
 		this.zooPort = zooPort;
 	}
 
+	public int getAttribute(){
+		return attribute;
+	}
+	
+	public String getPredicate(){
+		return predicate;
+	}
+	
 	@Override
 	public void init(List<Values> stateValues) {
 		this.stateValues = stateValues;
@@ -340,8 +348,8 @@ public class Select implements Serializable, AbstractStatOperator  {
 
 	private void handleUpdate(String data){
 		String[] sp = data.split(",");
-		if(sp[0].equalsIgnoreCase("select")){
-			predicate = sp[1];
+		if(sp[0].equalsIgnoreCase("select")&&Integer.parseInt(sp[1])==streamId && Integer.parseInt(sp[2])==attribute){
+			predicate = sp[3];
 		//	System.out.println("Predicate in "+ID+" changed to: "+predicate);
 		}
 	}

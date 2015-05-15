@@ -9,6 +9,8 @@ import gr.katsip.synefo.storm.operators.relational.StringComparator;
 //import gr.katsip.synefo.storm.operators.synefo_comp_ops.modifiedJoinOperator;
 
 
+
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -227,7 +229,8 @@ public class DemoTopologyFour {
 		ArrayList<Integer> dataPs = new ArrayList<Integer>();
 		dataPs.add(0);
 		String[] attributes = {"Doctor", "fit+app"};
-		Client clientOperator = new Client("0","Fred", attributes, dataPs, 3, zooIP, zooPort);
+		ArrayList<String> preds = new ArrayList<String>();
+		Client clientOperator = new Client("0","Fred", attributes, dataPs, 3, zooIP, zooPort, preds);
 		String[] schema = {"tuple", "crap"};
 		clientOperator.setOutputSchema(new Fields(schema));
 		clientOperator.setStateSchema(new Fields(schema));

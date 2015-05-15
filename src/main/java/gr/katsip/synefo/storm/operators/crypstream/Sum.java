@@ -2,6 +2,7 @@ package gr.katsip.synefo.storm.operators.crypstream;
 
 import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.operators.AbstractStatOperator;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigInteger;
@@ -9,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Pattern;
+
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -35,6 +37,8 @@ public class Sum implements AbstractStatOperator, Serializable {
 	private int type;
 
 	private int sum = 0;
+	
+	private int streamId;
 
 	private BigInteger cryptoSum = BigInteger.ONE;
 
@@ -64,7 +68,7 @@ public class Sum implements AbstractStatOperator, Serializable {
 
 	private  DataCallback getSPSCallback = null;
 
-	public Sum(int buff, int attr, String ID, int statReportPeriod, 
+	public Sum(int stream, int buff, int attr, String ID, int statReportPeriod, 
 			String zooIP, Integer zooPort) {//may need predicate later
 		size = buff;
 		attribute = attr;
@@ -78,6 +82,11 @@ public class Sum implements AbstractStatOperator, Serializable {
 		this.zooPort = zooPort;
 		dataSender = null;
 		type=0;
+		this.streamId=stream;
+	}
+	
+	public int getAttribute(){
+		return attribute;
 	}
 
 	@Override
@@ -314,9 +323,8 @@ public class Sum implements AbstractStatOperator, Serializable {
 
 	private void handleUpdate(String data){
 		String[] sp = data.split(",");
-		if(sp[0].equalsIgnoreCase("sum")&&sp[1].equalsIgnoreCase("paillier")){
+		if(sp[0].equalsIgnoreCase("sum")&&Integer.parseInt(sp[1])==streamId && Integer.parseInt(sp[2])==attribute){
 			type = 1;
-			System.out.println("Sum set to paillier");
 		}
 	}
 

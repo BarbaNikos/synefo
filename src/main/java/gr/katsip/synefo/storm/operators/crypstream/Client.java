@@ -2,6 +2,7 @@ package gr.katsip.synefo.storm.operators.crypstream;
 
 import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.operators.AbstractStatOperator;
+
 import java.io.FileOutputStream;
 import java.io.Serializable;
 import java.math.BigInteger;
@@ -13,13 +14,16 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
+
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
+
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
@@ -75,8 +79,10 @@ public class Client implements AbstractStatOperator, Serializable {
 	private BigInteger lambda;
 
 	private int count;
+	
+	ArrayList<String> predicates = null;
 
-	public Client(String idd, String nme, String[] atts, ArrayList<Integer> dataPs, int schemaSiz, String zooIP, int zooPort) {
+	public Client(String idd, String nme, String[] atts, ArrayList<Integer> dataPs, int schemaSiz, String zooIP, int zooPort, ArrayList<String> preds) {
 		ID = idd;
 		CPABEDecryptFile = nme+""+idd;
 		dataProviders = new ArrayList<Integer>(dataPs);
@@ -85,6 +91,7 @@ public class Client implements AbstractStatOperator, Serializable {
 		encryptionData.put("RND",0);
 		encryptionData.put("OPE",0);
 		encryptionData.put("HOM",0);
+		predicates = new ArrayList<String>(preds);
 		this.schemaSize=schemaSiz;
 		this.zooIP=zooIP;
 		this.zooPort=zooPort;
@@ -209,8 +216,22 @@ public class Client implements AbstractStatOperator, Serializable {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
-			String newUpdate = "select,"+new String(Hex.encodeHex(encryptDetermine("2",newDetKey)));
-			spsUpdate.createChildNode(newUpdate.getBytes());
+			//predicates clientID,attribute,predicate
+			for(int i=0;i<predicates.size();i++){
+				String[] pred = predicates.get(i).split(",");
+				if(clientId==Integer.parseInt(pred[0])&& field==Integer.parseInt(pred[2])){
+					String newUpdate ="select,"+pred[0]+","+pred[1]+","+new String(Hex.encodeHex(encryptDetermine(pred[2],newDetKey)));
+					spsUpdate.createChildNode(newUpdate.getBytes());
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					newUpdate ="count,"+pred[0]+","+pred[1]+","+new String(Hex.encodeHex(encryptDetermine(pred[2],newDetKey)));
+					spsUpdate.createChildNode(newUpdate.getBytes());
+				}
+			}
 			System.out.println("DET KEY: "+tuple[5]);
 			byte[] newK = null;
 			try {
@@ -231,8 +252,14 @@ public class Client implements AbstractStatOperator, Serializable {
 			nsquare = new BigInteger(tuple[6]);
 			g = new BigInteger(tuple[7]);
 			lambda = new BigInteger(tuple[8]);
-			String newUpdate = "sum,paillier";
-			spsUpdate.createChildNode(newUpdate.getBytes());
+			//Stream ID, BoltID, predicate
+			for(int i=0;i<predicates.size();i++){
+				String[] pred = predicates.get(i).split(",");
+				if(clientId==Integer.parseInt(pred[0])&& field==Integer.parseInt(pred[2])){
+					String newUpdate ="sum,"+pred[0]+","+pred[1]+",paillier";
+					spsUpdate.createChildNode(newUpdate.getBytes());
+				}
+			}
 		}
 	}
 

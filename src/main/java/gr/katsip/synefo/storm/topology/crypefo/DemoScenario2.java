@@ -105,6 +105,11 @@ public class DemoScenario2 {
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
 		
+		ArrayList<String> preds = new ArrayList<String>();
+		/*
+		 * TODO:
+		 * Add predicates to preds
+		 */
 		
 		/**
 		 * Stage 0: Data Sources Spouts
@@ -242,7 +247,9 @@ public class DemoScenario2 {
 		ArrayList<Integer> dataPs = new ArrayList<Integer>();
 		dataPs.add(1);
 		String[] attributes = {"Doctor", "fit+app"};
-		Client clientOperator = new Client("client_bolt","Fred", attributes, dataPs, 4, zooIP, zooPort);
+		
+		//////fix below to match this scenario
+		Client clientOperator = new Client("client_bolt","Fred", attributes, dataPs, 4, zooIP, zooPort,preds);
 		String[] schema = {"tuple", "crap"};
 		clientOperator.setOutputSchema(new Fields(schema));
 		clientOperator.setStateSchema(new Fields(schema));
