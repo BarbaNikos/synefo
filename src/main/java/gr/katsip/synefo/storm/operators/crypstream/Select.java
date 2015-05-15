@@ -203,6 +203,7 @@ public class Select implements Serializable, AbstractStatOperator  {
 		}
 		if(!values.get(0).toString().contains("SPS")) {
 			//System.out.println("ID: "+ID+" Predicate: "+predicate+ " SELECTION: "+values.get(0).toString());
+			System.out.println("Predicate: "+predicate+" Tuple: "+values.get(0).toString());
 			String[] tuples = values.get(0).toString().split(Pattern.quote("//$$$//"));
 			boolean matches  = false;
 			if(type == 0) {
@@ -236,7 +237,6 @@ public class Select implements Serializable, AbstractStatOperator  {
 			dataSender = new DataCollector(zooIP, zooPort, statReportPeriod, ID);
 		}
 		if(!values.get(0).toString().contains("SPS")) {
-			System.out.println("Predicate: "+predicate+" Tuple: "+values.get(0).toString());
 			String[] tuples = values.get(0).toString().split("//$$$//");
 			boolean matches  = false;
 			if(type == 0) {
@@ -349,6 +349,7 @@ public class Select implements Serializable, AbstractStatOperator  {
 
 	private void handleUpdate(String data){
 		String[] sp = data.split(",");
+		System.out.println("sps update in select "+ data);
 		if(sp[0].equalsIgnoreCase("select")&&Integer.parseInt(sp[1])==streamId && Integer.parseInt(sp[2])==attribute){
 			predicate = sp[3];
 			System.out.println("Predicate in "+ID+" changed to: "+predicate);
