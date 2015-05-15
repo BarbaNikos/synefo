@@ -63,6 +63,8 @@ public class Sum implements AbstractStatOperator, Serializable {
 	private Fields output_schema;
 
 	private ZooKeeper zk = null;
+	
+	private int statReportCount;
 
 	private  Watcher SPSRetrieverWatcher =null;
 
@@ -164,7 +166,12 @@ public class Sum implements AbstractStatOperator, Serializable {
 			for(int k =0;k<encUse.length;k++){
 				encryptionData.put(encUse[k], encryptionData.get(encUse[k])+1);
 			}
-			updateData(statistics);
+			if(statReportCount > statReportPeriod) {
+				updateData(statistics);
+				statReportCount = 0;
+			}else {
+				statReportCount += 1;
+			}
 			if(type==0){
 				int ret = regSum(tuples);
 				summ.add(tuples[0]+"//$$$//SUM//$$$//"+ret);

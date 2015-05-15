@@ -63,6 +63,8 @@ public class Select implements Serializable, AbstractStatOperator  {
 	private  Watcher SPSRetrieverWatcher =null;
 	
 	private  DataCallback getSPSCallback = null;
+	
+	private int statReportCount=0;
 	/**
 	 * 
 	 * @param returnSet
@@ -217,9 +219,15 @@ public class Select implements Serializable, AbstractStatOperator  {
 			}
 			String[] encUse= tuples[tuples.length-1].split(" ");
 			for(int k =0;k<encUse.length;k++){
+				System.out.println("added to "+encUse[k]);
 				encryptionData.put(encUse[k], encryptionData.get(encUse[k])+1);
 			}
-			updateData(statistics);
+			if(statReportCount > statReportPeriod) {
+				updateData(statistics);
+				statReportCount = 0;
+			}else {
+				statReportCount += 1;
+			}
 			Values val = new Values(); val.add(values.get(0).toString());
 			ArrayList<Values> valz = new ArrayList<Values>();
 			valz.add(val);
@@ -348,12 +356,12 @@ public class Select implements Serializable, AbstractStatOperator  {
 	}
 
 	private void handleUpdate(String data){
-		System.out.println("sps sid: "+ streamId+ " att: "+attribute+" tpl: "+ data);
+	//	System.out.println("sps sid: "+ streamId+ " att: "+attribute+" tpl: "+ data);
 		String[] sp = data.split(",");
-		System.out.println("new sps: "+sp[0]+" new ID "+sp[1]+ " new att "+sp[2]);
+	//	System.out.println("new sps: "+sp[0]+" new ID "+sp[1]+ " new att "+sp[2]);
 		if(sp[0].equalsIgnoreCase("select")&&Integer.parseInt(sp[1])==streamId && Integer.parseInt(sp[2])==attribute){
 			predicate = sp[3];
-			System.out.println("Predicate in "+ID+" changed to: "+predicate);
+	//		System.out.println("Predicate in "+ID+" changed to: "+predicate);
 		}
 	}
 
