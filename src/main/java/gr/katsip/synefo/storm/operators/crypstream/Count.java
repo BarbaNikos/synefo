@@ -2,14 +2,17 @@ package gr.katsip.synefo.storm.operators.crypstream;
 
 import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.operators.AbstractStatOperator;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Pattern;
+
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
+
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -267,7 +270,8 @@ public class Count implements AbstractStatOperator, Serializable{
 		}
 		@Override
 		public void mergeState(Fields receivedStateSchema, List<Values> receivedStateValues) {
-
+		Integer receivedCount = (Integer) (receivedStateValues.get(0)).get(0);
+		count += receivedCount;
 		}
 
 		public int equiCount(String[] tuple) {

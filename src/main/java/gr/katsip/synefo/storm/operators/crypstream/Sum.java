@@ -37,7 +37,7 @@ public class Sum implements AbstractStatOperator, Serializable {
 	private int type;
 
 	private int sum = 0;
-	
+
 	private int streamId;
 
 	private BigInteger cryptoSum = BigInteger.ONE;
@@ -84,7 +84,7 @@ public class Sum implements AbstractStatOperator, Serializable {
 		type = 0;
 		this.streamId=stream;
 	}
-	
+
 	public int getAttribute(){
 		return attribute;
 	}
@@ -254,6 +254,9 @@ public class Sum implements AbstractStatOperator, Serializable {
 	@Override
 	public void mergeState(Fields receivedStateSchema,
 			List<Values> receivedStateValues) {
+		Integer receivedRegSum = (Integer) (receivedStateValues.get(0)).get(0);
+		sum += receivedRegSum;		
+		cryptoSum.add(new BigInteger(receivedStateValues.get(0).get(1).toString()));
 	}
 
 	@Override
@@ -263,6 +266,13 @@ public class Sum implements AbstractStatOperator, Serializable {
 
 	@Override
 	public List<Values> getStateValues() {
+		stateValues.clear();
+		Values newRegSum = new Values();
+		newRegSum.add(sum);
+		stateValues.add(newRegSum);
+		Values newCryptoSum = new Values();
+		newCryptoSum.add(cryptoSum);
+		stateValues.add(newCryptoSum);
 		return stateValues;
 	}
 
