@@ -368,7 +368,7 @@ public class Select implements Serializable, AbstractStatOperator  {
 		//	System.out.println("new sps: "+sp[0]+" new ID "+sp[1]+ " new att "+sp[2]);
 		if(sp[0].equalsIgnoreCase("select")&&Integer.parseInt(sp[1])==streamId && Integer.parseInt(sp[2])==attribute){
 			predicate = sp[3];
-			//		System.out.println("Predicate in "+ID+" changed to: "+predicate);
+					System.out.println("Predicate in "+ID+" changed to: "+predicate);
 		}
 	}
 
