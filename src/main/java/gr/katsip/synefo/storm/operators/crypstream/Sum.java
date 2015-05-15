@@ -303,7 +303,7 @@ public class Sum implements AbstractStatOperator, Serializable {
 					encryptionData.get("HOM");
 
 			dataSender.addToBuffer(tuple);
-			if(statReportCount>statReportPeriod-2){
+			if(statReportCount>statReportPeriod){
 				encryptionData.put("pln",0);
 				encryptionData.put("DET",0);
 				encryptionData.put("RND",0);
