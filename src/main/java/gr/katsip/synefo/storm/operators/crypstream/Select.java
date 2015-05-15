@@ -203,6 +203,12 @@ public class Select implements Serializable, AbstractStatOperator  {
 			} catch (IOException e) {
 				e.printStackTrace();}
 		}
+		if(statReportCount > statReportPeriod) {
+			updateData(statistics);
+			statReportCount = 0;
+		}else {
+			statReportCount += 1;
+		}
 		if(!values.get(0).toString().contains("SPS")) {
 			//System.out.println("ID: "+ID+" Predicate: "+predicate+ " SELECTION: "+values.get(0).toString());
 			String[] tuples = values.get(0).toString().split(Pattern.quote("//$$$//"));
@@ -220,12 +226,6 @@ public class Select implements Serializable, AbstractStatOperator  {
 			for(int k =0;k<encUse.length;k++){
 				//System.out.println("added to "+encUse[k]);
 				encryptionData.put(encUse[k], encryptionData.get(encUse[k])+1);
-			}
-			if(statReportCount > statReportPeriod) {
-				updateData(statistics);
-				statReportCount = 0;
-			}else {
-				statReportCount += 1;
 			}
 			Values val = new Values(); val.add(values.get(0).toString());
 			ArrayList<Values> valz = new ArrayList<Values>();

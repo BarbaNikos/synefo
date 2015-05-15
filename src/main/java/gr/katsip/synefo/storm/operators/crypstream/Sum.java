@@ -157,6 +157,12 @@ public class Sum implements AbstractStatOperator, Serializable {
 			} catch (IOException e) {
 				e.printStackTrace();}
 		}
+		if(statReportCount > statReportPeriod) {
+			updateData(statistics);
+			statReportCount = 0;
+		}else {
+			statReportCount += 1;
+		}
 		if(!values.get(0).toString().contains("SPS")) {
 			String[] tuples = values.get(0).toString().split(Pattern.quote("//$$$//"));
 			//System.out.println(values.get(0));
@@ -165,12 +171,6 @@ public class Sum implements AbstractStatOperator, Serializable {
 			String[] encUse= tuples[tuples.length-1].split(" ");
 			for(int k =0;k<encUse.length;k++){
 				encryptionData.put(encUse[k], encryptionData.get(encUse[k])+1);
-			}
-			if(statReportCount > statReportPeriod) {
-				updateData(statistics);
-				statReportCount = 0;
-			}else {
-				statReportCount += 1;
 			}
 			if(type==0){
 				int ret = regSum(tuples);
@@ -187,7 +187,6 @@ public class Sum implements AbstractStatOperator, Serializable {
 					vals.add(v);
 				}
 			}
-
 			return vals;
 		}else {
 			return new ArrayList<Values>();
