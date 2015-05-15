@@ -259,6 +259,8 @@ public class Client implements AbstractStatOperator, Serializable {
 			for(int i=0;i<predicates.size();i++) {
 				String[] pred = predicates.get(i).split(",");
 				if(clientId==Integer.parseInt(pred[0])&& field==Integer.parseInt(pred[1])){
+					//id, attribute, predicate
+					System.out.println("SPS CREATED ID: "+pred[0]+", attribute "+pred[1]);
 					String newUpdate = "select,"+pred[0]+","+pred[1]+"," + new String(Hex.encodeHex(encryptDetermine(pred[2],newDetKey)));
 					spsUpdate.createChildNode(newUpdate.getBytes());
 //					try {
