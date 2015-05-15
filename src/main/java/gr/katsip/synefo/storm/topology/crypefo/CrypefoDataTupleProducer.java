@@ -48,6 +48,7 @@ public class CrypefoDataTupleProducer implements AbstractStatTupleProducer, Seri
 		this.zooConnectionInfo = zooConnectionInfo;
 		this.dataSender = null;
 		this.statReportPeriod = statReportPeriod;
+		this.producerName=producerName;
 	}
 
 	public void connect() {

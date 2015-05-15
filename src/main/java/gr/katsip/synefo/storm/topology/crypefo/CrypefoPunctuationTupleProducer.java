@@ -45,6 +45,7 @@ public class CrypefoPunctuationTupleProducer implements AbstractStatTupleProduce
 		this.zooConnectionInfo = zooConnectionInfo;
 		this.dataSender = null;
 		this.statReportPeriod = statReportPeriod;
+		this.producerName=producerName;
 	}
 
 	public void connect() {
