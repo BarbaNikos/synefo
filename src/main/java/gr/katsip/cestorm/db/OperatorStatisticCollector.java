@@ -124,7 +124,7 @@ public class OperatorStatisticCollector {
 				/**
 				 * children received
 				 */
-//				System.out.println("getChildrenCallback");
+				System.out.println("getChildrenCallback");
 				List<String> childrenDifference = new ArrayList<String>(children);
 				childrenDifference.removeAll(operators);
 				operators.addAllAbsent(children);
@@ -160,8 +160,8 @@ public class OperatorStatisticCollector {
 				System.out.println("getDataCallback(): NONODE");
 				break;
 			case OK:
-//				System.out.println("getDataCallback(): Successfully retrieved stats { " + 
-//						new String(data) + " } for operator: " + (String) ctx);
+				System.out.println("getDataCallback(): Successfully retrieved stats { " + 
+						new String(data) + " } for operator: " + (String) ctx);
 				String readableData = new String(data);
 				String operatorIdentifier = (String) ctx;
 				if(readableData.contains("/data") == true)
