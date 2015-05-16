@@ -8,8 +8,7 @@ import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.operators.relational.ProjectOperator;
 import gr.katsip.synefo.storm.operators.relational.StatJoinOperator;
 import gr.katsip.synefo.storm.operators.relational.StringComparator;
-import gr.katsip.synefo.storm.producers.StreamgenTupleProducer;
-
+import gr.katsip.synefo.storm.producers.StreamgenStatTupleProducer;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -141,7 +140,8 @@ public class ZeroDemoTopology {
 		 * Stage 0: Data Sources
 		 */
 		String[] spoutSchema = { "num", "one", "two", "three", "four" };
-		StreamgenTupleProducer tupleProducer = new StreamgenTupleProducer(streamIPs[0]);
+		StreamgenStatTupleProducer tupleProducer = new StreamgenStatTupleProducer(streamIPs[0], 
+				"spout", zooIP + ":" + zooPort, 500);
 		tupleProducer.setSchema(new Fields(spoutSchema));
 		builder.setSpout("spout", 
 				new SynefoSpout("spout", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)

@@ -39,7 +39,6 @@ public class ProjectOperator implements AbstractOperator, Serializable {
 			projected_values.add(values.get(fields.fieldIndex(field)));
 		}
 		returnTuples.add(projected_values);
-//		returnTuples.add(new Values(fields.select(projectedAttributes, values)));
 		return returnTuples;
 	}
 
