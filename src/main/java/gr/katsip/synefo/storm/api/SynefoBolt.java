@@ -310,8 +310,10 @@ public class SynefoBolt extends BaseRichBolt {
 					 * Calculate latency
 					 */
 					latency = ( 
-							Math.abs(this.opLatencyLocalTimestamp[2] - this.opLatencyLocalTimestamp[1] - 1000 - (this.opLatencyReceivedTimestamp[2] - this.opLatencyReceivedTimestamp[1] - 1000)) + 
-							Math.abs(this.opLatencyLocalTimestamp[1] - this.opLatencyLocalTimestamp[0] - 1000 - (this.opLatencyReceivedTimestamp[1] - this.opLatencyReceivedTimestamp[0] - 1000))
+							Math.abs(this.opLatencyLocalTimestamp[2] - this.opLatencyLocalTimestamp[1] - 1000 - 
+									(this.opLatencyReceivedTimestamp[2] - this.opLatencyReceivedTimestamp[1] - 1000)) + 
+							Math.abs(this.opLatencyLocalTimestamp[1] - this.opLatencyLocalTimestamp[0] - 1000 - 
+									(this.opLatencyReceivedTimestamp[1] - this.opLatencyReceivedTimestamp[0] - 1000))
 							) / 2;
 					statistics.updateWindowLatency(latency);
 					this.opLatencyReceiveState = OpLatencyState.na;
@@ -577,7 +579,27 @@ public class SynefoBolt extends BaseRichBolt {
 			logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
 					") received an ADD action (timestamp: " + System.currentTimeMillis() + ").");
 			String selfComp = this.taskName + ":" + this.taskID;
+			/**
+			 * If this Synefobolt is about to become Active
+			 */
 			if(selfComp.equals(componentName + ":" + componentId)) {
+				/**
+				 * If statistics are reported to a database, add a data-point 
+				 * with zero statistics
+				 */
+				if(statOperatorFlag == true)
+					((AbstractStatOperator) operator).reportStatisticBeforeScaleOut();
+				else
+					logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+							") timestamp: " + System.currentTimeMillis() + ", " + 
+							"cpu: " + 0.0 + 
+							", memory: " + 0.0 + 
+							", latency: " + 0 + 
+							", throughput: " + 0);
+				/**
+				 * Re-initialize statistics object
+				 */
+				statistics = new TaskStatistics();
 				/**
 				 * If this component is added, open a ServerSocket
 				 */
@@ -676,6 +698,23 @@ public class SynefoBolt extends BaseRichBolt {
 					") received a REMOVE action (timestamp: " + System.currentTimeMillis() + ").");
 			String selfComp = this.taskName + ":" + this.taskID;
 			if(selfComp.equals(componentName + ":" + componentId)) {
+				/**
+				 * If statistics are reported to a database, add a data-point 
+				 * with zero statistics
+				 */
+				if(statOperatorFlag == true)
+					((AbstractStatOperator) operator).reportStatisticBeforeScaleOut();
+				else
+					logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+							") timestamp: " + System.currentTimeMillis() + ", " + 
+							"cpu: " + 0.0 + 
+							", memory: " + 0.0 + 
+							", latency: " + 0 + 
+							", throughput: " + 0);
+				/**
+				 * Re-initialize statistics object
+				 */
+				statistics = new TaskStatistics();
 				try {
 					ServerSocket _socket = new ServerSocket(6000 + taskID);
 					logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
