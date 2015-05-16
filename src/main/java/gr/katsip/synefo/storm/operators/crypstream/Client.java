@@ -264,7 +264,7 @@ public class Client implements AbstractStatOperator, Serializable {
 					System.out.println("SPS CREATED ID: "+pred[0]+", attribute "+pred[1]+" encrypted "+pred[2]);
 					
 					///////WRROOONGGGG BOOOO I SUCK
-					String newUpdate = "select,"+pred[0]+","+(Integer.parseInt(pred[1])+1)+"," + String.valueOf(Hex.encodeHex(encryptDetermine(pred[2],newDetKey)));
+					String newUpdate = "select,"+pred[0]+","+(Integer.parseInt(pred[1]))+"," + String.valueOf(Hex.encodeHex(encryptDetermine(pred[2],newDetKey)));
 					spsUpdate.createChildNode(newUpdate.getBytes());
 //					try {
 //						Thread.sleep(10);
