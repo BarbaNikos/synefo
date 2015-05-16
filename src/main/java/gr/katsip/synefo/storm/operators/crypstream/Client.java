@@ -262,8 +262,6 @@ public class Client implements AbstractStatOperator, Serializable {
 				if(clientId==Integer.parseInt(pred[0])&& field==Integer.parseInt(pred[1])-1){
 					//id, attribute, predicate
 					System.out.println("SPS CREATED ID: "+pred[0]+", attribute "+pred[1]+" encrypted "+pred[2]);
-					
-					///////WRROOONGGGG BOOOO I SUCK
 					String newUpdate = "select,"+pred[0]+","+(Integer.parseInt(pred[1]))+"," + String.valueOf(Hex.encodeHex(encryptDetermine(pred[2],newDetKey)));
 					spsUpdate.createChildNode(newUpdate.getBytes());
 //					try {
@@ -300,7 +298,7 @@ public class Client implements AbstractStatOperator, Serializable {
 			//Stream ID, BoltID, predicate
 			for(int i=0;i<predicates.size();i++) {
 				String[] pred = predicates.get(i).split(",");
-				if(clientId==Integer.parseInt(pred[0])&& field==Integer.parseInt(pred[2])){
+				if(clientId==Integer.parseInt(pred[0])&& field==Integer.parseInt(pred[1])-1){
 					String newUpdate ="sum,"+pred[0]+","+pred[1]+",paillier";
 					spsUpdate.createChildNode(newUpdate.getBytes());
 				}
