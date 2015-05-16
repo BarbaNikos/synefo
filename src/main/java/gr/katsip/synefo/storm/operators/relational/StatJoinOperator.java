@@ -336,6 +336,10 @@ public class StatJoinOperator<T extends Object> implements Serializable, Abstrac
 		float sel = (float) 0.0;
 		String tuple = CPU + "," + memory + "," + latency + "," + 
 				throughput + "," + sel + ",0,0,0,0,0";
+		if(dataSender == null) {
+			String[] zooTokens = this.zooConnectionInfo.split(":");
+			dataSender = new DataCollector(zooTokens[0], Integer.parseInt(zooTokens[1]), statReportPeriod, this.operatorName);
+		}
 		dataSender.pushStatisticData(tuple.getBytes());
 	}
 
@@ -348,6 +352,10 @@ public class StatJoinOperator<T extends Object> implements Serializable, Abstrac
 		float sel = (float) 0.0;
 		String tuple = CPU + "," + memory + "," + latency + "," + 
 				throughput + "," + sel + ",0,0,0,0,0";
+		if(dataSender == null) {
+			String[] zooTokens = this.zooConnectionInfo.split(":");
+			dataSender = new DataCollector(zooTokens[0], Integer.parseInt(zooTokens[1]), statReportPeriod, this.operatorName);
+		}
 		dataSender.pushStatisticData(tuple.getBytes());
 	}
 

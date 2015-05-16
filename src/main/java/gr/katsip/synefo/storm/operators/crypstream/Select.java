@@ -387,6 +387,9 @@ public class Select implements Serializable, AbstractStatOperator  {
 		float sel = (float) 0.0;
 		String tuple = CPU + "," + memory + "," + latency + "," + 
 				throughput + "," + sel + ",0,0,0,0,0";
+		if(dataSender == null) {
+			dataSender = new DataCollector(zooIP, zooPort, statReportPeriod, ID);
+		}
 		dataSender.pushStatisticData(tuple.getBytes());
 	}
 
@@ -399,6 +402,9 @@ public class Select implements Serializable, AbstractStatOperator  {
 		float sel = (float) 0.0;
 		String tuple = CPU + "," + memory + "," + latency + "," + 
 				throughput + "," + sel + ",0,0,0,0,0";
+		if(dataSender == null) {
+			dataSender = new DataCollector(zooIP, zooPort, statReportPeriod, ID);
+		}
 		dataSender.pushStatisticData(tuple.getBytes());
 	}
 }
