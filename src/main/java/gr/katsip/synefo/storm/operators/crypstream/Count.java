@@ -2,17 +2,14 @@ package gr.katsip.synefo.storm.operators.crypstream;
 
 import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.operators.AbstractStatOperator;
-
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Pattern;
-
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
-
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -22,8 +19,6 @@ import org.apache.zookeeper.KeeperException.Code;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-
 
 public class Count implements AbstractStatOperator, Serializable{
 
@@ -225,59 +220,86 @@ public class Count implements AbstractStatOperator, Serializable{
 
 			};
 		}
-			if(!values.get(0).toString().contains("SPS")) {
-				List<Values> returnedTuples = new ArrayList<Values>();
-				System.out.println( values.get(0));
-				String[] tuples = values.get(0).toString().split(Pattern.quote("//$$$//"));
-				if(type==0){
-					returnedTuples.add(new Values(equiCount(tuples)));
-				}
-				else if (type==1 || type==2){
-					returnedTuples.add(new Values(lessCount(tuples)));
-				}
-				else if (type==3 || type==4){
-					returnedTuples.add(new Values(greaterCount(tuples)));
-				}
-				else{
-					returnedTuples.add(new Values(-1));
-				}
-				encryptionData.put(tuples[tuples.length-1], encryptionData.get(tuples[tuples.length-1])+1);
-				updateData(null);
-				return returnedTuples;
+		if(!values.get(0).toString().contains("SPS")) {
+			List<Values> returnedTuples = new ArrayList<Values>();
+			System.out.println( values.get(0));
+			String[] tuples = values.get(0).toString().split(Pattern.quote("//$$$//"));
+			if(type==0){
+				returnedTuples.add(new Values(equiCount(tuples)));
+			}
+			else if (type==1 || type==2){
+				returnedTuples.add(new Values(lessCount(tuples)));
+			}
+			else if (type==3 || type==4){
+				returnedTuples.add(new Values(greaterCount(tuples)));
 			}
 			else{
-				return new ArrayList<Values>();
+				returnedTuples.add(new Values(-1));
 			}
+			encryptionData.put(tuples[tuples.length-1], encryptionData.get(tuples[tuples.length-1])+1);
+			updateData(null);
+			return returnedTuples;
 		}
+		else{
+			return new ArrayList<Values>();
+		}
+	}
 
-		@Override
-		public List<Values> getStateValues() {
-			stateValues.clear();
-			Values newCount = new Values();
-			newCount.add(count);
-			stateValues.add(newCount);
-			return stateValues;
-		}
+	@Override
+	public List<Values> getStateValues() {
+		stateValues.clear();
+		Values newCount = new Values();
+		newCount.add(count);
+		stateValues.add(newCount);
+		return stateValues;
+	}
 
-		@Override
-		public Fields getStateSchema() {
-			return stateSchema;
-		}
+	@Override
+	public Fields getStateSchema() {
+		return stateSchema;
+	}
 
-		@Override
-		public Fields getOutputSchema() {
-			return output_schema;
-		}
-		@Override
-		public void mergeState(Fields receivedStateSchema, List<Values> receivedStateValues) {
+	@Override
+	public Fields getOutputSchema() {
+		return output_schema;
+	}
+	@Override
+	public void mergeState(Fields receivedStateSchema, List<Values> receivedStateValues) {
 		Integer receivedCount = (Integer) (receivedStateValues.get(0)).get(0);
 		count += receivedCount;
-		}
+	}
 
-		public int equiCount(String[] tuple) {
-			if(tuple[attribute].equalsIgnoreCase(predicate)){
+	public int equiCount(String[] tuple) {
+		if(tuple[attribute].equalsIgnoreCase(predicate)){
+			count++;
+		}
+		counter++;
+		if(counter == size) {
+			int ret = count;
+			count = 0;
+			counter=0;
+			return ret;
+		}else {
+			return -1;
+		}
+	}
+
+	public int lessCount(String[] tuple) {
+		if(type==1) {
+			if(Integer.parseInt(tuple[attribute])<Integer.parseInt(predicate))
 				count++;
+			counter++;
+			if(counter == size) {
+				int ret = count;
+				count = 0;
+				counter=0;
+				return ret;
+			}else {
+				return -1;
 			}
+		}else {
+			if(Integer.parseInt(tuple[attribute])<Integer.parseInt(predicate))
+				count++;
 			counter++;
 			if(counter == size) {
 				int ret = count;
@@ -288,122 +310,117 @@ public class Count implements AbstractStatOperator, Serializable{
 				return -1;
 			}
 		}
-
-		public int lessCount(String[] tuple) {
-			if(type==1) {
-				if(Integer.parseInt(tuple[attribute])<Integer.parseInt(predicate))
-					count++;
-				counter++;
-				if(counter == size) {
-					int ret = count;
-					count = 0;
-					counter=0;
-					return ret;
-				}else {
-					return -1;
-				}
-			}else {
-				if(Integer.parseInt(tuple[attribute])<Integer.parseInt(predicate))
-					count++;
-				counter++;
-				if(counter == size) {
-					int ret = count;
-					count = 0;
-					counter=0;
-					return ret;
-				}else {
-					return -1;
-				}
-			}
-		}
-
-		public int greaterCount(String[] tuple) {
-			if(type==1) {
-				if(Integer.parseInt(tuple[attribute])>Integer.parseInt(predicate))
-					count++;
-				counter++;
-				if(counter == size) {
-					int ret = count;
-					count = 0;
-					counter=0;
-					return ret;
-				}else {
-					return -1;
-				}
-			}else {
-				if(Integer.parseInt(tuple[attribute])>=Integer.parseInt(predicate))
-					count++;
-				counter++;
-				if(counter == size) {
-					int ret = count;
-					count = 0;
-					counter=0;
-					return ret;
-				}else {
-					return -1;
-				}
-			}
-		}
-
-		public void updateData(TaskStatistics stats) {
-			int CPU = 0;
-			int memory = 0;
-			int latency = 0;
-			int throughput = 0;
-			int sel = 0;
-			if(stats != null) {
-				String tuple = 	 (float) stats.getCpuLoad() + "," + (float) stats.getMemory() + "," + 
-						(int) stats.getWindowLatency() + "," + (int) stats.getWindowThroughput() + "," + 
-						(float) stats.getSelectivity() + "," + 
-						encryptionData.get("pln") + "," +
-						encryptionData.get("DET") + "," +
-						encryptionData.get("RND") + "," +
-						encryptionData.get("OPE") + ","  + 
-						encryptionData.get("HOM");
-
-				dataSender.addToBuffer(tuple);
-				encryptionData.put("pln",0);
-				encryptionData.put("DET",0);
-				encryptionData.put("RND",0);
-				encryptionData.put("OPE",0);
-				encryptionData.put("HOM",0);
-			}else {
-				String tuple = 	CPU + "," + memory + "," + latency + "," + 
-						throughput + "," + sel + "," + 
-						encryptionData.get("pln") + "," + 
-						encryptionData.get("DET") + "," + 
-						encryptionData.get("RND") + "," +
-						encryptionData.get("OPE") + ","  + 
-						encryptionData.get("HOM");
-
-				dataSender.addToBuffer(tuple);
-				encryptionData.put("pln",0);
-				encryptionData.put("DET",0);
-				encryptionData.put("RND",0);
-				encryptionData.put("OPE",0);
-				encryptionData.put("HOM",0);
-			}
-		}
-		public void getDataAndWatch() {
-		//	System.out.println("Select watch reset in select "+ID);
-			zk.getData("/SPS", 
-					true, 
-					getSPSCallback, 
-					"/SPS/".getBytes());
-		}
-
-		private void handleUpdate(String data){
-			String[] sp = data.split(",");
-			if(sp[0].equalsIgnoreCase("count")){
-				predicate = sp[1];
-				System.out.println("Predicate in "+ID+" changed to: "+predicate);
-			}
-		}
-
-		@Override
-		public void updateOperatorName(String operatorName) {
-			this.ID = operatorName;
-			
-		}
-
 	}
+
+	public int greaterCount(String[] tuple) {
+		if(type==1) {
+			if(Integer.parseInt(tuple[attribute])>Integer.parseInt(predicate))
+				count++;
+			counter++;
+			if(counter == size) {
+				int ret = count;
+				count = 0;
+				counter=0;
+				return ret;
+			}else {
+				return -1;
+			}
+		}else {
+			if(Integer.parseInt(tuple[attribute])>=Integer.parseInt(predicate))
+				count++;
+			counter++;
+			if(counter == size) {
+				int ret = count;
+				count = 0;
+				counter=0;
+				return ret;
+			}else {
+				return -1;
+			}
+		}
+	}
+
+	public void updateData(TaskStatistics stats) {
+		int CPU = 0;
+		int memory = 0;
+		int latency = 0;
+		int throughput = 0;
+		int sel = 0;
+		if(stats != null) {
+			String tuple = 	 (float) stats.getCpuLoad() + "," + (float) stats.getMemory() + "," + 
+					(int) stats.getWindowLatency() + "," + (int) stats.getWindowThroughput() + "," + 
+					(float) stats.getSelectivity() + "," + 
+					encryptionData.get("pln") + "," +
+					encryptionData.get("DET") + "," +
+					encryptionData.get("RND") + "," +
+					encryptionData.get("OPE") + ","  + 
+					encryptionData.get("HOM");
+
+			dataSender.addToBuffer(tuple);
+			encryptionData.put("pln",0);
+			encryptionData.put("DET",0);
+			encryptionData.put("RND",0);
+			encryptionData.put("OPE",0);
+			encryptionData.put("HOM",0);
+		}else {
+			String tuple = 	CPU + "," + memory + "," + latency + "," + 
+					throughput + "," + sel + "," + 
+					encryptionData.get("pln") + "," + 
+					encryptionData.get("DET") + "," + 
+					encryptionData.get("RND") + "," +
+					encryptionData.get("OPE") + ","  + 
+					encryptionData.get("HOM");
+
+			dataSender.addToBuffer(tuple);
+			encryptionData.put("pln",0);
+			encryptionData.put("DET",0);
+			encryptionData.put("RND",0);
+			encryptionData.put("OPE",0);
+			encryptionData.put("HOM",0);
+		}
+	}
+	public void getDataAndWatch() {
+		//	System.out.println("Select watch reset in select "+ID);
+		zk.getData("/SPS", 
+				true, 
+				getSPSCallback, 
+				"/SPS/".getBytes());
+	}
+
+	private void handleUpdate(String data){
+		String[] sp = data.split(",");
+		if(sp[0].equalsIgnoreCase("count")){
+			predicate = sp[1];
+			System.out.println("Predicate in "+ID+" changed to: "+predicate);
+		}
+	}
+
+	@Override
+	public void updateOperatorName(String operatorName) {
+		this.ID = operatorName;
+	}
+
+	@Override
+	public void reportStatisticBeforeScaleOut() {
+		float CPU = (float) 0.0;
+		float memory = (float) 0.0;
+		int latency = 0;
+		int throughput = 0;
+		float sel = (float) 0.0;
+		String tuple = CPU + "," + memory + "," + latency + "," + 
+				throughput + "," + sel + ",0,0,0,0,0";
+		dataSender.pushStatisticData(tuple.getBytes());
+	}
+
+	@Override
+	public void reportStatisticBeforeScaleIn() {
+		float CPU = (float) 0.0;
+		float memory = (float) 0.0;
+		int latency = 0;
+		int throughput = 0;
+		float sel = (float) 0.0;
+		String tuple = CPU + "," + memory + "," + latency + "," + 
+				throughput + "," + sel + ",0,0,0,0,0";
+		dataSender.pushStatisticData(tuple.getBytes());
+	}
+}

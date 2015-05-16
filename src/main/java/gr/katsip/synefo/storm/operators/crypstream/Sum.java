@@ -348,4 +348,29 @@ public class Sum implements AbstractStatOperator, Serializable {
 		this.ID = operatorName;
 
 	}
+	
+	@Override
+	public void reportStatisticBeforeScaleOut() {
+		float CPU = (float) 0.0;
+		float memory = (float) 0.0;
+		int latency = 0;
+		int throughput = 0;
+		float sel = (float) 0.0;
+		String tuple = CPU + "," + memory + "," + latency + "," + 
+				throughput + "," + sel + ",0,0,0,0,0";
+		dataSender.pushStatisticData(tuple.getBytes());
+	}
+
+	@Override
+	public void reportStatisticBeforeScaleIn() {
+		float CPU = (float) 0.0;
+		float memory = (float) 0.0;
+		int latency = 0;
+		int throughput = 0;
+		float sel = (float) 0.0;
+		String tuple = CPU + "," + memory + "," + latency + "," + 
+				throughput + "," + sel + ",0,0,0,0,0";
+		dataSender.pushStatisticData(tuple.getBytes());
+	}
+	
 }

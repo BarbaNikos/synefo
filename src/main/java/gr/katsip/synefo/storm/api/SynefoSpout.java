@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.lib.SynefoMessage.Type;
+import gr.katsip.synefo.storm.producers.AbstractStatTupleProducer;
 import gr.katsip.synefo.storm.producers.AbstractTupleProducer;
 import gr.katsip.synefo.utils.SynefoConstant;
 import backtype.storm.spout.SpoutOutputCollector;
@@ -76,6 +77,8 @@ public class SynefoSpout extends BaseRichSpout {
 
 	private int reportCounter;
 	
+	private boolean statTupleProducerFlag;
+	
 	private enum OpLatencyState {
 		na,
 		s_1,
@@ -104,8 +107,15 @@ public class SynefoSpout extends BaseRichSpout {
 		reportCounter = 0;
 		opLatencySendState = OpLatencyState.na;
 		opLatencySendTimestamp = 0L;
+		if(tupleProducer instanceof AbstractStatTupleProducer)
+			statTupleProducerFlag = true;
+		else
+			statTupleProducerFlag = false;
 	}
 
+	/**
+	 * The function for registering to Synefo server
+	 */
 	@SuppressWarnings("unchecked")
 	public void registerToSynEFO() {
 		Socket socket;
@@ -182,6 +192,13 @@ public class SynefoSpout extends BaseRichSpout {
 				taskName + ":" + taskId + "@" + taskIP + 
 				") registered to +EFO successfully (timestamp: " + 
 				System.currentTimeMillis() + ").");
+		/**
+		 * Updating operator name for saving the statistics data 
+		 * in the database server accordingly
+		 */
+		if(statTupleProducerFlag == true)
+			((AbstractStatTupleProducer) tupleProducer).updateProducerName(
+					taskName + ":" + taskId + "@" + taskIP);
 	}
 
 	public void nextTuple() {
@@ -196,7 +213,11 @@ public class SynefoSpout extends BaseRichSpout {
 			 * Add SYNEFO_HEADER (SYNEFO_TIMESTAMP) value in the beginning
 			 */
 			values.add((new Long(System.currentTimeMillis())).toString());
-			Values returnedValues = tupleProducer.nextTuple();
+			Values returnedValues = null;
+			if(statTupleProducerFlag == true)
+				returnedValues = ((AbstractStatTupleProducer) tupleProducer).nextTuple(stats);
+			else
+				returnedValues = ((AbstractStatTupleProducer) tupleProducer).nextTuple(null);
 			if(returnedValues != null) {
 				for(int i = 0; i < returnedValues.size(); i++) {
 					values.add(returnedValues.get(i));
@@ -236,12 +257,13 @@ public class SynefoSpout extends BaseRichSpout {
 				collector.emitDirect(d_task, v);
 			}
 		}
-		if(reportCounter >= 10000) {
-			logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
-					") timestamp: " + System.currentTimeMillis() + ", " + 
-					"cpu: " + stats.getCpuLoad() + 
-					", memory: " + stats.getMemory() +  
-					", input-rate: " + stats.getWindowThroughput());
+		if(reportCounter >= 500) {
+			if(statTupleProducerFlag == false)
+				logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
+						") timestamp: " + System.currentTimeMillis() + ", " + 
+						"cpu: " + stats.getCpuLoad() + 
+						", memory: " + stats.getMemory() +  
+						", input-rate: " + stats.getWindowThroughput());
 			reportCounter = 0;
 			/**
 			 * Send out a QUERY_LATENCY_METRIC tuple to measure the latency per query

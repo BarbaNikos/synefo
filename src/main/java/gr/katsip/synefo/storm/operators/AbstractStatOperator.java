@@ -12,4 +12,8 @@ public interface AbstractStatOperator extends AbstractOperator {
 	
 	public void updateOperatorName(String operatorName);
 	
+	public void reportStatisticBeforeScaleOut();
+	
+	public void reportStatisticBeforeScaleIn();
+	
 }

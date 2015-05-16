@@ -87,8 +87,6 @@ public class DataCollector implements Serializable {
 		}
 	}
 
-
-
 	public void pushStatisticData(byte[] statBuffer) {
 		String nodePath = "/data/" + this.operatorIdentifier;
 		zk.setData(nodePath, statBuffer, -1, setDataCallback, statBuffer);
@@ -143,6 +141,5 @@ public class DataCollector implements Serializable {
 				break;
 			}
 		}
-
 	};
 }

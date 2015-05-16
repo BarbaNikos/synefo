@@ -138,7 +138,7 @@ public class SynefoBolt extends BaseRichBolt {
 	}
 
 	/**
-	 * The function for registering to SynEFO server
+	 * The function for registering to Synefo server
 	 */
 	@SuppressWarnings("unchecked")
 	public void registerToSynEFO() {
@@ -226,10 +226,12 @@ public class SynefoBolt extends BaseRichBolt {
 				taskName + ":" + taskID + 
 				") registered to synEFO successfully, timestamp: " + System.currentTimeMillis() + ".");
 		/**
-		 * Updating operator name for saving the statistics data in the database accordingly
+		 * Updating operator name for saving the statistics data in the 
+		 * database server accordingly
 		 */
 		if(statOperatorFlag == true)
-			((AbstractStatOperator) operator).updateOperatorName(taskName + ":" + taskID + "@" + taskIP);
+			((AbstractStatOperator) operator).updateOperatorName(
+					taskName + ":" + taskID + "@" + taskIP);
 	}
 
 	public void prepare(@SuppressWarnings("rawtypes") Map conf, TopologyContext context, OutputCollector collector) {
@@ -427,7 +429,7 @@ public class SynefoBolt extends BaseRichBolt {
 			}
 		}
 
-		if(reportCounter >= 10000) {
+		if(reportCounter >= 500) {
 			if(statOperatorFlag == false)
 				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
 						") timestamp: " + System.currentTimeMillis() + ", " + 
