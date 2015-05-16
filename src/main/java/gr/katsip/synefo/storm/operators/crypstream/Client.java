@@ -255,14 +255,14 @@ public class Client implements AbstractStatOperator, Serializable {
 			} catch (DecoderException e1) {
 				e1.printStackTrace();
 			}
-			System.out.println("NEW DET KEY: "+new String(newDetKey)+" tup "+new String(tuple[5].toCharArray()));
+			//System.out.println("NEW DET KEY: "+new String(newDetKey)+" tup "+new String(tuple[5].toCharArray()));
 			//predicates clientID,attribute,predicate
 			for(int i=0;i<predicates.size();i++) {
 				String[] pred = predicates.get(i).split(",");
 				if(clientId==Integer.parseInt(pred[0])&& field==Integer.parseInt(pred[1])){
 					//id, attribute, predicate
-					//System.out.println("SPS CREATED ID: "+pred[0]+", attribute "+pred[1]);
-					String newUpdate = "select,"+pred[0]+","+(Integer.parseInt(pred[1])+1)+"," + new String(Hex.encodeHex(encryptDetermine(pred[2],newDetKey)));
+					System.out.println("SPS CREATED ID: "+pred[0]+", attribute "+pred[1]+" encrypted"+pred[2]);
+					String newUpdate = "select,"+pred[0]+","+(Integer.parseInt(pred[1])+1)+"," + String.valueOf(Hex.encodeHex(encryptDetermine(pred[2],newDetKey)));
 					spsUpdate.createChildNode(newUpdate.getBytes());
 //					try {
 //						Thread.sleep(10);
