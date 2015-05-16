@@ -36,8 +36,6 @@ public class DataCollector implements Serializable {
 	private Integer zooPort;
 
 	private ZooKeeper zk = null;
-
-	private StringBuilder strBuild;
 	
 	private Watcher dataCollectorWatcher = new Watcher() {
 		@Override
@@ -57,7 +55,6 @@ public class DataCollector implements Serializable {
 		this.bufferSize = bufferSize;
 		this.currentBufferSize = 0;
 		this.operatorIdentifier = operatorIdentifier;
-		strBuild = new StringBuilder();
 		this.zooIP = zooIP;
 		this.zooPort = zooPort;
 		try {
@@ -81,7 +78,7 @@ public class DataCollector implements Serializable {
 			currentBufferSize += 1;
 		}else {
 			logger.info("dataCollector.addToBuffer(): About to create new child node, buffer is full (buffer-size: " + 
-					strBuild.length() + ").");
+					tuple.length() + ").");
 			pushStatisticData(tuple.getBytes());
 			currentBufferSize = 0;
 		}
