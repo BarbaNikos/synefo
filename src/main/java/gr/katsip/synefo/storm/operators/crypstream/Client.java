@@ -259,7 +259,7 @@ public class Client implements AbstractStatOperator, Serializable {
 			//predicates clientID,attribute,predicate
 			for(int i=0;i<predicates.size();i++) {
 				String[] pred = predicates.get(i).split(",");
-				if(clientId==Integer.parseInt(pred[0])&& field==Integer.parseInt(pred[1])+1){
+				if(clientId==Integer.parseInt(pred[0])&& field==Integer.parseInt(pred[1])-1){
 					//id, attribute, predicate
 					System.out.println("SPS CREATED ID: "+pred[0]+", attribute "+pred[1]+" encrypted"+pred[2]);
 					
