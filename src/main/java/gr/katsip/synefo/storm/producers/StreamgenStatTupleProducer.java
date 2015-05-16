@@ -37,7 +37,8 @@ public class StreamgenStatTupleProducer implements AbstractStatTupleProducer, Se
 	
 	private int statReportPeriod;
 
-	public StreamgenStatTupleProducer(String dataProviderIP, String producerName, String zooConnectionInfo, int statReportPeriod) {
+	public StreamgenStatTupleProducer(String dataProviderIP, String producerName, 
+			String zooConnectionInfo, int statReportPeriod) {
 		dataProvider = null;
 		this.dataProviderIP = dataProviderIP;
 		this.producerName = producerName;
@@ -168,13 +169,14 @@ public class StreamgenStatTupleProducer implements AbstractStatTupleProducer, Se
 	public void updateData(TaskStatistics stats) {
 		float CPU = (float) 0.0;
 		float memory = (float) 0.0;
-		int latency = 0;
+		float latency = (float) 0.0;
 		int throughput = 0;
 		float sel = (float) 0.0;
+		
 		if(stats != null) {
 			String tuple = 	(float) stats.getCpuLoad() + "," + (float) stats.getMemory() + "," + 
-					(int) stats.getWindowLatency() + "," + (int) stats.getWindowThroughput() + "," + 
-					(float) stats.getSelectivity() + ",0,0,0,0,0";
+					(int) 0.0 + "," + (int) stats.getWindowThroughput() + "," + 
+					(float) 1.0 + ",0,0,0,0,0";
 			dataSender.addToBuffer(tuple);
 		}else {
 			String tuple = CPU + "," + memory + "," + latency + "," + 

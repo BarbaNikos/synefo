@@ -217,7 +217,7 @@ public class SynefoSpout extends BaseRichSpout {
 			if(statTupleProducerFlag == true)
 				returnedValues = ((AbstractStatTupleProducer) tupleProducer).nextTuple(stats);
 			else
-				returnedValues = ((AbstractStatTupleProducer) tupleProducer).nextTuple(null);
+				returnedValues = tupleProducer.nextTuple();
 			if(returnedValues != null) {
 				for(int i = 0; i < returnedValues.size(); i++) {
 					values.add(returnedValues.get(i));
