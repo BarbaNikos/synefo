@@ -255,6 +255,7 @@ public class Client implements AbstractStatOperator, Serializable {
 			} catch (DecoderException e1) {
 				e1.printStackTrace();
 			}
+			System.out.println("NEW DET KEY: "+new String(newDetKey));
 			//predicates clientID,attribute,predicate
 			for(int i=0;i<predicates.size();i++) {
 				String[] pred = predicates.get(i).split(",");
