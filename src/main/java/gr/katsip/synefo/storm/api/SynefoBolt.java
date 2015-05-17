@@ -384,7 +384,11 @@ public class SynefoBolt extends BaseRichBolt {
 					e.printStackTrace();
 				}
 			}else {
-				List<Values> returnedTuples = operator.execute(fields, values);
+				List<Values> returnedTuples = null;
+				if(statOperatorFlag)
+					returnedTuples = ((AbstractStatOperator) operator).execute(statistics, fields, values);
+				else
+					returnedTuples = operator.execute(fields, values);
 				if(returnedTuples != null && returnedTuples.size() > 0) {
 					for(Values v : returnedTuples) {
 						produced_values = new Values();

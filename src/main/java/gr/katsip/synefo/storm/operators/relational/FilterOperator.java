@@ -45,9 +45,6 @@ public class FilterOperator<T> implements AbstractOperator, Serializable {
 		T tValue = (T) values.get(fields.fieldIndex(fieldName));
 		if(comparator.compare(value, tValue) == 0) {
 			Values newValues = new Values(values.toArray());
-//			for(int i = 0; i < values.size(); i++) {
-//				newValues.add(values.get(i));
-//			}
 			returnTuples.add(newValues);
 			return returnTuples;
 		}

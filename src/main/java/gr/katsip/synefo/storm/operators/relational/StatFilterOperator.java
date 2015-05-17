@@ -2,7 +2,7 @@ package gr.katsip.synefo.storm.operators.relational;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.Comparator;
 import java.util.List;
 
 import backtype.storm.tuple.Fields;
@@ -11,20 +11,24 @@ import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.operators.AbstractStatOperator;
 import gr.katsip.synefo.storm.operators.crypstream.DataCollector;
 
-public class StatProjectOperator implements AbstractStatOperator, Serializable {
-	
+public class StatFilterOperator<T> implements AbstractStatOperator, Serializable {
+
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 754765785493018351L;
+	private static final long serialVersionUID = -4077505930209677317L;
 
-	private List<Values> stateValues;
+	private Comparator<T> comparator;
+
+	private T value;
+
+	private String fieldName;
 
 	private Fields stateSchema;
+	
+	private List<Values> stateValues;
 
 	private Fields outputSchema;
-
-	private Fields projectedAttributes;
 	
 	private int statReportPeriod;
 
@@ -34,15 +38,17 @@ public class StatProjectOperator implements AbstractStatOperator, Serializable {
 	
 	private String operatorName = null;
 	
-	public StatProjectOperator(Fields projectedAttributes, String zooConnectionInfo, 
-			String operatorName, int statReportPeriod) {
-		this.projectedAttributes = new Fields(projectedAttributes.toList());
+	public StatFilterOperator(Comparator<T> comparator, String fieldName, T value, 
+			String zooConnectionInfo, int statReportPeriod, String operatorName) {
+		this.comparator = comparator;
+		this.value = value;
+		this.fieldName = fieldName;
 		this.statReportPeriod = statReportPeriod;
 		this.zooConnectionInfo = zooConnectionInfo;
 		dataSender = null;
 		this.operatorName = operatorName;
 	}
-
+	
 	@Override
 	public void init(List<Values> stateValues) {
 		this.stateValues = stateValues;
@@ -66,13 +72,13 @@ public class StatProjectOperator implements AbstractStatOperator, Serializable {
 					statReportPeriod, this.operatorName);
 		}
 		List<Values> returnTuples = new ArrayList<Values>();
-		Iterator<String> itr = projectedAttributes.iterator();
-		Values projected_values = new Values();
-		while(itr.hasNext()) {
-			String field = itr.next();
-			projected_values.add(values.get(fields.fieldIndex(field)));
+		@SuppressWarnings("unchecked")
+		T tValue = (T) values.get(fields.fieldIndex(fieldName));
+		if(comparator.compare(value, tValue) == 0) {
+			Values newValues = new Values(values.toArray());
+			returnTuples.add(newValues);
+			return returnTuples;
 		}
-		returnTuples.add(projected_values);
 		updateData(null);
 		return returnTuples;
 	}
@@ -95,7 +101,7 @@ public class StatProjectOperator implements AbstractStatOperator, Serializable {
 	@Override
 	public void mergeState(Fields receivedStateSchema,
 			List<Values> receivedStateValues) {
-		//Stateless operator
+		//Nothing to do since no state is kept
 	}
 
 	@Override
@@ -107,13 +113,13 @@ public class StatProjectOperator implements AbstractStatOperator, Serializable {
 					statReportPeriod, this.operatorName);
 		}
 		List<Values> returnTuples = new ArrayList<Values>();
-		Iterator<String> itr = projectedAttributes.iterator();
-		Values projected_values = new Values();
-		while(itr.hasNext()) {
-			String field = itr.next();
-			projected_values.add(values.get(fields.fieldIndex(field)));
+		@SuppressWarnings("unchecked")
+		T tValue = (T) values.get(fields.fieldIndex(fieldName));
+		if(comparator.compare(value, tValue) == 0) {
+			Values newValues = new Values(values.toArray());
+			returnTuples.add(newValues);
+			return returnTuples;
 		}
-		returnTuples.add(projected_values);
 		updateData(statistics);
 		return returnTuples;
 	}

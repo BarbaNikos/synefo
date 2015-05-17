@@ -4,6 +4,7 @@ import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.lib.SynefoMessage.Type;
 import gr.katsip.synefo.storm.operators.AbstractOperator;
+import gr.katsip.synefo.storm.operators.AbstractStatOperator;
 import gr.katsip.synefo.utils.SynefoConstant;
 
 import java.io.IOException;
@@ -57,15 +58,17 @@ public class OperatorBolt extends BaseRichBolt {
 	private AbstractOperator operator;
 
 	private List<Values> stateValues;
-	
+
 	private int downStreamIndex;
 
 	private int reportCounter;
-	
+
 	private String synefoServerIP = null;
-	
+
 	private Integer synefoServerPort = -1;
-	
+
+	private boolean statOperatorFlag;
+
 	private enum OpLatencyState {
 		na,
 		s_1,
@@ -75,15 +78,15 @@ public class OperatorBolt extends BaseRichBolt {
 		r_2,
 		r_3
 	}
-	
+
 	private OpLatencyState opLatencySendState;
-	
+
 	private OpLatencyState opLatencyReceiveState;
-	
+
 	private long[] opLatencyReceivedTimestamp = new long[3];
-	
+
 	private long[] opLatencyLocalTimestamp = new long[3];
-	
+
 	private long opLatencySendTimestamp;
 
 	public OperatorBolt(String taskName, String synEFO_ip, Integer synEFO_port, 
@@ -103,6 +106,10 @@ public class OperatorBolt extends BaseRichBolt {
 		opLatencySendTimestamp = 0L;
 		opLatencyReceivedTimestamp = new long[3];
 		opLatencyLocalTimestamp = new long[3];
+		if(operator instanceof AbstractStatOperator)
+			statOperatorFlag = true;
+		else
+			statOperatorFlag = false;
 	}
 
 	@Override
@@ -124,8 +131,9 @@ public class OperatorBolt extends BaseRichBolt {
 					for(Integer d_task : intDownstreamTasks) {
 						collector.emitDirect(d_task, v);
 					}
-					logger.info("OPERATOR-BOLT (" + taskName + ":" + taskId + "@" + taskIP + 
-							") just forwarded a QUERY-LATENCY-TUPLE.");
+					//					logger.info("OPERATOR-BOLT (" + taskName + ":" + taskId + "@" + taskIP + 
+					//							") just forwarded a QUERY-LATENCY-TUPLE.");
+					collector.ack(tuple);
 					return;
 				}
 			}else if(operatorHeader.contains(SynefoConstant.OP_LATENCY_METRIC)) {
@@ -156,15 +164,16 @@ public class OperatorBolt extends BaseRichBolt {
 					this.opLatencyReceiveState = OpLatencyState.na;
 					opLatencyLocalTimestamp = new long[3];
 					opLatencyReceivedTimestamp = new long[3];
-					logger.info("OPERATOR-BOLT (" + this.taskName + ":" + taskId + "@" + 
-							this.taskIP + ") calculated OPERATOR-LATENCY-METRIC: " + latency + ".");
+					//					logger.info("OPERATOR-BOLT (" + this.taskName + ":" + taskId + "@" + 
+					//							this.taskIP + ") calculated OPERATOR-LATENCY-METRIC: " + latency + ".");
 				}
+				collector.ack(tuple);
 				return;
 			}else {
 				operatorTimestamp = Long.parseLong(operatorHeader);
 			}
 		}
-		
+
 		Values produced_values = null;
 		Values values = new Values(tuple.getValues().toArray());
 		values.remove(0);
@@ -172,21 +181,28 @@ public class OperatorBolt extends BaseRichBolt {
 		fieldList.remove(0);
 		Fields fields = new Fields(fieldList);
 		if(intDownstreamTasks != null && intDownstreamTasks.size() > 0) {
-			List<Values> returnedTuples = operator.execute(fields, values);
-			for(Values v : returnedTuples) {
-				produced_values = new Values();
-				produced_values.add((new Long(System.currentTimeMillis())).toString());
-				for(int i = 0; i < v.size(); i++) {
-					produced_values.add(v.get(i));
+			List<Values> returnedTuples = null;
+			if(statOperatorFlag)
+				returnedTuples = ((AbstractStatOperator) operator).execute(statistics, fields, values);
+			else
+				returnedTuples = operator.execute(fields, values);
+			if(returnedTuples != null && returnedTuples.size() > 0) {
+				for(Values v : returnedTuples) {
+					produced_values = new Values();
+					produced_values.add((new Long(System.currentTimeMillis())).toString());
+					for(int i = 0; i < v.size(); i++) {
+						produced_values.add(v.get(i));
+					}
+					collector.emitDirect(intDownstreamTasks.get(downStreamIndex), produced_values);
 				}
-				collector.emitDirect(intDownstreamTasks.get(downStreamIndex), produced_values);
+				if(downStreamIndex >= (intDownstreamTasks.size() - 1)) {
+					downStreamIndex = 0;
+				}else {
+					downStreamIndex += 1;
+				}
 			}
+			statistics.updateSelectivity(( (double) returnedTuples.size() / 1.0));
 			collector.ack(tuple);
-			if(downStreamIndex >= (intDownstreamTasks.size() - 1)) {
-				downStreamIndex = 0;
-			}else {
-				downStreamIndex += 1;
-			}
 		}else {
 			if(queryLatencyFlag == true) {
 				long latency = -1;
@@ -210,16 +226,23 @@ public class OperatorBolt extends BaseRichBolt {
 					e.printStackTrace();
 				}
 			}else {
-				List<Values> returnedTuples = operator.execute(fields, values);
-				for(Values v : returnedTuples) {
-					produced_values = new Values();
-					produced_values.add(Long.toString(System.currentTimeMillis()));
-					for(int i = 0; i < v.size(); i++) {
-						produced_values.add(v.get(i));
+				List<Values> returnedTuples = null;
+				if(statOperatorFlag)
+					returnedTuples = ((AbstractStatOperator) operator).execute(statistics, fields, values);
+				else
+					returnedTuples = operator.execute(fields, values);
+				if(returnedTuples != null && returnedTuples.size() > 0) {
+					for(Values v : returnedTuples) {
+						produced_values = new Values();
+						produced_values.add(Long.toString(System.currentTimeMillis()));
+						for(int i = 0; i < v.size(); i++) {
+							produced_values.add(v.get(i));
+						}
+						logger.info("OPERATOR-BOLT (" + this.taskName + ":" + taskId + "@" + 
+								this.taskIP + ") emits: " + produced_values);
 					}
-					logger.info("OPERATOR-BOLT (" + this.taskName + ":" + taskId + "@" + 
-							this.taskIP + ") emits: " + produced_values);
 				}
+				statistics.updateSelectivity(( (double) returnedTuples.size() / 1.0));
 			}
 			collector.ack(tuple);
 		}
@@ -253,14 +276,15 @@ public class OperatorBolt extends BaseRichBolt {
 				collector.emitDirect(d_task, v);
 			}
 		}
-		
-		if(reportCounter >= 10000) {
-			logger.info("OPERATOR-BOLT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
-					") timestamp: " + System.currentTimeMillis() + ", " + 
-					"cpu: " + statistics.getCpuLoad() + 
-					", memory: " + statistics.getMemory() + 
-					", latency: " + statistics.getWindowLatency() + 
-					", throughput: " + statistics.getWindowThroughput());
+
+		if(reportCounter >= 500) {
+			if(statOperatorFlag == false)
+				logger.info("OPERATOR-BOLT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
+						") timestamp: " + System.currentTimeMillis() + ", " + 
+						"cpu: " + statistics.getCpuLoad() + 
+						", memory: " + statistics.getMemory() + 
+						", latency: " + statistics.getWindowLatency() + 
+						", throughput: " + statistics.getWindowThroughput());
 			reportCounter = 0;
 			/**
 			 * Initiate operator latency metric sequence
@@ -282,7 +306,7 @@ public class OperatorBolt extends BaseRichBolt {
 			reportCounter += 1;
 		}
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	private void retrieveDownstreamTasks() {
 		ArrayList<String> activeDownstreamTasks;
@@ -357,6 +381,13 @@ public class OperatorBolt extends BaseRichBolt {
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		}
+		/**
+		 * Updating operator name for saving the statistics data in the 
+		 * database server accordingly
+		 */
+		if(statOperatorFlag == true)
+			((AbstractStatOperator) operator).updateOperatorName(
+					taskName + ":" + taskId + "@" + taskIP);
 	}
 
 	@Override
