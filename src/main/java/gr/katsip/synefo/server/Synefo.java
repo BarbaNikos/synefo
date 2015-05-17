@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import gr.katsip.cestorm.db.CEStormDatabaseManager;
+import gr.katsip.synefo.server.time.TimeServer;
 import gr.katsip.synefo.storm.api.Pair;
 
 public class Synefo {
@@ -77,6 +78,8 @@ public class Synefo {
 		Socket _stormComponent = null;
 		OutputStream _out = null;
 		InputStream _in = null;
+		Thread timeServer = new Thread(new TimeServer(5556));
+		timeServer.start();
 		(new Thread(new SynefoCoordinatorThread(zooHost, zooIP, resourceThresholds, physicalTopology, 
 				activeTopology, nameToIdMap, taskIPs, operationFlag, demoMode, queryId, ceDb))).start();
 		while(killCommand == false) {

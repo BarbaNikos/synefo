@@ -9,7 +9,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import gr.katsip.cestorm.db.CEStormDatabaseManager;
-import gr.katsip.synefo.server.time.TimeServer;
 import gr.katsip.synefo.storm.api.Pair;
 
 public class SynefoCoordinatorThread implements Runnable {
@@ -199,7 +198,6 @@ public class SynefoCoordinatorThread implements Runnable {
 
 		userInterfaceThread = new Thread(new SynEFOUserInterface(tamer, physicalTopology, demoMode, queryId, ceDb));
 		userInterfaceThread.start();
-		(new Thread(new TimeServer(5556))).start();
 	}
 
 }

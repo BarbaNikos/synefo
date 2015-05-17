@@ -268,33 +268,31 @@ public class SynefoSpout extends BaseRichSpout {
 			/**
 			 * Send out a QUERY_LATENCY_METRIC tuple to measure the latency per query
 			 */
-			if(statTupleProducerFlag == false) {
-				try {
-					Socket timeClient = new Socket(synefoIP, 5556);
-					OutputStream out = timeClient.getOutputStream();
-					InputStream in = timeClient.getInputStream();
-					byte[] buffer = new byte[8];
-					Long receivedTimestamp = (long) 0;
-					if(in.read(buffer) == 8) {
-						ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
-						receivedTimestamp = byteBuffer.getLong();
-					}
-					in.close();
-					out.close();
-					timeClient.close();
-					Values latencyTuple = new Values();
-					latencyTuple.add(new String(SynefoConstant.QUERY_LATENCY_METRIC + ":" + receivedTimestamp));
-					for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
-						latencyTuple.add(null);
-					}
-					logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
-							") about to emit query-latency tuple: " + latencyTuple.toString());
-					for(int task : intActiveDownstreamTasks) {
-						collector.emitDirect(task, latencyTuple);
-					}
-				} catch (IOException e) {
-					e.printStackTrace();
+			try {
+				Socket timeClient = new Socket(synefoIP, 5556);
+				OutputStream out = timeClient.getOutputStream();
+				InputStream in = timeClient.getInputStream();
+				byte[] buffer = new byte[8];
+				Long receivedTimestamp = (long) 0;
+				if(in.read(buffer) == 8) {
+					ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
+					receivedTimestamp = byteBuffer.getLong();
 				}
+				in.close();
+				out.close();
+				timeClient.close();
+				Values latencyTuple = new Values();
+				latencyTuple.add(new String(SynefoConstant.QUERY_LATENCY_METRIC + ":" + receivedTimestamp));
+				for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
+					latencyTuple.add(null);
+				}
+				logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
+						") about to emit query-latency tuple: " + latencyTuple.toString());
+				for(int task : intActiveDownstreamTasks) {
+					collector.emitDirect(task, latencyTuple);
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
 			/**
 			 * Initiate operator latency sequence
