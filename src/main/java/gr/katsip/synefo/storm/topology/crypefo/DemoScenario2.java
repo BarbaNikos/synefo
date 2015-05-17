@@ -216,6 +216,7 @@ public class DemoScenario2 {
 						zooIP, zooPort, false), 1)
 						.setNumTasks(1)
 						.directGrouping("spout_data_1");
+		
 		selectOperator = new Select(returnSet, "100", 3, 3, 0, 500, "select_bolt_2", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt_2", 
@@ -342,7 +343,7 @@ public class DemoScenario2 {
 
 		conf.setDebug(false);
 		conf.setNumWorkers(7);
-		StormSubmitter.submitTopology("crypefo-top-1", conf, builder.createTopology());
+		StormSubmitter.submitTopology("crypefo-demo-top-2", conf, builder.createTopology());
 		statCollector.init();
 		//	LocalCluster cluster = new LocalCluster();
 		//cluster.submitTopology("debug-topology", conf, builder.createTopology());

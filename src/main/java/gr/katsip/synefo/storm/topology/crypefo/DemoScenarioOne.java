@@ -284,7 +284,7 @@ public class DemoScenarioOne {
 		synEFOSocket.close();
 		ceDb.destroy();
 		conf.setDebug(false);
-		conf.setNumWorkers(7);
+		conf.setNumWorkers(11);
 		StormSubmitter.submitTopology("crypefo-top-1", conf, builder.createTopology());
 		statCollector.init();
 	}
