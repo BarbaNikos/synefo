@@ -162,8 +162,8 @@ public class OperatorStatisticCollector {
 				System.out.println("getDataCallback(): NONODE");
 				break;
 			case OK:
-				System.out.println("getDataCallback(): Successfully retrieved stats { " + 
-						new String(data) + " } for operator: " + (String) ctx);
+//				System.out.println("getDataCallback(): Successfully retrieved stats { " + 
+//						new String(data) + " } for operator: " + (String) ctx);
 				String readableData = new String(data);
 				String operatorIdentifier = (String) ctx;
 				if(readableData.contains("/data") == true)

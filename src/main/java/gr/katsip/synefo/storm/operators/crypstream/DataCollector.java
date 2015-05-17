@@ -77,8 +77,8 @@ public class DataCollector implements Serializable {
 		if(currentBufferSize < bufferSize) {
 			currentBufferSize += 1;
 		}else {
-			logger.info("dataCollector.addToBuffer(): About to create new child node, buffer is full (buffer-size: " + 
-					tuple.length() + ").");
+//			logger.info("dataCollector.addToBuffer(): About to create new child node, buffer is full (buffer-size: " + 
+//					tuple.length() + ").");
 			pushStatisticData(tuple.getBytes());
 			currentBufferSize = 0;
 		}
@@ -102,7 +102,7 @@ public class DataCollector implements Serializable {
 				logger.error("dataCollector.getDataCallback(): NONODE with name: " + path);
 				break;
 			case OK:
-				logger.info("dataCollector.getDataCallback(): OK data have been set successfully.");
+//				logger.info("dataCollector.getDataCallback(): OK data have been set successfully.");
 				break;
 			default:
 				logger.error("dataCollector.getDataCallback(): Unexpected scenario: " + 
@@ -130,7 +130,7 @@ public class DataCollector implements Serializable {
 				logger.error("dataCollector.createChildNodeCallback(): NODEEXISTS with name: " + path);
 				break;
 			case OK:
-				logger.info("dataCollector.createChildNodeCallback(): OK buffer written successfully.");
+//				logger.info("dataCollector.createChildNodeCallback(): OK buffer written successfully.");
 				break;
 			default:
 				logger.error("dataCollector.createChildNodeCallback(): Unexpected scenario: " + 
