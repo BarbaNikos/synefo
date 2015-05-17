@@ -32,7 +32,19 @@ public class TimeServer implements Runnable {
 				output.write(buffer);
 				output.flush();
 				buffer = new byte[8];
-				if(input.read(buffer) == 8) {
+				int i = input.read(buffer, 0, buffer.length);
+				if(i == 8) {
+					System.out.println("synefo-time-server: received response size: " + i);
+					input.close();
+					output.close();
+					client.close();
+				}else {
+					System.out.println("synefo-time-server: received response with smaller size: " + i);
+					try {
+						Thread.sleep(10);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
 					input.close();
 					output.close();
 					client.close();
