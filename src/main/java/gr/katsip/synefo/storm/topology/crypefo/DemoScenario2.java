@@ -312,7 +312,7 @@ public class DemoScenario2 {
 						.directGrouping("spout_sps_1")
 						.directGrouping("spout_sps_2");
 		topology.put("client_bolt", new ArrayList<String>());
-		ceDb.insertOperator("clinet_bolt", "n/a", queryId, 1, 0, "BOLT");
+		ceDb.insertOperator("client_bolt", "n/a", queryId, 1, 0, "BOLT");
 
 		/**
 		 * Notify SynEFO server about the 
