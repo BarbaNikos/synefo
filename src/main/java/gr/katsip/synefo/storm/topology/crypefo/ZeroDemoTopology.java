@@ -219,7 +219,7 @@ public class ZeroDemoTopology {
 		synEFOSocket.close();
 		ceDb.destroy();
 		conf.setDebug(false);
-		conf.setNumWorkers(3);
+		conf.setNumWorkers(4);
 		StormSubmitter.submitTopology("zero-demo-top", conf, builder.createTopology());
 		statCollector.init();
 	}
