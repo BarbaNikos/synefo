@@ -32,7 +32,7 @@ public class TimeServer implements Runnable {
 				output.write(buffer);
 				output.flush();
 				buffer = new byte[8];
-				if(input.read(buffer) >= 1) {
+				if(input.read(buffer) == 8) {
 					input.close();
 					output.close();
 					client.close();
