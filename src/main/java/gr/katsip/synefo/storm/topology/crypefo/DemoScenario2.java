@@ -342,7 +342,7 @@ public class DemoScenario2 {
 		synEFOSocket.close();
 
 		conf.setDebug(false);
-		conf.setNumWorkers(7);
+		conf.setNumWorkers(11);
 		StormSubmitter.submitTopology("crypefo-demo-top-2", conf, builder.createTopology());
 		statCollector.init();
 		//	LocalCluster cluster = new LocalCluster();
