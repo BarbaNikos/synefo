@@ -55,7 +55,7 @@ public class StatProjectOperator implements AbstractStatOperator, Serializable {
 
 	@Override
 	public void setOutputSchema(Fields output_schema) {
-		this.outputSchema = new Fields(outputSchema.toList());
+		this.outputSchema = new Fields(output_schema.toList());
 	}
 
 	@Override
