@@ -143,37 +143,37 @@ public class SerialOperatorTopology {
 				new OperatorSpout("spout_1", synefoIP, synefoPort, tupleProducer), 1)
 				.setNumTasks(1);
 		_tmp = new ArrayList<String>();
-		_tmp.add("project_bolt_1");
+		_tmp.add("project_1");
 		topology.put("spout_1", new ArrayList<String>(_tmp));
 		ceDb.insertOperator("spout_1", "n/a", queryId, 0, 1, "SPOUT");
 		/**
 		 * Stage 1: Project Operators
 		 */
 		StatProjectOperator projectOperator = new StatProjectOperator(new Fields(spoutSchema), 
-				"project", zooIP + ":" + zooPort, 500);
+				"project_1", zooIP + ":" + zooPort, 500);
 		projectOperator.setOutputSchema(new Fields(spoutSchema));
-		builder.setBolt("project_bolt_1", 
-				new OperatorBolt("project_bolt_1", synefoIP, synefoPort, projectOperator), 1)
+		builder.setBolt("project_1", 
+				new OperatorBolt("project_1", synefoIP, synefoPort, projectOperator), 1)
 				.setNumTasks(1)
 				.directGrouping("spout_1");
 		_tmp = new ArrayList<String>();
-		_tmp.add("join_bolt_1");
-		topology.put("project_bolt_1", new ArrayList<String>(_tmp));
-		ceDb.insertOperator("project_bolt_1", "n/a", queryId, 1, 2, "BOLT");
+		_tmp.add("join_1");
+		topology.put("project_1", new ArrayList<String>(_tmp));
+		ceDb.insertOperator("project_1", "n/a", queryId, 1, 2, "BOLT");
 		_tmp = null;
 		/**
 		 * Stage 2: Join operators
 		 */
 		StatJoinOperator<String> joinOperator = new StatJoinOperator<String>(new StringComparator(), 100, "three", 
 				new Fields(spoutSchema), new Fields(spoutSchema), zooIP + ":" + zooPort, 500);
-		builder.setBolt("join_bolt_1", 
-				new OperatorBolt("join_bolt_1", synefoIP, synefoPort, joinOperator), 1)
+		builder.setBolt("join_1", 
+				new OperatorBolt("join_1", synefoIP, synefoPort, joinOperator), 1)
 				.setNumTasks(1)
-				.directGrouping("project_bolt_1");
+				.directGrouping("project_1");
 		_tmp = new ArrayList<String>();
-		_tmp.add("count_group_by_bolt_1");
-		topology.put("join_bolt_1", new ArrayList<String>(_tmp));
-		ceDb.insertOperator("join_bolt_1", "n/a", queryId, 1, 2, "BOLT");
+		_tmp.add("count_grpby");
+		topology.put("join_1", new ArrayList<String>(_tmp));
+		ceDb.insertOperator("join_1", "n/a", queryId, 1, 2, "BOLT");
 		_tmp = null;
 		/**
 		 * Stage 3: Aggregate operator
@@ -186,12 +186,12 @@ public class SerialOperatorTopology {
 		String[] countGroupByStateSchema = { "key", "count", "time" };
 		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
 		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
-		builder.setBolt("count_group_by_bolt_1", 
-				new OperatorBolt("count_group_by_bolt_1", synefoIP, synefoPort, countGroupByAggrOperator), 1)
+		builder.setBolt("count_grpby", 
+				new OperatorBolt("count_grpby", synefoIP, synefoPort, countGroupByAggrOperator), 1)
 				.setNumTasks(1)
-				.directGrouping("join_bolt_1");
-		topology.put("count_group_by_bolt_1", new ArrayList<String>());
-		ceDb.insertOperator("count_group_by_bolt_1", "n/a", queryId, 1, 2, "BOLT");
+				.directGrouping("join_1");
+		topology.put("count_grpby", new ArrayList<String>());
+		ceDb.insertOperator("count_grpby", "n/a", queryId, 1, 2, "BOLT");
 		ceDb.insertOperatorAdjacencyList(queryId, topology);
 		/**
 		 * Notify SynEFO server about the 
