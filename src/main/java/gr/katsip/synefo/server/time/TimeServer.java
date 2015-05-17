@@ -1,6 +1,7 @@
 package gr.katsip.synefo.server.time;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -27,9 +28,15 @@ public class TimeServer implements Runnable {
 				Long time = new Long(System.currentTimeMillis());
 				byte[] buffer = ByteBuffer.allocate(8).putLong(time).array();
 				OutputStream output = client.getOutputStream();
+				InputStream input = client.getInputStream();
 				output.write(buffer);
 				output.flush();
-				output.close();
+				buffer = new byte[8];
+				if(input.read(buffer) >= 1) {
+					input.close();
+					output.close();
+					client.close();
+				}
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

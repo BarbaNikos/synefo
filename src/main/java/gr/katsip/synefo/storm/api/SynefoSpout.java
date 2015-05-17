@@ -278,6 +278,10 @@ public class SynefoSpout extends BaseRichSpout {
 					ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
 					receivedTimestamp = byteBuffer.getLong();
 				}
+				receivedTimestamp = (long) 1L;
+				buffer = ByteBuffer.allocate(8).putLong(receivedTimestamp).array();
+				out.write(buffer);
+				out.flush();
 				in.close();
 				out.close();
 				timeClient.close();
