@@ -1,14 +1,17 @@
 package gr.katsip.synefo.storm.api;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
+//import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
+//import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
+//import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -270,17 +273,21 @@ public class SynefoSpout extends BaseRichSpout {
 			 */
 			try {
 				Socket timeClient = new Socket(synefoIP, 5556);
-				OutputStream out = timeClient.getOutputStream();
-				InputStream in = timeClient.getInputStream();
-				byte[] buffer = new byte[8];
-				Long receivedTimestamp = (long) 0;
-				if(in.read(buffer) == 8) {
-					ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
-					receivedTimestamp = byteBuffer.getLong();
-				}
-				receivedTimestamp = (long) 1L;
-				buffer = ByteBuffer.allocate(8).putLong(receivedTimestamp).array();
-				out.write(buffer);
+//				OutputStream out = timeClient.getOutputStream();
+				PrintWriter out = new PrintWriter(timeClient.getOutputStream(), true);
+//				InputStream in = timeClient.getInputStream();
+				BufferedReader in = new BufferedReader(new InputStreamReader(timeClient.getInputStream()));
+//				byte[] buffer = new byte[8];
+//				Long receivedTimestamp = (long) 0;
+				Long receivedTimestamp = Long.parseLong(in.readLine());
+//				if(in.read(buffer) == 8) {
+//					ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
+//					receivedTimestamp = byteBuffer.getLong();
+//				}
+//				receivedTimestamp = (long) 1L;
+//				buffer = ByteBuffer.allocate(8).putLong(receivedTimestamp).array();
+				out.println("OK");
+//				out.write(buffer);
 				out.flush();
 				in.close();
 				out.close();
