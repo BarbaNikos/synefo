@@ -1,17 +1,23 @@
 package gr.katsip.synefo.storm.operators.crypstream;
 
+import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.operators.AbstractOperator;
+import gr.katsip.synefo.storm.operators.AbstractStatOperator;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Pattern;
+
+import org.apache.zookeeper.ZooKeeper;
 
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
-public class modifiedJoinOperator<T extends Object> implements AbstractOperator, Serializable {
+public class modifiedJoinOperator<T extends Object> implements AbstractStatOperator, Serializable {
 
 	/**
 	 * 
@@ -41,9 +47,25 @@ public class modifiedJoinOperator<T extends Object> implements AbstractOperator,
 	private Fields output_schema;
 
 	private Comparator<T> comparator;
+	
+	private String zooIP;
 
-	public modifiedJoinOperator(Comparator<T> comparator, int window, String joinAttribute, 
-			Fields leftFieldSchema, Fields rightFieldSchema) {
+	private Integer zooPort;
+
+	private String ID;
+
+	private ZooKeeper zk = null;
+	
+	private DataCollector dataSender = null;
+	
+	private int statReportPeriod;
+	
+	private int statReportCount;
+	
+	private HashMap<String, Integer> encryptionData = new HashMap<String,Integer>();
+
+	public modifiedJoinOperator(String ID, Comparator<T> comparator, int window, String joinAttribute, 
+			Fields leftFieldSchema, Fields rightFieldSchema, String zooIp, int zooPort, int statReportPeriod) {
 		this.window = window;
 		this.joinAttribute = joinAttribute;
 		/**
@@ -58,6 +80,16 @@ public class modifiedJoinOperator<T extends Object> implements AbstractOperator,
 		schema.add("timestamp");
 		this.rightStateFieldSchema = new Fields(schema);
 		this.comparator = comparator;
+		this.zooIP=zooIp;
+		this.zooPort=zooPort;
+		this.ID=ID;
+		this.statReportPeriod=statReportPeriod;
+		
+		encryptionData.put("pln",0);
+		encryptionData.put("DET",0);
+		encryptionData.put("RND",0);
+		encryptionData.put("OPE",0);
+		encryptionData.put("HOM",0);
 	}
 
 	@Override
@@ -75,6 +107,10 @@ public class modifiedJoinOperator<T extends Object> implements AbstractOperator,
 			Values v = new Values(tpl[i]);
 			values.add(i, v);
 			
+		}
+		String[] encUse= tpl[tpl.length-1].split(" ");
+		for(int k =0;k<encUse.length;k++){
+			encryptionData.put(encUse[k], encryptionData.get(encUse[k])+1);
 		}
 		List<Values> result = new ArrayList<Values>();
 		if(fields.toList().equals(leftFieldSchema.toList())) {
@@ -247,6 +283,150 @@ public class modifiedJoinOperator<T extends Object> implements AbstractOperator,
 		//		List<String> schema = stateSchema.toList();
 		//		schema.add("timestamp");
 		//		this.stateSchema = new Fields(schema);
+	}
+
+	@Override
+	public List<Values> execute(TaskStatistics statistics, Fields fields,
+			Values values) {
+		if(dataSender == null) {
+			dataSender = new DataCollector(zooIP, zooPort, statReportPeriod, ID);
+		}
+		updateData(statistics);
+		String[] tpl = values.get(0).toString().split(Pattern.quote("//$$$//"));
+		values.remove(0);
+		for(int i=0;i<tpl.length;i++){
+			Values v = new Values(tpl[i]);
+			values.add(i, v);
+			
+		}
+		List<Values> result = new ArrayList<Values>();
+		if(fields.toList().equals(leftFieldSchema.toList())) {
+			for(Values rightStateTuple : rightRelation) {
+				Values rightTuple = new Values(rightStateTuple.toArray());
+				rightTuple.remove(rightStateFieldSchema.fieldIndex("timestamp"));
+				Values resultValues = equiJoin(values, rightTuple);
+				if(resultValues != null && resultValues.size() > 0) {
+					result.add(resultValues);
+				}
+			}
+			if(leftRelation.size() < window) {
+				Values v = new Values(values.toArray());
+				v.add(System.currentTimeMillis());
+				leftRelation.add(v);
+			}else {
+				if(leftRelation.size() > 0)
+					leftRelation.remove(0);
+				Values v = new Values(values.toArray());
+				v.add(System.currentTimeMillis());
+				leftRelation.add(v);
+			}
+		}
+		if(fields.toList().equals(rightFieldSchema.toList())) {
+			for(Values leftStateTuple : leftRelation) {
+				Values leftTuple = new Values(leftStateTuple.toArray());
+				leftTuple.remove(leftStateFieldSchema.fieldIndex("timestamp"));
+				Values resultValues = equiJoin(leftTuple, values);
+				if(resultValues != null && resultValues.size() > 0) {
+					result.add(resultValues);
+				}
+			}
+			if(rightRelation.size() < window) {
+				Values v = new Values(values.toArray());
+				v.add(System.currentTimeMillis());
+				rightRelation.add(v);
+			}else {
+				if(rightRelation.size() > 0)
+					rightRelation.remove(0);
+				Values v = new Values(values.toArray());
+				v.add(System.currentTimeMillis());
+				rightRelation.add(v);
+			}
+		}
+		if(result.size()>0){
+			String res = ""+result.get(0);
+			result.remove(0);
+			for(int i=0;i<result.size();i++){
+				res = res + "//$$$//"+ result.get(i);
+				result.remove(i);
+			}
+			result.add(0, new Values(res));
+		}
+		return result;
+	}
+
+	@Override
+	public void updateOperatorName(String operatorName) {
+		this.ID = operatorName;
+
+	}
+	
+	public void updateData(TaskStatistics stats) {
+		int CPU = 0;
+		int memory = 0;
+		int latency = 0;
+		int throughput = 0;
+		int sel = 0;
+		if(stats != null) {
+			String tuple = 	(float) stats.getCpuLoad() + "," + (float) stats.getMemory() + "," + 
+					(int) stats.getWindowLatency() + "," + (int) stats.getWindowThroughput() + "," + 
+					(float) stats.getSelectivity() + "," + 
+					encryptionData.get("pln") + "," +
+					encryptionData.get("DET") + "," +
+					encryptionData.get("RND") + "," +
+					encryptionData.get("OPE") + ","  + 
+					encryptionData.get("HOM");
+
+			//System.out.println(tuple);
+			dataSender.addToBuffer(tuple);
+			if(statReportCount>statReportPeriod){
+				encryptionData.put("pln",0);
+				encryptionData.put("DET",0);
+				encryptionData.put("RND",0);
+				encryptionData.put("OPE",0);
+				encryptionData.put("HOM",0);
+				statReportCount=0;
+			}
+			statReportCount++;
+		}else {
+			String tuple = 	CPU + "," + memory + "," + latency + "," + 
+					throughput + "," + sel + "," + 
+					encryptionData.get("pln") + "," + 
+					encryptionData.get("DET") + "," + 
+					encryptionData.get("RND") + "," +
+					encryptionData.get("OPE") + ","  + 
+					encryptionData.get("HOM");
+
+			dataSender.addToBuffer(tuple);
+			encryptionData.put("pln",0);
+			encryptionData.put("DET",0);
+			encryptionData.put("RND",0);
+			encryptionData.put("OPE",0);
+			encryptionData.put("HOM",0);
+		}
+	}
+	
+	@Override
+	public void reportStatisticBeforeScaleOut() {
+		float CPU = (float) 0.0;
+		float memory = (float) 0.0;
+		int latency = 0;
+		int throughput = 0;
+		float sel = (float) 0.0;
+		String tuple = CPU + "," + memory + "," + latency + "," + 
+				throughput + "," + sel + ",0,0,0,0,0";
+		dataSender.pushStatisticData(tuple.getBytes());
+	}
+
+	@Override
+	public void reportStatisticBeforeScaleIn() {
+		float CPU = (float) 0.0;
+		float memory = (float) 0.0;
+		int latency = 0;
+		int throughput = 0;
+		float sel = (float) 0.0;
+		String tuple = CPU + "," + memory + "," + latency + "," + 
+				throughput + "," + sel + ",0,0,0,0,0";
+		dataSender.pushStatisticData(tuple.getBytes());
 	}
 
 }
