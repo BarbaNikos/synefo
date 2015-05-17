@@ -40,7 +40,7 @@ import backtype.storm.generated.InvalidTopologyException;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 
-public class DemoScenario2 {
+public class DemoScenarioTwo {
 
 
 
@@ -343,7 +343,7 @@ public class DemoScenario2 {
 
 		conf.setDebug(false);
 		conf.setNumWorkers(11);
-		StormSubmitter.submitTopology("crypefo-demo-top-2", conf, builder.createTopology());
+		StormSubmitter.submitTopology("crypefo-demo-2", conf, builder.createTopology());
 		statCollector.init();
 		//	LocalCluster cluster = new LocalCluster();
 		//cluster.submitTopology("debug-topology", conf, builder.createTopology());

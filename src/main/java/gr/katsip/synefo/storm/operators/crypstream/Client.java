@@ -168,14 +168,14 @@ public class Client implements AbstractStatOperator, Serializable {
 		if(tuples[0].equalsIgnoreCase("SPS")) {
 			processSps(tuples);
 		}else {
+			String[] encUse= tuples[tuples.length-1].split(" ");
+			for(int k = 0; k < encUse.length; k++){
+				encryptionData.put(encUse[k], encryptionData.get(encUse[k])+1);
+			}
 			if(statReportCount > statReportPeriod) {
 				currentTuple=values.get(0).toString();
 				//System.out.println(currentTuple);
 				processNormal(currentTuple);
-				String[] encUse= tuples[tuples.length-1].split(" ");
-				for(int k = 0; k < encUse.length; k++){
-					encryptionData.put(encUse[k], encryptionData.get(encUse[k])+1);
-				}
 			}
 		}
 		if(statReportCount > statReportPeriod) {

@@ -285,7 +285,7 @@ public class DemoScenarioOne {
 		ceDb.destroy();
 		conf.setDebug(false);
 		conf.setNumWorkers(11);
-		StormSubmitter.submitTopology("crypefo-top-1", conf, builder.createTopology());
+		StormSubmitter.submitTopology("crypefo-demo-1", conf, builder.createTopology());
 		statCollector.init();
 	}
 
