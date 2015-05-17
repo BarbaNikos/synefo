@@ -286,6 +286,13 @@ public class Client implements AbstractStatOperator, Serializable {
 			//ope
 //			System.out.println("OPE KEY: "+tuple[5]);
 			keys.get(clientId).put(field,tuple[5].getBytes());
+			for(int i=0;i<predicates.size();i++) {
+				String[] pred = predicates.get(i).split(",");
+				if(clientId==Integer.parseInt(pred[0])&& field==Integer.parseInt(pred[1])-1){
+					String newUpdate ="select,"+pred[0]+","+pred[1]+","+(pred[2]+Integer.parseInt(tuple[5]));
+					spsUpdate.createChildNode(newUpdate.getBytes());
+				}
+			}
 		}else if(permission == 4) {
 			//hom
 //			System.out.println("HOM KEY: "+tuple[5]);
