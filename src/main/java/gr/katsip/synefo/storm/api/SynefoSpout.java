@@ -269,37 +269,38 @@ public class SynefoSpout extends BaseRichSpout {
 						", input-rate: " + stats.getWindowThroughput());
 			reportCounter = 0;
 			/**
+			 * TODO: Temporarily got rid of it because it does not seem to work.
 			 * Send out a QUERY_LATENCY_METRIC tuple to measure the latency per query
 			 */
-			try {
-				Socket socket;
-				ObjectOutputStream output = null;
-				ObjectInputStream input = null;
-				socket = null;
-				SynefoMessage msg = new SynefoMessage();
-				msg._type = Type.REG;
-				msg._values.put("TASK_TYPE", "TIME");
-				
-				socket = new Socket(synefoIP, synefoPort);
-				output = new ObjectOutputStream(socket.getOutputStream());
-				input = new ObjectInputStream(socket.getInputStream());
-				output.writeObject(msg);
-				output.flush();
-				msg = null;
-				Long receivedTimestamp = null;
-				try {
-					receivedTimestamp = (Long) input.readObject();
-				} catch (ClassNotFoundException e) {
-					e.printStackTrace();
-				}
-				/**
-				 * Closing channels of communication with 
-				 * SynEFO server
-				 */
-				output.flush();
-				output.close();
-				input.close();
-				socket.close();
+//			try {
+//				Socket socket;
+//				ObjectOutputStream output = null;
+//				ObjectInputStream input = null;
+//				socket = null;
+//				SynefoMessage msg = new SynefoMessage();
+//				msg._type = Type.REG;
+//				msg._values.put("TASK_TYPE", "TIME");
+//				
+//				socket = new Socket(synefoIP, synefoPort);
+//				output = new ObjectOutputStream(socket.getOutputStream());
+//				input = new ObjectInputStream(socket.getInputStream());
+//				output.writeObject(msg);
+//				output.flush();
+//				msg = null;
+//				Long receivedTimestamp = null;
+//				try {
+//					receivedTimestamp = (Long) input.readObject();
+//				} catch (ClassNotFoundException e) {
+//					e.printStackTrace();
+//				}
+//				/**
+//				 * Closing channels of communication with 
+//				 * SynEFO server
+//				 */
+//				output.flush();
+//				output.close();
+//				input.close();
+//				socket.close();
 //				
 //				Socket timeClient = new Socket(synefoIP, 5556);
 ////				OutputStream out = timeClient.getOutputStream();
@@ -321,19 +322,19 @@ public class SynefoSpout extends BaseRichSpout {
 //				in.close();
 //				out.close();
 //				timeClient.close();
-				Values latencyTuple = new Values();
-				latencyTuple.add(new String(SynefoConstant.QUERY_LATENCY_METRIC + ":" + receivedTimestamp));
-				for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
-					latencyTuple.add(null);
-				}
-				logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
-						") about to emit query-latency tuple: " + latencyTuple.toString());
-				for(int task : intActiveDownstreamTasks) {
-					collector.emitDirect(task, latencyTuple);
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+//				Values latencyTuple = new Values();
+//				latencyTuple.add(new String(SynefoConstant.QUERY_LATENCY_METRIC + ":" + receivedTimestamp));
+//				for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
+//					latencyTuple.add(null);
+//				}
+//				logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
+//						") about to emit query-latency tuple: " + latencyTuple.toString());
+//				for(int task : intActiveDownstreamTasks) {
+//					collector.emitDirect(task, latencyTuple);
+//				}
+//			} catch (IOException e) {
+//				e.printStackTrace();
+//			}
 			/**
 			 * Initiate operator latency sequence
 			 */
