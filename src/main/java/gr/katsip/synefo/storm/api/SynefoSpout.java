@@ -1,13 +1,13 @@
 package gr.katsip.synefo.storm.api;
 
-import java.io.BufferedReader;
+//import java.io.BufferedReader;
 import java.io.IOException;
 //import java.io.InputStream;
-import java.io.InputStreamReader;
+//import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 //import java.io.OutputStream;
-import java.io.PrintWriter;
+//import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -272,26 +272,55 @@ public class SynefoSpout extends BaseRichSpout {
 			 * Send out a QUERY_LATENCY_METRIC tuple to measure the latency per query
 			 */
 			try {
-				Socket timeClient = new Socket(synefoIP, 5556);
-//				OutputStream out = timeClient.getOutputStream();
-				PrintWriter out = new PrintWriter(timeClient.getOutputStream(), true);
-//				InputStream in = timeClient.getInputStream();
-				BufferedReader in = new BufferedReader(new InputStreamReader(timeClient.getInputStream()));
-//				byte[] buffer = new byte[8];
-//				Long receivedTimestamp = (long) 0;
-				Long receivedTimestamp = Long.parseLong(in.readLine());
-//				if(in.read(buffer) == 8) {
-//					ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
-//					receivedTimestamp = byteBuffer.getLong();
-//				}
-//				receivedTimestamp = (long) 1L;
-//				buffer = ByteBuffer.allocate(8).putLong(receivedTimestamp).array();
-				out.println("OK");
-//				out.write(buffer);
-				out.flush();
-				in.close();
-				out.close();
-				timeClient.close();
+				Socket socket;
+				ObjectOutputStream output = null;
+				ObjectInputStream input = null;
+				socket = null;
+				SynefoMessage msg = new SynefoMessage();
+				msg._type = Type.REG;
+				msg._values.put("TASK_TYPE", "TIME");
+				
+				socket = new Socket(synefoIP, synefoPort);
+				output = new ObjectOutputStream(socket.getOutputStream());
+				input = new ObjectInputStream(socket.getInputStream());
+				output.writeObject(msg);
+				output.flush();
+				msg = null;
+				Long receivedTimestamp = null;
+				try {
+					receivedTimestamp = (Long) input.readObject();
+				} catch (ClassNotFoundException e) {
+					e.printStackTrace();
+				}
+				/**
+				 * Closing channels of communication with 
+				 * SynEFO server
+				 */
+				output.flush();
+				output.close();
+				input.close();
+				socket.close();
+//				
+//				Socket timeClient = new Socket(synefoIP, 5556);
+////				OutputStream out = timeClient.getOutputStream();
+//				PrintWriter out = new PrintWriter(timeClient.getOutputStream(), true);
+////				InputStream in = timeClient.getInputStream();
+//				BufferedReader in = new BufferedReader(new InputStreamReader(timeClient.getInputStream()));
+////				byte[] buffer = new byte[8];
+////				Long receivedTimestamp = (long) 0;
+//				Long receivedTimestamp = Long.parseLong(in.readLine());
+////				if(in.read(buffer) == 8) {
+////					ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
+////					receivedTimestamp = byteBuffer.getLong();
+////				}
+////				receivedTimestamp = (long) 1L;
+////				buffer = ByteBuffer.allocate(8).putLong(receivedTimestamp).array();
+//				out.println("OK");
+////				out.write(buffer);
+//				out.flush();
+//				in.close();
+//				out.close();
+//				timeClient.close();
 				Values latencyTuple = new Values();
 				latencyTuple.add(new String(SynefoConstant.QUERY_LATENCY_METRIC + ":" + receivedTimestamp));
 				for(int i = 0; i < tupleProducer.getSchema().size(); i++) {

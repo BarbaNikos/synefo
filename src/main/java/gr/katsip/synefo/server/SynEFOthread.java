@@ -89,10 +89,25 @@ public class SynEFOthread implements Runnable {
 					queryId.set(Integer.parseInt(msg._values.get("QUERY_ID")));
 				topologyProcess();
 				break;
+			case "TIME":
+				timeProcess();
+				break;
 			default:
 				System.err.println("+efo worker: unrecognized connection (" +
 						_componentType + "). Terminating operation...");
 			}
+		}
+	}
+	
+	public void timeProcess() {
+		Long currentTimestamp = new Long(System.currentTimeMillis());
+		try {
+			output.writeObject(currentTimestamp);
+			output.flush();
+			input.close();
+			output.close();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 
