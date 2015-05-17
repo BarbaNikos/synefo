@@ -23,6 +23,7 @@ public class TimeServer implements Runnable {
 		while(true) {
 			try {
 				Socket client = server.accept();
+				System.out.println("synefo-time-server: accepted connection from: " + client.getInetAddress().getHostAddress());
 				Long time = new Long(System.currentTimeMillis());
 				byte[] buffer = ByteBuffer.allocate(8).putLong(time).array();
 				OutputStream output = client.getOutputStream();
