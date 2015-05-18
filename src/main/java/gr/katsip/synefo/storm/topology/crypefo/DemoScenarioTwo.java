@@ -166,7 +166,7 @@ public class DemoScenarioTwo {
 		_tmp.add("select_bolt_1");
 		_tmp.add("select_bolt_2");
 		topology.put("spout_data_1", new ArrayList<String>(_tmp));
-		ceDb.insertOperator("spout_data_1", "n/a", queryId, 1, 0, "SPOUT");
+		ceDb.insertOperator("spout_data_1", "n/a", queryId, 0, 1, "SPOUT");
 
 		punctuationTupleProducer = new CrypefoPunctuationTupleProducer(streamIPs[1], "spout_sps_2", zooIP + ":" + zooPort, 500);
 		punctuationTupleProducer.setSchema(new Fields(punctuationSpoutSchema));
@@ -176,7 +176,7 @@ public class DemoScenarioTwo {
 		_tmp = new ArrayList<String>();
 		_tmp.add("client_bolt");
 		topology.put("spout_sps_2", new ArrayList<String>(_tmp));
-		ceDb.insertOperator("spout_sps_2", "n/a", queryId, 1, 0, "SPOUT");
+		ceDb.insertOperator("spout_sps_2", "n/a", queryId, 0, 2, "SPOUT");
 
 		dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[1], 1, "spout_data_2", zooIP + ":" + zooPort, 500);
 		dataTupleProducer.setSchema(new Fields(dataSpoutSchema));
@@ -189,7 +189,7 @@ public class DemoScenarioTwo {
 		_tmp.add("select_bolt_3");
 		_tmp.add("select_bolt_4");
 		topology.put("spout_data_2", new ArrayList<String>(_tmp));
-		ceDb.insertOperator("spout_data_2", "n/a", queryId, 1, 0, "SPOUT");
+		ceDb.insertOperator("spout_data_2", "n/a", queryId, 0, 3, "SPOUT");
 
 
 		/**
@@ -221,7 +221,7 @@ public class DemoScenarioTwo {
 		topology.put("select_bolt_1", new ArrayList<String>(_tmp));
 		topology.put("select_bolt_2", new ArrayList<String>(_tmp));
 		ceDb.insertOperator("select_bolt_1", "n/a", queryId, 1, 0, "BOLT");
-		ceDb.insertOperator("select_bolt_2", "n/a", queryId, 1, 0, "BOLT");
+		ceDb.insertOperator("select_bolt_2", "n/a", queryId, 1, 1, "BOLT");
 
 		//From Stream 2
 
@@ -245,8 +245,8 @@ public class DemoScenarioTwo {
 		_tmp.add("join_bolt_2");
 		topology.put("select_bolt_3", new ArrayList<String>(_tmp));
 		topology.put("select_bolt_4", new ArrayList<String>(_tmp));
-		ceDb.insertOperator("select_bolt_3", "n/a", queryId, 1, 0, "BOLT");
-		ceDb.insertOperator("select_bolt_4", "n/a", queryId, 1, 0, "BOLT");
+		ceDb.insertOperator("select_bolt_3", "n/a", queryId, 1, 2, "BOLT");
+		ceDb.insertOperator("select_bolt_4", "n/a", queryId, 1, 3, "BOLT");
 
 		/**
 		 * Stage 2: Join Operator
@@ -279,8 +279,8 @@ public class DemoScenarioTwo {
 		_tmp.add("client_bolt");
 		topology.put("join_bolt_1", new ArrayList<String>(_tmp));
 		topology.put("join_bolt_2", new ArrayList<String>(_tmp));
-		ceDb.insertOperator("join_bolt_1", "n/a", queryId, 1, 0, "BOLT");
-		ceDb.insertOperator("join_bolt_2", "n/a", queryId, 1, 0, "BOLT");
+		ceDb.insertOperator("join_bolt_1", "n/a", queryId, 2, 0, "BOLT");
+		ceDb.insertOperator("join_bolt_2", "n/a", queryId, 2, 1, "BOLT");
 
 		/**
 		 * Stage 3: Client Bolt (project operator)
@@ -303,8 +303,8 @@ public class DemoScenarioTwo {
 						.directGrouping("spout_sps_1")
 						.directGrouping("spout_sps_2");
 		topology.put("client_bolt", new ArrayList<String>());
-		ceDb.insertOperator("client_bolt", "n/a", queryId, 1, 0, "BOLT");
-
+		ceDb.insertOperator("client_bolt", "n/a", queryId, 3, 0, "BOLT");
+		ceDb.insertOperatorAdjacencyList(queryId, topology);
 		/**
 		 * Notify SynEFO server about the 
 		 * Topology
