@@ -1,19 +1,13 @@
 package gr.katsip.synefo.storm.operators.crypstream;
 
 import gr.katsip.synefo.metric.TaskStatistics;
-import gr.katsip.synefo.storm.operators.AbstractOperator;
 import gr.katsip.synefo.storm.operators.AbstractStatOperator;
-
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Pattern;
-
-import org.apache.zookeeper.ZooKeeper;
-
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
@@ -53,8 +47,6 @@ public class modifiedJoinOperator<T extends Object> implements AbstractStatOpera
 	private Integer zooPort;
 
 	private String ID;
-
-	private ZooKeeper zk = null;
 	
 	private DataCollector dataSender = null;
 	
@@ -101,6 +93,9 @@ public class modifiedJoinOperator<T extends Object> implements AbstractStatOpera
 
 	@Override
 	public List<Values> execute(Fields fields, Values values) {
+		if(dataSender == null) {
+			dataSender = new DataCollector(zooIP, zooPort, statReportPeriod, ID);
+		}
 		String[] tpl = values.get(0).toString().split(Pattern.quote("//$$$//"));
 		values.remove(0);
 		for(int i=0;i<tpl.length;i++){
@@ -286,7 +281,7 @@ public class modifiedJoinOperator<T extends Object> implements AbstractStatOpera
 			Values values) {
 		if(dataSender == null) {
 			dataSender = new DataCollector(zooIP, zooPort, statReportPeriod, ID);
-		}		
+		}	
 		String[] tpl = values.get(0).toString().split(Pattern.quote("//$$$//"));
 		String[] encUse= tpl[tpl.length-1].split(" ");
 		for(int k =0;k<encUse.length;k++){
@@ -357,7 +352,6 @@ public class modifiedJoinOperator<T extends Object> implements AbstractStatOpera
 	@Override
 	public void updateOperatorName(String operatorName) {
 		this.ID = operatorName;
-
 	}
 	
 	public void updateData(TaskStatistics stats) {
@@ -414,6 +408,9 @@ public class modifiedJoinOperator<T extends Object> implements AbstractStatOpera
 		float sel = (float) 0.0;
 		String tuple = CPU + "," + memory + "," + latency + "," + 
 				throughput + "," + sel + ",0,0,0,0,0";
+		if(dataSender == null) {
+			dataSender = new DataCollector(zooIP, zooPort, statReportPeriod, ID);
+		}
 		dataSender.pushStatisticData(tuple.getBytes());
 	}
 
@@ -426,6 +423,9 @@ public class modifiedJoinOperator<T extends Object> implements AbstractStatOpera
 		float sel = (float) 0.0;
 		String tuple = CPU + "," + memory + "," + latency + "," + 
 				throughput + "," + sel + ",0,0,0,0,0";
+		if(dataSender == null) {
+			dataSender = new DataCollector(zooIP, zooPort, statReportPeriod, ID);
+		}
 		dataSender.pushStatisticData(tuple.getBytes());
 	}
 

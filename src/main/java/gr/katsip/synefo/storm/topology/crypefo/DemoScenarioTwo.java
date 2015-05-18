@@ -7,11 +7,8 @@ import gr.katsip.synefo.storm.api.SynefoSpout;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.operators.crypstream.Client;
 import gr.katsip.synefo.storm.operators.crypstream.Select;
-import gr.katsip.synefo.storm.operators.crypstream.Sum;
 import gr.katsip.synefo.storm.operators.crypstream.modifiedJoinOperator;
-import gr.katsip.synefo.storm.operators.relational.ProjectOperator;
 import gr.katsip.synefo.storm.operators.relational.StringComparator;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -23,17 +20,13 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
-
 import backtype.storm.Config;
-import backtype.storm.LocalCluster;
-//import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;
 import backtype.storm.generated.AlreadyAliveException;
 import backtype.storm.generated.InvalidTopologyException;
@@ -41,8 +34,6 @@ import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 
 public class DemoScenarioTwo {
-
-
 
 	public static void main(String[] args) throws UnknownHostException, IOException, 
 	InterruptedException, ClassNotFoundException, AlreadyAliveException, InvalidTopologyException {

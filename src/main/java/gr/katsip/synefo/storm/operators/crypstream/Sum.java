@@ -111,7 +111,6 @@ public class Sum implements AbstractStatOperator, Serializable {
 							byte[] data =zk.getData(path,false,null);
 							handleUpdate(new String(data));
 						} catch (KeeperException | InterruptedException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
 					}else if(event.getType() == null) {

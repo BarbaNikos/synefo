@@ -117,7 +117,6 @@ public class Count implements AbstractStatOperator, Serializable{
 						byte[] data =zk.getData(path,false,null);
 						handleUpdate(new String(data));
 					} catch (KeeperException | InterruptedException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				}else if(event.getType() == null) {
@@ -153,7 +152,8 @@ public class Count implements AbstractStatOperator, Serializable{
 			String[] encUse= tuples[tuples.length-1].split(" ");
 			for(int k =0;k<encUse.length;k++){
 				encryptionData.put(encUse[k], encryptionData.get(encUse[k])+1);
-			}updateData(statistics);
+			}
+			updateData(statistics);
 			return returnedTuples;
 		}
 		else{
@@ -180,7 +180,6 @@ public class Count implements AbstractStatOperator, Serializable{
 							byte[] data =zk.getData(path,false,null);
 							handleUpdate(new String(data));
 						} catch (KeeperException | InterruptedException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
 					}else if(event.getType() == null) {
