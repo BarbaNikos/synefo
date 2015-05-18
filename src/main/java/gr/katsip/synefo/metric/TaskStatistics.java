@@ -3,8 +3,6 @@ package gr.katsip.synefo.metric;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.util.LinkedList;
-
-//import java.lang.management.MemoryUsage;
 import com.sun.management.OperatingSystemMXBean;
 
 public class TaskStatistics implements Serializable {
@@ -190,7 +188,10 @@ public class TaskStatistics implements Serializable {
 
 	public void updateMemory() {
 		Runtime runtime = Runtime.getRuntime();
-		double memory = (runtime.totalMemory() - runtime.freeMemory()) / runtime.totalMemory();
+		/**
+		 * The formula below gives the percent of the maximum available memory to the JVM
+		 */
+		double memory = (double) (runtime.maxMemory() - runtime.totalMemory()) / runtime.maxMemory();
 		if(memorySamples == 0) {
 			this.memory = memory;
 			memorySamples += 1;
