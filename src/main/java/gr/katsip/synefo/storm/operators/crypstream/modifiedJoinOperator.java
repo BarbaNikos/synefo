@@ -108,10 +108,6 @@ public class modifiedJoinOperator<T extends Object> implements AbstractStatOpera
 			values.add(i, v);
 			
 		}
-		String[] encUse= tpl[tpl.length-1].split(" ");
-		for(int k =0;k<encUse.length;k++){
-			encryptionData.put(encUse[k], encryptionData.get(encUse[k])+1);
-		}
 		List<Values> result = new ArrayList<Values>();
 		if(fields.toList().equals(leftFieldSchema.toList())) {
 			for(Values rightStateTuple : rightRelation) {
@@ -290,9 +286,13 @@ public class modifiedJoinOperator<T extends Object> implements AbstractStatOpera
 			Values values) {
 		if(dataSender == null) {
 			dataSender = new DataCollector(zooIP, zooPort, statReportPeriod, ID);
+		}		
+		String[] tpl = values.get(0).toString().split(Pattern.quote("//$$$//"));
+		String[] encUse= tpl[tpl.length-1].split(" ");
+		for(int k =0;k<encUse.length;k++){
+			encryptionData.put(encUse[k], encryptionData.get(encUse[k])+1);
 		}
 		updateData(statistics);
-		String[] tpl = values.get(0).toString().split(Pattern.quote("//$$$//"));
 		values.remove(0);
 		for(int i=0;i<tpl.length;i++){
 			Values v = new Values(tpl[i]);
