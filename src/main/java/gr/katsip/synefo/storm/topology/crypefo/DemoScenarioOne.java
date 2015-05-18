@@ -86,7 +86,7 @@ public class DemoScenarioOne {
 		CEStormDatabaseManager ceDb = new CEStormDatabaseManager(dbServerIp, 
 				dbServerUser, dbServerPass);
 		Integer queryId = ceDb.insertQuery(1, 
-				"SELECT SUM(steps) FROM D1 WHERE lon=x AND lat=y");
+				"SELECT SUM(steps) FROM GPS_STREAM WHERE lon=x AND lat=y");
 		OperatorStatisticCollector statCollector = new OperatorStatisticCollector(zooIP + ":" + zooPort, 
 				dbServerIp, 
 				dbServerUser, dbServerPass, queryId);

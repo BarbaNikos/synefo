@@ -84,7 +84,7 @@ public class DemoScenarioTwo {
 		CEStormDatabaseManager ceDb = new CEStormDatabaseManager(dbServerIp, 
 				dbServerUser, dbServerPass);
 		Integer queryId = ceDb.insertQuery(1, 
-				"SELECT D1.name, D1.steps FROM D1, D2 WHERE D1.name = D2.name AND D1.steps > 100 AND D2.city = 'Pittsburgh'");
+				"SELECT GPS_STREAM.name, FITBIT_STREAM.steps FROM GPS_STREAM JOIN FITBIT_STREAM ON name WHERE FITBIT_STREAM.steps > 100 AND GPS_STREAM.city = 'Pittsburgh'");
 		OperatorStatisticCollector statCollector = new OperatorStatisticCollector(zooIP + ":" + zooPort, 
 				dbServerIp, 
 				dbServerUser, dbServerPass, queryId);
