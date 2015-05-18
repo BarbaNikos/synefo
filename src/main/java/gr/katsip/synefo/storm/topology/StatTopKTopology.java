@@ -155,7 +155,7 @@ public class StatTopKTopology {
 		 * Stage 0: Two input streams (spout_1, spout_2)
 		 */
 		StreamgenStatTupleProducer tupleProducer = new StreamgenStatTupleProducer(streamIPs[0], 
-				"spout_1", zooIP + ":" + zooPort, 500);
+				zooIP + ":" + zooPort, 500);
 		String[] spoutSchemaOne = { "one", "two", "three", "four", "five" };
 		tupleProducer.setSchema(new Fields(spoutSchemaOne));
 		builder.setSpout("spout_1", 
@@ -169,7 +169,7 @@ public class StatTopKTopology {
 		ceDb.insertOperator("spout_1", "n/a", queryId, 0, 4, "SPOUT");
 		
 		tupleProducer = new StreamgenStatTupleProducer(streamIPs[1], 
-				"spout_2", zooIP + ":" + zooPort, 500);
+				zooIP + ":" + zooPort, 500);
 		String[] spoutSchemaTwo = { "1", "2", "three", "4", "5" };
 		tupleProducer.setSchema(new Fields(spoutSchemaTwo));
 		builder.setSpout("spout_2", 

@@ -136,7 +136,7 @@ public class SerialOperatorTopology {
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
 		StreamgenStatTupleProducer tupleProducer = new StreamgenStatTupleProducer(streamIPs[0], 
-				"spout", zooIP + ":" + zooPort, 500);
+				zooIP + ":" + zooPort, 500);
 		String[] spoutSchema = { "one", "two", "three", "four", "five" };
 		tupleProducer.setSchema(new Fields(spoutSchema));
 		builder.setSpout("spout_1", 
@@ -150,7 +150,7 @@ public class SerialOperatorTopology {
 		 * Stage 1: Project Operators
 		 */
 		StatProjectOperator projectOperator = new StatProjectOperator(new Fields(spoutSchema), 
-				"project_1", zooIP + ":" + zooPort, 500);
+				zooIP + ":" + zooPort, 500);
 		projectOperator.setOutputSchema(new Fields(spoutSchema));
 		builder.setBolt("project_1", 
 				new OperatorBolt("project_1", synefoIP, synefoPort, projectOperator), 1)

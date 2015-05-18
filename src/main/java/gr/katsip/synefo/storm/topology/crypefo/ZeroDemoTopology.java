@@ -141,7 +141,7 @@ public class ZeroDemoTopology {
 		 */
 		String[] spoutSchema = { "num", "one", "two", "three", "four" };
 		StreamgenStatTupleProducer tupleProducer = new StreamgenStatTupleProducer(streamIPs[0], 
-				"spout", zooIP + ":" + zooPort, 500);
+				zooIP + ":" + zooPort, 500);
 		tupleProducer.setSchema(new Fields(spoutSchema));
 		builder.setSpout("spout", 
 				new SynefoSpout("spout", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)

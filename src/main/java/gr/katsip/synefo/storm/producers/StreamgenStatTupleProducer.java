@@ -37,11 +37,11 @@ public class StreamgenStatTupleProducer implements AbstractStatTupleProducer, Se
 	
 	private int statReportPeriod;
 
-	public StreamgenStatTupleProducer(String dataProviderIP, String producerName, 
+	public StreamgenStatTupleProducer(String dataProviderIP, 
 			String zooConnectionInfo, int statReportPeriod) {
 		dataProvider = null;
 		this.dataProviderIP = dataProviderIP;
-		this.producerName = producerName;
+		this.producerName = null;
 		this.zooConnectionInfo = zooConnectionInfo;
 		this.dataSender = null;
 		this.statReportPeriod = statReportPeriod;

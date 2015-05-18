@@ -34,13 +34,12 @@ public class StatProjectOperator implements AbstractStatOperator, Serializable {
 	
 	private String operatorName = null;
 	
-	public StatProjectOperator(Fields projectedAttributes, String zooConnectionInfo, 
-			String operatorName, int statReportPeriod) {
+	public StatProjectOperator(Fields projectedAttributes, String zooConnectionInfo, int statReportPeriod) {
 		this.projectedAttributes = new Fields(projectedAttributes.toList());
 		this.statReportPeriod = statReportPeriod;
 		this.zooConnectionInfo = zooConnectionInfo;
 		dataSender = null;
-		this.operatorName = operatorName;
+		this.operatorName = null;
 	}
 
 	@Override
