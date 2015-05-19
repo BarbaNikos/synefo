@@ -225,9 +225,6 @@ public class JoinOperator<T extends Object> implements AbstractOperator, Seriali
 		 * The following does not really make sense because the left relation might have 
 		 * a different schema compared to the right relation.
 		 */
-		//		List<String> schema = stateSchema.toList();
-		//		schema.add("timestamp");
-		//		this.stateSchema = new Fields(schema);
 	}
 
 }
