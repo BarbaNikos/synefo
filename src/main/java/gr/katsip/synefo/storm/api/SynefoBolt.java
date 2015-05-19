@@ -491,12 +491,16 @@ public class SynefoBolt extends BaseRichBolt {
 						scaleCommand + ", about to update routing tables (timestamp: " + System.currentTimeMillis() + ").");
 				if(action.toLowerCase().equals("activate")) {
 					if(activeDownstreamTasks.contains(taskWithIp) == false && intActiveDownstreamTasks.contains(task_id) == false) {
-						activeDownstreamTasks.add(taskWithIp);
-						intActiveDownstreamTasks.add(task_id);
+						if(activeDownstreamTasks.indexOf(taskWithIp) < 0)
+							activeDownstreamTasks.add(taskWithIp);
+						if(intActiveDownstreamTasks.indexOf(task_id) < 0)
+							intActiveDownstreamTasks.add(task_id);
 					}
 				}else if(action.toLowerCase().equals("deactivate")) {
-					activeDownstreamTasks.remove(activeDownstreamTasks.indexOf(taskWithIp));
-					intActiveDownstreamTasks.remove(intActiveDownstreamTasks.indexOf(task_id));
+					if(activeDownstreamTasks.indexOf(taskWithIp) >= 0)
+						activeDownstreamTasks.remove(activeDownstreamTasks.indexOf(taskWithIp));
+					if(intActiveDownstreamTasks.indexOf(task_id) >= 0)
+						intActiveDownstreamTasks.remove(intActiveDownstreamTasks.indexOf(task_id));
 				}
 				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + ") located scale-command: " + 
 						scaleCommand + ", updated routing tables: " + intActiveDownstreamTasks + 
@@ -506,8 +510,10 @@ public class SynefoBolt extends BaseRichBolt {
 						scaleCommand + ", about to produce punctuation tuple (timestamp: " + System.currentTimeMillis() + ").");
 				if(action.toLowerCase().contains("add")) {
 					if(activeDownstreamTasks.contains(taskWithIp) == false && intActiveDownstreamTasks.contains(task_id) == false) {
-						activeDownstreamTasks.add(taskWithIp);
-						intActiveDownstreamTasks.add(task_id);
+						if(activeDownstreamTasks.indexOf(taskWithIp) < 0)
+							activeDownstreamTasks.add(taskWithIp);
+						if(intActiveDownstreamTasks.indexOf(task_id) < 0)
+							intActiveDownstreamTasks.add(task_id);
 					}
 					strBuild.append(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.ADD_ACTION + "/");
 				}else if(action.toLowerCase().contains("remove")) {
