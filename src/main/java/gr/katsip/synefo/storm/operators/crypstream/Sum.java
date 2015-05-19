@@ -168,7 +168,7 @@ public class Sum implements AbstractStatOperator, Serializable {
 			}
 			if(type==0){
 				int ret = regSum(tuples);
-				summ.add(tuples[0]+"//$$$//SUM//$$$//"+ret);
+				summ.add(tuples[0]+"//$$$//SUM//$$$//"+ret+"//$$$//pln");
 				if(ret>0){
 					vals.add(summ);
 				}
@@ -177,7 +177,7 @@ public class Sum implements AbstractStatOperator, Serializable {
 				BigInteger z = multBigInt(tuples);
 				if (z.compareTo(BigInteger.ZERO)==1){
 					Values v = new Values();
-					v.add(tuples[0]+"//$$$//SUM//$$$//"+z);
+					v.add(tuples[0]+"//$$$//SUM//$$$//"+z+"//$$$//HOM");
 					vals.add(v);
 				}
 			}
