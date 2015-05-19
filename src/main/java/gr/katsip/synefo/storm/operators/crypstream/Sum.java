@@ -256,7 +256,7 @@ public class Sum implements AbstractStatOperator, Serializable {
 			List<Values> receivedStateValues) {
 		Integer receivedRegSum = (Integer) (receivedStateValues.get(0)).get(0);
 		sum += receivedRegSum;		
-		cryptoSum.add(new BigInteger(receivedStateValues.get(0).get(1).toString()));
+		cryptoSum.add(new BigInteger(receivedStateValues.get(1).get(0).toString()));
 	}
 
 	@Override
