@@ -97,7 +97,7 @@ public class Sum implements AbstractStatOperator, Serializable {
 		if(dataSender == null) {
 			dataSender = new DataCollector(zooIP, zooPort, statReportPeriod, ID);
 		}
-		if(SPSRetrieverWatcher==null){
+		if(SPSRetrieverWatcher==null) {
 			SPSRetrieverWatcher = new Watcher() {
 				@Override
 				public void process(WatchedEvent event) {
@@ -122,7 +122,7 @@ public class Sum implements AbstractStatOperator, Serializable {
 				}
 			};
 		}
-		if(getSPSCallback==null){
+		if(getSPSCallback==null) {
 			getSPSCallback = new DataCallback() {
 				@Override
 				public void processResult(int rc, String path, Object ctx, byte[] data,
@@ -150,7 +150,7 @@ public class Sum implements AbstractStatOperator, Serializable {
 
 			};
 		}
-		if(zk==null){
+		if(zk==null) {
 			try {
 				zk = new ZooKeeper(this.zooIP + ":" + this.zooPort, 100000, SPSRetrieverWatcher);
 			} catch (IOException e) {
@@ -187,8 +187,6 @@ public class Sum implements AbstractStatOperator, Serializable {
 		}
 	}
 
-
-
 	@Override
 	public  List<Values> execute(Fields fields, Values values) {
 		if(dataSender == null) {
@@ -214,7 +212,7 @@ public class Sum implements AbstractStatOperator, Serializable {
 		}
 	}
 
-	public BigInteger multBigInt(String[] tuples){
+	public BigInteger multBigInt(String[] tuples) {
 		counter++;
 		//System.out.println("Value: "+tuples[attribute]);
 		if(counter==size){
@@ -254,9 +252,14 @@ public class Sum implements AbstractStatOperator, Serializable {
 	@Override
 	public void mergeState(Fields receivedStateSchema,
 			List<Values> receivedStateValues) {
-		Integer receivedRegSum = (Integer) (receivedStateValues.get(0)).get(0);
-		sum += receivedRegSum;		
-		cryptoSum.add(new BigInteger(((BigInteger) receivedStateValues.get(1).get(0)).toByteArray()));
+		Values stateReceived = receivedStateValues.get(0);
+		Integer receivedRegSum = (Integer) stateReceived.get(0);
+		sum += receivedRegSum;
+		cryptoSum.add(new BigInteger(((BigInteger) stateReceived.get(1)).toByteArray()));
+		type = (int) stateReceived.get(2);
+//		Integer receivedRegSum = (Integer) (receivedStateValues.get(0)).get(0);
+//		sum += receivedRegSum;		
+//		cryptoSum.add(new BigInteger(((BigInteger) receivedStateValues.get(1).get(0)).toByteArray()));
 	}
 
 	@Override
@@ -267,12 +270,17 @@ public class Sum implements AbstractStatOperator, Serializable {
 	@Override
 	public List<Values> getStateValues() {
 		stateValues.clear();
-		Values newRegSum = new Values();
-		newRegSum.add(sum);
-		stateValues.add(newRegSum);
-		Values newCryptoSum = new Values();
-		newCryptoSum.add(cryptoSum);
-		stateValues.add(newCryptoSum);
+		Values stateToBeSent = new Values();
+		stateToBeSent.add(sum);
+		stateToBeSent.add(cryptoSum);
+		stateToBeSent.add(type);
+		stateValues.add(stateToBeSent);
+//		Values newRegSum = new Values();
+//		newRegSum.add(sum);
+//		stateValues.add(newRegSum);
+//		Values newCryptoSum = new Values();
+//		newCryptoSum.add(cryptoSum);
+//		stateValues.add(newCryptoSum);
 		return stateValues;
 	}
 

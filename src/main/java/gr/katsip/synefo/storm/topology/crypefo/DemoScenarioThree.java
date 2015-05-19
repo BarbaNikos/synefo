@@ -38,8 +38,6 @@ import backtype.storm.tuple.Fields;
 
 public class DemoScenarioThree {
 
-
-
 	public static void main(String[] args) throws UnknownHostException, IOException, 
 	InterruptedException, ClassNotFoundException, AlreadyAliveException, InvalidTopologyException {
 		String synefoIP = "";
@@ -189,13 +187,11 @@ public class DemoScenarioThree {
 				new SynefoSpout("spout_data_2", synefoIP, synefoPort, dataTupleProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
 
-
 		_tmp = new ArrayList<String>();
 		_tmp.add("select_bolt_3");
 		_tmp.add("select_bolt_4");
 		topology.put("spout_data_2", new ArrayList<String>(_tmp));
 		ceDb.insertOperator("spout_data_2", "n/a", queryId, 1, 0, "SPOUT");
-
 
 		/**
 		 * Stage 1: Select operators
