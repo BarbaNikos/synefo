@@ -446,11 +446,15 @@ public class Client implements AbstractStatOperator, Serializable {
 					encryptionData.get("HOM");
 
 			dataSender.addToBuffer(tuple);
-			encryptionData.put("pln",0);
-			encryptionData.put("DET",0);
-			encryptionData.put("RND",0);
-			encryptionData.put("OPE",0);
-			encryptionData.put("HOM",0);
+			if(statReportCount>statReportPeriod){
+				encryptionData.put("pln",0);
+				encryptionData.put("DET",0);
+				encryptionData.put("RND",0);
+				encryptionData.put("OPE",0);
+				encryptionData.put("HOM",0);
+				statReportCount=0;
+			}
+			statReportCount++;
 		}else {
 			String tuple = 	CPU + "," + memory + "," + latency + "," + 
 					throughput + "," + sel + "," + 
