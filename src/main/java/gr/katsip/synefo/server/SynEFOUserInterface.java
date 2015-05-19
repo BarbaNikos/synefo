@@ -90,7 +90,7 @@ public class SynEFOUserInterface implements Runnable {
 				/**
 				 * If the node is not active.
 				 */
-				if(beastMaster.scaleFunction.getActiveTopology().get(compOne).lastIndexOf(compTwo) < 0 && 
+				if(beastMaster.scaleFunction.getActiveTopology().containsKey(compOne) == true && beastMaster.scaleFunction.getActiveTopology().get(compOne).lastIndexOf(compTwo) < 0 && 
 						beastMaster.scaleFunction.getActiveTopology().containsKey(compTwo) == false) {
 					beastMaster.scaleFunction.addInactiveNode(compTwo);
 					String scaleOutCommand = "ADD~" + compTwo;
@@ -144,7 +144,7 @@ public class SynEFOUserInterface implements Runnable {
 				/**
 				 * If the node is active.
 				 */
-				if(beastMaster.scaleFunction.getActiveTopology().get(compOne).lastIndexOf(compTwo) >= 0 && 
+				if(beastMaster.scaleFunction.getActiveTopology().containsKey(compOne) == true && beastMaster.scaleFunction.getActiveTopology().get(compOne).lastIndexOf(compTwo) >= 0 && 
 						beastMaster.scaleFunction.getActiveTopology().containsKey(compTwo) == true) {
 					beastMaster.scaleFunction.removeActiveNode(compTwo);
 					String scaleInCommand = "REMOVE~" + compTwo;
