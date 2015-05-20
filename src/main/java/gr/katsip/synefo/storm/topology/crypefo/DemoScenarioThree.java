@@ -342,6 +342,7 @@ public class DemoScenarioThree {
 		 */
 		ArrayList<Integer> dataPs = new ArrayList<Integer>();
 		dataPs.add(1);
+		dataPs.add(2);
 		String[] attributes = { "Doctor" , "fit+app" };
 
 		//////fix below to match this scenario
