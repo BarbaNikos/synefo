@@ -5,9 +5,9 @@ import gr.katsip.cestorm.db.OperatorStatisticCollector;
 import gr.katsip.synefo.storm.api.SynefoBolt;
 import gr.katsip.synefo.storm.api.SynefoSpout;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
-import gr.katsip.synefo.storm.operators.relational.CountGroupByAggrOperator;
-import gr.katsip.synefo.storm.operators.relational.JoinOperator;
-import gr.katsip.synefo.storm.operators.relational.ProjectOperator;
+import gr.katsip.synefo.storm.operators.relational.StatCountGroupByOperator;
+import gr.katsip.synefo.storm.operators.relational.StatJoinOperator;
+import gr.katsip.synefo.storm.operators.relational.StatProjectOperator;
 import gr.katsip.synefo.storm.operators.relational.StringComparator;
 import gr.katsip.synefo.storm.producers.StreamgenStatTupleProducer;
 import java.io.BufferedReader;
@@ -42,12 +42,6 @@ import backtype.storm.tuple.Fields;
  * GROUP BY A.three, B.three
  * 
  * @author Nick R. Katsipoulakis
- *
- */
-
-/**
- * TODO: INCOMPLETE. Not all operators are stat-reporting operators
- * @author katsip
  *
  */
 public class StatTopKTopology {
@@ -185,19 +179,19 @@ public class StatTopKTopology {
 		/**
 		 * Stage 1: Project operators spout_1 => {project_1, 2, 3} / spout_3 => {project_4, 5, 6}
 		 */
-		ProjectOperator projectOperator = new ProjectOperator(new Fields(spoutSchemaOne));
+		StatProjectOperator projectOperator = new StatProjectOperator(new Fields(spoutSchemaOne), zooIP + ":" + zooPort, 500);
 		projectOperator.setOutputSchema(new Fields(spoutSchemaOne));
 		builder.setBolt("project_bolt_1", 
 				new SynefoBolt("project_bolt_1", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
 				.directGrouping("spout_1");
-		projectOperator = new ProjectOperator(new Fields(spoutSchemaOne));
+		projectOperator = new StatProjectOperator(new Fields(spoutSchemaOne), zooIP + ":" + zooPort, 500);
 		projectOperator.setOutputSchema(new Fields(spoutSchemaOne));
 		builder.setBolt("project_bolt_2", 
 				new SynefoBolt("project_bolt_2", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
 				.directGrouping("spout_1");
-		projectOperator = new ProjectOperator(new Fields(spoutSchemaOne));
+		projectOperator = new StatProjectOperator(new Fields(spoutSchemaOne), zooIP + ":" + zooPort, 500);
 		projectOperator.setOutputSchema(new Fields(spoutSchemaOne));
 		builder.setBolt("project_bolt_3", 
 				new SynefoBolt("project_bolt_3", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
@@ -218,8 +212,8 @@ public class StatTopKTopology {
 		/**
 		 * Stage 2: Join operators between project_bolt_1:3 (spout_1) and spout_2
 		 */
-		JoinOperator<String> joinOperator = new JoinOperator<String>(new StringComparator(), 500, "three", 
-				new Fields(spoutSchemaOne), new Fields(spoutSchemaTwo));
+		StatJoinOperator<String> joinOperator = new StatJoinOperator<String>(new StringComparator(), 500, "three", 
+				new Fields(spoutSchemaOne), new Fields(spoutSchemaTwo), zooIP + ":" + zooPort, 500);
 		builder.setBolt("join_bolt_1", 
 				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, 
 						joinOperator, zooIP, zooPort, true), 1)
@@ -228,8 +222,8 @@ public class StatTopKTopology {
 				.directGrouping("project_bolt_2")
 				.directGrouping("project_bolt_3")
 				.directGrouping("spout_2");
-		joinOperator = new JoinOperator<String>(new StringComparator(), 500, "three", 
-				new Fields(spoutSchemaOne), new Fields(spoutSchemaTwo));
+		joinOperator = new StatJoinOperator<String>(new StringComparator(), 500, "three", 
+				new Fields(spoutSchemaOne), new Fields(spoutSchemaTwo), zooIP + ":" + zooPort, 500);
 		builder.setBolt("join_bolt_2", 
 				new SynefoBolt("join_bolt_2", synefoIP, synefoPort, 
 						joinOperator, zooIP, zooPort, true), 1)
@@ -238,8 +232,8 @@ public class StatTopKTopology {
 				.directGrouping("project_bolt_2")
 				.directGrouping("project_bolt_3")
 				.directGrouping("spout_2");
-		joinOperator = new JoinOperator<String>(new StringComparator(), 500, "three", 
-				new Fields(spoutSchemaOne), new Fields(spoutSchemaTwo));
+		joinOperator = new StatJoinOperator<String>(new StringComparator(), 500, "three", 
+				new Fields(spoutSchemaOne), new Fields(spoutSchemaTwo), zooIP + ":" + zooPort, 500);
 		builder.setBolt("join_bolt_3", 
 				new SynefoBolt("join_bolt_3", synefoIP, synefoPort, 
 						joinOperator, zooIP, zooPort, true), 1)
@@ -266,7 +260,8 @@ public class StatTopKTopology {
 		String[] groupByAttributes = new String[joinOperator.getOutputSchema().toList().size()];
 		groupByAttributes = joinOperator.getOutputSchema().toList().toArray(groupByAttributes);
 		
-		CountGroupByAggrOperator countGroupByAggrOperator = new CountGroupByAggrOperator(500, groupByAttributes);
+		StatCountGroupByOperator countGroupByAggrOperator = new StatCountGroupByOperator(500, groupByAttributes, 
+				zooIP + ":" + zooPort, 500);
 		String[] countGroupBySchema = { "key", "count" };
 		String[] countGroupByStateSchema = { "key", "count", "time" };
 		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
@@ -278,7 +273,7 @@ public class StatTopKTopology {
 				.directGrouping("join_bolt_1")
 				.directGrouping("join_bolt_2")
 				.directGrouping("join_bolt_3");
-		countGroupByAggrOperator = new CountGroupByAggrOperator(500, groupByAttributes);
+		countGroupByAggrOperator = new StatCountGroupByOperator(500, groupByAttributes, zooIP + ":" + zooPort, 500);
 		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
 		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
 		builder.setBolt("count_group_by_bolt_2", 
@@ -288,7 +283,7 @@ public class StatTopKTopology {
 				.directGrouping("join_bolt_1")
 				.directGrouping("join_bolt_2")
 				.directGrouping("join_bolt_3");
-		countGroupByAggrOperator = new CountGroupByAggrOperator(500, groupByAttributes);
+		countGroupByAggrOperator = new StatCountGroupByOperator(500, groupByAttributes, zooIP + ":" + zooPort, 500);
 		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
 		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
 		builder.setBolt("count_group_by_bolt_3", 
@@ -310,7 +305,7 @@ public class StatTopKTopology {
 		/**
 		 * Stage 4: Drain Operator (project operator)
 		 */
-		projectOperator = new ProjectOperator(new Fields(countGroupBySchema));
+		projectOperator = new StatProjectOperator(new Fields(countGroupBySchema), zooIP + ":" + zooPort, 500);
 		projectOperator.setOutputSchema(new Fields(countGroupBySchema));
 		builder.setBolt("drain_bolt", 
 				new SynefoBolt("drain_bolt", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
