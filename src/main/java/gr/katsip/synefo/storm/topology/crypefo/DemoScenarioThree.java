@@ -7,6 +7,7 @@ import gr.katsip.synefo.storm.api.SynefoSpout;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.operators.crypstream.Client;
 import gr.katsip.synefo.storm.operators.crypstream.Select;
+import gr.katsip.synefo.storm.operators.crypstream.Sum;
 import gr.katsip.synefo.storm.operators.crypstream.modifiedJoinOperator;
 import gr.katsip.synefo.storm.operators.relational.StringComparator;
 
@@ -193,6 +194,29 @@ public class DemoScenarioThree {
 		topology.put("spout_data_2", new ArrayList<String>(_tmp));
 		ceDb.insertOperator("spout_data_2", "n/a", queryId, 1, 0, "SPOUT");
 
+	
+		 punctuationTupleProducer = new CrypefoPunctuationTupleProducer(streamIPs[2], "spout_sps_3", zooIP + ":" + zooPort, 500);
+		punctuationTupleProducer.setSchema(new Fields(punctuationSpoutSchema));
+		builder.setSpout("spout_sps_3", 
+				new SynefoSpout("spout_sps_3", synefoIP, synefoPort, punctuationTupleProducer, zooIP, zooPort), 1)
+				.setNumTasks(1);
+		_tmp = new ArrayList<String>();
+		_tmp.add("client_bolt_2");
+		topology.put("spout_sps_3", new ArrayList<String>(_tmp));
+		ceDb.insertOperator("spout_sps_3", "n/a", queryId, 0, 0, "SPOUT");
+
+		dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[2], 1, "spout_data_3", zooIP + ":" + zooPort, 500);
+		dataTupleProducer.setSchema(new Fields(dataSpoutSchema));
+		builder.setSpout("spout_data_3", 
+				new SynefoSpout("spout_data_3", synefoIP, synefoPort, dataTupleProducer, zooIP, zooPort), 1)
+				.setNumTasks(1);
+
+		_tmp = new ArrayList<String>();
+		_tmp.add("sum_bolt_1");
+		_tmp.add("sum_bolt_2");
+		topology.put("spout_data_3", new ArrayList<String>(_tmp));
+		ceDb.insertOperator("spout_data_3", "n/a", queryId, 1, 0, "SPOUT");
+		
 		/**
 		 * Stage 1: Select operators
 		 */
@@ -203,6 +227,7 @@ public class DemoScenarioThree {
 		returnSet.add(2);
 		Select selectOperator = new Select(returnSet, "100", 3, 3, 0, 500, "select_bolt_1", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
+		preds.add("1,"+selectOperator.getAttribute()+","+ selectOperator.getPredicate());
 		builder.setBolt("select_bolt_1", 
 				new SynefoBolt("select_bolt_1", synefoIP, synefoPort, selectOperator, 
 						zooIP, zooPort, false), 1)
@@ -211,6 +236,7 @@ public class DemoScenarioThree {
 		
 		selectOperator = new Select(returnSet, "100", 3, 3, 0, 500, "select_bolt_2", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
+		preds.add("1,"+selectOperator.getAttribute()+","+ selectOperator.getPredicate());
 		builder.setBolt("select_bolt_2", 
 				new SynefoBolt("select_bolt_2", synefoIP, synefoPort, selectOperator, 
 						zooIP, zooPort, false), 1)
@@ -228,6 +254,7 @@ public class DemoScenarioThree {
 
 		selectOperator = new Select(returnSet, "Pittsburgh", 3, 0, 0, 500, "select_bolt_3", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
+		preds.add("1,"+selectOperator.getAttribute()+","+ selectOperator.getPredicate());
 		builder.setBolt("select_bolt_3", 
 				new SynefoBolt("select_bolt_3", synefoIP, synefoPort, selectOperator, 
 						zooIP, zooPort, false), 1)
@@ -236,6 +263,7 @@ public class DemoScenarioThree {
 		returnSet = new ArrayList<Integer>();
 		selectOperator = new Select(returnSet, "Pittsburgh", 3, 0, 0, 500, "select_bolt_4", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
+		preds.add("1,"+selectOperator.getAttribute()+","+ selectOperator.getPredicate());
 		builder.setBolt("select_bolt_4", 
 				new SynefoBolt("select_bolt_4", synefoIP, synefoPort, selectOperator, 
 						zooIP, zooPort, false), 1)
@@ -249,6 +277,33 @@ public class DemoScenarioThree {
 		ceDb.insertOperator("select_bolt_3", "n/a", queryId, 1, 0, "BOLT");
 		ceDb.insertOperator("select_bolt_4", "n/a", queryId, 1, 0, "BOLT");
 
+		/**
+		 * Q1: Aggregate
+		 */
+		Sum sumOperator = new Sum(1, 50, 2, "sum_bolt_1", 500, zooIP, zooPort);
+		preds.add("1,"+sumOperator.getAttribute()+",none" );
+		sumOperator.setOutputSchema(new Fields(selectionOutputSchema));
+		builder.setBolt("sum_bolt_1", 
+				new SynefoBolt("sum_bolt_1", synefoIP, synefoPort, sumOperator, 
+						zooIP, zooPort, false), 1)
+						.setNumTasks(1)
+						.directGrouping("data_spout_3");
+		_tmp = new ArrayList<String>();
+		sumOperator = new Sum(1, 50, 2, "sum_bolt_2", 500, zooIP, zooPort);
+		preds.add("1,"+sumOperator.getAttribute()+",none" );
+		sumOperator.setOutputSchema(new Fields(selectionOutputSchema));
+		builder.setBolt("sum_bolt_2", 
+				new SynefoBolt("sum_bolt_2", synefoIP, synefoPort, sumOperator, 
+						zooIP, zooPort, false), 1)
+						.setNumTasks(1)
+						.directGrouping("data_spout_3");
+		_tmp = new ArrayList<String>();
+		_tmp.add("client_bolt_2");
+		topology.put("sum_bolt_1", new ArrayList<String>(_tmp));
+		topology.put("sum_bolt_2", new ArrayList<String>(_tmp));
+		ceDb.insertOperator("sum_bolt_1", "n/a", queryId, 3, 1, "BOLT");
+		ceDb.insertOperator("sum_bolt_2", "n/a", queryId, 3, 2, "BOLT");
+		
 		/**
 		 * Stage 2: Join Operator
 		 */
@@ -305,6 +360,21 @@ public class DemoScenarioThree {
 						.directGrouping("spout_sps_2");
 		topology.put("client_bolt", new ArrayList<String>());
 		ceDb.insertOperator("client_bolt", "n/a", queryId, 1, 0, "BOLT");
+		
+		clientOperator = new Client("client_bolt_2", "Fred", attributes, dataPs, 4, zooIP, zooPort, preds, 500);
+		clientOperator.setOutputSchema(new Fields(schema));
+		clientOperator.setStateSchema(new Fields(schema));
+		builder.setBolt("client_bolt_2", 
+				new SynefoBolt("client_bolt_2", synefoIP, synefoPort, 
+						clientOperator, zooIP, zooPort, false), 1)
+						.setNumTasks(1)
+						.directGrouping("sum_bolt_1")
+						.directGrouping("sum_bolt_2")
+						.directGrouping("spout_sps_3");
+		topology.put("client_bolt_2", new ArrayList<String>());
+		ceDb.insertOperator("client_bolt_2", "n/a", queryId, 1, 0, "BOLT");
+		ceDb.insertOperatorAdjacencyList(queryId, topology);
+
 
 		/**
 		 * Notify SynEFO server about the 

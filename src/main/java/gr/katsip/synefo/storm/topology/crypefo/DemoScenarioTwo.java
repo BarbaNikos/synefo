@@ -202,6 +202,7 @@ public class DemoScenarioTwo {
 		returnSet.add(2);
 		Select selectOperator = new Select(returnSet, "100", 3, 3, 0, 500, "select_bolt_1", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
+		preds.add("1,"+selectOperator.getAttribute()+","+ selectOperator.getPredicate());
 		builder.setBolt("select_bolt_1", 
 				new SynefoBolt("select_bolt_1", synefoIP, synefoPort, selectOperator, 
 						zooIP, zooPort, false), 1)
@@ -210,6 +211,7 @@ public class DemoScenarioTwo {
 		
 		selectOperator = new Select(returnSet, "100", 3, 3, 0, 500, "select_bolt_2", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
+		preds.add("1,"+selectOperator.getAttribute()+","+ selectOperator.getPredicate());
 		builder.setBolt("select_bolt_2", 
 				new SynefoBolt("select_bolt_2", synefoIP, synefoPort, selectOperator, 
 						zooIP, zooPort, false), 1)
@@ -227,6 +229,7 @@ public class DemoScenarioTwo {
 
 		selectOperator = new Select(returnSet, "Pittsburgh", 3, 0, 0, 500, "select_bolt_3", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
+		preds.add("1,"+selectOperator.getAttribute()+","+ selectOperator.getPredicate());
 		builder.setBolt("select_bolt_3", 
 				new SynefoBolt("select_bolt_3", synefoIP, synefoPort, selectOperator, 
 						zooIP, zooPort, false), 1)
@@ -235,6 +238,7 @@ public class DemoScenarioTwo {
 		returnSet = new ArrayList<Integer>();
 		selectOperator = new Select(returnSet, "Pittsburgh", 3, 0, 0, 500, "select_bolt_4", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
+		preds.add("1,"+selectOperator.getAttribute()+","+ selectOperator.getPredicate());
 		builder.setBolt("select_bolt_4", 
 				new SynefoBolt("select_bolt_4", synefoIP, synefoPort, selectOperator, 
 						zooIP, zooPort, false), 1)
