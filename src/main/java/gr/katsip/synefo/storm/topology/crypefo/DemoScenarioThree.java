@@ -287,7 +287,7 @@ public class DemoScenarioThree {
 				new SynefoBolt("sum_bolt_1", synefoIP, synefoPort, sumOperator, 
 						zooIP, zooPort, false), 1)
 						.setNumTasks(1)
-						.directGrouping("data_spout_3");
+						.directGrouping("spout_data_3");
 		_tmp = new ArrayList<String>();
 		sumOperator = new Sum(1, 50, 2, "sum_bolt_2", 500, zooIP, zooPort);
 		preds.add("1,"+sumOperator.getAttribute()+",none" );
@@ -296,7 +296,7 @@ public class DemoScenarioThree {
 				new SynefoBolt("sum_bolt_2", synefoIP, synefoPort, sumOperator, 
 						zooIP, zooPort, false), 1)
 						.setNumTasks(1)
-						.directGrouping("data_spout_3");
+						.directGrouping("spout_data_3");
 		_tmp = new ArrayList<String>();
 		_tmp.add("client_bolt_2");
 		topology.put("sum_bolt_1", new ArrayList<String>(_tmp));
