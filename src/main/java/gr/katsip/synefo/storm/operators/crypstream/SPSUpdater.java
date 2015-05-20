@@ -37,7 +37,7 @@ public class SPSUpdater implements Serializable {
 		}
 	};
 
-	public SPSUpdater(String zooIP, Integer zooPort){
+	public SPSUpdater(String zooIP, Integer zooPort) {
 		this.zooIP = zooIP;
 		this.zooPort = zooPort;
 		try {
@@ -61,7 +61,7 @@ public class SPSUpdater implements Serializable {
 	public void createChildNode(byte[] statBuffer) {
 		String nodePath = "/SPS";
 		zk.setData(nodePath, statBuffer, -1, setSPSCallback, statBuffer);
-		System.out.println("znode created for SPS");
+//		System.out.println("znode created for SPS");
 	}
 	
 	StatCallback setSPSCallback = new StatCallback() {
@@ -72,21 +72,21 @@ public class SPSUpdater implements Serializable {
 				byte[] statBuffer = (byte[]) ctx;
 				createChildNode(statBuffer);
 				logger.error("SPSUpdater.getDataCallback(): CONNECTIONLOSS for: " + path + ". Attempting again.");
-				System.out.println("SPSUpdater.getDataCallback(): CONNECTIONLOSS for: " + path + ". Attempting again.");
+//				System.out.println("SPSUpdater.getDataCallback(): CONNECTIONLOSS for: " + path + ". Attempting again.");
 				break;
 			case NONODE:
 				logger.error("SPSUpdater.getDataCallback(): NONODE with name: " + path);
-				System.out.println("SPSUpdater.getDataCallback(): NONODE with name: " + path);
+//				System.out.println("SPSUpdater.getDataCallback(): NONODE with name: " + path);
 				break;
 			case OK:
-				logger.info("SPSUpdater.getDataCallback(): OK data have been set successfully.");
-				System.out.println("SPSUpdater.getDataCallback(): OK data have been set successfully.");
+//				logger.info("SPSUpdater.getDataCallback(): OK data have been set successfully.");
+//				System.out.println("SPSUpdater.getDataCallback(): OK data have been set successfully.");
 				break;
 			default:
 				logger.error("SPSUpdater.getDataCallback(): Unexpected scenario: " + 
 						KeeperException.create(Code.get(rc), path));
-				System.out.println("SPSUpdater.getDataCallback(): Unexpected scenario: " + 
-						KeeperException.create(Code.get(rc), path));
+//				System.out.println("SPSUpdater.getDataCallback(): Unexpected scenario: " + 
+//						KeeperException.create(Code.get(rc), path));
 				break;
 			}
 		}

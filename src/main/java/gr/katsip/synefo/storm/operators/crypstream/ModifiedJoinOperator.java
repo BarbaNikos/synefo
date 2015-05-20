@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
-public class modifiedJoinOperator<T extends Object> implements AbstractStatOperator, Serializable {
+public class ModifiedJoinOperator<T extends Object> implements AbstractStatOperator, Serializable {
 
 	/**
 	 * 
@@ -56,7 +56,7 @@ public class modifiedJoinOperator<T extends Object> implements AbstractStatOpera
 	
 	private HashMap<String, Integer> encryptionData = new HashMap<String,Integer>();
 
-	public modifiedJoinOperator(String ID, Comparator<T> comparator, int window, String joinAttribute, 
+	public ModifiedJoinOperator(String ID, Comparator<T> comparator, int window, String joinAttribute, 
 			Fields leftFieldSchema, Fields rightFieldSchema, String zooIp, int zooPort, int statReportPeriod) {
 		this.window = window;
 		this.joinAttribute = joinAttribute;
@@ -101,7 +101,6 @@ public class modifiedJoinOperator<T extends Object> implements AbstractStatOpera
 		for(int i=0;i<tpl.length;i++){
 			Values v = new Values(tpl[i]);
 			values.add(i, v);
-			
 		}
 		List<Values> result = new ArrayList<Values>();
 		if(fields.toList().equals(leftFieldSchema.toList())) {
@@ -146,7 +145,7 @@ public class modifiedJoinOperator<T extends Object> implements AbstractStatOpera
 				rightRelation.add(v);
 			}
 		}
-		if(result.size()>0){
+		if(result.size()>0) {
 			String res = ""+result.get(0);
 			result.remove(0);
 			for(int i=0;i<result.size();i++){
@@ -271,9 +270,6 @@ public class modifiedJoinOperator<T extends Object> implements AbstractStatOpera
 		 * The following does not really make sense because the left relation might have 
 		 * a different schema compared to the right relation.
 		 */
-		//		List<String> schema = stateSchema.toList();
-		//		schema.add("timestamp");
-		//		this.stateSchema = new Fields(schema);
 	}
 
 	@Override
@@ -284,12 +280,12 @@ public class modifiedJoinOperator<T extends Object> implements AbstractStatOpera
 		}	
 		String[] tpl = values.get(0).toString().split(Pattern.quote("//$$$//"));
 		String[] encUse= tpl[tpl.length-1].split(" ");
-		for(int k =0;k<encUse.length;k++){
+		for(int k = 0; k < encUse.length; k++) {
 			encryptionData.put(encUse[k], encryptionData.get(encUse[k])+1);
 		}
 		updateData(statistics);
 		values.remove(0);
-		for(int i=0;i<tpl.length;i++){
+		for(int i = 0; i < tpl.length; i++) {
 			Values v = new Values(tpl[i]);
 			values.add(i, v);
 			
@@ -369,10 +365,8 @@ public class modifiedJoinOperator<T extends Object> implements AbstractStatOpera
 					encryptionData.get("RND") + "," +
 					encryptionData.get("OPE") + ","  + 
 					encryptionData.get("HOM");
-
-			//System.out.println(tuple);
 			dataSender.addToBuffer(tuple);
-			if(statReportCount>statReportPeriod){
+			if(statReportCount>statReportPeriod) {
 				encryptionData.put("pln",0);
 				encryptionData.put("DET",0);
 				encryptionData.put("RND",0);

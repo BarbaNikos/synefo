@@ -41,14 +41,10 @@ public class OperatorStatisticCollector {
 			 * When you retrieve the path, call the getDataAndWatch() function to 
 			 * retrieve data and set watch again
 			 */
-//			System.out.println("Received event type: " + event.getType());
 			if(event.getType() == Event.EventType.NodeDataChanged) {
-				//Retrieve operator
-//				System.out.println("NodeDataChanged event: " + path);
 				String operator = path.substring(path.lastIndexOf("/") + 1, path.length());
 				getDataAndWatch(operator);
 			}else if(event.getType() == Event.EventType.NodeChildrenChanged) {
-				//Retrieve new children
 				getChildrenAndWatch();
 			}
 		}
@@ -125,8 +121,7 @@ public class OperatorStatisticCollector {
 				/**
 				 * children received
 				 */
-				System.out.println("getChildrenCallback: " + Arrays.toString(children.toArray()));
-				
+				System.out.println("getChildrenCallback() returned nodes: " + Arrays.toString(children.toArray()));
 				List<String> childrenDifference = new ArrayList<String>(children);
 				childrenDifference.removeAll(operators);
 				operators.addAllAbsent(children);
@@ -162,8 +157,6 @@ public class OperatorStatisticCollector {
 				System.out.println("getDataCallback(): NONODE");
 				break;
 			case OK:
-//				System.out.println("getDataCallback(): Successfully retrieved stats { " + 
-//						new String(data) + " } for operator: " + (String) ctx);
 				String readableData = new String(data);
 				String operatorIdentifier = (String) ctx;
 				if(readableData.contains("/data") == true)

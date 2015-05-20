@@ -7,7 +7,7 @@ import gr.katsip.synefo.storm.api.SynefoSpout;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.operators.crypstream.Client;
 import gr.katsip.synefo.storm.operators.crypstream.Select;
-import gr.katsip.synefo.storm.operators.crypstream.modifiedJoinOperator;
+import gr.katsip.synefo.storm.operators.crypstream.ModifiedJoinOperator;
 import gr.katsip.synefo.storm.operators.relational.StringComparator;
 import java.io.BufferedReader;
 import java.io.File;
@@ -258,7 +258,7 @@ public class DemoScenarioTwo {
 
 		String[] vals_left = {"id","name", "stairs_climed", "steps", "blood_pressure", "lon", "lat"};
 		String[] vals_right = {"id","unique","name","city"};
-		modifiedJoinOperator<String> joinOperator = new modifiedJoinOperator<String>("join_bolt_1",new StringComparator(), 100, "name", 
+		ModifiedJoinOperator<String> joinOperator = new ModifiedJoinOperator<String>("join_bolt_1",new StringComparator(), 100, "name", 
 				new Fields(vals_left), new Fields(vals_right), zooIP, zooPort, 500);
 		builder.setBolt("join_bolt_1", 
 				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, 
@@ -268,7 +268,7 @@ public class DemoScenarioTwo {
 						.directGrouping("select_bolt_2")
 						.directGrouping("select_bolt_3")
 						.directGrouping("select_bolt_4");
-		joinOperator = new modifiedJoinOperator<String>("join_bolt_2",new StringComparator(), 100, "two", 
+		joinOperator = new ModifiedJoinOperator<String>("join_bolt_2",new StringComparator(), 100, "two", 
 				new Fields(vals_left), new Fields(vals_right), zooIP, zooPort, 500);
 		builder.setBolt("join_bolt_2", 
 				new SynefoBolt("join_bolt_2", synefoIP, synefoPort, 
