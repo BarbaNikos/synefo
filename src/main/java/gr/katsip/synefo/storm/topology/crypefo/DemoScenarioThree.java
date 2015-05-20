@@ -205,7 +205,7 @@ public class DemoScenarioThree {
 		topology.put("spout_sps_3", new ArrayList<String>(_tmp));
 		ceDb.insertOperator("spout_sps_3", "n/a", queryId, 0, 4, "SPOUT");
 
-		dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[2], 1, "spout_data_3", zooIP + ":" + zooPort, 500);
+		dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[2], 2, "spout_data_3", zooIP + ":" + zooPort, 500);
 		dataTupleProducer.setSchema(new Fields(dataSpoutSchema));
 		builder.setSpout("spout_data_3", 
 				new SynefoSpout("spout_data_3", synefoIP, synefoPort, dataTupleProducer, zooIP, zooPort), 1)
@@ -281,7 +281,7 @@ public class DemoScenarioThree {
 		 * Q1: Aggregate
 		 */
 		Sum sumOperator = new Sum(1, 50, 2, "sum_bolt_1", 500, zooIP, zooPort);
-		preds.add("1," + sumOperator.getAttribute() + ",none");
+		preds.add("2," + sumOperator.getAttribute() + ",none");
 		sumOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("sum_bolt_1", 
 				new SynefoBolt("sum_bolt_1", synefoIP, synefoPort, sumOperator, 
@@ -290,7 +290,7 @@ public class DemoScenarioThree {
 						.directGrouping("spout_data_3");
 		_tmp = new ArrayList<String>();
 		sumOperator = new Sum(1, 50, 2, "sum_bolt_2", 500, zooIP, zooPort);
-		preds.add("1," + sumOperator.getAttribute() + ",none");
+		preds.add("2," + sumOperator.getAttribute() + ",none");
 		sumOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("sum_bolt_2", 
 				new SynefoBolt("sum_bolt_2", synefoIP, synefoPort, sumOperator, 
