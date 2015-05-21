@@ -211,7 +211,7 @@ public class Client implements AbstractStatOperator, Serializable {
 	}
 
 	public void processNormal(String tuple) {
-		String[] tuples = tuple.split(Pattern.quote("//$$$//"));
+		String[] tuples = tuple.split(Pattern.quote(","));
 		String finalTuple="";
 		int clientID = Integer.parseInt(tuples[0]);
 //		System.out.println("tup: "+tuple);
