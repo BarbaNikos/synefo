@@ -164,7 +164,7 @@ public class SerialOperatorTopology {
 		/**
 		 * Stage 2: Join operators
 		 */
-		StatJoinOperator<String> joinOperator = new StatJoinOperator<String>(new StringComparator(), 100, "three", 
+		StatJoinOperator<String> joinOperator = new StatJoinOperator<String>(new StringComparator(), 1000, "three", 
 				new Fields(spoutSchema), new Fields(spoutSchema), zooIP + ":" + zooPort, 500);
 		builder.setBolt("join_1", 
 				new OperatorBolt("join_1", synefoIP, synefoPort, joinOperator), 1)
@@ -180,7 +180,7 @@ public class SerialOperatorTopology {
 		 */
 		String[] groupByAttributes = new String[joinOperator.getOutputSchema().toList().size()];
 		groupByAttributes = joinOperator.getOutputSchema().toList().toArray(groupByAttributes);
-		StatCountGroupByOperator countGroupByAggrOperator = new StatCountGroupByOperator(100, 
+		StatCountGroupByOperator countGroupByAggrOperator = new StatCountGroupByOperator(1000, 
 				groupByAttributes, zooIP + ":" + zooPort, 500);
 		String[] countGroupBySchema = { "key", "count" };
 		String[] countGroupByStateSchema = { "key", "count", "time" };

@@ -213,7 +213,8 @@ public class TaskStatistics implements Serializable {
 		/**
 		 * The formula below gives the percent of the maximum available memory to the JVM
 		 */
-		memory = (double) (runtime.maxMemory() - runtime.totalMemory()) / runtime.maxMemory();
+//		memory = (double) (runtime.maxMemory() - runtime.totalMemory()) / runtime.maxMemory();
+		memory = (double) runtime.totalMemory() / runtime.maxMemory();
 		if(memorySampleWindow.size() >= sampleWindowSize) {
 			Double removedValue = memorySampleWindow.poll();
 			runningMemoryWindowSum -= removedValue;
