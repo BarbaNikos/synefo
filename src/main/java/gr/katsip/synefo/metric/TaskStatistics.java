@@ -3,8 +3,10 @@ package gr.katsip.synefo.metric;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.util.LinkedList;
+
 import com.sun.management.OperatingSystemMXBean;
 
+@SuppressWarnings("restriction")
 public class TaskStatistics implements Serializable {
 
 	/**
@@ -223,7 +225,8 @@ public class TaskStatistics implements Serializable {
 		double cpu_load = 0.0;
 		OperatingSystemMXBean bean = (com.sun.management.OperatingSystemMXBean) ManagementFactory
 				.getOperatingSystemMXBean();
-		cpu_load = bean.getProcessCpuLoad();
+//		cpu_load = bean.getProcessCpuLoad();
+		cpu_load = bean.getSystemCpuLoad();
 		if(cpuSamples == 0) {
 			this.cpuLoad = cpu_load;
 			cpuSamples += 1;

@@ -402,7 +402,7 @@ public class DemoScenarioThree {
 		synEFOSocket.close();
 
 		conf.setDebug(false);
-		conf.setNumWorkers(11);
+		conf.setNumWorkers(16);
 		StormSubmitter.submitTopology("crypefo-demo-3", conf, builder.createTopology());
 		statCollector.init();
 	}
