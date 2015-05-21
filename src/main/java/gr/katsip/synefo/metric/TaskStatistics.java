@@ -43,16 +43,20 @@ public class TaskStatistics implements Serializable {
 	private Long runningLatencyWindowSum;
 
 	private double memory;
-
-	private long memorySamples;
+	
+	private LinkedList<Double> memorySampleWindow;
+	
+	private Double runningMemoryWindowSum;
 
 	private double inputRate;
 
 	private long inputRateSamples;
+	
+	private LinkedList<Double> cpuSampleWindow;
+	
+	private Double runningCpuWindowSum;
 
 	private double cpuLoad;
-
-	private long cpuSamples;
 
 	public TaskStatistics() {
 		selectivity = 0.0;
@@ -62,15 +66,17 @@ public class TaskStatistics implements Serializable {
 		throughput = 0;
 		throughputSamples = 0;
 		memory = 0.0;
-		memorySamples = 0;
 		inputRate = 0.0;
 		inputRateSamples = 0;
 		cpuLoad = 0.0;
-		cpuSamples = 0;
 		throughputSampleWindow = new LinkedList<Double>();
 		runningThroughputWindowSum = 0.0;
 		latencySampleWindow = new LinkedList<Long>();
 		runningLatencyWindowSum = 0L;
+		cpuSampleWindow = new LinkedList<Double>();
+		runningCpuWindowSum = 0.0;
+		memorySampleWindow = new LinkedList<Double>();
+		runningMemoryWindowSum = 0.0;
 	}
 
 	public void updateSelectivity(double selectivity) {
@@ -173,6 +179,18 @@ public class TaskStatistics implements Serializable {
 		latencySampleWindow.offer(this.latency);
 		runningLatencyWindowSum += this.latency;
 	}
+	
+	public void updateCpuLoad() {
+		OperatingSystemMXBean bean = (com.sun.management.OperatingSystemMXBean) ManagementFactory
+				.getOperatingSystemMXBean();
+		this.cpuLoad = bean.getSystemCpuLoad();
+		if(cpuSampleWindow.size() >= sampleWindowSize) {
+			Double removedValue = cpuSampleWindow.poll();
+			runningCpuWindowSum -= removedValue;
+		}
+		cpuSampleWindow.offer(cpuLoad);
+		runningCpuWindowSum += cpuLoad;
+	}
 
 	public double getThroughput() {
 		return throughput;
@@ -180,12 +198,14 @@ public class TaskStatistics implements Serializable {
 
 	public double getWindowThroughput() {
 		return throughputSampleWindow.size() > 0 ? (runningThroughputWindowSum / throughputSampleWindow.size()) : 0;
-//		return (runningThroughputWindowSum / throughputSampleWindow.size());
 	}
 	
 	public long getWindowLatency() {
 		return latencySampleWindow.size() > 0 ? (runningLatencyWindowSum / latencySampleWindow.size()) : 0;
-//		return (runningLatencyWindowSum / latencySampleWindow.size());
+	}
+
+	public double getCpuLoad() {
+		return cpuSampleWindow.size() > 0 ? (runningCpuWindowSum / cpuSampleWindow.size()) : 0.0;
 	}
 
 	public void updateMemory() {
@@ -193,18 +213,17 @@ public class TaskStatistics implements Serializable {
 		/**
 		 * The formula below gives the percent of the maximum available memory to the JVM
 		 */
-		double memory = (double) (runtime.maxMemory() - runtime.totalMemory()) / runtime.maxMemory();
-		if(memorySamples == 0) {
-			this.memory = memory;
-			memorySamples += 1;
-		}else {
-			this.memory = this.memory + (memory - this.memory)/(memorySamples + 1);
-			memorySamples += 1;
+		memory = (double) (runtime.maxMemory() - runtime.totalMemory()) / runtime.maxMemory();
+		if(memorySampleWindow.size() >= sampleWindowSize) {
+			Double removedValue = memorySampleWindow.poll();
+			runningMemoryWindowSum -= removedValue;
 		}
+		memorySampleWindow.offer(memory);
+		runningMemoryWindowSum += memory;
 	}
 
 	public double getMemory() {
-		return memory;
+		return memorySampleWindow.size() > 0 ? (runningMemoryWindowSum / memorySampleWindow.size()) : 0.0;
 	}
 
 	public void updateInputRate(double input_rate) {
@@ -221,25 +240,6 @@ public class TaskStatistics implements Serializable {
 		return inputRate;
 	}
 
-	public void updateCpuLoad() {
-		double cpu_load = 0.0;
-		OperatingSystemMXBean bean = (com.sun.management.OperatingSystemMXBean) ManagementFactory
-				.getOperatingSystemMXBean();
-//		cpu_load = bean.getProcessCpuLoad();
-		cpu_load = bean.getSystemCpuLoad();
-		if(cpuSamples == 0) {
-			this.cpuLoad = cpu_load;
-			cpuSamples += 1;
-		}else {
-			this.cpuLoad = Math.abs(this.cpuLoad + (cpu_load - this.cpuLoad)/(cpuSamples + 1));
-			cpuSamples += 1;
-		}
-	}
-
-	public double getCpuLoad() {
-		return cpuLoad;
-	}
-
 	public void resetStatistics() {
 		selectivity = 0.0;
 		selectivitySamples = 0;
@@ -248,11 +248,17 @@ public class TaskStatistics implements Serializable {
 		throughput = 0;
 		throughputSamples = 0;
 		memory = 0.0;
-		memorySamples = 0;
 		inputRate = 0.0;
 		inputRateSamples = 0;
 		cpuLoad = 0.0;
-		cpuSamples = 0;
+		throughputSampleWindow = new LinkedList<Double>();
+		runningThroughputWindowSum = 0.0;
+		latencySampleWindow = new LinkedList<Long>();
+		runningLatencyWindowSum = 0L;
+		cpuSampleWindow = new LinkedList<Double>();
+		runningCpuWindowSum = 0.0;
+		memorySampleWindow = new LinkedList<Double>();
+		runningMemoryWindowSum = 0.0;
 	}
 
 	@Override
