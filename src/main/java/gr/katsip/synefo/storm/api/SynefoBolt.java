@@ -396,8 +396,8 @@ public class SynefoBolt extends BaseRichBolt {
 						for(int i = 0; i < v.size(); i++) {
 							produced_values.add(v.get(i));
 						}
-						logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + 
-								this.taskIP + ") emits: " + produced_values);
+//						logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + 
+//								this.taskIP + ") emits: " + produced_values);
 					}
 				}
 				statistics.updateSelectivity(( (double) returnedTuples.size() / 1.0));

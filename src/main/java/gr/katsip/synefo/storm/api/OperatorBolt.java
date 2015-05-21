@@ -238,8 +238,8 @@ public class OperatorBolt extends BaseRichBolt {
 						for(int i = 0; i < v.size(); i++) {
 							produced_values.add(v.get(i));
 						}
-						logger.info("OPERATOR-BOLT (" + this.taskName + ":" + taskId + "@" + 
-								this.taskIP + ") emits: " + produced_values);
+//						logger.info("OPERATOR-BOLT (" + this.taskName + ":" + taskId + "@" + 
+//								this.taskIP + ") emits: " + produced_values);
 					}
 				}
 				statistics.updateSelectivity(( (double) returnedTuples.size() / 1.0));
