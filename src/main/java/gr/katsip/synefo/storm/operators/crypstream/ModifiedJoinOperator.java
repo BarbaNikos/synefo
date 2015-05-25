@@ -152,7 +152,6 @@ public class ModifiedJoinOperator<T extends Object> implements AbstractStatOpera
 				res = res + "//$$$//"+ result.get(i);
 				result.remove(i);
 			}
-			System.out.println("Res: "+res);
 			result.add(0, new Values(res));
 		}
 		return result;
@@ -263,7 +262,7 @@ public class ModifiedJoinOperator<T extends Object> implements AbstractStatOpera
 		for(String field : this.rightFieldSchema.toList()) {
 			outputSchema.add("r." + field);
 		}*/
-		output_schema = new Fields(outputSchema);
+		output_schema = new Fields(_output_schema.toList());
 	}
 
 	@Override
@@ -347,6 +346,7 @@ public class ModifiedJoinOperator<T extends Object> implements AbstractStatOpera
 				res = res + "//$$$//"+ result.get(i);
 				result.remove(i);
 			}
+			System.out.println("Res: "+res);
 			result.add(0, new Values(res));
 		}
 		return result;
