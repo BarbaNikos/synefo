@@ -1,8 +1,11 @@
 package gr.katsip.cestorm.db;
 
+import gr.katsip.cestorm.db.ExperimentReplayer.CrypefoEvent;
 import gr.katsip.cestorm.db.ExperimentReplayer.Operator;
 import gr.katsip.cestorm.db.ExperimentReplayer.OperatorAdjacencyListEntry;
 import gr.katsip.cestorm.db.ExperimentReplayer.Query;
+import gr.katsip.cestorm.db.ExperimentReplayer.ScaleEvent;
+import gr.katsip.cestorm.db.ExperimentReplayer.Statistic;
 import gr.katsip.cestorm.db.ExperimentReplayer.TopologyOperatorEntry;
 
 import java.io.BufferedReader;
@@ -10,6 +13,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.TreeMap;
 
 public class ExperimentReplayMain {
 
@@ -68,7 +73,22 @@ public class ExperimentReplayMain {
 		for(TopologyOperatorEntry topologyOperatorEntry : topologyOperatorInitial) {
 			System.out.println("operator_id: " + topologyOperatorEntry.operatorId + ", status: " + topologyOperatorEntry.status + ", start_time: " + topologyOperatorEntry.startTime);
 		}
-		
+		TreeMap<Long, ArrayList<CrypefoEvent>> timeEvents = replayer.getTimeEvents();
+		Iterator<Long> itr = timeEvents.keySet().iterator();
+		while(itr.hasNext()) {
+			Long timestamp = itr.next();
+			System.out.println("Timestamp: " + timestamp);
+			ArrayList<CrypefoEvent> events = timeEvents.get(timestamp);
+			for(CrypefoEvent event : events) {
+				if(event instanceof ExperimentReplayer.ScaleEvent) {
+					ScaleEvent scaleEvent = (ScaleEvent) event;
+					System.out.println("\t" + scaleEvent.toString());
+				}else {
+					Statistic statistic = (Statistic) event;
+					System.out.println("\t" + statistic.toString());
+				}
+			}
+		}
 		replayer.destroyConnection();
 	}
 
