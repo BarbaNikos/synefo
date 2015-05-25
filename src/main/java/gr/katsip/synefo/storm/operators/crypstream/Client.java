@@ -215,7 +215,7 @@ public class Client implements AbstractStatOperator, Serializable {
 	public void processNormal(String tuple) {
 		String[] tuples = tuple.split(Pattern.quote(","));
 		String finalTuple="";
-		int clientID = Integer.parseInt(tuples[0]);
+		int clientID = Integer.parseInt(tuples[0].replaceAll("\\[", "").replaceAll("\\]",""));
 //		System.out.println("tup: "+tuple);
 		for(int i=1;i<tuples.length;i++) {
 			//System.out.println(subscriptions.get(clientID).get(i)+" "+i);
@@ -224,7 +224,7 @@ public class Client implements AbstractStatOperator, Serializable {
 			}else if(subscriptions.get(clientID).get(i) == 1) {
 
 			}else if(subscriptions.get(clientID).get(i) == 2) {
-				String result = new String(decryptDetermine(tuples[i].getBytes(),keys.get(clientID).get(i)));
+				String result = new String(decryptDetermine(tuples[i].replaceAll("\\[", "").replaceAll("\\]","").getBytes(),keys.get(clientID).get(i)));
 				finalTuple = finalTuple + ", " + result;
 				//System.out.println(finalTuple);
 			}else if(subscriptions.get(clientID).get(i) == 3) {
