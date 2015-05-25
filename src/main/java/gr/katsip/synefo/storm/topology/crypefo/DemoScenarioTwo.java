@@ -259,7 +259,7 @@ public class DemoScenarioTwo {
 		String[] vals_left = {"id","name", "stairs_climed", "steps", "blood_pressure", "lon", "lat"};
 		String[] vals_right = {"id","unique","name","city"};
 		ModifiedJoinOperator<String> joinOperator = new ModifiedJoinOperator<String>("join_bolt_1",new StringComparator(), 100, "name", 
-				new Fields(vals_left), new Fields(vals_right), zooIP, zooPort, 500);
+				new Fields(vals_left), new Fields(vals_right), zooIP, zooPort, 50);
 		joinOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("join_bolt_1", 
 				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, 
@@ -270,7 +270,7 @@ public class DemoScenarioTwo {
 						.directGrouping("select_bolt_3")
 						.directGrouping("select_bolt_4");
 		joinOperator = new ModifiedJoinOperator<String>("join_bolt_2",new StringComparator(), 100, "name", 
-				new Fields(vals_left), new Fields(vals_right), zooIP, zooPort, 500);
+				new Fields(vals_left), new Fields(vals_right), zooIP, zooPort, 50);
 		joinOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("join_bolt_2", 
 				new SynefoBolt("join_bolt_2", synefoIP, synefoPort, 
@@ -296,7 +296,7 @@ public class DemoScenarioTwo {
 		String[] attributes = {"Doctor", "fit+app"};
 
 		//////fix below to match this scenario
-		Client clientOperator = new Client("client_bolt", "Fred", attributes, dataPs, 4, zooIP, zooPort, preds, 500);
+		Client clientOperator = new Client("client_bolt", "Fred", attributes, dataPs, 4, zooIP, zooPort, preds, 50);
 		String[] schema = {"tuple", "crap"};
 		clientOperator.setOutputSchema(new Fields(schema));
 		clientOperator.setStateSchema(new Fields(schema));
