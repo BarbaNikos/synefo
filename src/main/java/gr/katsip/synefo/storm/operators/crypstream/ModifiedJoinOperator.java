@@ -203,13 +203,13 @@ public class ModifiedJoinOperator<T extends Object> implements AbstractStatOpera
 	@Override
 	public Fields getOutputSchema() {
 		List<String> outputSchema = new ArrayList<String>();
-		for(String field : this.leftFieldSchema.toList()) {
-			outputSchema.add("l." + field);
-		}
-		for(String field : this.rightFieldSchema.toList()) {
-			outputSchema.add("r." + field);
-		}
-		output_schema = new Fields(outputSchema);
+//		for(String field : this.leftFieldSchema.toList()) {
+//			outputSchema.add("l." + field);
+//		}
+//		for(String field : this.rightFieldSchema.toList()) {
+//			outputSchema.add("r." + field);
+//		}
+//		output_schema = new Fields(outputSchema);
 		return output_schema;
 	}
 
