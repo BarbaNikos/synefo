@@ -346,7 +346,7 @@ public class ModifiedJoinOperator<T extends Object> implements AbstractStatOpera
 				res = res + "//$$$//"+ result.get(i).toString().replaceAll("\\[", "").replaceAll("\\]","");
 				result.remove(i);
 			}
-			res=res+"//$$$//"+encUsed;
+			res=res+","+encUsed;
 			System.out.println(res);
 			result = new ArrayList<Values>();
 			result.add(new Values(res));
