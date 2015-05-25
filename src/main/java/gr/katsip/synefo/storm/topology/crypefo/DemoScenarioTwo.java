@@ -268,7 +268,7 @@ public class DemoScenarioTwo {
 						.directGrouping("select_bolt_2")
 						.directGrouping("select_bolt_3")
 						.directGrouping("select_bolt_4");
-		joinOperator = new ModifiedJoinOperator<String>("join_bolt_2",new StringComparator(), 100, "two", 
+		joinOperator = new ModifiedJoinOperator<String>("join_bolt_2",new StringComparator(), 100, "name", 
 				new Fields(vals_left), new Fields(vals_right), zooIP, zooPort, 500);
 		builder.setBolt("join_bolt_2", 
 				new SynefoBolt("join_bolt_2", synefoIP, synefoPort, 
