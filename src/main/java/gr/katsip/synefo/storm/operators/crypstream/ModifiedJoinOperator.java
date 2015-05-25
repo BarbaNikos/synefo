@@ -162,10 +162,8 @@ public class ModifiedJoinOperator<T extends Object> implements AbstractStatOpera
 		Values attributes = new Values();
 		T val_1 = (T) leftTuple.get(leftFieldSchema.fieldIndex(joinAttribute));
 		T val_2 = (T) rightTuple.get(rightFieldSchema.fieldIndex(joinAttribute));
-		System.out.println("Before");
-		
 		System.out.println(val_1.toString()+" vs "+val_2.toString());
-		if(comparator.compare(val_1, val_2) == 0) {
+		if(val_1.toString().equalsIgnoreCase(val_2.toString())) {
 			for(Object attr : leftTuple) {
 				attributes.add(attr);
 			}
