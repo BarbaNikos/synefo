@@ -290,10 +290,9 @@ public class ModifiedJoinOperator<T extends Object> implements AbstractStatOpera
 			values.add(i, v);
 		}
 		if(values.size()==leftFieldSchema.size()){
-			//need to convert leftFieldSchea
-			fields = leftFieldSchema;
+			fields = new Fields(leftFieldSchema.toList());
 		}else{
-			fields = rightFieldSchema;
+			fields = new Fields(rightFieldSchema.toList());
 		}
 		
 		List<Values> result = new ArrayList<Values>();
