@@ -180,7 +180,7 @@ public class DemoScenarioOne {
 		returnSet.add(0);
 		returnSet.add(1);
 		returnSet.add(2);
-		Select selectOperator = new Select(returnSet, "2", 3, 0, 1, 500, "select_bolt_1", zooIP, zooPort);
+		Select selectOperator = new Select(returnSet, "Captain", 1, 0, 1, 500, "select_bolt_1", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		preds.add("1,"+selectOperator.getAttribute()+","+ selectOperator.getPredicate());
 		builder.setBolt("select_bolt_1", 
@@ -194,7 +194,7 @@ public class DemoScenarioOne {
 		topology.put("select_bolt_1", new ArrayList<String>(_tmp));
 		ceDb.insertOperator("select_bolt_1", "n/a", queryId, 1, 1, "BOLT");
 
-		selectOperator = new Select(returnSet, "2", 3, 0, 1, 500, "select_bolt_2", zooIP, zooPort);
+		selectOperator = new Select(returnSet, "Captain", 1, 0, 1, 500, "select_bolt_2", zooIP, zooPort);
 		preds.add("1,"+selectOperator.getAttribute()+","+ selectOperator.getPredicate());
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt_2", 
@@ -210,7 +210,7 @@ public class DemoScenarioOne {
 		/**
 		 * Stage 2: Aggregate Operator
 		 */
-		Sum sumOperator = new Sum(1, 50, 2, "sum_bolt_1", 500, zooIP, zooPort);
+		Sum sumOperator = new Sum(1, 50, 4, "sum_bolt_1", 50, zooIP, zooPort);
 		preds.add("1,"+sumOperator.getAttribute()+",none" );
 		sumOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("sum_bolt_1", 
@@ -220,7 +220,7 @@ public class DemoScenarioOne {
 						.directGrouping("select_bolt_1")
 						.directGrouping("select_bolt_2");
 		_tmp = new ArrayList<String>();
-		sumOperator = new Sum(1, 50, 2, "sum_bolt_2", 500, zooIP, zooPort);
+		sumOperator = new Sum(1, 50, 4, "sum_bolt_2", 50, zooIP, zooPort);
 		preds.add("1,"+sumOperator.getAttribute()+",none" );
 		sumOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("sum_bolt_2", 
@@ -242,7 +242,7 @@ public class DemoScenarioOne {
 		ArrayList<Integer> dataPs = new ArrayList<Integer>();
 		dataPs.add(1);
 		String[] attributes = {"Doctor", "fit+app"};
-		Client clientOperator = new Client("client_bolt","Fred", attributes, dataPs, 4, zooIP, zooPort, preds, 500);
+		Client clientOperator = new Client("client_bolt","Fred", attributes, dataPs, 4, zooIP, zooPort, preds, 50);
 		String[] schema = {"tuple", "crap"};
 		clientOperator.setOutputSchema(new Fields(schema));
 		clientOperator.setStateSchema(new Fields(schema));
