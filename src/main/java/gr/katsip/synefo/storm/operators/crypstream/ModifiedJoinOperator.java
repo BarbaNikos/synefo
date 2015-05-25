@@ -152,6 +152,7 @@ public class ModifiedJoinOperator<T extends Object> implements AbstractStatOpera
 				res = res + "//$$$//"+ result.get(i);
 				result.remove(i);
 			}
+			System.out.println("Res: "+res);
 			result.add(0, new Values(res));
 		}
 		return result;
