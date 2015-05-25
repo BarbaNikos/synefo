@@ -256,12 +256,12 @@ public class ModifiedJoinOperator<T extends Object> implements AbstractStatOpera
 	@Override
 	public void setOutputSchema(Fields _output_schema) {
 		List<String> outputSchema = new ArrayList<String>();
-		for(String field : this.leftFieldSchema.toList()) {
+		/*for(String field : this.leftFieldSchema.toList()) {
 			outputSchema.add("l." + field);
 		}
 		for(String field : this.rightFieldSchema.toList()) {
 			outputSchema.add("r." + field);
-		}
+		}*/
 		output_schema = new Fields(outputSchema);
 	}
 
