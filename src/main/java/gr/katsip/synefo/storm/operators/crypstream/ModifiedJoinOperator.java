@@ -281,6 +281,7 @@ public class ModifiedJoinOperator<T extends Object> implements AbstractStatOpera
 		}	
 		String[] tpl = values.get(0).toString().split(Pattern.quote("//$$$//"));
 		String[] encUse= tpl[tpl.length-1].split(" ");
+		String encUsed =tpl[tpl.length-1];
 		for(int k = 0; k < encUse.length; k++) {
 			encryptionData.put(encUse[k], encryptionData.get(encUse[k])+1);
 		}
@@ -346,7 +347,7 @@ public class ModifiedJoinOperator<T extends Object> implements AbstractStatOpera
 				res = res + "//$$$//"+ result.get(i).toString().replaceAll("\\[", "").replaceAll("\\]","");
 				result.remove(i);
 			}
-			System.out.println("Res: "+res);
+			res=res+"//$$$//"+encUsed;
 			result = new ArrayList<Values>();
 			result.add(new Values(res));
 		}
