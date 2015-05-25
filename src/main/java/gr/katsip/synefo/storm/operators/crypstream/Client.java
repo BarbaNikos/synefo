@@ -217,22 +217,22 @@ public class Client implements AbstractStatOperator, Serializable {
 		String finalTuple="";
 		int clientID = Integer.parseInt(tuples[0].replaceAll("\\[", "").replaceAll("\\]",""));
 //		System.out.println("tup: "+tuple);
-		for(int i=1;i<tuples.length;i++) {
-			//System.out.println(subscriptions.get(clientID).get(i)+" "+i);
-			if(subscriptions.get(clientID).get(i) == 0) {
-				finalTuple=finalTuple+", "+tuples[i];
-			}else if(subscriptions.get(clientID).get(i) == 1) {
-
-			}else if(subscriptions.get(clientID).get(i) == 2) {
-				String result = new String(decryptDetermine(tuples[i].replaceAll("\\[", "").replaceAll("\\]","").getBytes(),keys.get(clientID).get(i)));
-				finalTuple = finalTuple + ", " + result;
-				//System.out.println(finalTuple);
-			}else if(subscriptions.get(clientID).get(i) == 3) {
-
-			}else if(subscriptions.get(clientID).get(i) == 4) {
-				//System.out.println("SUM: "+Decryption(new BigInteger(tuples[i])));
-			}
-		}
+//		for(int i=1;i<tuples.length;i++) {
+//			//System.out.println(subscriptions.get(clientID).get(i)+" "+i);
+//			if(subscriptions.get(clientID).get(i) == 0) {
+//				finalTuple=finalTuple+", "+tuples[i];
+//			}else if(subscriptions.get(clientID).get(i) == 1) {
+//
+//			}else if(subscriptions.get(clientID).get(i) == 2) {
+//				String result = new String(decryptDetermine(tuples[i].replaceAll("\\[", "").replaceAll("\\]","").getBytes(),keys.get(clientID).get(i)));
+//				finalTuple = finalTuple + ", " + result;
+//				//System.out.println(finalTuple);
+//			}else if(subscriptions.get(clientID).get(i) == 3) {
+//
+//			}else if(subscriptions.get(clientID).get(i) == 4) {
+//				//System.out.println("SUM: "+Decryption(new BigInteger(tuples[i])));
+//			}
+//		}
 	}
 
 	public void processSps(String[] tuple) {
