@@ -180,12 +180,7 @@ public class Client implements AbstractStatOperator, Serializable {
 				processNormal(currentTuple);
 			}
 		}
-		if(statReportCount > statReportPeriod) {
 			updateData(statistics);
-			statReportCount = 0;
-		}else {
-			statReportCount += 1;
-		}
 		return new ArrayList<Values>();
 	}
 
