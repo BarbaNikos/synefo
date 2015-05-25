@@ -298,6 +298,7 @@ public class ModifiedJoinOperator<T extends Object> implements AbstractStatOpera
 		
 		List<Values> result = new ArrayList<Values>();
 		if(fields.toList().equals(leftFieldSchema.toList())) {
+			System.out.println("Left");
 			for(Values rightStateTuple : rightRelation) {
 				Values rightTuple = new Values(rightStateTuple.toArray());
 				rightTuple.remove(rightStateFieldSchema.fieldIndex("timestamp"));
@@ -319,6 +320,7 @@ public class ModifiedJoinOperator<T extends Object> implements AbstractStatOpera
 			}
 		}
 		if(fields.toList().equals(rightFieldSchema.toList())) {
+			System.out.println("Right");
 			for(Values leftStateTuple : leftRelation) {
 				Values leftTuple = new Values(leftStateTuple.toArray());
 				leftTuple.remove(leftStateFieldSchema.fieldIndex("timestamp"));
