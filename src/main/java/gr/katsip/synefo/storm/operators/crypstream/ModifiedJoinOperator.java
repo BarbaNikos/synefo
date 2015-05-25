@@ -288,8 +288,13 @@ public class ModifiedJoinOperator<T extends Object> implements AbstractStatOpera
 		for(int i = 0; i < tpl.length; i++) {
 			Values v = new Values(tpl[i]);
 			values.add(i, v);
-			
 		}
+		if(values.size()==leftFieldSchema.size()){
+			fields = new Fields((String[]) leftFieldSchema.toList().toArray());
+		}else{
+			fields = new Fields((String[]) rightFieldSchema.toList().toArray());
+		}
+		
 		List<Values> result = new ArrayList<Values>();
 		if(fields.toList().equals(leftFieldSchema.toList())) {
 			for(Values rightStateTuple : rightRelation) {
