@@ -136,6 +136,10 @@ public class SynefoCoordinatorThread implements Runnable {
 			}
 			activeUpdatedTopology = ScaleFunction.getInitialActiveTopology(updatedTopology, 
 					ScaleFunction.getInverseTopology(updatedTopology));
+			/**
+			 * In case we are running scale experiments, the following line is un-commented
+			 * activeUpdatedTopology = updatedTopology
+			 */
 			itr = activeUpdatedTopology.entrySet().iterator();
 //			System.out.println("Initial active topology:");
 //			while(itr.hasNext()) {

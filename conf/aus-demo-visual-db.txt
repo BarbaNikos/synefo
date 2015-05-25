@@ -1,0 +1,4 @@
+db-server-ip:ec2-54-66-235-41.ap-southeast-2.compute.amazonaws.com
+db-schema-name:ce_storm
+db-user:root
+db-password:myCQl_Is_#1
