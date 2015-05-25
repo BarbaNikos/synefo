@@ -15,6 +15,8 @@ public class ExperimentReplayer {
 	private static final String retrieveOperators = "SELECT * FROM operator WHERE query_id = ?";
 	
 	private static final String retrieveOperatorAdjacencyList = "SELECT * FROM operator_adjacency_list WHERE query_id = ?";
+	
+	private static final String retrieveInitialActiveTopology = "SELECT * from topology_operator WHERE start_time = (SELECT min(start_time) FROM topology_operator WHERE end_time IS NOT NULL AND operator_id IN (SELECT id FROM operator WHERE query_id = ?))";
 
 	private static final String retrieveTopologyOperators = "SELECT * FROM topology_operator WHERE query_id = ?";
 	
@@ -30,7 +32,7 @@ public class ExperimentReplayer {
 
 	private Connection connection = null;
 	
-	private class Query {
+	public class Query {
 		
 		public int id;
 		
@@ -40,7 +42,7 @@ public class ExperimentReplayer {
 		
 	}
 	
-	private class Operator {
+	public class Operator {
 		
 		public Integer id;
 		
@@ -58,7 +60,7 @@ public class ExperimentReplayer {
 		
 	}
 	
-	private class OperatorAdjacencyListEntry {
+	public class OperatorAdjacencyListEntry {
 		
 		public Integer queryId;
 		
@@ -68,7 +70,7 @@ public class ExperimentReplayer {
 		
 	}
 	
-	private class TopologyOperatorEntry {
+	public class TopologyOperatorEntry {
 		
 		public Integer operatorId;
 		
@@ -145,8 +147,26 @@ public class ExperimentReplayer {
 	
 	private ArrayList<Operator> operators = null;
 	
+	public Query getQuery() {
+		return query;
+	}
+
+	public ArrayList<Operator> getOperators() {
+		return operators;
+	}
+
+	public ArrayList<OperatorAdjacencyListEntry> getOperatorAdjacencyList() {
+		return operatorAdjacencyList;
+	}
+
 	private ArrayList<OperatorAdjacencyListEntry> operatorAdjacencyList = null;
 	
+	private ArrayList<TopologyOperatorEntry> initialTopologyOperatorList = null;
+	
+	public ArrayList<TopologyOperatorEntry> getInitialTopologyOperatorList() {
+		return initialTopologyOperatorList;
+	}
+
 	public ExperimentReplayer(String url, String user, String password, int queryId) {
 		this.url = url;
 		this.user = user;
@@ -255,6 +275,46 @@ public class ExperimentReplayer {
 			} catch (SQLException e1) {
 				e1.printStackTrace();
 			}
+		}
+		/**
+		 * Retrieve initial active topology
+		 */
+		try {
+			connection.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
+			connection.setAutoCommit(false);
+			PreparedStatement prepStatement = connection.prepareStatement(retrieveInitialActiveTopology);
+			prepStatement.setInt(1, queryId);
+			ResultSet result = prepStatement.executeQuery();
+			initialTopologyOperatorList = new ArrayList<TopologyOperatorEntry>();
+			while(result.next()) {
+				if(result.wasNull() == false) {
+					TopologyOperatorEntry topologyOperator = new TopologyOperatorEntry();
+					topologyOperator.operatorId = result.getInt("operator_id");
+					topologyOperator.status = result.getString("status");
+					topologyOperator.startTime = result.getLong("start_time");
+					topologyOperator.endTime = result.getLong("end_time");
+					initialTopologyOperatorList.add(topologyOperator);
+				}
+			}
+			result.close();
+		} catch(SQLException e) {
+			System.err.println("ExperimentReplayer encountered error when retrieving initial active topology: " + e.getMessage());
+			e.printStackTrace();
+			try {
+				connection.rollback();
+				connection.setAutoCommit(true);
+				return;
+			} catch (SQLException e1) {
+				e1.printStackTrace();
+			}
+		}
+	}
+	
+	public void destroyConnection() {
+		try {
+			connection.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
 		}
 	}
 }
