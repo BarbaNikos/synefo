@@ -162,7 +162,6 @@ public class ModifiedJoinOperator<T extends Object> implements AbstractStatOpera
 		Values attributes = new Values();
 		T val_1 = (T) leftTuple.get(leftFieldSchema.fieldIndex(joinAttribute));
 		T val_2 = (T) rightTuple.get(rightFieldSchema.fieldIndex(joinAttribute));
-		System.out.println(val_1.toString()+" vs "+val_2.toString());
 		if(val_1.toString().equalsIgnoreCase(val_2.toString())) {
 			for(Object attr : leftTuple) {
 				attributes.add(attr);
@@ -348,6 +347,7 @@ public class ModifiedJoinOperator<T extends Object> implements AbstractStatOpera
 				result.remove(i);
 			}
 			res=res+"//$$$//"+encUsed;
+			System.out.println(res);
 			result = new ArrayList<Values>();
 			result.add(new Values(res));
 		}
