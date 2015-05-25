@@ -6,7 +6,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.TreeMap;
 
 public class ExperimentReplayer {
 	
@@ -17,12 +17,10 @@ public class ExperimentReplayer {
 	private static final String retrieveOperatorAdjacencyList = "SELECT * FROM operator_adjacency_list WHERE query_id = ?";
 	
 	private static final String retrieveInitialActiveTopology = "SELECT * from topology_operator WHERE start_time = (SELECT min(start_time) FROM topology_operator WHERE end_time IS NOT NULL AND operator_id IN (SELECT id FROM operator WHERE query_id = ?))";
-
-	private static final String retrieveTopologyOperators = "SELECT * FROM topology_operator WHERE query_id = ?";
 	
-	private static final String retrieveSceleEvents = "SELECT * FROM scale_event";
+	private static final String retrieveSceleEvents = "SELECT * FROM scale_event WHERE operator_id IN (SELECT id FROM operator WHERE query_id = ?)";
 	
-	private static final String retrieveStatistics = "SELECT * FROM statistic";
+	private static final String retrieveStatistics = "SELECT * FROM statistic where operator_id IN (SELECT id FROM operator WHERE query_id = ?)";
 	
 	private String url = null;
 
@@ -82,7 +80,11 @@ public class ExperimentReplayer {
 		
 	}
 	
-	public class ScaleEvent {
+	public class CrypefoEvent {
+		
+	}
+	
+	public class ScaleEvent extends CrypefoEvent {
 		
 		public Integer id;
 		
@@ -91,10 +93,16 @@ public class ExperimentReplayer {
 		public String action;
 		
 		public Long timestamp;
+
+		@Override
+		public String toString() {
+			return "ScaleEvent [id=" + id + ", operatorId=" + operatorId
+					+ ", action=" + action + ", timestamp=" + timestamp + "]";
+		}
 		
 	}
 	
-	public class Statistic {
+	public class Statistic extends CrypefoEvent {
 		
 		public Integer statisticId;
 		
@@ -121,24 +129,17 @@ public class ExperimentReplayer {
 		public Integer ope;
 		
 		public Integer hom;
-		
-	}
-	
-	private enum Type {
-		SCALE_EVENT,
-		TOPOLOGY_OPERATOR,
-		STAT
-	}
-	
-	private class CrypefoEvent {
-		public Type eventType;
-		
-		public List<Object> fields;
-		
-		public CrypefoEvent(Type eventType, List<Object> fields) {
-			this.eventType = eventType;
-			this.fields = new ArrayList<Object>(fields);
+
+		@Override
+		public String toString() {
+			return "Statistic [statisticId=" + statisticId + ", operatorId="
+					+ operatorId + ", timestamp=" + timestamp + ", cpu=" + cpu
+					+ ", memory=" + memory + ", latency=" + latency
+					+ ", throughput=" + throughput + ", selectivity="
+					+ selectivity + ", plain=" + plain + ", det=" + det
+					+ ", rnd=" + rnd + ", ope=" + ope + ", hom=" + hom + "]";
 		}
+		
 	}
 	
 	private Integer queryId = -1;
@@ -165,6 +166,12 @@ public class ExperimentReplayer {
 	
 	public ArrayList<TopologyOperatorEntry> getInitialTopologyOperatorList() {
 		return initialTopologyOperatorList;
+	}
+	
+	private TreeMap<Long, ArrayList<CrypefoEvent>> timeEvents = null;
+
+	public TreeMap<Long, ArrayList<CrypefoEvent>> getTimeEvents() {
+		return timeEvents;
 	}
 
 	public ExperimentReplayer(String url, String user, String password, int queryId) {
@@ -299,6 +306,91 @@ public class ExperimentReplayer {
 			result.close();
 		} catch(SQLException e) {
 			System.err.println("ExperimentReplayer encountered error when retrieving initial active topology: " + e.getMessage());
+			e.printStackTrace();
+			try {
+				connection.rollback();
+				connection.setAutoCommit(true);
+				return;
+			} catch (SQLException e1) {
+				e1.printStackTrace();
+			}
+		}
+		/**
+		 * Retrieve Time events: first statistics and then scale-events
+		 */
+		timeEvents = new TreeMap<Long, ArrayList<CrypefoEvent>>();
+		try {
+			connection.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
+			connection.setAutoCommit(false);
+			PreparedStatement prepStatement = connection.prepareStatement(retrieveStatistics);
+			prepStatement.setInt(1, queryId);
+			ResultSet result = prepStatement.executeQuery();
+			while(result.next()) {
+				if(result.wasNull() == false) {
+					Statistic stat = new Statistic();
+					stat.statisticId = result.getInt("stat_id");
+					stat.operatorId = result.getInt("operator_id");
+					stat.timestamp = result.getLong("timestamp");
+					stat.cpu = result.getFloat("cpu");
+					stat.memory = result.getFloat("memory");
+					stat.latency = result.getInt("latency");
+					stat.throughput = result.getInt("throughput");
+					stat.selectivity = result.getFloat("selectivity");
+					stat.plain = result.getInt("plain");
+					stat.det = result.getInt("det");
+					stat.rnd = result.getInt("rnd");
+					stat.ope = result.getInt("ope");
+					stat.hom = result.getInt("hom");
+					if(timeEvents.containsKey(stat.timestamp)) {
+						ArrayList<CrypefoEvent> events = timeEvents.get(stat.timestamp);
+						events.add(stat);
+						timeEvents.put(stat.timestamp, events);
+					}else {
+						ArrayList<CrypefoEvent> events = new ArrayList<CrypefoEvent>();
+						events.add(stat);
+						timeEvents.put(stat.timestamp, events);
+					}
+				}
+			}
+			result.close();
+		} catch(SQLException e) {
+			System.err.println("ExperimentReplayer encountered error when retrieving statistic records: " + e.getMessage());
+			e.printStackTrace();
+			try {
+				connection.rollback();
+				connection.setAutoCommit(true);
+				return;
+			} catch (SQLException e1) {
+				e1.printStackTrace();
+			}
+		}
+		try {
+			connection.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
+			connection.setAutoCommit(false);
+			PreparedStatement prepStatement = connection.prepareStatement(retrieveSceleEvents);
+			prepStatement.setInt(1, queryId);
+			ResultSet result = prepStatement.executeQuery();
+			while(result.next()) {
+				if(result.wasNull() == false) {
+					ScaleEvent scaleEvent = new ScaleEvent();
+					scaleEvent.id = result.getInt("id");
+					scaleEvent.operatorId = result.getInt("operator_id");
+					scaleEvent.action = result.getString("action");
+					scaleEvent.timestamp = result.getLong("timestamp");
+					if(timeEvents.containsKey(scaleEvent.timestamp)) {
+						ArrayList<CrypefoEvent> events = timeEvents.get(scaleEvent.timestamp);
+						events.add(scaleEvent);
+						timeEvents.put(scaleEvent.timestamp, events);
+					}else {
+						ArrayList<CrypefoEvent> events = new ArrayList<CrypefoEvent>();
+						events.add(scaleEvent);
+						timeEvents.put(scaleEvent.timestamp, events);
+					}
+				}
+			}
+			result.close();
+		} catch(SQLException e) {
+			System.err.println("ExperimentReplayer encountered error when retrieving scale-event records: " + e.getMessage());
 			e.printStackTrace();
 			try {
 				connection.rollback();
