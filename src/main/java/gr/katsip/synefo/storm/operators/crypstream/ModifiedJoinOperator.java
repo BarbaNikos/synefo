@@ -228,6 +228,7 @@ public class ModifiedJoinOperator<T extends Object> implements AbstractStatOpera
 			if(receivedRightRelation != null && receivedRightRelation.size() > 0)
 				this.rightRelation.addAll(receivedRightRelation);
 			while(leftRelation.size() > window) {
+				System.out.println("LeftRelationKey: "+leftRelation.get(0).get(this.leftStateFieldSchema.fieldIndex("timestamp")));
 				long earliestLeftTime = (long) leftRelation.get(0).get(this.leftStateFieldSchema.fieldIndex("timestamp"));
 				int leftIndex = 0;
 				for(int i = 0; i < leftRelation.size(); i++) {
