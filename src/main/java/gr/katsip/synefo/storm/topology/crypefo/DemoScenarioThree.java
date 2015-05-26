@@ -320,7 +320,7 @@ public class DemoScenarioThree {
 						.directGrouping("select_bolt_2")
 						.directGrouping("select_bolt_3")
 						.directGrouping("select_bolt_4");
-		joinOperator = new ModifiedJoinOperator<String>("join_bolt_2",new StringComparator(), 100, "two", 
+		joinOperator = new ModifiedJoinOperator<String>("join_bolt_2",new StringComparator(), 100, "location", 
 				new Fields(vals_left), new Fields(vals_right), zooIP, zooPort, 50);
 		joinOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("join_bolt_2", 
