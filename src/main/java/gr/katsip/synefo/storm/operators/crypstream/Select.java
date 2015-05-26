@@ -209,7 +209,7 @@ public class Select implements Serializable, AbstractStatOperator  {
 		}
 		updateData(statistics);
 		if(!values.get(0).toString().contains("SPS")) {
-			System.out.println("ID: "+ID+" Predicate: "+predicate+ " SELECTION: "+values.get(0).toString());
+//			System.out.println("ID: "+ID+" Predicate: "+predicate+ " SELECTION: "+values.get(0).toString());
 			String[] tuples = values.get(0).toString().split(Pattern.quote("//$$$//"));
 			boolean matches  = false;
 			if(type == 0) {
@@ -260,7 +260,7 @@ public class Select implements Serializable, AbstractStatOperator  {
 			ArrayList<Values> valz = new ArrayList<Values>();
 			valz.add(val);
 			if(matches){
-				System.out.println("MAtched: "+values.get(0).toString());
+//				System.out.println("MAtched: "+values.get(0).toString());
 				return valz;
 			}
 			else
@@ -271,7 +271,7 @@ public class Select implements Serializable, AbstractStatOperator  {
 	}
 
 	public boolean equiSelect(String[] tuple) {
-		System.out.println("Attribute: "+attribute+" predicate: "+predicate+" Tuple: "+ Arrays.toString(tuple));
+//		System.out.println("Attribute: "+attribute+" predicate: "+predicate+" Tuple: "+ Arrays.toString(tuple));
 		if(predicate.equals("*") && predicate == null)
 			return true;
 		if(tuple[attribute].equalsIgnoreCase(predicate))
