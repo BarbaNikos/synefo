@@ -291,10 +291,7 @@ public class ModifiedJoinOperator<T extends Object> implements AbstractStatOpera
 		for(int i = 0; i < tpl.length - 1; i++) {
 //			Values v = new Values(tpl[i]);
 //			values.add(v);
-//			values.add(new String(tpl[i]));
-			String[] vals = tpl[i].split(",");
-			for(int j = 0; j < vals.length; ++j)
-				valuesCopy.add(new String(vals[j]));
+			valuesCopy.add(new String(tpl[i]));
 		}
 //		if((values.size() - 1 ) == leftFieldSchema.size() ){
 //			fields = new Fields(leftFieldSchema.toList());
@@ -302,7 +299,7 @@ public class ModifiedJoinOperator<T extends Object> implements AbstractStatOpera
 //			fields = new Fields(rightFieldSchema.toList());
 //		}
 		Fields fieldsCopy = null;
-		if((valuesCopy.size() - 1) == leftFieldSchema.size()) {
+		if((valuesCopy.size()) == leftFieldSchema.size()) {
 			fieldsCopy = new Fields(leftFieldSchema.toList());
 		}else {
 			fieldsCopy = new Fields(rightFieldSchema.toList());
