@@ -280,7 +280,7 @@ public class DemoScenarioThree {
 		/**
 		 * Q1: Aggregate
 		 */
-		Sum sumOperator = new Sum(1, 50, 2, "sum_bolt_1", 500, zooIP, zooPort);
+		Sum sumOperator = new Sum(1, 50, 2, "sum_bolt_1", 100, zooIP, zooPort);
 		preds.add("2," + sumOperator.getAttribute() + ",none");
 		sumOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("sum_bolt_1", 
@@ -289,7 +289,7 @@ public class DemoScenarioThree {
 						.setNumTasks(1)
 						.directGrouping("spout_data_3");
 		_tmp = new ArrayList<String>();
-		sumOperator = new Sum(1, 50, 2, "sum_bolt_2", 500, zooIP, zooPort);
+		sumOperator = new Sum(1, 50, 2, "sum_bolt_2", 100, zooIP, zooPort);
 		preds.add("2," + sumOperator.getAttribute() + ",none");
 		sumOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("sum_bolt_2", 
@@ -310,7 +310,7 @@ public class DemoScenarioThree {
 		String[] vals_left = { "id" , "name" , "stairs_climed" , "steps" , "blood_pressure" , "location" };
 		String[] vals_right = { "id" , "car_ID" , "car_owner" , "location" };
 		ModifiedJoinOperator<String> joinOperator = new ModifiedJoinOperator<String>("join_bolt_1",new StringComparator(), 100, "location", 
-				new Fields(vals_left), new Fields(vals_right), zooIP, zooPort, 500);
+				new Fields(vals_left), new Fields(vals_right), zooIP, zooPort, 50);
 		builder.setBolt("join_bolt_1", 
 				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, 
 						joinOperator, zooIP, zooPort, false), 1)
@@ -320,7 +320,7 @@ public class DemoScenarioThree {
 						.directGrouping("select_bolt_3")
 						.directGrouping("select_bolt_4");
 		joinOperator = new ModifiedJoinOperator<String>("join_bolt_2",new StringComparator(), 100, "two", 
-				new Fields(vals_left), new Fields(vals_right), zooIP, zooPort, 500);
+				new Fields(vals_left), new Fields(vals_right), zooIP, zooPort, 50);
 		builder.setBolt("join_bolt_2", 
 				new SynefoBolt("join_bolt_2", synefoIP, synefoPort, 
 						joinOperator, zooIP, zooPort, false), 1)
@@ -346,7 +346,7 @@ public class DemoScenarioThree {
 		String[] attributes = { "Doctor" , "fit+app" };
 
 		//////fix below to match this scenario
-		Client clientOperator = new Client("client_bolt", "Fred", attributes, dataPs, 4, zooIP, zooPort, preds, 500);
+		Client clientOperator = new Client("client_bolt", "Fred", attributes, dataPs, 4, zooIP, zooPort, preds, 50);
 		String[] schema = { "tuple" , "crap" };
 		clientOperator.setOutputSchema(new Fields(schema));
 		clientOperator.setStateSchema(new Fields(schema));
@@ -361,7 +361,7 @@ public class DemoScenarioThree {
 		topology.put("client_bolt", new ArrayList<String>());
 		ceDb.insertOperator("client_bolt", "n/a", queryId, 3, 0, "BOLT");
 		
-		clientOperator = new Client("client_bolt_2", "Fred", attributes, dataPs, 4, zooIP, zooPort, preds, 500);
+		clientOperator = new Client("client_bolt_2", "Fred", attributes, dataPs, 4, zooIP, zooPort, preds, 50);
 		clientOperator.setOutputSchema(new Fields(schema));
 		clientOperator.setStateSchema(new Fields(schema));
 		builder.setBolt("client_bolt_2", 
