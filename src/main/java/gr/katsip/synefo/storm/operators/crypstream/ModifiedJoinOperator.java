@@ -277,7 +277,7 @@ public class ModifiedJoinOperator<T extends Object> implements AbstractStatOpera
 			Values values) {
 		if(dataSender == null) {
 			dataSender = new DataCollector(zooIP, zooPort, statReportPeriod, ID);
-		}	
+		}
 		String[] tpl = values.get(0).toString().split(Pattern.quote("//$$$//"));
 		String[] encUse= tpl[tpl.length-1].split(" ");
 		String encUsed =tpl[tpl.length-1];
@@ -286,56 +286,107 @@ public class ModifiedJoinOperator<T extends Object> implements AbstractStatOpera
 		}
 		updateData(statistics);
 		values.remove(0);
-		for(int i = 0; i < tpl.length; i++) {
+		Values valuesCopy = new Values();
+		for(int i = 0; i < tpl.length - 1; i++) {
 //			Values v = new Values(tpl[i]);
 //			values.add(v);
-			values.add(new String(tpl[i]));
+//			values.add(new String(tpl[i]));
+			valuesCopy.add(new String(tpl[i]));
 		}
-		if((values.size()-1)==leftFieldSchema.size()){
-			fields = new Fields(leftFieldSchema.toList());
-		}else{
-			fields = new Fields(rightFieldSchema.toList());
+//		if((values.size() - 1 ) == leftFieldSchema.size() ){
+//			fields = new Fields(leftFieldSchema.toList());
+//		}else{
+//			fields = new Fields(rightFieldSchema.toList());
+//		}
+		Fields fieldsCopy = null;
+		if((valuesCopy.size() - 1) == leftFieldSchema.size()) {
+			fieldsCopy = new Fields(leftFieldSchema.toList());
+		}else {
+			fieldsCopy = new Fields(rightFieldSchema.toList());
 		}
 		
+//		List<Values> result = new ArrayList<Values>();
+//		if(fields.toList().equals(leftFieldSchema.toList())) {
+//			for(Values rightStateTuple : rightRelation) {
+//				Values rightTuple = new Values(rightStateTuple.toArray());
+//				rightTuple.remove(rightStateFieldSchema.fieldIndex("timestamp"));
+//				Values resultValues = equiJoin(values, rightTuple);
+//				if(resultValues != null && resultValues.size() > 0) {
+//					result.add(resultValues);
+//				}
+//			}
+//			if(leftRelation.size() < window) {
+//				Values v = new Values(values.toArray());
+//				v.add(System.currentTimeMillis());
+//				leftRelation.add(v);
+//			}else {
+//				if(leftRelation.size() > 0)
+//					leftRelation.remove(0);
+//				Values v = new Values(values.toArray());
+//				v.add(System.currentTimeMillis());
+//				leftRelation.add(v);
+//			}
+//		}
+//		if(fields.toList().equals(rightFieldSchema.toList())) {
+//			for(Values leftStateTuple : leftRelation) {
+//				Values leftTuple = new Values(leftStateTuple.toArray());
+//				leftTuple.remove(leftStateFieldSchema.fieldIndex("timestamp"));
+//				Values resultValues = equiJoin(leftTuple, values);
+//				if(resultValues != null && resultValues.size() > 0) {
+//					result.add(resultValues);
+//				}
+//			}
+//			if(rightRelation.size() < window) {
+//				Values v = new Values(values.toArray());
+//				v.add(System.currentTimeMillis());
+//				rightRelation.add(v);
+//			}else {
+//				if(rightRelation.size() > 0)
+//					rightRelation.remove(0);
+//				Values v = new Values(values.toArray());
+//				v.add(System.currentTimeMillis());
+//				rightRelation.add(v);
+//			}
+//		}
 		List<Values> result = new ArrayList<Values>();
-		if(fields.toList().equals(leftFieldSchema.toList())) {
+		if(fieldsCopy.toList().equals(leftFieldSchema.toList())) {
 			for(Values rightStateTuple : rightRelation) {
 				Values rightTuple = new Values(rightStateTuple.toArray());
 				rightTuple.remove(rightStateFieldSchema.fieldIndex("timestamp"));
-				Values resultValues = equiJoin(values, rightTuple);
+				Values resultValues = equiJoin(valuesCopy, rightTuple);
 				if(resultValues != null && resultValues.size() > 0) {
 					result.add(resultValues);
 				}
 			}
 			if(leftRelation.size() < window) {
-				Values v = new Values(values.toArray());
+				Values v = new Values(valuesCopy.toArray());
 				v.add(System.currentTimeMillis());
 				leftRelation.add(v);
 			}else {
 				if(leftRelation.size() > 0)
 					leftRelation.remove(0);
-				Values v = new Values(values.toArray());
+				Values v = new Values(valuesCopy.toArray());
 				v.add(System.currentTimeMillis());
 				leftRelation.add(v);
 			}
 		}
-		if(fields.toList().equals(rightFieldSchema.toList())) {
+		if(fieldsCopy.toList().equals(rightFieldSchema.toList())) {
 			for(Values leftStateTuple : leftRelation) {
 				Values leftTuple = new Values(leftStateTuple.toArray());
 				leftTuple.remove(leftStateFieldSchema.fieldIndex("timestamp"));
-				Values resultValues = equiJoin(leftTuple, values);
+				Values resultValues = equiJoin(leftTuple, valuesCopy);
 				if(resultValues != null && resultValues.size() > 0) {
 					result.add(resultValues);
 				}
 			}
 			if(rightRelation.size() < window) {
-				Values v = new Values(values.toArray());
+				Values v = new Values(valuesCopy.toArray());
 				v.add(System.currentTimeMillis());
 				rightRelation.add(v);
 			}else {
 				if(rightRelation.size() > 0)
 					rightRelation.remove(0);
-				Values v = new Values(values.toArray());
+				Values v = new Values(valuesCopy.toArray());
 				v.add(System.currentTimeMillis());
 				rightRelation.add(v);
 			}
