@@ -228,23 +228,23 @@ public class ModifiedJoinOperator<T extends Object> implements AbstractStatOpera
 			if(receivedRightRelation != null && receivedRightRelation.size() > 0)
 				this.rightRelation.addAll(receivedRightRelation);
 			while(leftRelation.size() > window) {
-				System.out.println("LeftRelationKey: "+leftRelation.get(0).get(this.leftStateFieldSchema.fieldIndex("timestamp")));
-				long earliestLeftTime = (long) leftRelation.get(0).get(this.leftStateFieldSchema.fieldIndex("timestamp"));
+//				System.out.println("LeftRelationKey: "+leftRelation.get(0).get(this.leftStateFieldSchema.fieldIndex("timestamp")));
+				long earliestLeftTime = (long) Long.parseLong(leftRelation.get(0).get(this.leftStateFieldSchema.fieldIndex("timestamp")).toString());
 				int leftIndex = 0;
 				for(int i = 0; i < leftRelation.size(); i++) {
-					if(earliestLeftTime > (long) leftRelation.get(i).get(this.leftStateFieldSchema.fieldIndex("timestamp"))) {
-						earliestLeftTime = (long) leftRelation.get(i).get(this.leftStateFieldSchema.fieldIndex("timestamp"));
+					if(earliestLeftTime > (long) Long.parseLong(leftRelation.get(i).get(this.leftStateFieldSchema.fieldIndex("timestamp")).toString())) {
+						earliestLeftTime = (long) Long.parseLong(leftRelation.get(i).get(this.leftStateFieldSchema.fieldIndex("timestamp")).toString());
 						leftIndex = i;
 					}
 				}
 				leftRelation.remove(leftIndex);
 			}
 			while(rightRelation.size() > window) {
-				long earliestRightTime = (long) rightRelation.get(0).get(this.rightStateFieldSchema.fieldIndex("timestamp"));
+				long earliestRightTime = (long) Long.parseLong(rightRelation.get(0).get(this.rightStateFieldSchema.fieldIndex("timestamp")).toString());
 				int rightIndex = 0;
 				for(int i = 0; i < rightRelation.size(); i++) {
-					if(earliestRightTime > (long) rightRelation.get(i).get(this.rightStateFieldSchema.fieldIndex("timestamp"))) {
-						earliestRightTime = (long) rightRelation.get(i).get(this.rightStateFieldSchema.fieldIndex("timestamp"));
+					if(earliestRightTime > (long) Long.parseLong(rightRelation.get(i).get(this.rightStateFieldSchema.fieldIndex("timestamp")).toString())) {
+						earliestRightTime = (long) Long.parseLong(rightRelation.get(i).get(this.rightStateFieldSchema.fieldIndex("timestamp")).toString());
 						rightIndex = i;
 					}
 				}
