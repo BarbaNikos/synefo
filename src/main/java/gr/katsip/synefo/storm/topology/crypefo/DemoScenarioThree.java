@@ -226,7 +226,7 @@ public class DemoScenarioThree {
 		returnSet.add(0);
 		returnSet.add(1);
 		returnSet.add(2);
-		Select selectOperator = new Select(returnSet, "100", 3, 3, 0, 500, "select_bolt_1", zooIP, zooPort);
+		Select selectOperator = new Select(returnSet, "100", 4, 3, 0, 500, "select_bolt_1", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		preds.add("1," + selectOperator.getAttribute() + "," + selectOperator.getPredicate());
 		builder.setBolt("select_bolt_1", 
@@ -235,7 +235,7 @@ public class DemoScenarioThree {
 						.setNumTasks(1)
 						.directGrouping("spout_data_1");
 		
-		selectOperator = new Select(returnSet, "100", 3, 3, 0, 500, "select_bolt_2", zooIP, zooPort);
+		selectOperator = new Select(returnSet, "100", 4, 3, 0, 500, "select_bolt_2", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		preds.add("1,"+selectOperator.getAttribute()+","+ selectOperator.getPredicate());
 		builder.setBolt("select_bolt_2", 
@@ -252,7 +252,7 @@ public class DemoScenarioThree {
 		ceDb.insertOperator("select_bolt_2", "n/a", queryId, 1, 1, "BOLT");
 
 		//From Stream 2
-		selectOperator = new Select(returnSet, "Pittsburgh", 3, 0, 0, 500, "select_bolt_3", zooIP, zooPort);
+		selectOperator = new Select(returnSet, "Captain", 3, 0, 0, 500, "select_bolt_3", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		preds.add("1," + selectOperator.getAttribute() + "," + selectOperator.getPredicate());
 		builder.setBolt("select_bolt_3", 
@@ -261,7 +261,7 @@ public class DemoScenarioThree {
 						.setNumTasks(1)
 						.directGrouping("spout_data_2");
 		returnSet = new ArrayList<Integer>();
-		selectOperator = new Select(returnSet, "Pittsburgh", 3, 0, 0, 500, "select_bolt_4", zooIP, zooPort);
+		selectOperator = new Select(returnSet, "Captain", 3, 0, 0, 500, "select_bolt_4", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		preds.add("1," + selectOperator.getAttribute() + "," + selectOperator.getPredicate());
 		builder.setBolt("select_bolt_4", 
