@@ -148,7 +148,7 @@ public class DemoScenarioOne {
 		ArrayList<String> preds = new ArrayList<String>();
 		
 		String[] punctuationSpoutSchema = { "punct" };
-		CrypefoPunctuationTupleProducer punctuationTupleProducer = new CrypefoPunctuationTupleProducer(streamIPs[0], "spout_sps", zooIP + ":" + zooPort, 500);
+		CrypefoPunctuationTupleProducer punctuationTupleProducer = new CrypefoPunctuationTupleProducer(streamIPs[0], "spout_sps", zooIP + ":" + zooPort, 1000);
 		punctuationTupleProducer.setSchema(new Fields(punctuationSpoutSchema));
 		builder.setSpout("spout_sps", 
 				new SynefoSpout("spout_sps", synefoIP, synefoPort, punctuationTupleProducer, zooIP, zooPort), 1)
@@ -160,7 +160,7 @@ public class DemoScenarioOne {
 		ceDb.insertOperator("spout_sps", "n/a", queryId, 0, 0, "SPOUT");
 
 		String[] dataSpoutSchema = { "tuple" };
-		CrypefoDataTupleProducer dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[0], 1, "spout_data", zooIP + ":" + zooPort, 500);
+		CrypefoDataTupleProducer dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[0], 1, "spout_data", zooIP + ":" + zooPort, 1000);
 		dataTupleProducer.setSchema(new Fields(dataSpoutSchema));
 		builder.setSpout("spout_data", 
 				new SynefoSpout("spout_data", synefoIP, synefoPort, dataTupleProducer, zooIP, zooPort), 1)
@@ -180,7 +180,7 @@ public class DemoScenarioOne {
 		returnSet.add(0);
 		returnSet.add(1);
 		returnSet.add(2);
-		Select selectOperator = new Select(returnSet, "Captain", 1, 0, 1, 500, "select_bolt_1", zooIP, zooPort);
+		Select selectOperator = new Select(returnSet, "Captain", 1, 0, 1, 1000, "select_bolt_1", zooIP, zooPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		preds.add("1,"+selectOperator.getAttribute()+","+ selectOperator.getPredicate());
 		builder.setBolt("select_bolt_1", 
@@ -194,7 +194,7 @@ public class DemoScenarioOne {
 		topology.put("select_bolt_1", new ArrayList<String>(_tmp));
 		ceDb.insertOperator("select_bolt_1", "n/a", queryId, 1, 1, "BOLT");
 
-		selectOperator = new Select(returnSet, "Captain", 1, 0, 1, 500, "select_bolt_2", zooIP, zooPort);
+		selectOperator = new Select(returnSet, "Captain", 1, 0, 1, 1000, "select_bolt_2", zooIP, zooPort);
 		preds.add("1,"+selectOperator.getAttribute()+","+ selectOperator.getPredicate());
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt_2", 
