@@ -285,13 +285,15 @@ public class ModifiedJoinOperator<T extends Object> implements AbstractStatOpera
 			encryptionData.put(encUse[k], encryptionData.get(encUse[k])+1);
 		}
 		updateData(statistics);
-		values.remove(0);
+//		values.remove(0);
 		Values valuesCopy = new Values();
 		for(int i = 0; i < tpl.length - 1; i++) {
 //			Values v = new Values(tpl[i]);
 //			values.add(v);
 //			values.add(new String(tpl[i]));
-			valuesCopy.add(new String(tpl[i]));
+			String[] vals = tpl[i].split(",");
+			for(int j = 0; j < vals.length; ++j)
+				valuesCopy.add(new String(vals[j]));
 		}
 //		if((values.size() - 1 ) == leftFieldSchema.size() ){
 //			fields = new Fields(leftFieldSchema.toList());
