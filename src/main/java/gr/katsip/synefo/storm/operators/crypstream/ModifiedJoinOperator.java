@@ -287,8 +287,9 @@ public class ModifiedJoinOperator<T extends Object> implements AbstractStatOpera
 		updateData(statistics);
 		values.remove(0);
 		for(int i = 0; i < tpl.length; i++) {
-			Values v = new Values(tpl[i]);
-			values.add(v);
+//			Values v = new Values(tpl[i]);
+//			values.add(v);
+			values.add(new String(tpl[i]));
 		}
 		if((values.size()-1)==leftFieldSchema.size()){
 			fields = new Fields(leftFieldSchema.toList());
