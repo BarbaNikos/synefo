@@ -205,8 +205,8 @@ public class TaskStatistics implements Serializable {
 	}
 
 	public double getCpuLoad() {
-		return cpuLoad;
-//		return cpuSampleWindow.size() > 0 ? (runningCpuWindowSum / cpuSampleWindow.size()) : 0.0;
+//		return cpuLoad;
+		return cpuSampleWindow.size() > 0 ? (runningCpuWindowSum / cpuSampleWindow.size()) : 0.0;
 	}
 
 	public void updateMemory() {
