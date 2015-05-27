@@ -37,6 +37,10 @@ public class DataCollector implements Serializable {
 
 	private ZooKeeper zk = null;
 	
+	private long previousTimestamp=0;
+	
+	private long reportPeriod=1000;
+	
 	private Watcher dataCollectorWatcher = new Watcher() {
 		@Override
 		public void process(WatchedEvent event) {
@@ -73,12 +77,15 @@ public class DataCollector implements Serializable {
 		}
 	}
 
-	public void addToBuffer(String tuple) {
-		if(currentBufferSize < bufferSize) {
-			currentBufferSize += 1;
-		}else {
-			pushStatisticData(tuple.getBytes());
+	public boolean addToBuffer(String tuple) {
+		if(currentBufferSize > bufferSize && (System.currentTimeMillis()-previousTimestamp)>reportPeriod) {
 			currentBufferSize = 0;
+			previousTimestamp=System.currentTimeMillis();
+			pushStatisticData(tuple.getBytes());
+			return true;
+		}else {
+			currentBufferSize += 1;
+			return false;
 		}
 	}
 

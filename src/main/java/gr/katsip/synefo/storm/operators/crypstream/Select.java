@@ -325,8 +325,8 @@ public class Select implements Serializable, AbstractStatOperator  {
 					encryptionData.get("HOM");
 
 			//System.out.println(tuple);
-			dataSender.addToBuffer(tuple);
-			if(statReportCount>statReportPeriod){
+			boolean isDataFull = dataSender.addToBuffer(tuple);
+			if(isDataFull){
 				encryptionData.put("pln",0);
 				encryptionData.put("DET",0);
 				encryptionData.put("RND",0);
