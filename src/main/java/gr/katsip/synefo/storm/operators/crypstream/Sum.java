@@ -239,7 +239,7 @@ public class Sum implements AbstractStatOperator, Serializable {
 	        else
 	        	bigInteger1.add(new BigInteger("2"));
 		}
-//		System.out.println("In mult");
+		System.out.println("In mult");
 		if(counter==size) {
 			counter = 0;
 			BigInteger ret = cryptoSum.multiply(new BigInteger(tuples[attribute]));
