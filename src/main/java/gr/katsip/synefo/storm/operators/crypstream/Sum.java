@@ -140,7 +140,7 @@ public class Sum implements AbstractStatOperator, Serializable {
 						//System.out.println("getSPSCallback(): Successfully retrieved new predicate: " + 
 						//		new String(data));
 						handleUpdate(new String(data));
-						getDataAndWatch();
+//						getDataAndWatch();
 						break;
 					default:
 						System.out.println("getDataCallback(): Unexpected scenario: " + 
