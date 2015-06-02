@@ -218,7 +218,7 @@ public class Sum implements AbstractStatOperator, Serializable {
 		/**
 		 * Dummy added computation
 		 */
-		for(int i = 0; i < 100; i++) {
+		for(int i = 0; i < 10000; i++) {
 			BigInteger bigInteger = new BigInteger("9349988899999");
 	        BigInteger bigInteger1 = bigInteger.subtract(new BigInteger("1"));
 	        Random rnd = new Random();
@@ -239,7 +239,7 @@ public class Sum implements AbstractStatOperator, Serializable {
 	        else
 	        	bigInteger1.add(new BigInteger("2"));
 		}
-		System.out.println("In mult");
+//		System.out.println("In mult");
 		if(counter==size) {
 			counter = 0;
 			BigInteger ret = cryptoSum.multiply(new BigInteger(tuples[attribute]));
