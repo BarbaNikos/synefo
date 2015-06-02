@@ -175,33 +175,35 @@ public class Select implements Serializable, AbstractStatOperator  {
 				}
 			}
 		};
-		getSPSCallback = new DataCallback() {
-			@Override
-			public void processResult(int rc, String path, Object ctx, byte[] data,
-					Stat stat) {
-				switch(Code.get(rc)) {
-				case CONNECTIONLOSS:
-					System.out.println("getSPSCallback(): CONNECTIONLOSS");
-					getDataAndWatch();
-					break;
-				case NONODE:
-					System.out.println("getSPSCallback(): NONODE");
-					break;
-				case OK:
-					//System.out.println("getSPSCallback(): Successfully retrieved new predicate: " + 
-					//		new String(data));
-					handleUpdate(new String(data));
-					getDataAndWatch();
-					break;
-				default:
-					System.out.println("getDataCallback(): Unexpected scenario: " + 
-							KeeperException.create(Code.get(rc), path) );
-					break;
+		if(getSPSCallback == null) {
+			getSPSCallback = new DataCallback() {
+				@Override
+				public void processResult(int rc, String path, Object ctx, byte[] data,
+						Stat stat) {
+					switch(Code.get(rc)) {
+					case CONNECTIONLOSS:
+						System.out.println("getSPSCallback(): CONNECTIONLOSS");
+						getDataAndWatch();
+						break;
+					case NONODE:
+						System.out.println("getSPSCallback(): NONODE");
+						break;
+					case OK:
+						//System.out.println("getSPSCallback(): Successfully retrieved new predicate: " + 
+						//		new String(data));
+						handleUpdate(new String(data));
+//						getDataAndWatch();
+						break;
+					default:
+						System.out.println("getDataCallback(): Unexpected scenario: " + 
+								KeeperException.create(Code.get(rc), path) );
+						break;
+					}
 				}
-			}
 
-		};
-		if(zk==null){
+			};
+		}
+		if(zk==null) {
 			try {
 				zk = new ZooKeeper(this.zooIP + ":" + this.zooPort, 100000, SPSRetrieverWatcher);
 			} catch (IOException e) {
@@ -209,7 +211,7 @@ public class Select implements Serializable, AbstractStatOperator  {
 		}
 		updateData(statistics);
 		if(!values.get(0).toString().contains("SPS")) {
-//			System.out.println("ID: "+ID+" Predicate: "+predicate+ " SELECTION: "+values.get(0).toString());
+			//			System.out.println("ID: "+ID+" Predicate: "+predicate+ " SELECTION: "+values.get(0).toString());
 			String[] tuples = values.get(0).toString().split(Pattern.quote("//$$$//"));
 			boolean matches  = false;
 			if(type == 0) {
@@ -260,7 +262,7 @@ public class Select implements Serializable, AbstractStatOperator  {
 			ArrayList<Values> valz = new ArrayList<Values>();
 			valz.add(val);
 			if(matches){
-//				System.out.println("MAtched: "+values.get(0).toString());
+				//				System.out.println("MAtched: "+values.get(0).toString());
 				return valz;
 			}
 			else
@@ -271,7 +273,7 @@ public class Select implements Serializable, AbstractStatOperator  {
 	}
 
 	public boolean equiSelect(String[] tuple) {
-//		System.out.println("Attribute: "+attribute+" predicate: "+predicate+" Tuple: "+ Arrays.toString(tuple));
+		//		System.out.println("Attribute: "+attribute+" predicate: "+predicate+" Tuple: "+ Arrays.toString(tuple));
 		if(predicate.equals("*") && predicate == null)
 			return true;
 		if(tuple[attribute].equalsIgnoreCase(predicate))
@@ -362,7 +364,7 @@ public class Select implements Serializable, AbstractStatOperator  {
 	}
 
 	private void handleUpdate(String data){
-//			System.out.println("sps sid: "+ streamId+ " att: "+attribute+" tpl: "+ data);
+		//			System.out.println("sps sid: "+ streamId+ " att: "+attribute+" tpl: "+ data);
 		String[] sp = data.split(",");
 		//	System.out.println("new sps: "+sp[0]+" new ID "+sp[1]+ " new att "+sp[2]);
 		if(sp[0].equalsIgnoreCase("select")&&Integer.parseInt(sp[1])==streamId && Integer.parseInt(sp[2])==attribute){
@@ -376,7 +378,7 @@ public class Select implements Serializable, AbstractStatOperator  {
 		this.ID = operatorName;
 
 	}
-	
+
 	@Override
 	public void reportStatisticBeforeScaleOut() {
 		float CPU = (float) 0.0;
