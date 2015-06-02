@@ -140,7 +140,6 @@ public class DemoScenarioTwo {
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
 		ArrayList<String> preds = new ArrayList<String>();
-		//TODO: Fill out predicates
 		/**
 		 * Stage 0: Data Sources Spouts
 		 */
@@ -258,7 +257,7 @@ public class DemoScenarioTwo {
 
 		String[] vals_left = {"id","name", "stairs_climed", "steps", "blood_pressure", "lon", "lat"};
 		String[] vals_right = {"id","unique","name","city"};
-		ModifiedJoinOperator<String> joinOperator = new ModifiedJoinOperator<String>("join_bolt_1",new StringComparator(), 100, "name", 
+		ModifiedJoinOperator<String> joinOperator = new ModifiedJoinOperator<String>("join_bolt_1",new StringComparator(), 500, "name", 
 				new Fields(vals_left), new Fields(vals_right), zooIP, zooPort, 50);
 		joinOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("join_bolt_1", 
@@ -269,7 +268,7 @@ public class DemoScenarioTwo {
 						.directGrouping("select_bolt_2")
 						.directGrouping("select_bolt_3")
 						.directGrouping("select_bolt_4");
-		joinOperator = new ModifiedJoinOperator<String>("join_bolt_2",new StringComparator(), 100, "name", 
+		joinOperator = new ModifiedJoinOperator<String>("join_bolt_2",new StringComparator(), 500, "name", 
 				new Fields(vals_left), new Fields(vals_right), zooIP, zooPort, 50);
 		joinOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("join_bolt_2", 
