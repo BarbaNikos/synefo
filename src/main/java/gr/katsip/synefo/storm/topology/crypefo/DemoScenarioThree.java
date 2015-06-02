@@ -308,7 +308,7 @@ public class DemoScenarioThree {
 		 */
 		String[] vals_left = { "id" , "name" , "stairs_climed" , "steps" , "blood_pressure" , "location" };
 		String[] vals_right = { "id" , "car_ID" , "car_owner" , "location" };
-		ModifiedJoinOperator<String> joinOperator = new ModifiedJoinOperator<String>("join_bolt_1",new StringComparator(), 300, "location", 
+		ModifiedJoinOperator<String> joinOperator = new ModifiedJoinOperator<String>("join_bolt_1",new StringComparator(), 100, "location", 
 				new Fields(vals_left), new Fields(vals_right), zooIP, zooPort, 50);
 		joinOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("join_bolt_1", 
@@ -319,7 +319,7 @@ public class DemoScenarioThree {
 						.directGrouping("select_bolt_2")
 						.directGrouping("select_bolt_3")
 						.directGrouping("select_bolt_4");
-		joinOperator = new ModifiedJoinOperator<String>("join_bolt_2",new StringComparator(), 300, "location", 
+		joinOperator = new ModifiedJoinOperator<String>("join_bolt_2",new StringComparator(), 100, "location", 
 				new Fields(vals_left), new Fields(vals_right), zooIP, zooPort, 50);
 		joinOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("join_bolt_2", 
