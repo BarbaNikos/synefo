@@ -171,7 +171,7 @@ public class Client implements AbstractStatOperator, Serializable {
 		}else {
 			String[] encUse= tuples[tuples.length-1].split(" ");
 			for(int k = 0; k < encUse.length; k++){
-				System.out.println(encUse[k]);
+//				System.out.println(encUse[k]);
 				encryptionData.put(encUse[k], encryptionData.get(encUse[k])+1);
 			}
 			if(statReportCount > statReportPeriod) {
