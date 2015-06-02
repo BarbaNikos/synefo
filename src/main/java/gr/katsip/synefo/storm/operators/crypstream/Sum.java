@@ -215,7 +215,7 @@ public class Sum implements AbstractStatOperator, Serializable {
 
 	public BigInteger multBigInt(String[] tuples) {
 		counter++;
-		//System.out.println("Value: "+tuples[attribute]);
+		System.out.println("In mult");
 		if(counter==size) {
 			counter = 0;
 			BigInteger ret = cryptoSum.multiply(new BigInteger(tuples[attribute]));
