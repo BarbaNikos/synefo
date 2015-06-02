@@ -370,7 +370,7 @@ public class Sum implements AbstractStatOperator, Serializable {
 
 	private void handleUpdate(String data){
 		String[] sp = data.split(",");
-		if(sp[0].equalsIgnoreCase("sum")&&Integer.parseInt(sp[1])==streamId && Integer.parseInt(sp[2])==attribute){
+		if(sp[0].equalsIgnoreCase("sum")){//&&Integer.parseInt(sp[1])==streamId && Integer.parseInt(sp[2])==attribute){
 			type = 1;
 		}
 	}
