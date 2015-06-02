@@ -9,6 +9,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 import java.util.regex.Pattern;
 
 import org.apache.zookeeper.KeeperException;
@@ -215,13 +216,37 @@ public class Sum implements AbstractStatOperator, Serializable {
 	public BigInteger multBigInt(String[] tuples) {
 		counter++;
 		//System.out.println("Value: "+tuples[attribute]);
-		if(counter==size){
+		if(counter==size) {
 			counter = 0;
 			BigInteger ret = cryptoSum.multiply(new BigInteger(tuples[attribute]));
 			cryptoSum=BigInteger.ONE;
 			return ret;
-		}else{
+		}else {
 			cryptoSum.multiply(new BigInteger(tuples[attribute]));
+			/**
+			 * Dummy added computation
+			 */
+			for(int i = 0; i < 100; i++) {
+				BigInteger bigInteger = new BigInteger("9349988899999");
+		        BigInteger bigInteger1 = bigInteger.subtract(new BigInteger("1"));
+		        Random rnd = new Random();
+		        int maxNumBitLength = bigInteger1.bitLength();
+		        BigInteger aRandomBigInt;
+		        do {
+		            aRandomBigInt = new BigInteger(maxNumBitLength, rnd);
+		            // compare random number lessthan ginven number
+		        } while (aRandomBigInt.compareTo(bigInteger1) > 0);
+		        BigInteger bRandomBigInt;
+		        do {
+		            bRandomBigInt = new BigInteger(maxNumBitLength, rnd);
+		            // compare random number lessthan ginven number
+		        } while (bRandomBigInt.compareTo(bigInteger1) > 0);
+		        bigInteger1 = aRandomBigInt.multiply(bRandomBigInt);
+		        if(bigInteger1.testBit(0))
+		        	bigInteger1.subtract(new BigInteger("1"));
+		        else
+		        	bigInteger1.add(new BigInteger("2"));
+			}
 			return BigInteger.ONE.multiply(new BigInteger("-1"));
 		}
 	}
