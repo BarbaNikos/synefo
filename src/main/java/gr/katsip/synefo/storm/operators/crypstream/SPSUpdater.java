@@ -61,7 +61,7 @@ public class SPSUpdater implements Serializable {
 	public void createChildNode(byte[] statBuffer) {
 		String nodePath = "/SPS";
 		zk.setData(nodePath, statBuffer, -1, setSPSCallback, statBuffer);
-//		System.out.println("znode created for SPS");
+		System.out.println("znode created for SPS: " + new String(statBuffer));
 	}
 	
 	StatCallback setSPSCallback = new StatCallback() {
