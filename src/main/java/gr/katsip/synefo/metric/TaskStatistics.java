@@ -57,6 +57,18 @@ public class TaskStatistics implements Serializable {
 	private Double runningCpuWindowSum;
 
 	private double cpuLoad;
+	
+	private ControlBasedStatistics throughputSlope;
+	
+	public ControlBasedStatistics getThroughputSlope() {
+		return throughputSlope;
+	}
+
+	public ControlBasedStatistics getLatencySlope() {
+		return latencySlope;
+	}
+
+	private ControlBasedStatistics latencySlope;
 
 	public TaskStatistics() {
 		selectivity = 0.0;
@@ -77,6 +89,8 @@ public class TaskStatistics implements Serializable {
 		runningCpuWindowSum = 0.0;
 		memorySampleWindow = new LinkedList<Double>();
 		runningMemoryWindowSum = 0.0;
+		throughputSlope = new ControlBasedStatistics();
+		latencySlope = new ControlBasedStatistics();
 	}
 
 	public void updateSelectivity(double selectivity) {
@@ -168,6 +182,7 @@ public class TaskStatistics implements Serializable {
 		}
 		throughputSampleWindow.offer(throughput);
 		runningThroughputWindowSum += throughput;
+		throughputSlope.updateSlope(throughput);
 	}
 
 	public void updateWindowLatency(long latency) {
@@ -178,6 +193,7 @@ public class TaskStatistics implements Serializable {
 		}
 		latencySampleWindow.offer(this.latency);
 		runningLatencyWindowSum += this.latency;
+		latencySlope.updateSlope(latency);
 	}
 	
 	public void updateCpuLoad() {
