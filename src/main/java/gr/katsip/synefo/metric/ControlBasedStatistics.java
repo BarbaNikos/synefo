@@ -1,6 +1,13 @@
 package gr.katsip.synefo.metric;
 
-public class ControlBasedStatistics {
+import java.io.Serializable;
+
+public class ControlBasedStatistics implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -2419181085580206834L;
 
 	private double slope;
 	
