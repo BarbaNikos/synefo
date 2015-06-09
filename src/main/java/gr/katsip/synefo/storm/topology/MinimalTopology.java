@@ -59,23 +59,23 @@ public class MinimalTopology {
 				new SynefoSpout("spout_1b", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
 		
-		tupleProducer = new StreamgenTupleProducer(streamIPs[2]);
-		tupleProducer.setSchema(new Fields(spoutTwoSchema));
-		builder.setSpout("spout_2a", 
-				new SynefoSpout("spout_2a", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
-				.setNumTasks(1);
-		tupleProducer = new StreamgenTupleProducer(streamIPs[3]);
-		tupleProducer.setSchema(new Fields(spoutTwoSchema));
-		builder.setSpout("spout_2b", 
-				new SynefoSpout("spout_2b", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
-				.setNumTasks(1);
+//		tupleProducer = new StreamgenTupleProducer(streamIPs[2]);
+//		tupleProducer.setSchema(new Fields(spoutTwoSchema));
+//		builder.setSpout("spout_2a", 
+//				new SynefoSpout("spout_2a", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
+//				.setNumTasks(1);
+//		tupleProducer = new StreamgenTupleProducer(streamIPs[3]);
+//		tupleProducer.setSchema(new Fields(spoutTwoSchema));
+//		builder.setSpout("spout_2b", 
+//				new SynefoSpout("spout_2b", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
+//				.setNumTasks(1);
 		_tmp = new ArrayList<String>();
 		_tmp.add("join_bolt_1");
 		_tmp.add("join_bolt_2");
 		topology.put("spout_1a", new ArrayList<String>(_tmp));
 		topology.put("spout_1b", new ArrayList<String>(_tmp));
-		topology.put("spout_2a", new ArrayList<String>(_tmp));
-		topology.put("spout_2b", new ArrayList<String>(_tmp));
+//		topology.put("spout_2a", new ArrayList<String>(_tmp));
+//		topology.put("spout_2b", new ArrayList<String>(_tmp));
 		/**
 		 * Stage 1: Join operators
 		 */
@@ -86,9 +86,9 @@ public class MinimalTopology {
 						joinOperator, zooIP, zooPort, true), 1)
 						.setNumTasks(2)
 						.directGrouping("spout_1a")
-						.directGrouping("spout_1b")
-						.directGrouping("spout_2a")
-						.directGrouping("spout_2b");
+						.directGrouping("spout_1b");
+//						.directGrouping("spout_2a")
+//						.directGrouping("spout_2b");
 		joinOperator = new JoinOperator<String>(new StringComparator(), 500, "three", 
 				new Fields(spoutSchema), new Fields(spoutTwoSchema));
 		builder.setBolt("join_bolt_2", 
@@ -96,9 +96,9 @@ public class MinimalTopology {
 						joinOperator, zooIP, zooPort, true), 1)
 						.setNumTasks(2)
 						.directGrouping("spout_1a")
-						.directGrouping("spout_1b")
-						.directGrouping("spout_2a")
-						.directGrouping("spout_2b");
+						.directGrouping("spout_1b");
+//						.directGrouping("spout_2a")
+//						.directGrouping("spout_2b");
 		_tmp = new ArrayList<String>();
 		_tmp.add("drain_bolt");
 		topology.put("join_bolt_1", new ArrayList<String>(_tmp));
@@ -144,7 +144,7 @@ public class MinimalTopology {
 		synEFOSocket.close();
 
 		conf.setDebug(false);
-		conf.setNumWorkers(7);
+		conf.setNumWorkers(5);
 		StormSubmitter.submitTopology("minimal-top", conf, builder.createTopology());
 	}
 
