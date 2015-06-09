@@ -323,8 +323,8 @@ public class SynefoBolt extends BaseRichBolt {
 					this.opLatencyReceiveState = OpLatencyState.na;
 					opLatencyLocalTimestamp = new long[3];
 					opLatencyReceivedTimestamp = new long[3];
-					//					logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + 
-					//							this.taskIP + ") calculated OPERATOR-LATENCY-METRIC: " + latency + ".");
+//					logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + 
+//							this.taskIP + ") calculated OPERATOR-LATENCY-METRIC: " + latency + ".");
 				}
 				collector.ack(tuple);
 				return;
@@ -469,10 +469,10 @@ public class SynefoBolt extends BaseRichBolt {
 		}else {
 			reportCounter += 1;
 		}
-		//		if(autoScale)
-		//			zooPet.setLatency(statistics.getLatency());
 		if(autoScale && warmFlag)
-			zooPet.setThroughput(statistics.getWindowThroughput());
+			zooPet.setLatency(statistics.getWindowLatency());
+//		if(autoScale && warmFlag)
+//			zooPet.setThroughput(statistics.getWindowThroughput());
 		//			zooPet.setThroughput(statistics.getThroughput());
 		String scaleCommand = "";
 		synchronized(zooPet) {

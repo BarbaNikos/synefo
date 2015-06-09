@@ -239,6 +239,11 @@ public class TopKTopology {
 		
 		conf.setDebug(false);
 		conf.setNumWorkers(12);
+		conf.put(Config.TOPOLOGY_RECEIVER_BUFFER_SIZE, 8);
+		conf.put(Config.TOPOLOGY_TRANSFER_BUFFER_SIZE, 32);
+		conf.put(Config.TOPOLOGY_EXECUTOR_RECEIVE_BUFFER_SIZE, 16384);
+		conf.put(Config.TOPOLOGY_EXECUTOR_SEND_BUFFER_SIZE, 16384);
+		
 		StormSubmitter.submitTopology("top-k-top", conf, builder.createTopology());
 	}
 
