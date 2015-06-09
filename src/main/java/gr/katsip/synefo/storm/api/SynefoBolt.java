@@ -628,24 +628,31 @@ public class SynefoBolt extends BaseRichBolt {
 						Socket client = _socket.accept();
 						ObjectOutputStream _stateOutput = new ObjectOutputStream(client.getOutputStream());
 						ObjectInputStream _stateInput = new ObjectInputStream(client.getInputStream());
-						List<Values> newState = (List<Values>) _stateInput.readObject();
-						operator.mergeState(operator.getOutputSchema(), newState);
+						Object responseObject = _stateInput.readObject();
+						if(responseObject instanceof List) {
+							List<Values> newState = (List<Values>) responseObject;
+							operator.mergeState(operator.getOutputSchema(), newState);
+						}
 						if(activeListFlag == false) {
 							_stateOutput.writeObject("+EFO_ACT_NODES");
 							_stateOutput.flush();
-							this.activeDownstreamTasks = (ArrayList<String>) _stateInput.readObject();
-							intActiveDownstreamTasks = new ArrayList<Integer>();
-							Iterator<String> itr = activeDownstreamTasks.iterator();
-							while(itr.hasNext()) {
-								String[] downTask = itr.next().split("[:@]");
-								Integer task = Integer.parseInt(downTask[1]);
-								intActiveDownstreamTasks.add(task);
+							responseObject = _stateInput.readObject();
+							if(responseObject instanceof List) {
+								this.activeDownstreamTasks = (ArrayList<String>) responseObject;
+								intActiveDownstreamTasks = new ArrayList<Integer>();
+								Iterator<String> itr = activeDownstreamTasks.iterator();
+								while(itr.hasNext()) {
+									String[] downTask = itr.next().split("[:@]");
+									Integer task = Integer.parseInt(downTask[1]);
+									intActiveDownstreamTasks.add(task);
+								}
+								logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+										") received active downstream task list:" + activeDownstreamTasks + "(intActiveDownstreamTasks: " + 
+										intActiveDownstreamTasks.toString() + ")");
+								activeListFlag = true;
+								downStreamIndex = 0;
 							}
-							logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
-									") received active downstream task list:" + activeDownstreamTasks + "(intActiveDownstreamTasks: " + 
-									intActiveDownstreamTasks.toString() + ")");
-							activeListFlag = true;
-							downStreamIndex = 0;
+							
 						}else {
 							_stateOutput.writeObject("+EFO_ACK");
 						}
@@ -693,10 +700,13 @@ public class SynefoBolt extends BaseRichBolt {
 					ObjectInputStream _stateInput = new ObjectInputStream(client.getInputStream());
 					_stateOutput.writeObject(operator.getStateValues());
 					_stateOutput.flush();
-					String response = (String) _stateInput.readObject();
-					if(response.equals("+EFO_ACT_NODES")) {
-						_stateOutput.writeObject(this.activeDownstreamTasks);
-						_stateOutput.flush();
+					Object responseObject = _stateInput.readObject();
+					if(responseObject instanceof String) {
+						String response = (String) responseObject;
+						if(response.equals("+EFO_ACT_NODES")) {
+							_stateOutput.writeObject(this.activeDownstreamTasks);
+							_stateOutput.flush();
+						}
 					}
 					_stateInput.close();
 					_stateOutput.close();
@@ -732,7 +742,7 @@ public class SynefoBolt extends BaseRichBolt {
 				try {
 					ServerSocket _socket = new ServerSocket(6000 + taskID);
 					logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
-							") accepting connections to receive state... (IP:" + 
+							") accepting connections to send state... (IP:" + 
 							_socket.getInetAddress() + ", port: " + _socket.getLocalPort());
 					int numOfStatesReceived = 0;
 					while(numOfStatesReceived < (compNum - 1)) {
@@ -741,9 +751,12 @@ public class SynefoBolt extends BaseRichBolt {
 						ObjectInputStream _stateInput = new ObjectInputStream(client.getInputStream());
 						_stateOutput.writeObject(operator.getStateValues());
 						_stateOutput.flush();
-						String response = (String) _stateInput.readObject();
-						if(response.equals("+EFO_ACK")) {
+						Object responseObject = _stateInput.readObject();
+						if(responseObject instanceof String) {
+							String response = (String) responseObject;
+							if(response.equals("+EFO_ACK")) {
 
+							}
 						}
 						_stateInput.close();
 						_stateOutput.close();
@@ -787,8 +800,11 @@ public class SynefoBolt extends BaseRichBolt {
 				try {
 					ObjectOutputStream _stateOutput = new ObjectOutputStream(client.getOutputStream());
 					ObjectInputStream _stateInput = new ObjectInputStream(client.getInputStream());
-					List<Values> newState = (List<Values>) _stateInput.readObject();
-					operator.mergeState(operator.getOutputSchema(), newState);
+					Object responseObject = _stateInput.readObject();
+					if(responseObject instanceof List) {
+						List<Values> newState = (List<Values>) responseObject;
+						operator.mergeState(operator.getOutputSchema(), newState);
+					}
 					_stateOutput.writeObject("+EFO_ACK");
 					_stateOutput.flush();
 					_stateInput.close();
