@@ -469,7 +469,7 @@ public class SynefoBolt extends BaseRichBolt {
 		}else {
 			reportCounter += 1;
 		}
-		if(autoScale && warmFlag)
+		if(autoScale && warmFlag == true)
 			zooPet.setLatency(statistics.getWindowLatency());
 //		if(autoScale && warmFlag)
 //			zooPet.setThroughput(statistics.getWindowThroughput());
@@ -585,6 +585,8 @@ public class SynefoBolt extends BaseRichBolt {
 		componentId = tokens[5];
 		compNum = Integer.parseInt(tokens[7]);
 		ip = tokens[9];
+		if(warmFlag == true)
+			warmFlag = false;
 		logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + ") action: " + scaleAction + ".");
 		/**
 		 * 
