@@ -84,7 +84,7 @@ public class MinimalTopology {
 		builder.setBolt("join_bolt_1", 
 				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, 
 						joinOperator, zooIP, zooPort, true), 1)
-						.setNumTasks(1)
+						.setNumTasks(2)
 						.directGrouping("spout_1a")
 						.directGrouping("spout_1b")
 						.directGrouping("spout_2a")
@@ -94,7 +94,7 @@ public class MinimalTopology {
 		builder.setBolt("join_bolt_2", 
 				new SynefoBolt("join_bolt_2", synefoIP, synefoPort, 
 						joinOperator, zooIP, zooPort, true), 1)
-						.setNumTasks(1)
+						.setNumTasks(2)
 						.directGrouping("spout_1a")
 						.directGrouping("spout_1b")
 						.directGrouping("spout_2a")

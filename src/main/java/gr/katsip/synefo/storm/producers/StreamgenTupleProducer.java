@@ -27,12 +27,9 @@ public class StreamgenTupleProducer implements AbstractTupleProducer, Serializab
 
 	private String dataProviderIP;
 
-	//	private long num;
-
 	public StreamgenTupleProducer(String dataProviderIP) {
 		dataProvider = null;
 		this.dataProviderIP = dataProviderIP;
-		//		num = 0;
 	}
 
 	public void connect() {
