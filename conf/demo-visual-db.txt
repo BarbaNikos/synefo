@@ -1,4 +1,4 @@
-db-server-ip:ec2-52-24-102-134.us-west-2.compute.amazonaws.com
+db-server-ip:52.25.1.113
 db-schema-name:ce_storm
 db-user:root
 db-password:myCQl_Is_#1

@@ -156,9 +156,9 @@ public class StatTopKTopology {
 				new SynefoSpout("spout_1", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
 		taskList = new ArrayList<String>();
-		taskList.add("project_bolt_1");
-		taskList.add("project_bolt_2");
-		taskList.add("project_bolt_3");
+		taskList.add("project_1");
+		taskList.add("project_2");
+		taskList.add("project_3");
 		topology.put("spout_1", new ArrayList<String>(taskList));
 		ceDb.insertOperator("spout_1", "n/a", queryId, 0, 4, "SPOUT");
 		
@@ -170,9 +170,9 @@ public class StatTopKTopology {
 				new SynefoSpout("spout_2", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
 		taskList = new ArrayList<String>();
-		taskList.add("join_bolt_1");
-		taskList.add("join_bolt_2");
-		taskList.add("join_bolt_3");
+		taskList.add("join_1");
+		taskList.add("join_2");
+		taskList.add("join_3");
 		topology.put("spout_2", new ArrayList<String>(taskList));
 		ceDb.insertOperator("spout_2", "n/a", queryId, 0, 0, "SPOUT");
 		
@@ -181,32 +181,32 @@ public class StatTopKTopology {
 		 */
 		StatProjectOperator projectOperator = new StatProjectOperator(new Fields(spoutSchemaOne), zooIP + ":" + zooPort, 500);
 		projectOperator.setOutputSchema(new Fields(spoutSchemaOne));
-		builder.setBolt("project_bolt_1", 
-				new SynefoBolt("project_bolt_1", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
+		builder.setBolt("project_1", 
+				new SynefoBolt("project_1", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
 				.directGrouping("spout_1");
 		projectOperator = new StatProjectOperator(new Fields(spoutSchemaOne), zooIP + ":" + zooPort, 500);
 		projectOperator.setOutputSchema(new Fields(spoutSchemaOne));
-		builder.setBolt("project_bolt_2", 
-				new SynefoBolt("project_bolt_2", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
+		builder.setBolt("project_2", 
+				new SynefoBolt("project_2", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
 				.directGrouping("spout_1");
 		projectOperator = new StatProjectOperator(new Fields(spoutSchemaOne), zooIP + ":" + zooPort, 500);
 		projectOperator.setOutputSchema(new Fields(spoutSchemaOne));
-		builder.setBolt("project_bolt_3", 
-				new SynefoBolt("project_bolt_3", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
+		builder.setBolt("project_3", 
+				new SynefoBolt("project_3", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
 				.directGrouping("spout_1");
 		taskList = new ArrayList<String>();
-		taskList.add("join_bolt_1");
-		taskList.add("join_bolt_2");
-		taskList.add("join_bolt_3");
-		topology.put("project_bolt_1", new ArrayList<String>(taskList));
-		ceDb.insertOperator("project_bolt_1", "n/a", queryId, 1, 5, "BOLT");
-		topology.put("project_bolt_2", new ArrayList<String>(taskList));
-		ceDb.insertOperator("project_bolt_2", "n/a", queryId, 1, 4, "BOLT");
-		topology.put("project_bolt_3", new ArrayList<String>(taskList));
-		ceDb.insertOperator("project_bolt_3", "n/a", queryId, 1, 3, "BOLT");
+		taskList.add("join_1");
+		taskList.add("join_2");
+		taskList.add("join_3");
+		topology.put("project_1", new ArrayList<String>(taskList));
+		ceDb.insertOperator("project_1", "n/a", queryId, 1, 5, "BOLT");
+		topology.put("project_2", new ArrayList<String>(taskList));
+		ceDb.insertOperator("project_2", "n/a", queryId, 1, 4, "BOLT");
+		topology.put("project_3", new ArrayList<String>(taskList));
+		ceDb.insertOperator("project_3", "n/a", queryId, 1, 3, "BOLT");
 		taskList = null;
 		
 		/**
@@ -214,44 +214,44 @@ public class StatTopKTopology {
 		 */
 		StatJoinOperator<String> joinOperator = new StatJoinOperator<String>(new StringComparator(), 500, "three", 
 				new Fields(spoutSchemaOne), new Fields(spoutSchemaTwo), zooIP + ":" + zooPort, 500);
-		builder.setBolt("join_bolt_1", 
-				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, 
+		builder.setBolt("join_1", 
+				new SynefoBolt("join_1", synefoIP, synefoPort, 
 						joinOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
-				.directGrouping("project_bolt_1")
-				.directGrouping("project_bolt_2")
-				.directGrouping("project_bolt_3")
+				.directGrouping("project_1")
+				.directGrouping("project_2")
+				.directGrouping("project_3")
 				.directGrouping("spout_2");
 		joinOperator = new StatJoinOperator<String>(new StringComparator(), 500, "three", 
 				new Fields(spoutSchemaOne), new Fields(spoutSchemaTwo), zooIP + ":" + zooPort, 500);
-		builder.setBolt("join_bolt_2", 
-				new SynefoBolt("join_bolt_2", synefoIP, synefoPort, 
+		builder.setBolt("join_2", 
+				new SynefoBolt("join_2", synefoIP, synefoPort, 
 						joinOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
-				.directGrouping("project_bolt_1")
-				.directGrouping("project_bolt_2")
-				.directGrouping("project_bolt_3")
+				.directGrouping("project_1")
+				.directGrouping("project_2")
+				.directGrouping("project_3")
 				.directGrouping("spout_2");
 		joinOperator = new StatJoinOperator<String>(new StringComparator(), 500, "three", 
 				new Fields(spoutSchemaOne), new Fields(spoutSchemaTwo), zooIP + ":" + zooPort, 500);
-		builder.setBolt("join_bolt_3", 
-				new SynefoBolt("join_bolt_3", synefoIP, synefoPort, 
+		builder.setBolt("join_3", 
+				new SynefoBolt("join_3", synefoIP, synefoPort, 
 						joinOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
-				.directGrouping("project_bolt_1")
-				.directGrouping("project_bolt_2")
-				.directGrouping("project_bolt_3")
+				.directGrouping("project_1")
+				.directGrouping("project_2")
+				.directGrouping("project_3")
 				.directGrouping("spout_2");
 		taskList = new ArrayList<String>();
-		taskList.add("count_group_by_bolt_1");
-		taskList.add("count_group_by_bolt_2");
-		taskList.add("count_group_by_bolt_3");
-		topology.put("join_bolt_1", new ArrayList<String>(taskList));
-		ceDb.insertOperator("join_bolt_1", "n/a", queryId, 2, 2, "BOLT");
-		topology.put("join_bolt_2", new ArrayList<String>(taskList));
-		ceDb.insertOperator("join_bolt_2", "n/a", queryId, 2, 1, "BOLT");
-		topology.put("join_bolt_3", new ArrayList<String>(taskList));
-		ceDb.insertOperator("join_bolt_3", "n/a", queryId, 2, 0, "BOLT");
+		taskList.add("count_grpby_1");
+		taskList.add("count_grpby_2");
+		taskList.add("count_grpby_3");
+		topology.put("join_1", new ArrayList<String>(taskList));
+		ceDb.insertOperator("join_1", "n/a", queryId, 2, 2, "BOLT");
+		topology.put("join_2", new ArrayList<String>(taskList));
+		ceDb.insertOperator("join_2", "n/a", queryId, 2, 1, "BOLT");
+		topology.put("join_3", new ArrayList<String>(taskList));
+		ceDb.insertOperator("join_3", "n/a", queryId, 2, 0, "BOLT");
 		taskList = null;
 		
 		/**
@@ -266,41 +266,41 @@ public class StatTopKTopology {
 		String[] countGroupByStateSchema = { "key", "count", "time" };
 		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
 		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
-		builder.setBolt("count_group_by_bolt_1", 
-				new SynefoBolt("count_group_by_bolt_1", synefoIP, synefoPort, 
+		builder.setBolt("count_grpby_1", 
+				new SynefoBolt("count_grpby_1", synefoIP, synefoPort, 
 						countGroupByAggrOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
-				.directGrouping("join_bolt_1")
-				.directGrouping("join_bolt_2")
-				.directGrouping("join_bolt_3");
+				.directGrouping("join_1")
+				.directGrouping("join_2")
+				.directGrouping("join_3");
 		countGroupByAggrOperator = new StatCountGroupByOperator(500, groupByAttributes, zooIP + ":" + zooPort, 500);
 		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
 		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
-		builder.setBolt("count_group_by_bolt_2", 
-				new SynefoBolt("count_group_by_bolt_2", synefoIP, synefoPort, 
+		builder.setBolt("count_grpby_2", 
+				new SynefoBolt("count_grpby_2", synefoIP, synefoPort, 
 						countGroupByAggrOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
-				.directGrouping("join_bolt_1")
-				.directGrouping("join_bolt_2")
-				.directGrouping("join_bolt_3");
+				.directGrouping("join_1")
+				.directGrouping("join_2")
+				.directGrouping("join_3");
 		countGroupByAggrOperator = new StatCountGroupByOperator(500, groupByAttributes, zooIP + ":" + zooPort, 500);
 		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
 		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
-		builder.setBolt("count_group_by_bolt_3", 
-				new SynefoBolt("count_group_by_bolt_3", synefoIP, synefoPort, 
+		builder.setBolt("count_grpby_3", 
+				new SynefoBolt("count_grpby_3", synefoIP, synefoPort, 
 						countGroupByAggrOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
-				.directGrouping("join_bolt_1")
-				.directGrouping("join_bolt_2")
-				.directGrouping("join_bolt_3");
+				.directGrouping("join_1")
+				.directGrouping("join_2")
+				.directGrouping("join_3");
 		taskList = new ArrayList<String>();
 		taskList.add("drain_bolt");
-		topology.put("count_group_by_bolt_1", taskList);
-		ceDb.insertOperator("count_group_by_bolt_1", "n/a", queryId, 3, 2, "BOLT");
-		topology.put("count_group_by_bolt_2", taskList);
-		ceDb.insertOperator("count_group_by_bolt_2", "n/a", queryId, 3, 1, "BOLT");
-		topology.put("count_group_by_bolt_3", taskList);
-		ceDb.insertOperator("count_group_by_bolt_3", "n/a", queryId, 3, 0, "BOLT");
+		topology.put("count_grpby_1", taskList);
+		ceDb.insertOperator("count_grpby_1", "n/a", queryId, 3, 2, "BOLT");
+		topology.put("count_grpby_2", taskList);
+		ceDb.insertOperator("count_grpby_2", "n/a", queryId, 3, 1, "BOLT");
+		topology.put("count_grpby_3", taskList);
+		ceDb.insertOperator("count_grpby_3", "n/a", queryId, 3, 0, "BOLT");
 		
 		/**
 		 * Stage 4: Drain Operator (project operator)
@@ -310,9 +310,9 @@ public class StatTopKTopology {
 		builder.setBolt("drain_bolt", 
 				new SynefoBolt("drain_bolt", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
 				.setNumTasks(1)
-				.directGrouping("count_group_by_bolt_1")
-				.directGrouping("count_group_by_bolt_2")
-				.directGrouping("count_group_by_bolt_3");
+				.directGrouping("count_grpby_1")
+				.directGrouping("count_grpby_2")
+				.directGrouping("count_grpby_3");
 		topology.put("drain_bolt", new ArrayList<String>());
 		ceDb.insertOperator("drain_bolt", "n/a", queryId, 4, 1, "BOLT");
 		ceDb.insertOperatorAdjacencyList(queryId, topology);
