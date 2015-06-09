@@ -240,7 +240,7 @@ public class SynefoBolt extends BaseRichBolt {
 		/**
 		 * Changed the taskName to include the taskID
 		 */
-		taskName = taskName + "_" + taskID;
+//		taskName = taskName + "_" + taskID;
 		try {
 			taskIP = InetAddress.getLocalHost().getHostAddress();
 		} catch (UnknownHostException e1) {

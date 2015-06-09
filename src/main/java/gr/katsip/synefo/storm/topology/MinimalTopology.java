@@ -58,7 +58,6 @@ public class MinimalTopology {
 		builder.setSpout("spout_1b", 
 				new SynefoSpout("spout_1b", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
-		
 //		tupleProducer = new StreamgenTupleProducer(streamIPs[2]);
 //		tupleProducer.setSchema(new Fields(spoutTwoSchema));
 //		builder.setSpout("spout_2a", 
@@ -84,7 +83,7 @@ public class MinimalTopology {
 		builder.setBolt("join_bolt_1", 
 				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, 
 						joinOperator, zooIP, zooPort, true), 1)
-						.setNumTasks(2)
+						.setNumTasks(1)
 						.directGrouping("spout_1a")
 						.directGrouping("spout_1b");
 //						.directGrouping("spout_2a")
@@ -94,7 +93,7 @@ public class MinimalTopology {
 		builder.setBolt("join_bolt_2", 
 				new SynefoBolt("join_bolt_2", synefoIP, synefoPort, 
 						joinOperator, zooIP, zooPort, true), 1)
-						.setNumTasks(2)
+						.setNumTasks(1)
 						.directGrouping("spout_1a")
 						.directGrouping("spout_1b");
 //						.directGrouping("spout_2a")
