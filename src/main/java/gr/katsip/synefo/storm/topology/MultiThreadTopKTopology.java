@@ -54,8 +54,7 @@ public class MultiThreadTopKTopology {
 		String[] spoutSchemaOne = { "one", "two", "three", "four", "five" };
 		tupleProducer.setSchema(new Fields(spoutSchemaOne));
 		builder.setSpout("spout_1", 
-				new SynefoSpout("spout_1", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
-				.setNumTasks(1);
+				new SynefoSpout("spout_1", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1);
 		taskNumber += 1;
 		taskList = new ArrayList<String>();
 		taskList.add("project");
@@ -65,8 +64,7 @@ public class MultiThreadTopKTopology {
 		String[] spoutSchemaTwo = { "1", "2", "three", "4", "5" };
 		tupleProducer.setSchema(new Fields(spoutSchemaTwo));
 		builder.setSpout("spout_2", 
-				new SynefoSpout("spout_2", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
-				.setNumTasks(1);
+				new SynefoSpout("spout_2", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1);
 		taskNumber += 1;
 		taskList = new ArrayList<String>();
 		taskList.add("join");
@@ -78,7 +76,6 @@ public class MultiThreadTopKTopology {
 		projectOperator.setOutputSchema(new Fields(spoutSchemaOne));
 		builder.setBolt("project", 
 				new SynefoBolt("project", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 3)
-				.setNumTasks(1)
 				.directGrouping("spout_1");
 		taskNumber += 3;
 		taskList = new ArrayList<String>();
@@ -93,7 +90,6 @@ public class MultiThreadTopKTopology {
 		builder.setBolt("join", 
 				new SynefoBolt("join", synefoIP, synefoPort, 
 						joinOperator, zooIP, zooPort, true), 5)
-						.setNumTasks(1)
 						.directGrouping("project")
 						.directGrouping("spout_2");
 		taskNumber += 5;
@@ -114,7 +110,6 @@ public class MultiThreadTopKTopology {
 		builder.setBolt("count_groupby", 
 				new SynefoBolt("count_groupby", synefoIP, synefoPort, 
 						countGroupByAggrOperator, zooIP, zooPort, true), 4)
-						.setNumTasks(1)
 						.directGrouping("join");
 		taskNumber += 4;
 		taskList = new ArrayList<String>();
@@ -127,7 +122,6 @@ public class MultiThreadTopKTopology {
 		projectOperator.setOutputSchema(new Fields(countGroupBySchema));
 		builder.setBolt("drain", 
 				new SynefoBolt("drain", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
-				.setNumTasks(1)
 				.directGrouping("count_groupby");
 		taskNumber += 1;
 		topology.put("drain", new ArrayList<String>());
