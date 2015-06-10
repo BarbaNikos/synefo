@@ -655,13 +655,7 @@ public class SynefoBolt extends BaseRichBolt {
 		logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
 				") received punctuation tuple: " + tuple.toString() + 
 				"(timestamp: " + System.currentTimeMillis() + ").");
-		byte[] buffer = ("punctuation tuple: " + tuple.toString() + 
-				"(timestamp: " + System.currentTimeMillis() + ")." + "\n").toString().getBytes();
-		if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
-			scaleEventFileChannel.write(
-					ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
-			scaleEventFileOffset += buffer.length;
-		}
+		
 		/**
 		 * Expected Header format: 
 		 * +EFO/ACTION:{ADD, REMOVE}/COMP:{taskName}:{taskID}/COMP_NUM:{Number of Components}/IP:{taskIP}/
@@ -679,6 +673,12 @@ public class SynefoBolt extends BaseRichBolt {
 		/**
 		 * 
 		 */
+		byte[] buffer = ("timestamp: " + System.currentTimeMillis() + "," + scaleAction + "\n").toString().getBytes();
+		if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
+			scaleEventFileChannel.write(
+					ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
+			scaleEventFileOffset += buffer.length;
+		}
 		if(scaleAction != null && scaleAction.equals(SynefoConstant.ADD_ACTION)) {
 			logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
 					") received an ADD action (timestamp: " + System.currentTimeMillis() + ").");
