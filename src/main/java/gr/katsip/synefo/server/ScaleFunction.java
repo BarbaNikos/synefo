@@ -13,7 +13,7 @@ public class ScaleFunction {
 
 	public HashMap<String, ArrayList<String>> physicalTopology;
 
-	private HashMap<String, ArrayList<String>> activeTopology;
+	private HashMap<String, ArrayList<String>> activeTopology; 
 	
 	private final ReadWriteLock activeTopologyLock = new ReentrantReadWriteLock();
 
