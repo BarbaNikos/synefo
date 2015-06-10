@@ -42,14 +42,18 @@ public class SynEFOthread implements Runnable {
 	private boolean demoMode;
 	
 	private AtomicInteger queryId;
+	
+	private AtomicInteger taskNumber = null;
 
-	public SynEFOthread(HashMap<String, ArrayList<String>> physicalTopology, HashMap<String, ArrayList<String>> activeTopology, 
+	public SynEFOthread(HashMap<String, ArrayList<String>> physicalTopology, 
+			HashMap<String, ArrayList<String>> activeTopology, 
 			HashMap<String, Integer> taskNameToIdMap, 
 			InputStream in, OutputStream out,  
 			HashMap<String, String> taskIPs, 
 			AtomicBoolean operationFlag, 
 			boolean demoMode, 
-			AtomicInteger queryId) {
+			AtomicInteger queryId, 
+			AtomicInteger taskNumber) {
 		this.in = in;
 		this.out = out;
 		this.taskNameToIdMap = taskNameToIdMap;
@@ -65,6 +69,7 @@ public class SynEFOthread implements Runnable {
 		this.operationFlag = operationFlag;
 		this.demoMode = demoMode;
 		this.queryId = queryId;
+		this.taskNumber = taskNumber;
 	}
 
 	public void run() {
@@ -87,7 +92,7 @@ public class SynEFOthread implements Runnable {
 			case "TOPOLOGY":
 				if(demoMode)
 					queryId.set(Integer.parseInt(msg._values.get("QUERY_ID")));
-				topologyProcess();
+				topologyProcess(msg._values);
 				break;
 			case "TIME":
 				timeProcess();
@@ -118,15 +123,7 @@ public class SynEFOthread implements Runnable {
 		/**
 		 * This node has previously died so it is going to come back-up
 		 */
-		/**
-		 * This node has previously died so it is going to come back-up
-		 */
 		if(operationFlag.get() == true) {
-			/**
-			 * Send physical-topology and active-topology.
-			 * TODO: Check if task-id and task-ip have changed
-			 * NOTE: Spouts are always active in Synefo
-			 */
 			System.out.println("+EFO-SPOUT: " + taskName + "(" + taskId + "@" + taskIP + 
 					") has RE-connected.");
 			ArrayList<String> _downStream = null;
@@ -239,10 +236,6 @@ public class SynEFOthread implements Runnable {
 		 * This node has previously died so it is going to come back-up
 		 */
 		if(operationFlag.get() == true) {
-			/**
-			 * Send physical-topology and active-topology.
-			 * TODO: Check if task-id and task-ip have changed
-			 */
 			System.out.println("+efo BOLT: " + taskName + "(" + taskId + "@" + taskIP + 
 					") has RE-connected.");
 			ArrayList<String> _downStream = null;
@@ -367,7 +360,13 @@ public class SynEFOthread implements Runnable {
 	}
 
 	@SuppressWarnings("unchecked")
-	public void topologyProcess() {
+	public void topologyProcess(HashMap<String, String> values) {
+		/**
+		 * This is the total number of tasks (threads) that will be spawned in the 
+		 * given topology. It is set atomically by the topology-process thread.
+		 */
+		Integer providedTaskNumber = Integer.parseInt(values.get("TASK_NUM"));
+		this.taskNumber.compareAndSet(-1, providedTaskNumber);
 		HashMap<String, ArrayList<String>> topology = null;
 		System.out.println("+efo worker-TOPOLOGY: connected.");
 		try {

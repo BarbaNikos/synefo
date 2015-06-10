@@ -13,7 +13,9 @@ public class ScaleFunction {
 
 	public HashMap<String, ArrayList<String>> physicalTopology;
 
-	private HashMap<String, ArrayList<String>> activeTopology; 
+	private HashMap<String, ArrayList<String>> activeTopology;
+	
+	private HashMap<String, Long> layerLatestUpdateTimestamp;
 	
 	private final ReadWriteLock activeTopologyLock = new ReentrantReadWriteLock();
 
@@ -21,6 +23,13 @@ public class ScaleFunction {
 			HashMap<String, ArrayList<String>> activeTopology) {
 		this.physicalTopology = physicalTopology;
 		this.activeTopology = activeTopology;
+		layerLatestUpdateTimestamp = new HashMap<String, Long>();
+		HashMap<String, ArrayList<String>> inverseTopology = ScaleFunction.getInverseTopology(physicalTopology);
+		Iterator<Entry<String, ArrayList<String>>> layerIterator = inverseTopology.entrySet().iterator();
+		while(layerIterator.hasNext()) {
+			Entry<String, ArrayList<String>> pair = layerIterator.next();
+			layerLatestUpdateTimestamp.put(pair.getKey(), System.currentTimeMillis());
+		}
 	}
 	
 	public HashMap<String, ArrayList<String>> getActiveTopology() {
@@ -47,6 +56,10 @@ public class ScaleFunction {
 		ArrayList<String> availableNodes = ScaleFunction.getInActiveNodes(
 				physicalTopology, activeTopology,
 				upstreamTask, overloadedWorker);
+		/**
+		 * Check if the previous scale action on that layer of nodes was 
+		 * before (at least) X seconds
+		 */
 		if(availableNodes == null || availableNodes.size() == 0)
 			return "";
 		String selectedTask = randomChoice(availableNodes);

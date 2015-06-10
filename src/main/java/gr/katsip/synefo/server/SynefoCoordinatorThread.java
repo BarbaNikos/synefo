@@ -19,8 +19,6 @@ public class SynefoCoordinatorThread implements Runnable {
 
 	private HashMap<String, Integer> taskNameToIdMap;
 
-	private Integer totalTaskNum = -1;
-
 	private ZooMaster tamer;
 
 	private HashMap<String, String> taskIPs;
@@ -34,12 +32,14 @@ public class SynefoCoordinatorThread implements Runnable {
 	private Thread userInterfaceThread;
 
 	private AtomicBoolean operationFlag;
-	
+
 	private boolean demoMode;
-	
+
 	private AtomicInteger queryId;
-	
+
 	private CEStormDatabaseManager ceDb = null;
+
+	private AtomicInteger taskNumber = null;
 
 	public SynefoCoordinatorThread(String zooHost, Integer zooPort, 
 			HashMap<String, Pair<Number, Number>> resourceThresholds, 
@@ -50,7 +50,8 @@ public class SynefoCoordinatorThread implements Runnable {
 			AtomicBoolean operationFlag, 
 			boolean demoMode, 
 			AtomicInteger queryId, 
-			CEStormDatabaseManager ceDb) {
+			CEStormDatabaseManager ceDb, 
+			AtomicInteger taskNumber) {
 		this.physicalTopology = physicalTopology;
 		this.activeTopology = runningTopology;
 		this.taskNameToIdMap = taskNameToIdMap;
@@ -62,6 +63,7 @@ public class SynefoCoordinatorThread implements Runnable {
 		this.demoMode = demoMode;
 		this.queryId = queryId;
 		this.ceDb = ceDb;
+		this.taskNumber = taskNumber;
 	}
 
 	public void run() {
@@ -74,12 +76,22 @@ public class SynefoCoordinatorThread implements Runnable {
 					e.printStackTrace();
 				}
 			}
-			totalTaskNum = physicalTopology.size();
+			/**
+			 * Here, if I am going to use a multi-core approach I need to 
+			 * get the total number of threads for each layer
+			 */
+			while(this.taskNumber.get() == -1) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
 		}
 		System.out.println("+efo coordinator thread: Received physical topology (size: " + 
-				totalTaskNum + ").");
+				taskNumber.get() + ").");
 		synchronized(taskNameToIdMap) {
-			while(taskNameToIdMap.size() < totalTaskNum) {
+			while(taskNameToIdMap.size() < taskNumber.get()) {
 				try {
 					taskNameToIdMap.wait();
 				} catch (InterruptedException e) {
@@ -141,32 +153,12 @@ public class SynefoCoordinatorThread implements Runnable {
 			 * activeUpdatedTopology = updatedTopology
 			 */
 			itr = activeUpdatedTopology.entrySet().iterator();
-//			System.out.println("Initial active topology:");
-//			while(itr.hasNext()) {
-//				Entry<String, ArrayList<String>> pair = itr.next();
-//				System.out.print(pair.getKey() + " -> {");
-//				for(String downTask : pair.getValue()) {
-//					System.out.print(downTask + " ");
-//				}
-//				System.out.println("}");
-//			}
 			physicalTopology.clear();
 			physicalTopology.putAll(updatedTopology);
 			activeTopology.clear();
 			activeTopology.putAll(activeUpdatedTopology);
 			tamer.setPhysicalTopology();
 			tamer.setActiveTopology();
-//			System.out.println("ZooMaster initial active topology: ");
-//			itr = (new HashMap<String, ArrayList<String>>(
-//					tamer.scaleFunction.getActiveTopology())).entrySet().iterator();
-//			while(itr.hasNext()) {
-//				Entry<String, ArrayList<String>> pair = itr.next();
-//				System.out.print(pair.getKey() + " -> {");
-//				for(String downTask : pair.getValue()) {
-//					System.out.print(downTask + " ");
-//				}
-//				System.out.println("}");
-//			}
 
 			/**
 			 * If demoMode is true: Need to populate the database with the 
@@ -183,7 +175,6 @@ public class SynefoCoordinatorThread implements Runnable {
 					Entry<String, ArrayList<String>> operatorEntry = operatorItr.next();
 					String operatorName = operatorEntry.getKey();
 					String[] operatorNameTokens = operatorName.split("[:@]");
-				//	System.out.println("About to update opName "+operatorNameTokens[0]+ " with "+operatorName);
 					this.ceDb.updateOperatorInformation(queryId.get(), operatorNameTokens[0], 
 							operatorName, operatorNameTokens[2]);
 				}
@@ -193,7 +184,6 @@ public class SynefoCoordinatorThread implements Runnable {
 				this.ceDb.insertInitialActiveTopology(queryId.get(), physicalTopology, activeTopology);
 			}
 			operationFlag.set(true);
-
 			taskNameToIdMap.clear();
 			taskNameToIdMap.notifyAll();
 		}

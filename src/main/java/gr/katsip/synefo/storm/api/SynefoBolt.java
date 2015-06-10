@@ -262,6 +262,10 @@ public class SynefoBolt extends BaseRichBolt {
 	public void prepare(@SuppressWarnings("rawtypes") Map conf, TopologyContext context, OutputCollector collector) {
 		this.collector = collector;
 		taskID = context.getThisTaskId();
+		/**
+		 * Update the taskName and extend it with the task-id (support for multi-core)
+		 */
+		taskName = taskName + "_" + taskID;
 		try {
 			taskIP = InetAddress.getLocalHost().getHostAddress();
 		} catch (UnknownHostException e1) {

@@ -42,6 +42,8 @@ public class Synefo {
 	
 	private AtomicInteger queryId;
 	
+	private AtomicInteger taskNumber;
+	
 	private CEStormDatabaseManager ceDb = null;
 
 	public Synefo(String zooHost, Integer zooIP, HashMap<String, Pair<Number, Number>> _resource_thresholds, CEStormDatabaseManager ceDb) {
@@ -63,6 +65,7 @@ public class Synefo {
 		this.zooHost = zooHost;
 		this.zooIP = zooIP;
 		operationFlag = new AtomicBoolean(false);
+		taskNumber = new AtomicInteger(-1);
 		if(ceDb != null) {
 			this.demoMode = true;
 			queryId = new AtomicInteger(-1);
@@ -81,14 +84,14 @@ public class Synefo {
 //		Thread timeServer = new Thread(new TimeServer(5556));
 //		timeServer.start();
 		(new Thread(new SynefoCoordinatorThread(zooHost, zooIP, resourceThresholds, physicalTopology, 
-				activeTopology, nameToIdMap, taskIPs, operationFlag, demoMode, queryId, ceDb))).start();
+				activeTopology, nameToIdMap, taskIPs, operationFlag, demoMode, queryId, ceDb, taskNumber))).start();
 		while(killCommand == false) {
 			try {
 				_stormComponent = serverSocket.accept();
 				_out = _stormComponent.getOutputStream();
 				_in = _stormComponent.getInputStream();
 				(new Thread(new SynEFOthread(physicalTopology, activeTopology, nameToIdMap, _in, _out, taskIPs, 
-						operationFlag, demoMode, queryId))).start();
+						operationFlag, demoMode, queryId, taskNumber))).start();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
