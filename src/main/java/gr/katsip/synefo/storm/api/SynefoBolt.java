@@ -45,6 +45,10 @@ public class SynefoBolt extends BaseRichBolt {
 	private static final long serialVersionUID = 4011052074675303959L;
 
 	Logger logger = LoggerFactory.getLogger(SynefoBolt.class);
+	
+	private static final int statReportPeriod = 5000;
+	
+	private static final int latencySequencePeriod = 250;
 
 	private String taskName;
 
@@ -81,6 +85,8 @@ public class SynefoBolt extends BaseRichBolt {
 	private Integer zooPort;
 
 	private int reportCounter;
+	
+	private int latencyPeriodCounter;
 
 	private boolean autoScale;
 
@@ -124,6 +130,7 @@ public class SynefoBolt extends BaseRichBolt {
 		this.zooIP = zooIP;
 		this.zooPort = zooPort;
 		reportCounter = 0;
+		latencyPeriodCounter = 0;
 		this.autoScale = autoScale;
 		warmFlag = false;
 		opLatencyReceiveState = OpLatencyState.na;
@@ -237,10 +244,6 @@ public class SynefoBolt extends BaseRichBolt {
 	public void prepare(@SuppressWarnings("rawtypes") Map conf, TopologyContext context, OutputCollector collector) {
 		this.collector = collector;
 		taskID = context.getThisTaskId();
-		/**
-		 * Changed the taskName to include the taskID
-		 */
-//		taskName = taskName + "_" + taskID;
 		try {
 			taskIP = InetAddress.getLocalHost().getHostAddress();
 		} catch (UnknownHostException e1) {
@@ -439,7 +442,7 @@ public class SynefoBolt extends BaseRichBolt {
 			}
 		}
 
-		if(reportCounter >= 250) {
+		if(latencyPeriodCounter >= SynefoBolt.latencySequencePeriod) {
 			/**
 			 * Initiate operator latency metric sequence
 			 */
@@ -456,9 +459,12 @@ public class SynefoBolt extends BaseRichBolt {
 					collector.emitDirect(d_task, v);
 				}
 			}
+			latencyPeriodCounter = 0;
+		}else {
+			latencyPeriodCounter += 1;
 		}
 		
-		if(reportCounter >= 500) {
+		if(reportCounter >= SynefoBolt.statReportPeriod) {
 			if(statOperatorFlag == false)
 				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
 						") timestamp: " + System.currentTimeMillis() + ", " + 
@@ -472,6 +478,7 @@ public class SynefoBolt extends BaseRichBolt {
 		}else {
 			reportCounter += 1;
 		}
+		
 		if(autoScale && warmFlag == true)
 			zooPet.setLatency(statistics.getWindowLatency());
 //		if(autoScale && warmFlag)
@@ -559,6 +566,8 @@ public class SynefoBolt extends BaseRichBolt {
 			opLatencySendTimestamp = 0L;
 			opLatencyReceivedTimestamp = new long[3];
 			opLatencyLocalTimestamp = new long[3];
+			reportCounter = 0;
+			latencyPeriodCounter = 0;
 		}
 	}
 
@@ -823,6 +832,8 @@ public class SynefoBolt extends BaseRichBolt {
 			}
 		}
 		zooPet.resetSubmittedScaleFlag();
+		latencyPeriodCounter = 0;
+		reportCounter = 0;
 		/**
 		 * Re-initialize operator-latency metrics
 		 */
