@@ -260,6 +260,24 @@ public class SynefoSpout extends BaseRichSpout {
 				collector.emitDirect(d_task, v);
 			}
 		}
+		if(reportCounter >= 250) {
+			/**
+			 * Initiate operator latency sequence
+			 */
+			if(opLatencySendState.equals(OpLatencyState.na)) {
+				this.opLatencySendState = OpLatencyState.s_1;
+				this.opLatencySendTimestamp = System.currentTimeMillis();
+				Values v = new Values();
+				v.add(SynefoConstant.OP_LATENCY_METRIC + ":" + OpLatencyState.s_1.toString() + ":" + opLatencySendTimestamp);
+				for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
+					v.add(null);
+				}
+				for(Integer d_task : intActiveDownstreamTasks) {
+					collector.emitDirect(d_task, v);
+				}
+			}
+		}
+		
 		if(reportCounter >= 500) {
 			if(statTupleProducerFlag == false)
 				logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
@@ -335,21 +353,6 @@ public class SynefoSpout extends BaseRichSpout {
 //			} catch (IOException e) {
 //				e.printStackTrace();
 //			}
-			/**
-			 * Initiate operator latency sequence
-			 */
-			if(opLatencySendState.equals(OpLatencyState.na)) {
-				this.opLatencySendState = OpLatencyState.s_1;
-				this.opLatencySendTimestamp = System.currentTimeMillis();
-				Values v = new Values();
-				v.add(SynefoConstant.OP_LATENCY_METRIC + ":" + OpLatencyState.s_1.toString() + ":" + opLatencySendTimestamp);
-				for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
-					v.add(null);
-				}
-				for(Integer d_task : intActiveDownstreamTasks) {
-					collector.emitDirect(d_task, v);
-				}
-			}
 		}else {
 			reportCounter += 1;
 		}

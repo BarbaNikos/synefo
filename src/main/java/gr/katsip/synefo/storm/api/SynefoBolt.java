@@ -439,17 +439,7 @@ public class SynefoBolt extends BaseRichBolt {
 			}
 		}
 
-		if(reportCounter >= 500) {
-			if(statOperatorFlag == false)
-				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
-						") timestamp: " + System.currentTimeMillis() + ", " + 
-						"cpu: " + statistics.getCpuLoad() + 
-						", memory: " + statistics.getMemory() + 
-						", latency: " + statistics.getWindowLatency() + 
-						", throughput: " + statistics.getWindowThroughput());
-			reportCounter = 0;
-			if(warmFlag == false)
-				warmFlag = true;
+		if(reportCounter >= 250) {
 			/**
 			 * Initiate operator latency metric sequence
 			 */
@@ -466,6 +456,19 @@ public class SynefoBolt extends BaseRichBolt {
 					collector.emitDirect(d_task, v);
 				}
 			}
+		}
+		
+		if(reportCounter >= 500) {
+			if(statOperatorFlag == false)
+				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+						") timestamp: " + System.currentTimeMillis() + ", " + 
+						"cpu: " + statistics.getCpuLoad() + 
+						", memory: " + statistics.getMemory() + 
+						", latency: " + statistics.getWindowLatency() + 
+						", throughput: " + statistics.getWindowThroughput());
+			reportCounter = 0;
+			if(warmFlag == false)
+				warmFlag = true;
 		}else {
 			reportCounter += 1;
 		}
