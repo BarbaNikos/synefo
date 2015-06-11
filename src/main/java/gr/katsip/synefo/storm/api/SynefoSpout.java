@@ -11,6 +11,11 @@ import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousFileChannel;
+import java.nio.channels.CompletionHandler;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 //import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,6 +50,20 @@ public class SynefoSpout extends BaseRichSpout {
 	private static final long serialVersionUID = -7244170192535254357L;
 
 	Logger logger = LoggerFactory.getLogger(SynefoSpout.class);
+	
+	private static final String stormHome = "/opt/apache-storm-0.9.4/logs/";
+
+	private AsynchronousFileChannel statisticFileChannel = null;
+
+	private CompletionHandler<Integer, Object> statisticFileHandler = null;
+
+	private AsynchronousFileChannel scaleEventFileChannel = null;
+
+	private CompletionHandler<Integer, Object> scaleEventFileHandler = null;
+
+	private Long statisticFileOffset = 0L;
+
+	private Long scaleEventFileOffset = 0L;
 
 	private static final int statReportPeriod = 5000;
 
@@ -289,12 +308,21 @@ public class SynefoSpout extends BaseRichSpout {
 		}
 
 		if(reportCounter >= SynefoSpout.statReportPeriod) {
-			if(statTupleProducerFlag == false)
+			if(statTupleProducerFlag == false) {
 				logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
 						") timestamp: " + System.currentTimeMillis() + ", " + 
 						"cpu: " + stats.getCpuLoad() + 
 						", memory: " + stats.getMemory() +  
 						", input-rate: " + stats.getWindowThroughput());
+				byte[] buffer = (System.currentTimeMillis() + "," + stats.getCpuLoad() + "," + 
+						stats.getMemory() + "," + stats.getWindowLatency() + "," + 
+						stats.getWindowThroughput() + "\n").toString().getBytes();
+				if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
+					statisticFileChannel.write(
+							ByteBuffer.wrap(buffer), this.statisticFileOffset, "stat write", statisticFileHandler);
+					statisticFileOffset += buffer.length;
+				}
+			}
 			reportCounter = 0;
 			/**
 			 * TODO: Temporarily got rid of it because it does not seem to work.
@@ -383,6 +411,12 @@ public class SynefoSpout extends BaseRichSpout {
 			StringBuilder strBuild = new StringBuilder();
 			strBuild.append(SynefoConstant.PUNCT_TUPLE_TAG + "/");
 			idx = 0;
+			byte[] buffer = ("timestamp: " + System.currentTimeMillis() + "," + action + "~" + task + ":" + task_id + "\n").toString().getBytes();
+			if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
+				scaleEventFileChannel.write(
+						ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
+				scaleEventFileOffset += buffer.length;
+			}
 			if(action.toLowerCase().contains("activate") || action.toLowerCase().contains("deactivate")) {
 				logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
 						") located scale-command: " + scaleCommand + ", about to update routing tables (timestamp: " + 
@@ -462,6 +496,46 @@ public class SynefoSpout extends BaseRichSpout {
 		pet = new ZooPet(zooIP, zooPort, taskName, taskId, taskIP);
 		if(activeDownstreamTasks == null && downstreamTasks == null) {
 			registerToSynEFO();
+		}
+		if(this.statisticFileChannel == null) {
+			try {
+				statisticFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
+						taskName + ":" + taskId + "@" + taskIP + "-stats.log"), 
+						StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			statisticFileHandler = new CompletionHandler<Integer, Object>() {
+				@Override
+				public void completed(Integer result, Object attachment) {
+					//Do nothing
+				}
+				@Override
+				public void failed(Throwable exc, Object attachment) {
+					//Do nothing
+				}
+			};
+			statisticFileOffset = 0L;
+		}
+		if(this.scaleEventFileChannel == null) {
+			try {
+				scaleEventFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
+						taskName + ":" + taskId + "@" + taskIP + "-scale-events.log"), 
+						StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			scaleEventFileHandler = new CompletionHandler<Integer, Object>() {
+				@Override
+				public void completed(Integer result, Object attachment) {
+					//Do nothing
+				}
+				@Override
+				public void failed(Throwable exc, Object attachment) {
+					//Do nothing
+				}
+			};
+			scaleEventFileOffset = 0L;
 		}
 	}
 
