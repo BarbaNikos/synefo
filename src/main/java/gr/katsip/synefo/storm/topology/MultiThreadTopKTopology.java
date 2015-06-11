@@ -89,7 +89,7 @@ public class MultiThreadTopKTopology {
 				new Fields(spoutSchemaOne), new Fields(spoutSchemaTwo));
 		builder.setBolt("join", 
 				new SynefoBolt("join", synefoIP, synefoPort, 
-						joinOperator, zooIP, zooPort, true), 8)
+						joinOperator, zooIP, zooPort, true), 16)
 						.directGrouping("project")
 						.directGrouping("spout-2");
 		taskNumber += 5;
@@ -153,7 +153,7 @@ public class MultiThreadTopKTopology {
 		synEFOSocket.close();
 
 		conf.setDebug(false);
-//		conf.setNumWorkers(12);
+		conf.setNumWorkers(16);
 		conf.put(Config.TOPOLOGY_RECEIVER_BUFFER_SIZE, 8);
 		conf.put(Config.TOPOLOGY_TRANSFER_BUFFER_SIZE, 32);
 		conf.put(Config.TOPOLOGY_EXECUTOR_RECEIVE_BUFFER_SIZE, 16384);
