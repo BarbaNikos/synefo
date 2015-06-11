@@ -534,8 +534,8 @@ public class SynefoBolt extends BaseRichBolt {
 //						", memory: " + statistics.getMemory() + 
 //						", latency: " + statistics.getWindowLatency() + 
 //						", throughput: " + statistics.getWindowThroughput());
-				byte[] buffer = (System.currentTimeMillis() + "," + statistics.getCpuLoad() + 
-						statistics.getMemory() + statistics.getWindowLatency() + 
+				byte[] buffer = (System.currentTimeMillis() + "," + statistics.getCpuLoad() + "," + 
+						statistics.getMemory() + "," + statistics.getWindowLatency() + "," + 
 						statistics.getWindowThroughput() + "\n").toString().getBytes();
 				if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
 					statisticFileChannel.write(
@@ -704,8 +704,8 @@ public class SynefoBolt extends BaseRichBolt {
 							", memory: " + 0.0 + 
 							", latency: " + 0 + 
 							", throughput: " + 0);
-					buffer = (System.currentTimeMillis() + "," + 0.0 + 
-							0.0 + 0 + 0 + "\n").toString().getBytes();
+					buffer = (System.currentTimeMillis() + "," + 0.0 + "," + 
+							0.0 + "," + 0 + "," + 0 + "\n").toString().getBytes();
 					if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
 						statisticFileChannel.write(
 								ByteBuffer.wrap(buffer), this.statisticFileOffset, "stat write", statisticFileHandler);
