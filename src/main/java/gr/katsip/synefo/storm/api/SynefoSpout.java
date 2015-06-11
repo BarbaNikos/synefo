@@ -450,6 +450,10 @@ public class SynefoSpout extends BaseRichSpout {
 			SpoutOutputCollector collector) {
 		this.collector = collector;
 		taskId = context.getThisTaskId();
+		/**
+		 * Update taskName with task-id so that multi-core is supported
+		 */
+		taskName = taskName + "_" + taskId;
 		try {
 			taskIP = InetAddress.getLocalHost().getHostAddress();
 		} catch (UnknownHostException e1) {
