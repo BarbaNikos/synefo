@@ -85,7 +85,7 @@ public class MultiThreadTopKTopology {
 		/**
 		 * Stage 2: Join operators after project and spout_2
 		 */
-		JoinOperator<String> joinOperator = new JoinOperator<String>(new StringComparator(), 500, "three", 
+		JoinOperator<String> joinOperator = new JoinOperator<String>(new StringComparator(), 100000, "three", 
 				new Fields(spoutSchemaOne), new Fields(spoutSchemaTwo));
 		builder.setBolt("join", 
 				new SynefoBolt("join", synefoIP, synefoPort, 
