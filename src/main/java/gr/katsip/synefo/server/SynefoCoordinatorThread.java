@@ -204,10 +204,12 @@ public class SynefoCoordinatorThread implements Runnable {
 			HashMap<String, ArrayList<String>> physicalTopology) {
 		HashMap<String, ArrayList<String>> physicalTopologyWithIds = new HashMap<String, ArrayList<String>>();
 		Iterator<Entry<String, Integer>> taskNameIterator = taskNameToIdMap.entrySet().iterator();
+		System.out.println("Topology: " + physicalTopology.toString());
 		while(taskNameIterator.hasNext()) {
 			Entry<String, Integer> pair = taskNameIterator.next();
 			String taskName = pair.getKey();
 			String taskNameWithoutId = taskName.split("_")[0];
+			System.out.println("taskName: " + taskName + ", taskname-without-id: " + taskNameWithoutId);
 			ArrayList<String> downstreamTaskList = physicalTopology.get(taskNameWithoutId);
 			ArrayList<String> downstreamTaskWithIdList = new ArrayList<String>();
 			for(String downstreamTask : downstreamTaskList) {
