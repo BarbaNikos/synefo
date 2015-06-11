@@ -120,9 +120,9 @@ public class SynefoCoordinatorThread implements Runnable {
 				(int) resourceThresholds.get("latency").lowerBound, 
 				(int) resourceThresholds.get("throughput").lowerBound);
 		
-		
+		HashMap<String, ArrayList<String>> expandedPhysicalTopology = physicalTopologyTaskExpand(taskNameToIdMap, physicalTopology);
 		physicalTopology.clear();
-		physicalTopology.putAll(physicalTopologyTaskExpand(taskNameToIdMap, physicalTopology));
+		physicalTopology.putAll(expandedPhysicalTopology);
 		/**
 		 * At this point, physicalTopologyWithIds has the actual topology of operators and the task-ids.
 		 */
