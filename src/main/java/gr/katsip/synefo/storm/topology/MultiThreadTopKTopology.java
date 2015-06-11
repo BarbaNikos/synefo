@@ -53,22 +53,22 @@ public class MultiThreadTopKTopology {
 		StreamgenTupleProducer tupleProducer = new StreamgenTupleProducer(streamIPs[0]);
 		String[] spoutSchemaOne = { "one", "two", "three", "four", "five" };
 		tupleProducer.setSchema(new Fields(spoutSchemaOne));
-		builder.setSpout("spout_1", 
-				new SynefoSpout("spout_1", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1);
+		builder.setSpout("spout-1", 
+				new SynefoSpout("spout-1", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1);
 		taskNumber += 1;
 		taskList = new ArrayList<String>();
 		taskList.add("project");
-		topology.put("spout_1", new ArrayList<String>(taskList));
+		topology.put("spout-1", new ArrayList<String>(taskList));
 
 		tupleProducer = new StreamgenTupleProducer(streamIPs[1]);
 		String[] spoutSchemaTwo = { "1", "2", "three", "4", "5" };
 		tupleProducer.setSchema(new Fields(spoutSchemaTwo));
-		builder.setSpout("spout_2", 
-				new SynefoSpout("spout_2", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1);
+		builder.setSpout("spout-2", 
+				new SynefoSpout("spout-2", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1);
 		taskNumber += 1;
 		taskList = new ArrayList<String>();
 		taskList.add("join");
-		topology.put("spout_2", new ArrayList<String>(taskList));
+		topology.put("spout-2", new ArrayList<String>(taskList));
 		/**
 		 * Stage 1: Project operator after spout_1
 		 */
@@ -76,7 +76,7 @@ public class MultiThreadTopKTopology {
 		projectOperator.setOutputSchema(new Fields(spoutSchemaOne));
 		builder.setBolt("project", 
 				new SynefoBolt("project", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 3)
-				.directGrouping("spout_1");
+				.directGrouping("spout-1");
 		taskNumber += 3;
 		taskList = new ArrayList<String>();
 		taskList.add("join");
@@ -91,10 +91,10 @@ public class MultiThreadTopKTopology {
 				new SynefoBolt("join", synefoIP, synefoPort, 
 						joinOperator, zooIP, zooPort, true), 5)
 						.directGrouping("project")
-						.directGrouping("spout_2");
+						.directGrouping("spout-2");
 		taskNumber += 5;
 		taskList = new ArrayList<String>();
-		taskList.add("count_groupby");
+		taskList.add("count-groupby");
 		topology.put("join", new ArrayList<String>(taskList));
 		taskList = null;
 		/**
@@ -107,14 +107,14 @@ public class MultiThreadTopKTopology {
 		String[] countGroupByStateSchema = { "key", "count", "time" };
 		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
 		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
-		builder.setBolt("count_groupby", 
-				new SynefoBolt("count_groupby", synefoIP, synefoPort, 
+		builder.setBolt("count-groupby", 
+				new SynefoBolt("count-groupby", synefoIP, synefoPort, 
 						countGroupByAggrOperator, zooIP, zooPort, true), 4)
 						.directGrouping("join");
 		taskNumber += 4;
 		taskList = new ArrayList<String>();
 		taskList.add("drain");
-		topology.put("count_groupby", taskList);
+		topology.put("count-groupby", taskList);
 		/**
 		 * Stage 4: Drain Operator (project operator)
 		 */
@@ -122,7 +122,7 @@ public class MultiThreadTopKTopology {
 		projectOperator.setOutputSchema(new Fields(countGroupBySchema));
 		builder.setBolt("drain", 
 				new SynefoBolt("drain", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
-				.directGrouping("count_groupby");
+				.directGrouping("count-groupby");
 		taskNumber += 1;
 		topology.put("drain", new ArrayList<String>());
 		/**

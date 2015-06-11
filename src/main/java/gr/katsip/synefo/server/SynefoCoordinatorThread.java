@@ -120,27 +120,9 @@ public class SynefoCoordinatorThread implements Runnable {
 				(int) resourceThresholds.get("latency").lowerBound, 
 				(int) resourceThresholds.get("throughput").lowerBound);
 		
-		HashMap<String, ArrayList<String>> physicalTopologyWithIds = new HashMap<String, ArrayList<String>>();
-		Iterator<Entry<String, Integer>> taskNameIterator = taskNameToIdMap.entrySet().iterator();
-		while(taskNameIterator.hasNext()) {
-			Entry<String, Integer> pair = taskNameIterator.next();
-			String taskName = pair.getKey();
-			String taskNameWithoutId = taskName.split("_")[0];
-			ArrayList<String> downstreamTaskList = physicalTopology.get(taskNameWithoutId);
-			ArrayList<String> downstreamTaskWithIdList = new ArrayList<String>();
-			for(String downstreamTask : downstreamTaskList) {
-				Iterator<Entry<String, Integer>> downstreamTaskIterator = taskNameToIdMap.entrySet().iterator();
-				while(downstreamTaskIterator.hasNext()) {
-					Entry<String, Integer> downstreamPair = downstreamTaskIterator.next();
-					if(downstreamPair.getKey().contains(downstreamTask)) {
-						downstreamTaskWithIdList.add(downstreamPair.getKey());
-					}
-				}
-			}
-			physicalTopologyWithIds.put(taskName, downstreamTaskWithIdList);
-		}
+		
 		physicalTopology.clear();
-		physicalTopology.putAll(physicalTopologyWithIds);
+		physicalTopology.putAll(physicalTopologyTaskExpand(taskNameToIdMap, physicalTopology));
 		/**
 		 * At this point, physicalTopologyWithIds has the actual topology of operators and the task-ids.
 		 */
@@ -216,6 +198,30 @@ public class SynefoCoordinatorThread implements Runnable {
 
 		userInterfaceThread = new Thread(new SynEFOUserInterface(tamer, physicalTopology, demoMode, queryId, ceDb));
 		userInterfaceThread.start();
+	}
+	
+	public static HashMap<String, ArrayList<String>> physicalTopologyTaskExpand(HashMap<String, Integer> taskNameToIdMap, 
+			HashMap<String, ArrayList<String>> physicalTopology) {
+		HashMap<String, ArrayList<String>> physicalTopologyWithIds = new HashMap<String, ArrayList<String>>();
+		Iterator<Entry<String, Integer>> taskNameIterator = taskNameToIdMap.entrySet().iterator();
+		while(taskNameIterator.hasNext()) {
+			Entry<String, Integer> pair = taskNameIterator.next();
+			String taskName = pair.getKey();
+			String taskNameWithoutId = taskName.split("_")[0];
+			ArrayList<String> downstreamTaskList = physicalTopology.get(taskNameWithoutId);
+			ArrayList<String> downstreamTaskWithIdList = new ArrayList<String>();
+			for(String downstreamTask : downstreamTaskList) {
+				Iterator<Entry<String, Integer>> downstreamTaskIterator = taskNameToIdMap.entrySet().iterator();
+				while(downstreamTaskIterator.hasNext()) {
+					Entry<String, Integer> downstreamPair = downstreamTaskIterator.next();
+					if(downstreamPair.getKey().contains(downstreamTask)) {
+						downstreamTaskWithIdList.add(downstreamPair.getKey());
+					}
+				}
+			}
+			physicalTopologyWithIds.put(taskName, downstreamTaskWithIdList);
+		}
+		return physicalTopologyWithIds;
 	}
 
 }
