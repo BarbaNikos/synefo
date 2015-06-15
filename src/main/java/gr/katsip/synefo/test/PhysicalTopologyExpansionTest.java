@@ -1,3 +1,4 @@
+package gr.katsip.synefo.test;
 import gr.katsip.synefo.server.SynefoCoordinatorThread;
 
 import java.util.ArrayList;

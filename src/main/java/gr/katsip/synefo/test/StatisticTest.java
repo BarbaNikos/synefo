@@ -1,3 +1,4 @@
+package gr.katsip.synefo.test;
 import java.util.Random;
 
 import backtype.storm.tuple.Values;

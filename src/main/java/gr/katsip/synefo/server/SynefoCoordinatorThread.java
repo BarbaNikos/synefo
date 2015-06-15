@@ -1,5 +1,6 @@
 package gr.katsip.synefo.server;
 
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -7,8 +8,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import gr.katsip.cestorm.db.CEStormDatabaseManager;
+import gr.katsip.synefo.server.ScaleFunction;
+import gr.katsip.synefo.server.SynEFOUserInterface;
+import gr.katsip.synefo.server.ZooMaster;
 import gr.katsip.synefo.storm.api.Pair;
 
 public class SynefoCoordinatorThread implements Runnable {

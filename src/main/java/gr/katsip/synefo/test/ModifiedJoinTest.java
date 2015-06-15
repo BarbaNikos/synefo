@@ -1,3 +1,4 @@
+package gr.katsip.synefo.test;
 import java.util.List;
 
 import gr.katsip.synefo.storm.operators.crypstream.ModifiedJoinOperator;

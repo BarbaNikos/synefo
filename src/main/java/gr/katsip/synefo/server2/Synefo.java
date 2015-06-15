@@ -1,5 +1,4 @@
-package gr.katsip.synefo.server;
-
+package gr.katsip.synefo.server2;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,8 +7,10 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import gr.katsip.cestorm.db.CEStormDatabaseManager;
 import gr.katsip.synefo.storm.api.Pair;
 
@@ -17,17 +18,17 @@ public class Synefo {
 
 	private ServerSocket serverSocket;
 
-	private Integer serverPort;
-
 	private boolean killCommand;
 
-	private HashMap<String, ArrayList<String>> physicalTopology;
+	private ConcurrentHashMap<String, ArrayList<String>> physicalTopology;
 
-	private HashMap<String, ArrayList<String>> activeTopology;
+	private ConcurrentHashMap<String, ArrayList<String>> activeTopology;
 
-	private HashMap<String, Integer> nameToIdMap;
+	private ConcurrentHashMap<String, Integer> taskIdentifierIndex;
 
-	private HashMap<String, String> taskIPs;
+	private ConcurrentHashMap<String, String> taskIPs;
+	
+	private ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation;
 
 	private HashMap<String, Pair<Number, Number>> resourceThresholds;
 
@@ -46,16 +47,14 @@ public class Synefo {
 	private CEStormDatabaseManager ceDb = null;
 
 	public Synefo(String zooHost, Integer zooIP, HashMap<String, Pair<Number, Number>> _resource_thresholds, CEStormDatabaseManager ceDb) {
-		physicalTopology = new HashMap<String, ArrayList<String>>();
-		activeTopology = new HashMap<String, ArrayList<String>>();
-		nameToIdMap = new HashMap<String, Integer>();
-		taskIPs = new HashMap<String, String>();
+		physicalTopology = new ConcurrentHashMap<String, ArrayList<String>>();
+		activeTopology = new ConcurrentHashMap<String, ArrayList<String>>();
+		taskIdentifierIndex = new ConcurrentHashMap<String, Integer>();
+		taskIPs = new ConcurrentHashMap<String, String>();
+		taskToJoinRelation = new ConcurrentHashMap<Integer, JoinOperator>();
 		serverSocket = null;
-		serverPort = -1;
 		try {
 			serverSocket = new ServerSocket(5555);
-			serverPort = serverSocket.getLocalPort();
-			System.out.println("+efo-INFO#" + serverSocket.getInetAddress().getHostAddress() + ":" + serverPort);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -80,17 +79,15 @@ public class Synefo {
 		Socket _stormComponent = null;
 		OutputStream _out = null;
 		InputStream _in = null;
-//		Thread timeServer = new Thread(new TimeServer(5556));
-//		timeServer.start();
 		(new Thread(new SynefoCoordinatorThread(zooHost, zooIP, resourceThresholds, physicalTopology, 
-				activeTopology, nameToIdMap, taskIPs, operationFlag, demoMode, queryId, ceDb, taskNumber))).start();
+				activeTopology, taskIdentifierIndex, taskIPs, operationFlag, demoMode, queryId, ceDb, taskNumber, taskToJoinRelation))).start();
 		while(killCommand == false) {
 			try {
 				_stormComponent = serverSocket.accept();
 				_out = _stormComponent.getOutputStream();
 				_in = _stormComponent.getInputStream();
-				(new Thread(new SynEFOthread(physicalTopology, activeTopology, nameToIdMap, _in, _out, taskIPs, 
-						operationFlag, demoMode, queryId, taskNumber))).start();
+				(new Thread(new SynefoThread(physicalTopology, activeTopology, taskIdentifierIndex, _in, _out, taskIPs, 
+						operationFlag, demoMode, queryId, taskNumber, taskToJoinRelation))).start();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
