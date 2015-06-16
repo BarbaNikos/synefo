@@ -68,17 +68,48 @@ public class Server2Test {
 		
 		ConcurrentHashMap<String, ArrayList<String>> expandedPhysicalTopology = SynefoCoordinatorThread.physicalTopologyTaskExpand(
 				taskIdentifierIndex, physicalTopology);
-		System.out.println(expandedPhysicalTopology.toString());
+//		System.out.println(expandedPhysicalTopology.toString());
 		
 		ConcurrentHashMap<String, ArrayList<String>> updatedTopology = SynefoCoordinatorThread.updatePhysicalTopology(
 				taskAddressIndex, taskIdentifierIndex, expandedPhysicalTopology);
-		System.out.println(updatedTopology.toString());
+//		System.out.println(updatedTopology.toString());
 		
 		System.out.println("++++ NOW to THE JOIN TEST ++++");
 		
-		activeTopology = SynefoCoordinatorThread.getInitialActiveTopologyWithJoinOperators(updatedTopology, 
+		activeTopology = SynefoCoordinatorThread.getInitialActiveTopologyWithJoinOperators(
+				updatedTopology, 
 				ScaleFunction.getInverseTopology(updatedTopology), taskToJoinRelation);
-		System.out.println(activeTopology.toString());
+//		System.out.println(activeTopology.toString());
+		
+		ScaleFunction scaleFunction = new ScaleFunction(
+				updatedTopology, activeTopology, taskToJoinRelation);
+		String scaleInCommand = scaleFunction.produceScaleInCommand("dispatcher_7:7@1.1.1.1", "joiner_4:4@1.1.1.1");
+		assert scaleInCommand == null;
+		System.out.println(scaleInCommand);
+		String scaleOutCommand = scaleFunction.produceScaleOutCommand("dispatcher_7:7@1.1.1.1", "joiner_4:4@1.1.1.1");
+		System.out.println(scaleOutCommand);
+		scaleOutCommand = scaleFunction.produceScaleOutCommand("dispatcher_7:7@1.1.1.1", "joiner_4:4@1.1.1.1");
+		System.out.println(scaleOutCommand);
+		scaleOutCommand = scaleFunction.produceScaleOutCommand("dispatcher_7:7@1.1.1.1", "joiner_4:4@1.1.1.1");
+		System.out.println(scaleOutCommand);
+		
+		scaleInCommand = scaleFunction.produceScaleInCommand("dispatcher_7:7@1.1.1.1", "joiner_4:4@1.1.1.1");
+		System.out.println(scaleInCommand);
+		
+		scaleInCommand = scaleFunction.produceScaleInCommand("dispatcher_7:7@1.1.1.1", "joiner_4:4@1.1.1.1");
+		System.out.println(scaleInCommand);
+		
+		scaleInCommand = scaleFunction.produceScaleInCommand("dispatcher_7:7@1.1.1.1", "joiner_4:4@1.1.1.1");
+		System.out.println(scaleInCommand);
+		
+		scaleInCommand = scaleFunction.produceScaleInCommand("spout_9:9@1.1.1.1", "dispatcher_7:7@1.1.1.1");
+		System.out.println("Normal: " + scaleInCommand);
+		
+		scaleOutCommand = scaleFunction.produceScaleOutCommand("spout_9:9@1.1.1.1", "dispatcher_7:7@1.1.1.1");
+		System.out.println(scaleOutCommand);
+		
+		scaleInCommand = scaleFunction.produceScaleInCommand("spout_9:9@1.1.1.1", "dispatcher_7:7@1.1.1.1");
+		System.out.println("Normal: " + scaleInCommand);
 	}
 
 }

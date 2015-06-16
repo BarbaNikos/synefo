@@ -49,7 +49,11 @@ public class ScaleFunction {
 			return "";
 		}
 		activeTopologyLock.writeLock().lock();
-		Integer identifier = Integer.parseInt(overloadedWorker.split("[:@")[1]);
+		if(activeTopology.containsKey(overloadedWorker) == false) {
+			activeTopologyLock.writeLock().unlock();
+			return "";
+		}
+		Integer identifier = Integer.parseInt(overloadedWorker.split("[:@]")[1]);
 		ArrayList<String> availableNodes = null;
 		if(taskToJoinRelation.containsKey(identifier)) {
 			availableNodes = ScaleFunction.getInActiveJoinNodes(physicalTopology, 
@@ -80,8 +84,12 @@ public class ScaleFunction {
 	 */
 	public String produceScaleInCommand(String upstreamTask, String underloadedWorker) {
 		activeTopologyLock.writeLock().lock();
+		if(activeTopology.containsKey(underloadedWorker) == false) {
+			activeTopologyLock.writeLock().unlock();
+			return "";
+		}
 		ArrayList<String> activeNodes = null;
-		Integer identifier = Integer.parseInt(underloadedWorker.split("[:@")[1]);
+		Integer identifier = Integer.parseInt(underloadedWorker.split("[:@]")[1]);
 		if(taskToJoinRelation.containsKey(identifier)) {
 			activeNodes = ScaleFunction.getActiveJoinNodes(physicalTopology, 
 					activeTopology, upstreamTask, underloadedWorker, taskToJoinRelation);
@@ -90,7 +98,6 @@ public class ScaleFunction {
 					physicalTopology, activeTopology,
 					upstreamTask, underloadedWorker);
 		}
-		System.out.println("ScaleFunction.produceScaleInCommand(): activeNodes: " + activeNodes);
 		if(activeNodes != null && activeNodes.size() > 1) {
 			removeActiveNodeGc(underloadedWorker);
 			activeTopologyLock.writeLock().unlock();
