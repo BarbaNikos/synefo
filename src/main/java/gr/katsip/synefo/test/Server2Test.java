@@ -3,8 +3,6 @@ package gr.katsip.synefo.test;
 import gr.katsip.synefo.server2.JoinOperator;
 import gr.katsip.synefo.server2.ScaleFunction;
 import gr.katsip.synefo.server2.SynefoCoordinatorThread;
-import gr.katsip.synefo.server2.JoinOperator.Step;
-
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 

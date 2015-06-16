@@ -52,7 +52,7 @@ public class ZooMaster {
 
 	private ConcurrentHashMap<String, Boolean> servedScaleRequests;
 	
-	private ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation = null;
+//	private ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation = null;
 
 	/**
 	 * Watcher object responsible for tracking storm components' requests 
@@ -156,7 +156,7 @@ public class ZooMaster {
 		this.zoo_port = zoo_port;
 		state = SynefoState.INIT;
 		this.physicalTopology = physicalTopology;
-		this.taskToJoinRelation = taskToJoinRelation;
+//		this.taskToJoinRelation = taskToJoinRelation;
 		this.scaleFunction = new ScaleFunction(physicalTopology, activeTopology, taskToJoinRelation);
 		scaleRequests = new ConcurrentLinkedQueue<String>();
 		servedScaleRequests = new ConcurrentHashMap<String, Boolean>();

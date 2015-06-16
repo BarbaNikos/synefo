@@ -5,10 +5,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-
 import gr.katsip.cestorm.db.CEStormDatabaseManager;
 import gr.katsip.synefo.TopologyXMLParser.ResourceThresholdParser;
-import gr.katsip.synefo.server2.Synefo;
+import gr.katsip.synefo.server.Synefo;
 
 public class SynefoMain {
 	public static void main( String[] args ) throws FileNotFoundException, IOException {

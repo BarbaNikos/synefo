@@ -1,16 +1,17 @@
 package gr.katsip.synefo.test;
-import gr.katsip.synefo.server.ScaleFunction;
+import gr.katsip.synefo.server2.ScaleFunction;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 public class ScaleFunctionTest {
 
 	public static void main(String[] args) {
-		HashMap<String, ArrayList<String>> topology = new HashMap<String, ArrayList<String>>();
+		ConcurrentHashMap<String, ArrayList<String>> topology = new ConcurrentHashMap<String, ArrayList<String>>();
 		ArrayList<String> taskList;
 		taskList = new ArrayList<String>();
 		taskList.add("project_bolt_1");
