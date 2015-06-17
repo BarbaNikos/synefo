@@ -69,7 +69,7 @@ public class TpchQueryFiveTopology {
 		taskList = new ArrayList<String>();
 		taskList.add("join-dispatch");
 		topology.put("customer", taskList);
-		topology.put("order", taskList);
+		topology.put("order", new ArrayList<String>(taskList));
 		
 		/**
 		 * Stage 1a: join dispatchers
