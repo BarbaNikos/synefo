@@ -79,16 +79,16 @@ public class JoinDispatcher implements AbstractJoinOperator, Serializable {
 					tuple.add(attributeNames);
 					tuple.add(attributeValues);
 					collector.emitDirect(nextTask, tuple);
-					if(nextTask >= activeTasks.size())
-						nextTask = 0;
+					if(taskIndex >= activeTasks.size())
+						taskIndex = 0;
 					else
-						nextTask += 1;
+						taskIndex += 1;
 					break;
 				}
-				if(nextTask >= activeTasks.size())
-					nextTask = 0;
+				if(taskIndex >= activeTasks.size())
+					taskIndex = 0;
 				else
-					nextTask += 1;
+					taskIndex += 1;
 			}
 			/**
 			 * JOIN:
@@ -119,16 +119,16 @@ public class JoinDispatcher implements AbstractJoinOperator, Serializable {
 					tuple.add(attributeNames);
 					tuple.add(attributeValues);
 					collector.emitDirect(nextTask, tuple);
-					if(nextTask >= activeTasks.size())
-						nextTask = 0;
+					if(taskIndex >= activeTasks.size())
+						taskIndex = 0;
 					else
-						nextTask += 1;
+						taskIndex += 1;
 					break;
 				}
-				if(nextTask >= activeTasks.size())
-					nextTask = 0;
+				if(taskIndex >= activeTasks.size())
+					taskIndex = 0;
 				else
-					nextTask += 1;
+					taskIndex += 1;
 			}
 			/**
 			 * JOIN:

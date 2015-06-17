@@ -7,7 +7,6 @@ import java.io.PrintWriter;
 import java.io.Serializable;
 import java.net.Socket;
 import java.net.UnknownHostException;
-
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 import gr.katsip.synefo.storm.producers.AbstractTupleProducer;
@@ -53,16 +52,16 @@ public class TpchTupleProducer implements AbstractTupleProducer, Serializable {
 	public Values nextTuple() {
 		if(dataProvider == null)
 			connect();
-		Values customer = new Values();
+		Values values = new Values();
 		try {
 			if(dataProvider.isClosed() == false) {
 				String line = input.readLine();
 				String[] attributes = line.split("|");
 				for(String attribute : attributes)
-					customer.add(attribute);
+					values.add(attribute);
 				Values tuple = new Values();
 				tuple.add(schema);
-				tuple.add(customer);
+				tuple.add(values);
 				return tuple;
 			}else {
 				return null;
