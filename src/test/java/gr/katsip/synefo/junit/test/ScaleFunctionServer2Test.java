@@ -161,13 +161,13 @@ public class ScaleFunctionServer2Test {
 			 */
 			if(activeTopology.containsKey("joiner_1:1@1.1.1.1")) {
 				scaleInCommand = scaleFunction.produceScaleInCommand("dispatcher_7:7@1.1.1.1", "joiner_1:1@1.1.1.1");
-				assertNotEquals(scaleInCommand, "");
+				assertEquals(scaleInCommand, "");
 			}else if(activeTopology.containsKey("joiner_2:2@1.1.1.1")) {
 				scaleInCommand = scaleFunction.produceScaleInCommand("dispatcher_7:7@1.1.1.1", "joiner_2:2@1.1.1.1");
-				assertNotEquals(scaleInCommand, "");
+				assertEquals(scaleInCommand, "");
 			}else {
 				scaleInCommand = scaleFunction.produceScaleInCommand("dispatcher_7:7@1.1.1.1", "joiner_3:3@1.1.1.1");
-				assertNotEquals(scaleInCommand, "");
+				assertEquals(scaleInCommand, "");
 			}
 		}
 		scaleInCommand = scaleFunction.produceScaleInCommand("spout_9:9@1.1.1.1", "dispatcher_7:7@1.1.1.1");
