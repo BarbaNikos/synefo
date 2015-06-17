@@ -88,7 +88,7 @@ public class TpchQueryFiveTopology {
 		 * Stage 1b : join joiners
 		 */
 		JoinJoiner joiner = new JoinJoiner("customer", new Fields(Customer.schema), "order", 
-				new Fields(Order.schema), "CUSTKEY");
+				new Fields(Order.schema), "O_CUSTKEY", "C_CUSTKEY");
 		joiner.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("join-join-cust", new SynefoJoinBolt("join-join-cust", synefoIP, synefoPort, 
 				joiner, zooIP, zooPort, false), 3)
@@ -98,7 +98,7 @@ public class TpchQueryFiveTopology {
 		taskList.add("drain");
 		topology.put("join-join-cust", taskList);
 		joiner = new JoinJoiner("order", new Fields(Order.schema), "customer", 
-				new Fields(Customer.schema), "CUSTKEY");
+				new Fields(Customer.schema), "C_CUSTKEY", "O_CUSTKEY");
 		joiner.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("join-join-order", new SynefoJoinBolt("join-join-order", synefoIP, synefoPort, 
 				joiner, zooIP, zooPort, false), 3)
