@@ -165,7 +165,7 @@ public class SynefoCoordinatorThread implements Runnable {
 				updatedTopology.put(parentTask, new ArrayList<String>());
 			}
 		}
-		System.out.println("updatePhysicalTop() about to return: " + updatedTopology.toString());
+//		System.out.println("updatePhysicalTop() about to return: " + updatedTopology.toString());
 		return updatedTopology;
 	}
 
