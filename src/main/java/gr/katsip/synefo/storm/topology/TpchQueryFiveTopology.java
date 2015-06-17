@@ -63,7 +63,7 @@ public class TpchQueryFiveTopology {
 				.setNumTasks(1);
 		taskNumber += 1;
 		builder.setSpout("order", 
-				new SynefoSpout("order", synefoIP, synefoPort, customerProducer, zooIP, zooPort), 1)
+				new SynefoSpout("order", synefoIP, synefoPort, orderProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
 		taskNumber += 1;
 		taskList = new ArrayList<String>();
