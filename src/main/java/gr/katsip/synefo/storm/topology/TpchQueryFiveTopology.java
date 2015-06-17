@@ -10,7 +10,6 @@ import gr.katsip.synefo.storm.operators.relational.elastic.JoinJoiner;
 import gr.katsip.synefo.tpch.Customer;
 import gr.katsip.synefo.tpch.Order;
 import gr.katsip.synefo.tpch.TpchTupleProducer;
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -18,9 +17,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
-
 import backtype.storm.Config;
-import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;
 import backtype.storm.generated.AlreadyAliveException;
 import backtype.storm.generated.InvalidTopologyException;
