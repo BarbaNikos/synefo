@@ -1,7 +1,12 @@
 package gr.katsip.synefo.storm.topology;
 
+import gr.katsip.synefo.storm.api.SynefoBolt;
+import gr.katsip.synefo.storm.api.SynefoJoinBolt;
 import gr.katsip.synefo.storm.api.SynefoSpout;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
+import gr.katsip.synefo.storm.operators.relational.ProjectOperator;
+import gr.katsip.synefo.storm.operators.relational.elastic.JoinDispatcher;
+import gr.katsip.synefo.storm.operators.relational.elastic.JoinJoiner;
 import gr.katsip.synefo.tpch.Customer;
 import gr.katsip.synefo.tpch.Order;
 import gr.katsip.synefo.tpch.TpchTupleProducer;
@@ -15,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import backtype.storm.Config;
+import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;
 import backtype.storm.generated.AlreadyAliveException;
 import backtype.storm.generated.InvalidTopologyException;
@@ -23,7 +29,8 @@ import backtype.storm.tuple.Fields;
 
 public class TpchQueryFiveTopology {
 
-	public static void main(String[] args) throws UnknownHostException, IOException, InterruptedException, ClassNotFoundException, AlreadyAliveException, InvalidTopologyException {
+	public static void main(String[] args) throws UnknownHostException, IOException, InterruptedException, 
+	ClassNotFoundException, AlreadyAliveException, InvalidTopologyException {
 		String synefoIP = "";
 		Integer synefoPort = 5555;
 		String[] streamIPs = null;
@@ -59,9 +66,57 @@ public class TpchQueryFiveTopology {
 				new SynefoSpout("order", synefoIP, synefoPort, customerProducer, zooIP, zooPort), 1)
 				.setNumTasks(1);
 		taskNumber += 1;
-		topology.put("customer", new ArrayList<String>());
-		topology.put("order", new ArrayList<String>());
+		taskList = new ArrayList<String>();
+		taskList.add("join-dispatch");
+		topology.put("customer", taskList);
+		topology.put("order", taskList);
 		
+		/**
+		 * Stage 1a: join dispatchers
+		 */
+		JoinDispatcher dispatcher = new JoinDispatcher("customer", new Fields(Customer.schema), "order", 
+				new Fields(Order.schema), new Fields(dataSchema));
+		builder.setBolt("join-dispatch", new SynefoJoinBolt("join-dispatch", synefoIP, synefoPort, 
+			dispatcher, zooIP, zooPort, false), 3)
+			.directGrouping("customer")
+			.directGrouping("order");
+		taskNumber += 3;
+		taskList = new ArrayList<String>();
+		taskList.add("join-join");
+		topology.put("join-dispatch", taskList);
+		/**
+		 * Stage 1b : join joiners
+		 */
+		JoinJoiner joiner = new JoinJoiner("customer", new Fields(Customer.schema), "order", 
+				new Fields(Order.schema), "CUSTKEY");
+		joiner.setOutputSchema(new Fields(dataSchema));
+		builder.setBolt("join-join-cust", new SynefoJoinBolt("join-join-cust", synefoIP, synefoPort, 
+				joiner, zooIP, zooPort, false), 3)
+		.directGrouping("join-dispatch");
+		taskNumber += 3;
+		taskList = new ArrayList<String>();
+		taskList.add("drain");
+		topology.put("join-join-cust", taskList);
+		joiner = new JoinJoiner("order", new Fields(Order.schema), "customer", 
+				new Fields(Customer.schema), "CUSTKEY");
+		joiner.setOutputSchema(new Fields(dataSchema));
+		builder.setBolt("join-join-order", new SynefoJoinBolt("join-join-order", synefoIP, synefoPort, 
+				joiner, zooIP, zooPort, false), 3)
+		.directGrouping("join-dispatch");
+		taskNumber += 3;
+		taskList = new ArrayList<String>();
+		taskList.add("drain");
+		topology.put("join-join-order", taskList);
+		/**
+		 * Stage 2: drain
+		 */
+		ProjectOperator projectOperator = new ProjectOperator(new Fields(dataSchema));
+		projectOperator.setOutputSchema(new Fields(dataSchema));
+		builder.setBolt("drain", 
+				new SynefoBolt("drain", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
+				.directGrouping("join-join-cust").directGrouping("join-join-order");
+		taskNumber += 1;
+		topology.put("drain", new ArrayList<String>());
 		/**
 		 * Notify SynEFO server about the 
 		 * Topology
@@ -96,6 +151,10 @@ public class TpchQueryFiveTopology {
 		conf.put(Config.TOPOLOGY_EXECUTOR_RECEIVE_BUFFER_SIZE, 16384);
 		conf.put(Config.TOPOLOGY_EXECUTOR_SEND_BUFFER_SIZE, 16384);
 
-		StormSubmitter.submitTopology("tpch-q5-top", conf, builder.createTopology());
+		LocalCluster cluster = new LocalCluster();
+		cluster.submitTopology("tpch-q5-top", conf, builder.createTopology());
+		Thread.sleep(100000);
+		cluster.shutdown();
+//		StormSubmitter.submitTopology("tpch-q5-top", conf, builder.createTopology());
 	}
 }

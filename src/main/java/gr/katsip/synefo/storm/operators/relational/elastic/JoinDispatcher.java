@@ -1,6 +1,8 @@
 package gr.katsip.synefo.storm.operators.relational.elastic;
 
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -9,8 +11,13 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 import gr.katsip.synefo.storm.operators.AbstractJoinOperator;
 
-public class JoinDispatcher implements AbstractJoinOperator {
+public class JoinDispatcher implements AbstractJoinOperator, Serializable {
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -2856458300296445939L;
+
 	List<Values> stateValues;
 	
 	private String leftRelation;
@@ -44,7 +51,7 @@ public class JoinDispatcher implements AbstractJoinOperator {
 
 	@Override
 	public void setOutputSchema(Fields output_schema) {
-//		this.outputSchema = new Fields(output_schema.toList());
+		this.outputSchema = new Fields(output_schema.toList());
 	}
 
 	@Override
@@ -52,7 +59,12 @@ public class JoinDispatcher implements AbstractJoinOperator {
 			HashMap<String, ArrayList<Integer>> taskRelationIndex,
 			ArrayList<Integer> activeTasks, Integer taskIndex, Fields fields,
 			Values values) {
-		if(fields.toList().toArray().equals(this.leftRelationSchema.toList().toArray())) {
+		/**
+		 * Receive a tuple that: attribute[0] : fields, attribute[1] : values
+		 */
+		Fields attributeNames = new Fields(((Fields) values.get(0)).toList());
+		Values attributeValues = (Values) values.get(1);
+		if(Arrays.equals(attributeNames.toList().toArray(), leftRelationSchema.toList().toArray())) {
 			/**
 			 * STORE:
 			 * Send it to one active left-relation-storage operators
@@ -63,10 +75,9 @@ public class JoinDispatcher implements AbstractJoinOperator {
 				Integer nextTask = activeTasks.get(taskIndex);
 				if(leftRelationTasks.contains(nextTask)) {
 					Values tuple = new Values();
-					values.add(System.currentTimeMillis());
-					for(Object o : values) {
-						values.add(o);
-					}
+					tuple.add(System.currentTimeMillis());
+					tuple.add(attributeNames);
+					tuple.add(attributeValues);
 					collector.emitDirect(nextTask, tuple);
 					if(nextTask >= activeTasks.size())
 						nextTask = 0;
@@ -85,16 +96,15 @@ public class JoinDispatcher implements AbstractJoinOperator {
 			 * After giving it an additional SYNEFO_HEADER field
 			 */
 			Values tuple = new Values();
-			values.add(System.currentTimeMillis());
-			for(Object o : values) {
-				values.add(o);
-			}
+			tuple.add(System.currentTimeMillis());
+			tuple.add(attributeNames);
+			tuple.add(attributeValues);
 			for(Integer rightRelationTask : taskRelationIndex.get(rightRelation)) {
 				if(activeTasks.contains(rightRelationTask)) {
 					collector.emitDirect(rightRelationTask, tuple);
 				}
 			}
-		}else if(fields.toList().toArray().equals(this.rightRelationSchema.toList().toArray())) {
+		}else if(Arrays.equals(attributeNames.toList().toArray(), rightRelationSchema.toList().toArray())) {
 			/**
 			 * STORE:
 			 * Send it to one active right-relation-storage operators
@@ -105,10 +115,9 @@ public class JoinDispatcher implements AbstractJoinOperator {
 				Integer nextTask = activeTasks.get(taskIndex);
 				if(rightRelationTasks.contains(nextTask)) {
 					Values tuple = new Values();
-					values.add(System.currentTimeMillis());
-					for(Object o : values) {
-						values.add(o);
-					}
+					tuple.add(System.currentTimeMillis());
+					tuple.add(attributeNames);
+					tuple.add(attributeValues);
 					collector.emitDirect(nextTask, tuple);
 					if(nextTask >= activeTasks.size())
 						nextTask = 0;
@@ -127,10 +136,9 @@ public class JoinDispatcher implements AbstractJoinOperator {
 			 * After giving it an additional SYNEFO_HEADER field
 			 */
 			Values tuple = new Values();
-			values.add(System.currentTimeMillis());
-			for(Object o : values) {
-				values.add(o);
-			}
+			tuple.add(System.currentTimeMillis());
+			tuple.add(attributeNames);
+			tuple.add(attributeValues);
 			for(Integer leftRelationTask : taskRelationIndex.get(leftRelation)) {
 				if(activeTasks.contains(leftRelationTask)) {
 					collector.emitDirect(leftRelationTask, tuple);

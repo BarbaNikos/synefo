@@ -1,6 +1,8 @@
 package gr.katsip.synefo.storm.operators.relational.elastic;
 
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -9,8 +11,13 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 import gr.katsip.synefo.storm.operators.AbstractJoinOperator;
 
-public class JoinJoiner implements AbstractJoinOperator {
+public class JoinJoiner implements AbstractJoinOperator, Serializable {
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1309799850817632049L;
+
 	private String storedRelation;
 	
 	private Fields storedRelationSchema;
@@ -53,26 +60,35 @@ public class JoinJoiner implements AbstractJoinOperator {
 			HashMap<String, ArrayList<Integer>> taskRelationIndex,
 			ArrayList<Integer> activeTasks, Integer taskIndex, Fields fields,
 			Values values) {
-		// TODO Auto-generated method stub
-
+		/**
+		 * Receive a tuple that: attribute[0] : fields, attribute[1] : values
+		 */
+		Fields attributeNames = new Fields(((Fields) values.get(0)).toList());
+		Values attributeValues = (Values) values.get(1);
+		if(Arrays.equals(attributeNames.toList().toArray(), storedRelationSchema.toList().toArray())) {
+			/**
+			 * Store the new tuple
+			 */
+		}else if(Arrays.equals(attributeNames.toList().toArray(), otherRelationSchema.toList().toArray())) {
+			/**
+			 * Attempt to join with stored tuples
+			 */
+		}
 	}
 
 	@Override
 	public List<Values> getStateValues() {
-		// TODO Auto-generated method stub
-		return null;
+		return stateValues;
 	}
 
 	@Override
 	public Fields getStateSchema() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public Fields getOutputSchema() {
-		// TODO Auto-generated method stub
-		return null;
+		return outputSchema;
 	}
 
 	@Override

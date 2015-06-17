@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import gr.katsip.cestorm.db.CEStormDatabaseManager;
 import gr.katsip.synefo.storm.api.Pair;
 
@@ -72,12 +73,6 @@ public class SynefoCoordinatorThread implements Runnable {
 
 	public void run() {
 		System.out.println("+efo coordinator thread: initiates execution...");
-		while(physicalTopology.size() == 0)
-			try {
-				physicalTopology.wait();
-			} catch (InterruptedException e1) {
-				e1.printStackTrace();
-			}
 		while(this.taskNumber.get() == -1) {
 			try {
 				Thread.sleep(100);
@@ -85,12 +80,11 @@ public class SynefoCoordinatorThread implements Runnable {
 				e.printStackTrace();
 			}
 		}
-
 		System.out.println("+efo coordinator thread: Received physical topology (size: " + 
 				taskNumber.get() + ").");
 		while(taskIdentifierIndex.size() < taskNumber.get())
 			try {
-				taskIdentifierIndex.wait();
+				Thread.sleep(100);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
@@ -115,18 +109,21 @@ public class SynefoCoordinatorThread implements Runnable {
 				(int) resourceThresholds.get("throughput").lowerBound);
 
 		ConcurrentHashMap<String, ArrayList<String>> expandedPhysicalTopology = physicalTopologyTaskExpand(taskIdentifierIndex, physicalTopology);
+		System.out.println("expanded-phys-top: " + expandedPhysicalTopology.toString());
 		physicalTopology.clear();
 		physicalTopology.putAll(expandedPhysicalTopology);
 		/**
 		 * At this point, physicalTopologyWithIds has the actual topology of operators and the task-ids.
 		 */
 		System.out.println("+efo coordinator thread: received task name allocation from Storm cluster. Updating internal structures...");
-		
+		ConcurrentHashMap<String, ArrayList<String>> updatedPhysicalTopology = SynefoCoordinatorThread.updatePhysicalTopology(
+				taskAddressIndex, taskIdentifierIndex, physicalTopology);
 		physicalTopology.clear();
-		physicalTopology.putAll(SynefoCoordinatorThread.updatePhysicalTopology(taskAddressIndex, taskIdentifierIndex, physicalTopology));
+		physicalTopology.putAll(updatedPhysicalTopology);
+		System.out.println("updated-phys-top: " + physicalTopology.toString());
 		activeTopology.clear();
 		activeTopology.putAll(SynefoCoordinatorThread.getInitialActiveTopologyWithJoinOperators(
-				SynefoCoordinatorThread.updatePhysicalTopology(taskAddressIndex, taskIdentifierIndex, physicalTopology), 
+				physicalTopology, 
 				ScaleFunction.getInverseTopology(physicalTopology), 
 				taskToJoinRelation));
 		
@@ -135,7 +132,6 @@ public class SynefoCoordinatorThread implements Runnable {
 		
 		operationFlag.set(true);
 		taskIdentifierIndex.clear();
-		taskIdentifierIndex.notifyAll();
 		tamer.setScaleOutEventWatch();
 		tamer.setScaleInEventWatch();
 
@@ -169,6 +165,7 @@ public class SynefoCoordinatorThread implements Runnable {
 				updatedTopology.put(parentTask, new ArrayList<String>());
 			}
 		}
+		System.out.println("updatePhysicalTop() about to return: " + updatedTopology.toString());
 		return updatedTopology;
 	}
 
@@ -212,7 +209,9 @@ public class SynefoCoordinatorThread implements Runnable {
 			Entry<String, ArrayList<String>> pair = itr.next();
 			String taskName = pair.getKey();
 			ArrayList<String> parentTasks = pair.getValue();
-			if(parentTasks == null || parentTasks.size() == 0) {
+			if(parentTasks == null) {
+				activeTasks.add(taskName);
+			}else if(parentTasks != null && parentTasks.size() == 0) {
 				activeTasks.add(taskName);
 			}
 		}

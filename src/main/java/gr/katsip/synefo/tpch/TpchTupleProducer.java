@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
@@ -11,8 +12,13 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 import gr.katsip.synefo.storm.producers.AbstractTupleProducer;
 
-public class TpchTupleProducer implements AbstractTupleProducer {
+public class TpchTupleProducer implements AbstractTupleProducer, Serializable {
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 4396139291927373430L;
+
 	private Fields fields;
 	
 	private Fields schema;

@@ -274,46 +274,46 @@ public class SynefoBolt extends BaseRichBolt {
 		zooPet = new ZooPet(zooIP, zooPort, taskName, taskID, taskIP);
 		if(downstreamTasks == null && activeDownstreamTasks == null)
 			registerToSynEFO();
-		if(this.statisticFileChannel == null) {
-			try {
-				statisticFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
-						taskName + ":" + taskID + "@" + taskIP + "-stats.log"), 
-						StandardOpenOption.WRITE, StandardOpenOption.CREATE);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			statisticFileHandler = new CompletionHandler<Integer, Object>() {
-				@Override
-				public void completed(Integer result, Object attachment) {
-					//Do nothing
-				}
-				@Override
-				public void failed(Throwable exc, Object attachment) {
-					//Do nothing
-				}
-			};
-			statisticFileOffset = 0L;
-		}
-		if(this.scaleEventFileChannel == null) {
-			try {
-				scaleEventFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
-						taskName + ":" + taskID + "@" + taskIP + "-scale-events.log"), 
-						StandardOpenOption.WRITE, StandardOpenOption.CREATE);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			scaleEventFileHandler = new CompletionHandler<Integer, Object>() {
-				@Override
-				public void completed(Integer result, Object attachment) {
-					//Do nothing
-				}
-				@Override
-				public void failed(Throwable exc, Object attachment) {
-					//Do nothing
-				}
-			};
-			scaleEventFileOffset = 0L;
-		}
+//		if(this.statisticFileChannel == null) {
+//			try {
+//				statisticFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
+//						taskName + ":" + taskID + "@" + taskIP + "-stats.log"), 
+//						StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+//			} catch (IOException e) {
+//				e.printStackTrace();
+//			}
+//			statisticFileHandler = new CompletionHandler<Integer, Object>() {
+//				@Override
+//				public void completed(Integer result, Object attachment) {
+//					//Do nothing
+//				}
+//				@Override
+//				public void failed(Throwable exc, Object attachment) {
+//					//Do nothing
+//				}
+//			};
+//			statisticFileOffset = 0L;
+//		}
+//		if(this.scaleEventFileChannel == null) {
+//			try {
+//				scaleEventFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
+//						taskName + ":" + taskID + "@" + taskIP + "-scale-events.log"), 
+//						StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+//			} catch (IOException e) {
+//				e.printStackTrace();
+//			}
+//			scaleEventFileHandler = new CompletionHandler<Integer, Object>() {
+//				@Override
+//				public void completed(Integer result, Object attachment) {
+//					//Do nothing
+//				}
+//				@Override
+//				public void failed(Throwable exc, Object attachment) {
+//					//Do nothing
+//				}
+//			};
+//			scaleEventFileOffset = 0L;
+//		}
 	}
 
 

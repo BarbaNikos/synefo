@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import gr.katsip.synefo.server2.JoinOperator.Step;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 
@@ -160,7 +161,6 @@ public class SynefoThread implements Runnable {
 		}
 		taskAddressIndex.putIfAbsent(taskName + ":" + identifier, taskIP);
 		taskIdentifierIndex.putIfAbsent(taskName, identifier);
-		taskIdentifierIndex.notifyAll();
 		System.out.println("+efo SPOUT: " + taskName + "(" + identifier + "@" + taskIP + 
 				") connected.");
 		/**
@@ -171,7 +171,7 @@ public class SynefoThread implements Runnable {
 		 */
 		while(taskIdentifierIndex.size() > 0)
 			try {
-				taskIdentifierIndex.wait();
+				Thread.sleep(100);
 			} catch (InterruptedException e2) {
 				e2.printStackTrace();
 			}
@@ -311,7 +311,6 @@ public class SynefoThread implements Runnable {
 		}
 		taskAddressIndex.putIfAbsent(taskName + ":" + identifier, taskIP);
 		taskIdentifierIndex.putIfAbsent(taskName, identifier);
-		taskIdentifierIndex.notifyAll();
 		System.out.println("+efo BOLT: " + taskName + "(" + identifier + "@" + taskIP + 
 				") connected.");
 		/**
@@ -322,7 +321,7 @@ public class SynefoThread implements Runnable {
 		 */
 		while(taskIdentifierIndex.size() > 0)
 			try {
-				taskIdentifierIndex.wait();
+				Thread.sleep(100);
 			} catch (InterruptedException e2) {
 				e2.printStackTrace();
 			}
@@ -335,7 +334,7 @@ public class SynefoThread implements Runnable {
 		HashMap<String, ArrayList<String>> relationTaskIndex = null;
 		if(operator != null && operator.getStep() == JoinOperator.Step.DISPATCH) {
 			relationTaskIndex = new HashMap<String, ArrayList<String>>();
-			for(String task : physicalTopology.get(taskName + ":" + "@" + taskIP)) {
+			for(String task : physicalTopology.get(taskName + ":" + identifier + "@" + taskIP)) {
 				Integer identifier = Integer.parseInt(task.split("[:@]")[1]);
 				JoinOperator op = taskToJoinRelation.get(identifier);
 				if(relationTaskIndex.containsKey(op.getRelation())) {
@@ -413,8 +412,6 @@ public class SynefoThread implements Runnable {
 		 * This is the total number of tasks (threads) that will be spawned in the 
 		 * given topology. It is set atomically by the topology-process thread.
 		 */
-		Integer providedTaskNumber = Integer.parseInt(values.get("TASK_NUM"));
-		this.taskNumber.compareAndSet(-1, providedTaskNumber);
 		HashMap<String, ArrayList<String>> topology = null;
 		System.out.println("+efo worker-TOPOLOGY: connected.");
 		try {
@@ -428,7 +425,8 @@ public class SynefoThread implements Runnable {
 		}
 		physicalTopology.clear();
 		physicalTopology.putAll(topology);
-		physicalTopology.notifyAll();
+		Integer providedTaskNumber = Integer.parseInt(values.get("TASK_NUM"));
+		this.taskNumber.compareAndSet(-1, providedTaskNumber);
 		System.out.println("+efo worker-TOPOLOGY: received topology information.");
 		String _ack = "+EFO_ACK";
 		try {
