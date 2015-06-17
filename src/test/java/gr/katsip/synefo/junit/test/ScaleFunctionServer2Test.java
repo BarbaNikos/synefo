@@ -1,4 +1,4 @@
-package gr.katsip.synefo.test;
+package gr.katsip.synefo.junit.test;
 
 import static org.junit.Assert.*;
 
