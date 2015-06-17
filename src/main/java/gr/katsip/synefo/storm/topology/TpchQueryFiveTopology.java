@@ -151,10 +151,10 @@ public class TpchQueryFiveTopology {
 		conf.put(Config.TOPOLOGY_EXECUTOR_RECEIVE_BUFFER_SIZE, 16384);
 		conf.put(Config.TOPOLOGY_EXECUTOR_SEND_BUFFER_SIZE, 16384);
 
-		LocalCluster cluster = new LocalCluster();
-		cluster.submitTopology("tpch-q5-top", conf, builder.createTopology());
-		Thread.sleep(100000);
-		cluster.shutdown();
-//		StormSubmitter.submitTopology("tpch-q5-top", conf, builder.createTopology());
+//		LocalCluster cluster = new LocalCluster();
+//		cluster.submitTopology("tpch-q5-top", conf, builder.createTopology());
+//		Thread.sleep(100000);
+//		cluster.shutdown();
+		StormSubmitter.submitTopology("tpch-q5-top", conf, builder.createTopology());
 	}
 }
