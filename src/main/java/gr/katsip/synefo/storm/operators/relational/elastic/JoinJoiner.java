@@ -48,6 +48,12 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 		this.otherRelationSchema = new Fields(otherRelationSchema.toList());
 		this.storedJoinAttribute = storedJoinAttribute;
 		this.otherJoinAttribute = otherJoinAttribute;
+		if(this.storedRelationSchema.fieldIndex(this.storedJoinAttribute) < 0) {
+			throw new IllegalArgumentException("Not compatible stored-relation schema with the join-attribute for the stored relation");
+		}
+		if(this.otherRelationSchema.fieldIndex(this.otherJoinAttribute) < 0) {
+			throw new IllegalArgumentException("Not compatible other-relation schema with the join-attribute for the other relation");
+		}
 		if(this.storedRelation.compareTo(this.otherRelation) <= 0) {
 			List<String> schema = storedRelationSchema.toList();
 			schema.addAll(otherRelationSchema.toList());
