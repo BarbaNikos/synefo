@@ -40,8 +40,6 @@ public class ZooMaster {
 
 	private String zoo_ip;
 
-	private Integer zoo_port;
-
 	private SynefoState state;
 
 	public ConcurrentHashMap<String, ArrayList<String>> physicalTopology;
@@ -148,12 +146,11 @@ public class ZooMaster {
 	 * @param physicalTopology an object reference to the physical-topology submitted to synefo
 	 * @param activeTopology an object reference to the initially active components in the topology submitted to synefo
 	 */
-	public ZooMaster(String zoo_ip, Integer zoo_port, 
+	public ZooMaster(String zoo_ip, 
 			ConcurrentHashMap<String, ArrayList<String>> physicalTopology, 
 			ConcurrentHashMap<String, ArrayList<String>> activeTopology, 
 			ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation) {
 		this.zoo_ip = zoo_ip;
-		this.zoo_port = zoo_port;
 		state = SynefoState.INIT;
 		this.physicalTopology = physicalTopology;
 //		this.taskToJoinRelation = taskToJoinRelation;
@@ -169,7 +166,7 @@ public class ZooMaster {
 	 */
 	public void start() {
 		try {
-			zk = new ZooKeeper(zoo_ip + ":" + zoo_port, 100000	, synefoWatcher);
+			zk = new ZooKeeper(zoo_ip, 100000	, synefoWatcher);
 			while(zk.getState() != ZooKeeper.States.CONNECTED) {
 				Thread.sleep(100);
 			}

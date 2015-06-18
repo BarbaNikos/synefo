@@ -32,8 +32,6 @@ public class Synefo {
 	private HashMap<String, Pair<Number, Number>> resourceThresholds;
 
 	private String zooHost;
-
-	private Integer zooIP;
 	
 	private AtomicBoolean operationFlag;
 	
@@ -45,7 +43,7 @@ public class Synefo {
 	
 	private CEStormDatabaseManager ceDb = null;
 
-	public Synefo(String zooHost, Integer zooIP, HashMap<String, Pair<Number, Number>> _resource_thresholds, CEStormDatabaseManager ceDb) {
+	public Synefo(String zooHost, HashMap<String, Pair<Number, Number>> _resource_thresholds, CEStormDatabaseManager ceDb) {
 		physicalTopology = new ConcurrentHashMap<String, ArrayList<String>>();
 		activeTopology = new ConcurrentHashMap<String, ArrayList<String>>();
 		taskIdentifierIndex = new ConcurrentHashMap<String, Integer>();
@@ -60,7 +58,6 @@ public class Synefo {
 		killCommand = false;
 		resourceThresholds = _resource_thresholds;
 		this.zooHost = zooHost;
-		this.zooIP = zooIP;
 		operationFlag = new AtomicBoolean(false);
 		taskNumber = new AtomicInteger(-1);
 		if(ceDb != null) {
@@ -78,7 +75,7 @@ public class Synefo {
 		Socket _stormComponent = null;
 		OutputStream _out = null;
 		InputStream _in = null;
-		(new Thread(new SynefoCoordinatorThread(zooHost, zooIP, resourceThresholds, physicalTopology, 
+		(new Thread(new SynefoCoordinatorThread(zooHost, resourceThresholds, physicalTopology, 
 				activeTopology, taskIdentifierIndex, taskIPs, operationFlag, demoMode, queryId, ceDb, taskNumber, taskToJoinRelation))).start();
 		while(killCommand == false) {
 			try {

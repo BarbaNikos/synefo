@@ -42,22 +42,20 @@ public class ZeroDemoTopology {
 		Integer synefoPort = 5555;
 		String[] streamIPs = null;
 		String zooIP = "";
-		Integer zooPort = -1;
 		String dbServerIp = null;
 		String dbServerUser = null;
 		String dbServerPass = null;
 		HashMap<String, ArrayList<String>> topology = new HashMap<String, ArrayList<String>>();
 		ArrayList<String> _tmp;
-		if(args.length < 5) {
-			System.err.println("Arguments: <synefo-IP> <stream-IP> <zoo-IP> <zoo-port> <db-info-file>");
+		if(args.length < 4) {
+			System.err.println("Arguments: <synefo-IP> <stream-IP> <zoo-ip1:port1,zoo-ip2:port2,...,zoo-ipN:portN> <db-info-file>");
 			System.exit(1);
 		}else {
 			synefoIP = args[0];
 			streamIPs = args[1].split(",");
 			zooIP = args[2];
-			zooPort = Integer.parseInt(args[3]);
 			System.out.println("Database Configuration file provided. Parsing connection information...");
-			try(BufferedReader br = new BufferedReader(new FileReader(new File(args[4])))) {
+			try(BufferedReader br = new BufferedReader(new FileReader(new File(args[3])))) {
 				for(String line; (line = br.readLine()) != null;) {
 					String[] lineTokens = line.split(":");
 					if(line.contains("db-server-ip:"))
@@ -86,7 +84,7 @@ public class ZeroDemoTopology {
 				dbServerUser, dbServerPass);
 		Integer queryId = ceDb.insertQuery(1, 
 				"SELECT * FROM Rstream AS R, Rstream AS S WHERE R.three = S.three");
-		OperatorStatisticCollector statCollector = new OperatorStatisticCollector(zooIP + ":" + zooPort, 
+		OperatorStatisticCollector statCollector = new OperatorStatisticCollector(zooIP, 
 				dbServerIp, 
 				dbServerUser, dbServerPass, queryId);
 		/**
@@ -99,7 +97,7 @@ public class ZeroDemoTopology {
 			}
 		};
 		try {
-			ZooKeeper zk = new ZooKeeper(zooIP + ":" + zooPort, 100000, sampleWatcher);
+			ZooKeeper zk = new ZooKeeper(zooIP, 100000, sampleWatcher);
 			if(zk.exists("/data", false) != null) {
 				System.out.println("Z-Node \"/data\" exists so we need to clean it up...");
 				List<String> operators = zk.getChildren("/data", false);
@@ -141,10 +139,10 @@ public class ZeroDemoTopology {
 		 */
 		String[] spoutSchema = { "num", "one", "two", "three", "four" };
 		StreamgenStatTupleProducer tupleProducer = new StreamgenStatTupleProducer(streamIPs[0], 
-				zooIP + ":" + zooPort, 500);
+				zooIP, 500);
 		tupleProducer.setSchema(new Fields(spoutSchema));
 		builder.setSpout("spout", 
-				new SynefoSpout("spout", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
+				new SynefoSpout("spout", synefoIP, synefoPort, tupleProducer, zooIP), 1)
 				.setNumTasks(1);
 		_tmp = new ArrayList<String>();
 		_tmp.add("join_bolt_1");
@@ -155,17 +153,17 @@ public class ZeroDemoTopology {
 		 * Stage 1: Join operators
 		 */
 		StatJoinOperator<String> joinOperator = new StatJoinOperator<String>(new StringComparator(), 50, "three", 
-				new Fields(spoutSchema), new Fields(spoutSchema), zooIP + ":" + zooPort, 500);
+				new Fields(spoutSchema), new Fields(spoutSchema), zooIP, 500);
 		builder.setBolt("join_bolt_1", 
 				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, 
-						joinOperator, zooIP, zooPort, false), 1)
+						joinOperator, zooIP, false), 1)
 						.setNumTasks(1)
 						.directGrouping("spout");
 		joinOperator = new StatJoinOperator<String>(new StringComparator(), 50, "three", 
-				new Fields(spoutSchema), new Fields(spoutSchema), zooIP + ":" + zooPort, 500);
+				new Fields(spoutSchema), new Fields(spoutSchema), zooIP, 500);
 		builder.setBolt("join_bolt_2", 
 				new SynefoBolt("join_bolt_2", synefoIP, synefoPort, 
-						joinOperator, zooIP, zooPort, false), 1)
+						joinOperator, zooIP, false), 1)
 						.setNumTasks(1)
 						.directGrouping("spout");
 		_tmp = new ArrayList<String>();
@@ -183,7 +181,7 @@ public class ZeroDemoTopology {
 				joinOperator.getOutputSchema().toList().toArray(new String[joinOperator.getOutputSchema().size()])));
 		builder.setBolt("drain_bolt", 
 				new SynefoBolt("drain_bolt", synefoIP, synefoPort, 
-						projectOperator, zooIP, zooPort, false), 1)
+						projectOperator, zooIP, false), 1)
 						.setNumTasks(1)
 						.directGrouping("join_bolt_1")
 						.directGrouping("join_bolt_2");

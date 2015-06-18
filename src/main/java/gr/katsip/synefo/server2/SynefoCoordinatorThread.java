@@ -28,8 +28,6 @@ public class SynefoCoordinatorThread implements Runnable {
 
 	private String zooHost;
 
-	private Integer zooPort;
-
 	private Thread userInterfaceThread;
 
 	private AtomicBoolean operationFlag;
@@ -44,7 +42,7 @@ public class SynefoCoordinatorThread implements Runnable {
 
 	private ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation = null;
 
-	public SynefoCoordinatorThread(String zooHost, Integer zooPort, 
+	public SynefoCoordinatorThread(String zooHost, 
 			HashMap<String, Pair<Number, Number>> resourceThresholds, 
 			ConcurrentHashMap<String, ArrayList<String>> physicalTopology, 
 			ConcurrentHashMap<String, ArrayList<String>> runningTopology, 
@@ -62,7 +60,6 @@ public class SynefoCoordinatorThread implements Runnable {
 		this.taskAddressIndex = taskIPs;
 		this.resourceThresholds = resourceThresholds;
 		this.zooHost = zooHost;
-		this.zooPort = zooPort;
 		this.operationFlag = operationFlag;
 		this.demoMode = demoMode;
 		this.queryId = queryId;
@@ -97,7 +94,7 @@ public class SynefoCoordinatorThread implements Runnable {
 		/**
 		 * Update ZooKeeper entries and Nodes
 		 */
-		tamer = new ZooMaster(zooHost, zooPort, physicalTopology, activeTopology, taskToJoinRelation);
+		tamer = new ZooMaster(zooHost, physicalTopology, activeTopology, taskToJoinRelation);
 		tamer.start();
 		tamer.setScaleOutThresholds((double) resourceThresholds.get("cpu").upperBound, 
 				(double) resourceThresholds.get("memory").upperBound, 

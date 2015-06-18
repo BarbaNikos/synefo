@@ -37,7 +37,7 @@ public class ZooMasterTest {
 		
 		HashMap<String, ArrayList<String>> activeTopology = ScaleFunction.getInitialActiveTopology(
 				physicalTopology, ScaleFunction.getInverseTopology(physicalTopology));
-		ZooMaster zooMaster = new ZooMaster("127.0.0.1", 2181, physicalTopology, activeTopology);
+		ZooMaster zooMaster = new ZooMaster("127.0.0.1:2181", physicalTopology, activeTopology);
 		
 		Watcher boltWatcher = new Watcher() {
 			public void process(WatchedEvent e) {

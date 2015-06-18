@@ -38,8 +38,6 @@ public class ZooPet {
 
 		private String zooIP;
 
-		private Integer zooPort;
-
 		private Integer taskID;
 
 		private String taskName;
@@ -68,9 +66,8 @@ public class ZooPet {
 		 * @param task_id the corresponding task's id
 		 * @param task_ip the corresponding task's IP
 		 */
-		public ZooPet(String zoo_ip, Integer zoo_port, String task_name, Integer task_id, String task_ip) {
+		public ZooPet(String zoo_ip, String task_name, Integer task_id, String task_ip) {
 			this.zooIP = zoo_ip;
-			this.zooPort = zoo_port;
 			this.taskID = task_id;
 			this.taskName = task_name;
 			state = BoltState.INIT;
@@ -148,7 +145,7 @@ public class ZooPet {
 		 */
 		public void start() {
 			try {
-				zk = new ZooKeeper(zooIP + ":" + zooPort, 100000, boltWatcher);
+				zk = new ZooKeeper(zooIP, 100000, boltWatcher);
 				while(zk.getState() != ZooKeeper.States.CONNECTED) {
 					Thread.sleep(100);
 				}

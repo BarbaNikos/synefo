@@ -99,8 +99,6 @@ public class SynefoSpout extends BaseRichSpout {
 
 	private String zooIP;
 
-	private Integer zooPort;
-
 	private int reportCounter;
 	
 	private int latencyPeriodCounter;
@@ -122,7 +120,7 @@ public class SynefoSpout extends BaseRichSpout {
 	private long opLatencySendTimestamp;
 
 	public SynefoSpout(String task_name, String synEFO_ip, Integer synEFO_port, 
-			AbstractTupleProducer tupleProducer, String zooIP, Integer zooPort) {
+			AbstractTupleProducer tupleProducer, String zooIP) {
 		taskName = task_name;
 		downstreamTasks = null;
 		activeDownstreamTasks = null;
@@ -131,7 +129,6 @@ public class SynefoSpout extends BaseRichSpout {
 		stats = new TaskStatistics();
 		this.tupleProducer = tupleProducer;
 		this.zooIP = zooIP;
-		this.zooPort = zooPort;
 		reportCounter = 0;
 		latencyPeriodCounter = 0;
 		opLatencySendState = OpLatencyState.na;
@@ -493,7 +490,7 @@ public class SynefoSpout extends BaseRichSpout {
 		} catch (UnknownHostException e1) {
 			e1.printStackTrace();
 		}
-		pet = new ZooPet(zooIP, zooPort, taskName, taskId, taskIP);
+		pet = new ZooPet(zooIP, taskName, taskId, taskIP);
 		if(activeDownstreamTasks == null && downstreamTasks == null) {
 			registerToSynEFO();
 		}

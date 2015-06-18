@@ -39,8 +39,6 @@ public class ZooMaster {
 
 	private String zoo_ip;
 
-	private Integer zoo_port;
-
 	private SynefoState state;
 
 	public HashMap<String, ArrayList<String>> physicalTopology;
@@ -145,11 +143,10 @@ public class ZooMaster {
 	 * @param physicalTopology an object reference to the physical-topology submitted to synefo
 	 * @param activeTopology an object reference to the initially active components in the topology submitted to synefo
 	 */
-	public ZooMaster(String zoo_ip, Integer zoo_port, 
+	public ZooMaster(String zoo_ip, 
 			HashMap<String, ArrayList<String>> physicalTopology, 
 			HashMap<String, ArrayList<String>> activeTopology) {
 		this.zoo_ip = zoo_ip;
-		this.zoo_port = zoo_port;
 		state = SynefoState.INIT;
 		this.physicalTopology = physicalTopology;
 		this.scaleFunction = new ScaleFunction(physicalTopology, activeTopology);
@@ -164,7 +161,7 @@ public class ZooMaster {
 	 */
 	public void start() {
 		try {
-			zk = new ZooKeeper(zoo_ip + ":" + zoo_port, 100000	, synefoWatcher);
+			zk = new ZooKeeper(zoo_ip, 100000, synefoWatcher);
 			while(zk.getState() != ZooKeeper.States.CONNECTED) {
 				Thread.sleep(100);
 			}

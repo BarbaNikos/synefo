@@ -42,20 +42,18 @@ public class SerialSynefoTopology {
 		Integer synefoPort = 5555;
 		String[] streamIPs = null;
 		String zooIP = "";
-		Integer zooPort = -1;
 		String dbServerIp = null;
 		String dbServerUser = null;
 		String dbServerPass = null;
 		HashMap<String, ArrayList<String>> topology = new HashMap<String, ArrayList<String>>();
 		ArrayList<String> _tmp;
-		if(args.length < 5) {
-			System.err.println("Arguments: <synefo-IP> <stream-IP> <zoo-IP> <zoo-port> <db-info-file>");
+		if(args.length < 4) {
+			System.err.println("Arguments: <synefo-IP> <stream-IP> <zoo-ip1:port1,zoo-ip2:port2,...,zoo-ipN:portN> <db-info-file>");
 			System.exit(1);
 		}else {
 			synefoIP = args[0];
 			streamIPs = args[1].split(",");
 			zooIP = args[2];
-			zooPort = Integer.parseInt(args[3]);
 			System.out.println("Database Configuration file provided. Parsing connection information...");
 			try(BufferedReader br = new BufferedReader(new FileReader(new File(args[4])))) {
 				for(String line; (line = br.readLine()) != null;) {
@@ -86,7 +84,7 @@ public class SerialSynefoTopology {
 				dbServerUser, dbServerPass);
 		Integer queryId = ceDb.insertQuery(1, 
 				"SELECT * FROM Rstream AS R, Rstream AS S WHERE R.three = S.three");
-		OperatorStatisticCollector statCollector = new OperatorStatisticCollector(zooIP + ":" + zooPort, 
+		OperatorStatisticCollector statCollector = new OperatorStatisticCollector(zooIP, 
 				dbServerIp, 
 				dbServerUser, dbServerPass, queryId);
 		/**
@@ -99,7 +97,7 @@ public class SerialSynefoTopology {
 			}
 		};
 		try {
-			ZooKeeper zk = new ZooKeeper(zooIP + ":" + zooPort, 100000, sampleWatcher);
+			ZooKeeper zk = new ZooKeeper(zooIP, 100000, sampleWatcher);
 			if(zk.exists("/data", false) != null) {
 				System.out.println("Z-Node \"/data\" exists so we need to clean it up...");
 				List<String> operators = zk.getChildren("/data", false);
@@ -136,11 +134,11 @@ public class SerialSynefoTopology {
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
 		StreamgenStatTupleProducer tupleProducer = new StreamgenStatTupleProducer(streamIPs[0], 
-				zooIP + ":" + zooPort, 500);
+				zooIP, 500);
 		String[] spoutSchema = { "one", "two", "three", "four", "five" };
 		tupleProducer.setSchema(new Fields(spoutSchema));
 		builder.setSpout("spout_1", 
-				new SynefoSpout("spout_1", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
+				new SynefoSpout("spout_1", synefoIP, synefoPort, tupleProducer, zooIP), 1)
 				.setNumTasks(1);
 		_tmp = new ArrayList<String>();
 		_tmp.add("project_1");
@@ -150,10 +148,10 @@ public class SerialSynefoTopology {
 		 * Stage 1: Project Operators
 		 */
 		StatProjectOperator projectOperator = new StatProjectOperator(new Fields(spoutSchema), 
-				zooIP + ":" + zooPort, 500);
+				zooIP, 500);
 		projectOperator.setOutputSchema(new Fields(spoutSchema));
 		builder.setBolt("project_1", 
-				new SynefoBolt("project_1", synefoIP, synefoPort, projectOperator, zooIP, zooPort, false), 1)
+				new SynefoBolt("project_1", synefoIP, synefoPort, projectOperator, zooIP, false), 1)
 				.setNumTasks(1)
 				.directGrouping("spout_1");
 		_tmp = new ArrayList<String>();
@@ -165,9 +163,9 @@ public class SerialSynefoTopology {
 		 * Stage 2: Join operators
 		 */
 		StatJoinOperator<String> joinOperator = new StatJoinOperator<String>(new StringComparator(), 100, "three", 
-				new Fields(spoutSchema), new Fields(spoutSchema), zooIP + ":" + zooPort, 500);
+				new Fields(spoutSchema), new Fields(spoutSchema), zooIP, 500);
 		builder.setBolt("join_1", 
-				new SynefoBolt("join_1", synefoIP, synefoPort, joinOperator, zooIP, zooPort, false), 1)
+				new SynefoBolt("join_1", synefoIP, synefoPort, joinOperator, zooIP, false), 1)
 				.setNumTasks(1)
 				.directGrouping("project_1");
 		_tmp = new ArrayList<String>();
@@ -181,14 +179,14 @@ public class SerialSynefoTopology {
 		String[] groupByAttributes = new String[joinOperator.getOutputSchema().toList().size()];
 		groupByAttributes = joinOperator.getOutputSchema().toList().toArray(groupByAttributes);
 		StatCountGroupByOperator countGroupByAggrOperator = new StatCountGroupByOperator(100, 
-				groupByAttributes, zooIP + ":" + zooPort, 500);
+				groupByAttributes, zooIP, 500);
 		String[] countGroupBySchema = { "key", "count" };
 		String[] countGroupByStateSchema = { "key", "count", "time" };
 		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
 		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
 		builder.setBolt("count_grpby", 
 				new SynefoBolt("count_grpby", synefoIP, synefoPort, 
-						countGroupByAggrOperator, zooIP, zooPort, false), 1)
+						countGroupByAggrOperator, zooIP, false), 1)
 				.setNumTasks(1)
 				.directGrouping("join_1");
 		topology.put("count_grpby", new ArrayList<String>());

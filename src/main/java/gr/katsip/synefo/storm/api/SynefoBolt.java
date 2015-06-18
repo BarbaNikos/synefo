@@ -100,8 +100,6 @@ public class SynefoBolt extends BaseRichBolt {
 
 	private String zooIP;
 
-	private Integer zooPort;
-
 	private int reportCounter;
 
 	private int latencyPeriodCounter;
@@ -133,7 +131,7 @@ public class SynefoBolt extends BaseRichBolt {
 	private long opLatencySendTimestamp;
 
 	public SynefoBolt(String task_name, String synEFO_ip, Integer synEFO_port, 
-			AbstractOperator operator, String zooIP, Integer zooPort, boolean autoScale) {
+			AbstractOperator operator, String zooIP, boolean autoScale) {
 		taskName = task_name;
 		synefoServerIP = synEFO_ip;
 		synefoServerPort = synEFO_port;
@@ -146,7 +144,6 @@ public class SynefoBolt extends BaseRichBolt {
 		stateValues = new ArrayList<Values>();
 		this.operator.init(stateValues);
 		this.zooIP = zooIP;
-		this.zooPort = zooPort;
 		reportCounter = 0;
 		latencyPeriodCounter = 0;
 		this.autoScale = autoScale;
@@ -271,7 +268,7 @@ public class SynefoBolt extends BaseRichBolt {
 		} catch (UnknownHostException e1) {
 			e1.printStackTrace();
 		}
-		zooPet = new ZooPet(zooIP, zooPort, taskName, taskID, taskIP);
+		zooPet = new ZooPet(zooIP, taskName, taskID, taskIP);
 		if(downstreamTasks == null && activeDownstreamTasks == null)
 			registerToSynEFO();
 		if(this.statisticFileChannel == null) {

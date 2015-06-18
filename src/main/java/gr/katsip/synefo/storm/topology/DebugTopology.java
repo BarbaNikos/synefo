@@ -26,16 +26,14 @@ public class DebugTopology {
 		String synefoIP = "";
 		Integer synefoPort = 5555;
 		String zooIP = "";
-		Integer zooPort = -1;
 		HashMap<String, ArrayList<String>> topology = new HashMap<String, ArrayList<String>>();
 		ArrayList<String> _tmp;
-		if(args.length < 3) {
-			System.err.println("Arguments: <synefo-IP> <zoo-IP> <zoo-port>");
+		if(args.length < 2) {
+			System.err.println("Arguments: <synefo-IP> <zoo-ip1:port1,zoo-ip2:port2,...,zoo-ipN:portN>");
 			System.exit(1);
 		}else {
 			synefoIP = args[0];
 			zooIP = args[1];
-			zooPort = Integer.parseInt(args[2]);
 		}
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
@@ -43,7 +41,7 @@ public class DebugTopology {
 		String[] spoutSchema = { "num", "name" };
 		tupleProducer.setSchema(new Fields(spoutSchema));
 		builder.setSpout("spout_1", 
-				new SynefoSpout("spout_1", synefoIP, synefoPort, tupleProducer, zooIP, zooPort), 1)
+				new SynefoSpout("spout_1", synefoIP, synefoPort, tupleProducer, zooIP), 1)
 				.setNumTasks(1);
 		_tmp = new ArrayList<String>();
 		_tmp.add("project_bolt_1");
@@ -57,19 +55,19 @@ public class DebugTopology {
 		ProjectOperator projectOperator = new ProjectOperator(new Fields(projectOutSchema));
 		projectOperator.setOutputSchema(new Fields(projectOutSchema));
 		builder.setBolt("project_bolt_1", 
-				new SynefoBolt("project_bolt_1", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
+				new SynefoBolt("project_bolt_1", synefoIP, synefoPort, projectOperator, zooIP, true), 1)
 				.setNumTasks(1)
 				.directGrouping("spout_1");
 		projectOperator = new ProjectOperator(new Fields(projectOutSchema));
 		projectOperator.setOutputSchema(new Fields(projectOutSchema));
 		builder.setBolt("project_bolt_2", 
-				new SynefoBolt("project_bolt_2", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
+				new SynefoBolt("project_bolt_2", synefoIP, synefoPort, projectOperator, zooIP, true), 1)
 				.setNumTasks(1)
 				.directGrouping("spout_1");
 		projectOperator = new ProjectOperator(new Fields(projectOutSchema));
 		projectOperator.setOutputSchema(new Fields(projectOutSchema));
 		builder.setBolt("project_bolt_3", 
-				new SynefoBolt("project_bolt_3", synefoIP, synefoPort, projectOperator, zooIP, zooPort, true), 1)
+				new SynefoBolt("project_bolt_3", synefoIP, synefoPort, projectOperator, zooIP, true), 1)
 				.setNumTasks(1)
 				.directGrouping("spout_1");
 		_tmp = new ArrayList<String>();
@@ -89,7 +87,7 @@ public class DebugTopology {
 		equi_join_op.setOutputSchema(new Fields(join_schema));
 		equi_join_op.setStateSchema(new Fields(state_schema));
 		builder.setBolt("join_bolt_1", 
-				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, equi_join_op, zooIP, zooPort, true), 1)
+				new SynefoBolt("join_bolt_1", synefoIP, synefoPort, equi_join_op, zooIP, true), 1)
 				.setNumTasks(1)
 				.directGrouping("project_bolt_1")
 				.directGrouping("project_bolt_2")
@@ -98,7 +96,7 @@ public class DebugTopology {
 		equi_join_op.setOutputSchema(new Fields(join_schema));
 		equi_join_op.setStateSchema(new Fields(state_schema));
 		builder.setBolt("join_bolt_2", 
-				new SynefoBolt("join_bolt_2", synefoIP, synefoPort, equi_join_op, zooIP, zooPort, true), 1)
+				new SynefoBolt("join_bolt_2", synefoIP, synefoPort, equi_join_op, zooIP, true), 1)
 				.setNumTasks(1)
 				.directGrouping("project_bolt_1")
 				.directGrouping("project_bolt_2")
@@ -107,7 +105,7 @@ public class DebugTopology {
 		equi_join_op.setOutputSchema(new Fields(join_schema));
 		equi_join_op.setStateSchema(new Fields(state_schema));
 		builder.setBolt("join_bolt_3", 
-				new SynefoBolt("join_bolt_3", synefoIP, synefoPort, equi_join_op, zooIP, zooPort, true), 1)
+				new SynefoBolt("join_bolt_3", synefoIP, synefoPort, equi_join_op, zooIP, true), 1)
 				.setNumTasks(1)
 				.directGrouping("project_bolt_1")
 				.directGrouping("project_bolt_2")
@@ -128,7 +126,7 @@ public class DebugTopology {
 		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
 		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
 		builder.setBolt("count_group_by_bolt_1", 
-				new SynefoBolt("count_group_by_bolt_1", synefoIP, synefoPort, countGroupByAggrOperator, zooIP, zooPort, true), 1)
+				new SynefoBolt("count_group_by_bolt_1", synefoIP, synefoPort, countGroupByAggrOperator, zooIP, true), 1)
 				.setNumTasks(1)
 				.directGrouping("join_bolt_1")
 				.directGrouping("join_bolt_2")
@@ -137,7 +135,7 @@ public class DebugTopology {
 		countGroupByAggrOperator.setOutputSchema(new Fields(countGroupBySchema));
 		countGroupByAggrOperator.setStateSchema(new Fields(countGroupByStateSchema));
 		builder.setBolt("count_group_by_bolt_2", 
-				new SynefoBolt("count_group_by_bolt_2", synefoIP, synefoPort, countGroupByAggrOperator, zooIP, zooPort, true), 1)
+				new SynefoBolt("count_group_by_bolt_2", synefoIP, synefoPort, countGroupByAggrOperator, zooIP, true), 1)
 				.setNumTasks(1)
 				.directGrouping("join_bolt_1")
 				.directGrouping("join_bolt_2")

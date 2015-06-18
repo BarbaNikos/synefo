@@ -14,18 +14,17 @@ public class SynefoMain {
 		String dbServerIp = null;
 		String dbServerUser = null;
 		String dbServerPass = null;
-		if(args.length < 3) {
-			System.err.println("arguments: <resource-file-thresholds.xml> <zookeeper-ip> <zookeeper-port> <optional: db-info-file>");
+		if(args.length < 2) {
+			System.err.println("arguments: <resource-file-thresholds.xml> <zoo-ip1:port1,zoo-ip2:port2,...,zoo-ipN:portN> <optional: db-info-file>");
 			System.exit(1);
 		}
 		ResourceThresholdParser parser = new ResourceThresholdParser();
 		parser.parseThresholds(args[0]);
 		String zooIP = args[1];
-		Integer zooPort = Integer.parseInt(args[2]);
 		CEStormDatabaseManager ceDb = null;
-		if(args.length == 4) {
+		if(args.length == 3) {
 			System.out.println("Database Configuration file provided. Parsing connection information...");
-			try(BufferedReader br = new BufferedReader(new FileReader(new File(args[3])))) {
+			try(BufferedReader br = new BufferedReader(new FileReader(new File(args[2])))) {
 			    for(String line; (line = br.readLine()) != null;) {
 			    	String[] lineTokens = line.split(":");
 			    	if(line.contains("db-server-ip:"))
@@ -51,7 +50,7 @@ public class SynefoMain {
 		}else {
 			ceDb = null;
 		}
-		Synefo synEFO = new Synefo(zooIP, zooPort, parser.get_thresholds(), ceDb);
+		Synefo synEFO = new Synefo(zooIP, parser.get_thresholds(), ceDb);
 		synEFO.runServer();
 	}
 }

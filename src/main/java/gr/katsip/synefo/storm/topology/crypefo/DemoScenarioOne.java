@@ -43,22 +43,20 @@ public class DemoScenarioOne {
 		Integer synefoPort = 5555;
 		String[] streamIPs = null;
 		String zooIP = "";
-		Integer zooPort = -1;
 		String dbServerIp = null;
 		String dbServerUser = null;
 		String dbServerPass = null;
 		HashMap<String, ArrayList<String>> topology = new HashMap<String, ArrayList<String>>();
 		ArrayList<String> _tmp;
-		if(args.length < 5) {
-			System.err.println("Arguments: <synefo-IP> <stream-IP> <zoo-IP> <zoo-port> <db-info-file>");
+		if(args.length < 4) {
+			System.err.println("Arguments: <synefo-IP> <stream-IP> <zoo-ip1:port1,zoo-ip2:port2,...,zoo-ipN:portN> <db-info-file>");
 			System.exit(1);
 		}else {
 			synefoIP = args[0];
 			streamIPs = args[1].split(",");
 			zooIP = args[2];
-			zooPort = Integer.parseInt(args[3]);
 			System.out.println("Database Configuration file provided. Parsing connection information...");
-			try(BufferedReader br = new BufferedReader(new FileReader(new File(args[4])))) {
+			try(BufferedReader br = new BufferedReader(new FileReader(new File(args[3])))) {
 				for(String line; (line = br.readLine()) != null;) {
 					String[] lineTokens = line.split(":");
 					if(line.contains("db-server-ip:"))
@@ -87,7 +85,7 @@ public class DemoScenarioOne {
 				dbServerUser, dbServerPass);
 		Integer queryId = ceDb.insertQuery(1, 
 				"SELECT SUM(steps) FROM GPS_STREAM WHERE lon=x AND lat=y");
-		OperatorStatisticCollector statCollector = new OperatorStatisticCollector(zooIP + ":" + zooPort, 
+		OperatorStatisticCollector statCollector = new OperatorStatisticCollector(zooIP, 
 				dbServerIp, 
 				dbServerUser, dbServerPass, queryId);
 		/**
@@ -100,7 +98,7 @@ public class DemoScenarioOne {
 			}
 		};
 		try {
-			ZooKeeper zk = new ZooKeeper(zooIP + ":" + zooPort, 100000, sampleWatcher);
+			ZooKeeper zk = new ZooKeeper(zooIP, 100000, sampleWatcher);
 			if(zk.exists("/SPS", false) != null ) {
 				zk.delete("/SPS", -1);
 				System.out.println("znode /sps deleted");
@@ -148,10 +146,10 @@ public class DemoScenarioOne {
 		ArrayList<String> preds = new ArrayList<String>();
 		
 		String[] punctuationSpoutSchema = { "punct" };
-		CrypefoPunctuationTupleProducer punctuationTupleProducer = new CrypefoPunctuationTupleProducer(streamIPs[0], "spout_sps", zooIP + ":" + zooPort, 1000);
+		CrypefoPunctuationTupleProducer punctuationTupleProducer = new CrypefoPunctuationTupleProducer(streamIPs[0], "spout_sps", zooIP, 1000);
 		punctuationTupleProducer.setSchema(new Fields(punctuationSpoutSchema));
 		builder.setSpout("spout_sps", 
-				new SynefoSpout("spout_sps", synefoIP, synefoPort, punctuationTupleProducer, zooIP, zooPort), 1)
+				new SynefoSpout("spout_sps", synefoIP, synefoPort, punctuationTupleProducer, zooIP), 1)
 				.setNumTasks(1);
 
 		_tmp = new ArrayList<String>();
@@ -160,10 +158,10 @@ public class DemoScenarioOne {
 		ceDb.insertOperator("spout_sps", "n/a", queryId, 0, 0, "SPOUT");
 
 		String[] dataSpoutSchema = { "tuple" };
-		CrypefoDataTupleProducer dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[0], 1, "spout_data", zooIP + ":" + zooPort, 1000);
+		CrypefoDataTupleProducer dataTupleProducer = new CrypefoDataTupleProducer(streamIPs[0], 1, "spout_data", zooIP, 1000);
 		dataTupleProducer.setSchema(new Fields(dataSpoutSchema));
 		builder.setSpout("spout_data", 
-				new SynefoSpout("spout_data", synefoIP, synefoPort, dataTupleProducer, zooIP, zooPort), 1)
+				new SynefoSpout("spout_data", synefoIP, synefoPort, dataTupleProducer, zooIP), 1)
 				.setNumTasks(1);
 
 		_tmp = new ArrayList<String>();
@@ -175,17 +173,19 @@ public class DemoScenarioOne {
 		/**
 		 * Stage 1: Select operator
 		 */
+		String zooTokenIp = zooIP.split(":")[0];
+		Integer zooTokenPort = Integer.parseInt(zooIP.split(":")[1]);
 		String[] selectionOutputSchema = dataSpoutSchema;
 		ArrayList<Integer> returnSet = new ArrayList<Integer>();
 		returnSet.add(0);
 		returnSet.add(1);
 		returnSet.add(2);
-		Select selectOperator = new Select(returnSet, "Captain", 1, 0, 1, 1000, "select_bolt_1", zooIP, zooPort);
+		Select selectOperator = new Select(returnSet, "Captain", 1, 0, 1, 1000, "select_bolt_1", zooTokenIp, zooTokenPort);
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		preds.add("1,"+selectOperator.getAttribute()+","+ selectOperator.getPredicate());
 		builder.setBolt("select_bolt_1", 
 				new SynefoBolt("select_bolt_1", synefoIP, synefoPort, selectOperator, 
-						zooIP, zooPort, false), 1)
+						zooIP, false), 1)
 						.setNumTasks(1)
 						.directGrouping("spout_data");
 		_tmp = new ArrayList<String>();
@@ -194,12 +194,12 @@ public class DemoScenarioOne {
 		topology.put("select_bolt_1", new ArrayList<String>(_tmp));
 		ceDb.insertOperator("select_bolt_1", "n/a", queryId, 1, 1, "BOLT");
 
-		selectOperator = new Select(returnSet, "Captain", 1, 0, 1, 1000, "select_bolt_2", zooIP, zooPort);
+		selectOperator = new Select(returnSet, "Captain", 1, 0, 1, 1000, "select_bolt_2", zooTokenIp, zooTokenPort);
 		preds.add("1,"+selectOperator.getAttribute()+","+ selectOperator.getPredicate());
 		selectOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("select_bolt_2", 
 				new SynefoBolt("select_bolt_2", synefoIP, synefoPort, selectOperator, 
-						zooIP, zooPort, false), 1)
+						zooIP, false), 1)
 						.setNumTasks(1)
 						.directGrouping("spout_data");
 		_tmp = new ArrayList<String>();
@@ -210,22 +210,22 @@ public class DemoScenarioOne {
 		/**
 		 * Stage 2: Aggregate Operator
 		 */
-		Sum sumOperator = new Sum(1, 50, 4, "sum_bolt_1", 50, zooIP, zooPort);
+		Sum sumOperator = new Sum(1, 50, 4, "sum_bolt_1", 50, zooTokenIp, zooTokenPort);
 		preds.add("1,"+sumOperator.getAttribute()+",none" );
 		sumOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("sum_bolt_1", 
 				new SynefoBolt("sum_bolt_1", synefoIP, synefoPort, sumOperator, 
-						zooIP, zooPort, false), 1)
+						zooIP, false), 1)
 						.setNumTasks(1)
 						.directGrouping("select_bolt_1")
 						.directGrouping("select_bolt_2");
 		_tmp = new ArrayList<String>();
-		sumOperator = new Sum(1, 50, 4, "sum_bolt_2", 50, zooIP, zooPort);
+		sumOperator = new Sum(1, 50, 4, "sum_bolt_2", 50, zooTokenIp, zooTokenPort);
 		preds.add("1,"+sumOperator.getAttribute()+",none" );
 		sumOperator.setOutputSchema(new Fields(selectionOutputSchema));
 		builder.setBolt("sum_bolt_2", 
 				new SynefoBolt("sum_bolt_2", synefoIP, synefoPort, sumOperator, 
-						zooIP, zooPort, false), 1)
+						zooIP, false), 1)
 						.setNumTasks(1)
 						.directGrouping("select_bolt_1")
 						.directGrouping("select_bolt_2");
@@ -242,13 +242,13 @@ public class DemoScenarioOne {
 		ArrayList<Integer> dataPs = new ArrayList<Integer>();
 		dataPs.add(1);
 		String[] attributes = {"Doctor", "fit+app"};
-		Client clientOperator = new Client("client_bolt","Fred", attributes, dataPs, 4, zooIP, zooPort, preds, 50);
+		Client clientOperator = new Client("client_bolt","Fred", attributes, dataPs, 4, zooTokenIp, zooTokenPort, preds, 50);
 		String[] schema = {"tuple", "crap"};
 		clientOperator.setOutputSchema(new Fields(schema));
 		clientOperator.setStateSchema(new Fields(schema));
 		builder.setBolt("client_bolt", 
 				new SynefoBolt("client_bolt", synefoIP, synefoPort, 
-						clientOperator, zooIP, zooPort, false), 1)
+						clientOperator, zooIP, false), 1)
 						.setNumTasks(1)
 						.directGrouping("sum_bolt_1")
 						.directGrouping("sum_bolt_2")
