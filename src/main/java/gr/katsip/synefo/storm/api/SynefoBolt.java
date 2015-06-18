@@ -281,13 +281,9 @@ public class SynefoBolt extends BaseRichBolt {
 			}
 			statisticFileHandler = new CompletionHandler<Integer, Object>() {
 				@Override
-				public void completed(Integer result, Object attachment) {
-					//Do nothing
-				}
+				public void completed(Integer result, Object attachment) {}
 				@Override
-				public void failed(Throwable exc, Object attachment) {
-					//Do nothing
-				}
+				public void failed(Throwable exc, Object attachment) {}
 			};
 			statisticFileOffset = 0L;
 		}
@@ -301,13 +297,9 @@ public class SynefoBolt extends BaseRichBolt {
 			}
 			scaleEventFileHandler = new CompletionHandler<Integer, Object>() {
 				@Override
-				public void completed(Integer result, Object attachment) {
-					//Do nothing
-				}
+				public void completed(Integer result, Object attachment) {}
 				@Override
-				public void failed(Throwable exc, Object attachment) {
-					//Do nothing
-				}
+				public void failed(Throwable exc, Object attachment) {}
 			};
 			scaleEventFileOffset = 0L;
 		}
