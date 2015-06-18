@@ -54,12 +54,10 @@ public class TpchQueryFiveTopology {
 		TpchTupleProducer orderProducer = new TpchTupleProducer(streamIPs[1], Order.schema);
 		orderProducer.setSchema(new Fields(dataSchema));
 		builder.setSpout("customer", 
-				new SynefoSpout("customer", synefoIP, synefoPort, customerProducer, zooIP), 1)
-				.setNumTasks(1);
+				new SynefoSpout("customer", synefoIP, synefoPort, customerProducer, zooIP), 1);
 		taskNumber += 1;
 		builder.setSpout("order", 
-				new SynefoSpout("order", synefoIP, synefoPort, orderProducer, zooIP), 1)
-				.setNumTasks(1);
+				new SynefoSpout("order", synefoIP, synefoPort, orderProducer, zooIP), 1);
 		taskNumber += 1;
 		taskList = new ArrayList<String>();
 		taskList.add("join-dispatch");
@@ -72,7 +70,7 @@ public class TpchQueryFiveTopology {
 		JoinDispatcher dispatcher = new JoinDispatcher("customer", new Fields(Customer.schema), "order", 
 				new Fields(Order.schema), new Fields(dataSchema));
 		builder.setBolt("join-dispatch", new SynefoJoinBolt("join-dispatch", synefoIP, synefoPort, 
-			dispatcher, zooIP, false), 3)
+			dispatcher, zooIP, true), 3)
 			.directGrouping("customer")
 			.directGrouping("order");
 		taskNumber += 3;
