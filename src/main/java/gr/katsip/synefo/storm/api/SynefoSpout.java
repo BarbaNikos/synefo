@@ -306,11 +306,11 @@ public class SynefoSpout extends BaseRichSpout {
 
 		if(reportCounter >= SynefoSpout.statReportPeriod) {
 			if(statTupleProducerFlag == false) {
-				logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
-						") timestamp: " + System.currentTimeMillis() + ", " + 
-						"cpu: " + stats.getCpuLoad() + 
-						", memory: " + stats.getMemory() +  
-						", input-rate: " + stats.getWindowThroughput());
+//				logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
+//						") timestamp: " + System.currentTimeMillis() + ", " + 
+//						"cpu: " + stats.getCpuLoad() + 
+//						", memory: " + stats.getMemory() +  
+//						", input-rate: " + stats.getWindowThroughput());
 				byte[] buffer = (System.currentTimeMillis() + "," + stats.getCpuLoad() + "," + 
 						stats.getMemory() + "," + stats.getWindowLatency() + "," + 
 						stats.getWindowThroughput() + "\n").toString().getBytes();

@@ -5,6 +5,7 @@ import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.lib.SynefoMessage.Type;
 import gr.katsip.synefo.storm.operators.AbstractJoinOperator;
 import gr.katsip.synefo.utils.SynefoConstant;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -25,8 +26,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
@@ -180,6 +183,9 @@ public class SynefoJoinBolt extends BaseRichBolt {
 			output.flush();
 			msg = null;
 			ArrayList<String> downstream = null;
+			logger.info("+EFO-JOIN-BOLT (" + 
+					taskName + ":" + taskID + 
+					") about to receive information from Synefo.");
 			downstream = (ArrayList<String>) input.readObject();
 			if(downstream != null && downstream.size() > 0) {
 				downstreamTasks = new ArrayList<String>(downstream);
@@ -236,11 +242,10 @@ public class SynefoJoinBolt extends BaseRichBolt {
 			output.close();
 			input.close();
 			socket.close();
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
+		} catch (IOException | ClassNotFoundException e) {
+			logger.info("+EFO-JOIN-BOLT (" + 
+					taskName + ":" + taskID + 
+					") just threw an exception: " + e.getMessage());
 			e.printStackTrace();
 		}
 		/**

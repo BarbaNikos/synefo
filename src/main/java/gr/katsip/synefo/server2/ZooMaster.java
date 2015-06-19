@@ -91,6 +91,7 @@ public class ZooMaster {
 									scaleFunction.physicalTopology,
 									childWorker.substring(0, childWorker.lastIndexOf(':')),
 									childWorker.substring(childWorker.lastIndexOf(':') + 1, childWorker.length()));
+							System.out.println("ZooMaster # retrieved parent node: " + upstream_task + ", or worker: " + childWorker);
 							String command = scaleFunction.produceScaleOutCommand(upstream_task, childWorker);
 							String activateCommand = ScaleFunction.produceActivateCommand(command);
 							System.out.println("ZooMaster # produced command: " + command + ", along with activate command: " + 
