@@ -226,12 +226,13 @@ public class SynefoJoinBolt extends BaseRichBolt {
 					}
 					intRelationTaskIndex.put(relation, identifiers);
 				}
+				output.writeObject(new String("OK"));
+				output.flush();
 			}
 			/**
 			 * Closing channels of communication with 
 			 * SynEFO server
 			 */
-			output.flush();
 			output.close();
 			input.close();
 			socket.close();

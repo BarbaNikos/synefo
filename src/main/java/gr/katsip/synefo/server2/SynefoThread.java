@@ -387,7 +387,10 @@ public class SynefoThread implements Runnable {
 			try {
 				output.writeObject(relationTaskIndex);
 				output.flush();
-			} catch (IOException e) {
+				String response = (String) input.readObject();
+				if(!response.equals("OK"))
+					System.out.println("+efo BOLT: " + taskName + "@" + taskIP + " sent back a N-ACK.");
+			} catch (IOException | ClassNotFoundException e) {
 				e.printStackTrace();
 			}
 		}

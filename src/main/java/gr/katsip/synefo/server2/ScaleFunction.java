@@ -56,9 +56,11 @@ public class ScaleFunction {
 		Integer identifier = Integer.parseInt(overloadedWorker.split("[:@]")[1]);
 		ArrayList<String> availableNodes = null;
 		if(taskToJoinRelation.containsKey(identifier)) {
+			System.out.println("ScaleFunction.produceScaleOutCommand(): overloadedTask " + identifier + " is a join operator");
 			availableNodes = ScaleFunction.getInActiveJoinNodes(physicalTopology, 
 					activeTopology, upstreamTask, overloadedWorker, taskToJoinRelation);
 		}else {
+			System.out.println("ScaleFunction.produceScaleOutCommand(): overloadedTask " + identifier + " is NOT a join operator");
 			availableNodes = ScaleFunction.getInActiveNodes(
 					physicalTopology, activeTopology,
 					upstreamTask, overloadedWorker);
@@ -68,6 +70,7 @@ public class ScaleFunction {
 			return "";
 		}
 		String selectedTask = randomChoice(availableNodes);
+		System.out.println("ScaleFunction.produceScaleOutCommand(): selected task to scale-out: " + selectedTask);
 		if(selectedTask != null && selectedTask.length() > 0) {
 			addActiveNodeTopology(selectedTask);
 			activeTopologyLock.writeLock().unlock();
@@ -202,6 +205,7 @@ public class ScaleFunction {
 			ConcurrentHashMap<String, ArrayList<String>> activeTopology, 
 			String upstream_task, String overloadedWorker, 
 			ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation) {
+		System.out.println("ScaleFunction.getInActiveJoinNodes(): called for " + overloadedWorker + ", with parent node: " + upstream_task);
 		Integer overloadedIdentifier = Integer.parseInt(overloadedWorker.split("[:@]")[1]);
 		ArrayList<String> available_nodes = new ArrayList<String>();
 		ArrayList<String> physical_nodes = physicalTopology.get(upstream_task);
@@ -212,6 +216,7 @@ public class ScaleFunction {
 				available_nodes.add(task);
 			}
 		}
+		System.out.println("ScaleFunction.getInActiveJoinNodes(): resulted with list of available nodes: " + available_nodes.toString());
 		return available_nodes;
 	}
 
