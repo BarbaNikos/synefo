@@ -60,7 +60,7 @@ public class TpchQueryFiveTopology {
 				new SynefoSpout("order", synefoIP, synefoPort, orderProducer, zooIP), 1);
 		taskNumber += 1;
 		taskList = new ArrayList<String>();
-		taskList.add("join-dispatch");
+		taskList.add("joindispatch");
 		topology.put("customer", taskList);
 		topology.put("order", new ArrayList<String>(taskList));
 		
@@ -69,37 +69,38 @@ public class TpchQueryFiveTopology {
 		 */
 		JoinDispatcher dispatcher = new JoinDispatcher("customer", new Fields(Customer.schema), "order", 
 				new Fields(Order.schema), new Fields(dataSchema));
-		builder.setBolt("join-dispatch", new SynefoJoinBolt("join-dispatch", synefoIP, synefoPort, 
+		builder.setBolt("joindispatch", new SynefoJoinBolt("joindispatch", synefoIP, synefoPort, 
 			dispatcher, zooIP, true), 3)
 			.directGrouping("customer")
 			.directGrouping("order");
 		taskNumber += 3;
 		taskList = new ArrayList<String>();
-		taskList.add("join-join");
-		topology.put("join-dispatch", taskList);
+		taskList.add("joinjoincust");
+		taskList.add("joinjoinorder");
+		topology.put("joindispatch", taskList);
 		/**
 		 * Stage 1b : join joiners
 		 */
 		JoinJoiner joiner = new JoinJoiner("customer", new Fields(Customer.schema), "order", 
 				new Fields(Order.schema), "C_CUSTKEY", "O_CUSTKEY");
 		joiner.setOutputSchema(new Fields(dataSchema));
-		builder.setBolt("join-join-cust", new SynefoJoinBolt("join-join-cust", synefoIP, synefoPort, 
+		builder.setBolt("joinjoincust", new SynefoJoinBolt("joinjoincust", synefoIP, synefoPort, 
 				joiner, zooIP, false), 3)
-		.directGrouping("join-dispatch");
+		.directGrouping("joindispatch");
 		taskNumber += 3;
 		taskList = new ArrayList<String>();
 		taskList.add("drain");
-		topology.put("join-join-cust", taskList);
+		topology.put("joinjoincust", taskList);
 		joiner = new JoinJoiner("order", new Fields(Order.schema), "customer", 
 				new Fields(Customer.schema), "O_CUSTKEY", "C_CUSTKEY");
 		joiner.setOutputSchema(new Fields(dataSchema));
-		builder.setBolt("join-join-order", new SynefoJoinBolt("join-join-order", synefoIP, synefoPort, 
+		builder.setBolt("joinjoinorder", new SynefoJoinBolt("joinjoinorder", synefoIP, synefoPort, 
 				joiner, zooIP, false), 3)
-		.directGrouping("join-dispatch");
+		.directGrouping("joindispatch");
 		taskNumber += 3;
 		taskList = new ArrayList<String>();
 		taskList.add("drain");
-		topology.put("join-join-order", taskList);
+		topology.put("joinjoinorder", taskList);
 		/**
 		 * Stage 2: drain
 		 */
@@ -107,7 +108,7 @@ public class TpchQueryFiveTopology {
 		projectOperator.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("drain", 
 				new SynefoBolt("drain", synefoIP, synefoPort, projectOperator, zooIP, true), 1)
-				.directGrouping("join-join-cust").directGrouping("join-join-order");
+				.directGrouping("joinjoincust").directGrouping("joinjoinorder");
 		taskNumber += 1;
 		topology.put("drain", new ArrayList<String>());
 		/**
