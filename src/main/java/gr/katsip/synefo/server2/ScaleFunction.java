@@ -63,8 +63,10 @@ public class ScaleFunction {
 					physicalTopology, activeTopology,
 					upstreamTask, overloadedWorker);
 		}
-		if(availableNodes == null || availableNodes.size() == 0)
+		if(availableNodes == null || availableNodes.size() == 0) {
+			activeTopologyLock.writeLock().unlock();
 			return "";
+		}
 		String selectedTask = randomChoice(availableNodes);
 		if(selectedTask != null && selectedTask.length() > 0) {
 			addActiveNodeTopology(selectedTask);

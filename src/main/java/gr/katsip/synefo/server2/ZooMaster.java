@@ -49,8 +49,6 @@ public class ZooMaster {
 	private ConcurrentLinkedQueue<String> scaleRequests;
 
 	private ConcurrentHashMap<String, Boolean> servedScaleRequests;
-	
-//	private ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation = null;
 
 	/**
 	 * Watcher object responsible for tracking storm components' requests 
