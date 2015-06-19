@@ -1,16 +1,16 @@
-package gr.katsip.synefo.test;
-import gr.katsip.synefo.server.SynefoCoordinatorThread;
+package gr.katsip.synefo.junit.test;
 
+import static org.junit.Assert.*;
+import gr.katsip.synefo.server.SynefoCoordinatorThread;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
 
+import org.junit.Test;
 
 public class PhysicalTopologyExpansionTest {
 
-	public static void main(String[] args) {
+	@Test
+	public void test() {
 		HashMap<String, ArrayList<String>> topology = new HashMap<String, ArrayList<String>>();
 		ArrayList<String> taskList;
 		taskList = new ArrayList<String>();
@@ -50,12 +50,10 @@ public class PhysicalTopologyExpansionTest {
 		
 		HashMap<String, ArrayList<String>> physicalTopologyWithIds = SynefoCoordinatorThread.physicalTopologyTaskExpand(taskNameToIdMap, 
 				topology);
-		
-		Iterator<Entry<String, ArrayList<String>>> itr = physicalTopologyWithIds.entrySet().iterator();
-		while(itr.hasNext()) {
-			Entry<String, ArrayList<String>> pair = itr.next();
-			System.out.println(pair.getKey() + " --> " + pair.getValue().toString());
-		}
+		ArrayList<String> joinDownstreamTasks = physicalTopologyWithIds.get("join_19");
+		assertEquals(joinDownstreamTasks.size(), 4);
+		joinDownstreamTasks = physicalTopologyWithIds.get("join_18");
+		assertEquals(joinDownstreamTasks.size(), 4);
 	}
 
 }
