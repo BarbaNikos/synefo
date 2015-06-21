@@ -21,4 +21,9 @@ public class Supplier {
 		"S_ACCTBAL", 
 		"S_COMMENT"
 	};
+	
+	public static final String[] query5Schema = {
+		"S_SUPPKEY",
+		"S_NATIONKEY"
+	};
 }

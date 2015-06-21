@@ -22,4 +22,8 @@ public class Customer {
 			"C_COMMENT" 
 			};
 	
+	public static final String[] query5schema = {
+		"C_CUSTKEY", 
+		"C_NATIONKEY"
+	};
 }

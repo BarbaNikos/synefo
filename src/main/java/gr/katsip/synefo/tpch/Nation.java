@@ -15,4 +15,9 @@ public class Nation {
 		"N_REGIONKEY", 
 		"N_COMMENT"
 	};
+	
+	public static final String[] query5schema = {
+		"N_NATIONKEY", 
+		"N_REGIONKEY"
+	};
 }

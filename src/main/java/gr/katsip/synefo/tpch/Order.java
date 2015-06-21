@@ -25,5 +25,11 @@ public class Order {
 		"O_SHIPPRIORITY", 
 		"O_COMMENT"
 	};
+	
+	public static final String[] query5Schema = {
+		"O_CUSTKEY", 
+		"O_ORDERKEY", 
+		"O_ORDERDATE"
+	};
 }
 

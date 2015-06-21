@@ -5,10 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.TreeMap;
-
 import backtype.storm.task.OutputCollector;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
@@ -40,8 +37,6 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 	private Fields joinOutputSchema;
 	
 	private HashMap<String, ArrayList<Long>> tupleIndex = null;
-	
-//	private ArrayList<Values> tuples = null;
 	
 	private TreeMap<Long, Values> timestampIndex = null;
 	

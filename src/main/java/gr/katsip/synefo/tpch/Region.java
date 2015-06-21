@@ -13,4 +13,9 @@ public class Region {
 		"R_NAME", 
 		"R_COMMENT"
 	};
+	
+	public static final String[] query5Schema = {
+		"R_REGIONKEY", 
+		"R_NAME"
+	};
 }

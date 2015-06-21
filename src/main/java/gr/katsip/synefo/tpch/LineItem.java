@@ -39,4 +39,11 @@ public class LineItem {
 		"L_SHIPMODE", 
 		"L_COMMENT"
 	};
+	
+	public static final String[] query5Schema = {
+		"L_ORDERKEY", 
+		"L_SUPPKEY", 
+		"L_EXTENDEDPRICE", 
+		"L_DISCOUNT"
+	};
 }
