@@ -5,6 +5,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.tuple.Fields;
@@ -36,12 +39,24 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 	
 	private Fields joinOutputSchema;
 	
-	private HashMap<String, ArrayList<Integer>> tupleIndex = null;
+	private HashMap<String, ArrayList<Long>> tupleIndex = null;
 	
-	private ArrayList<Values> tuples = null;
+//	private ArrayList<Values> tuples = null;
+	
+	private TreeMap<Long, Values> timestampIndex = null;
+	
+	/**
+	 * Window size in seconds
+	 */
+	private int windowSize;
+	
+	/**
+	 * Window slide in seconds
+	 */
+	private int slide;
 
 	public JoinJoiner(String storedRelation, Fields storedRelationSchema, String otherRelation, 
-			Fields otherRelationSchema, String storedJoinAttribute, String otherJoinAttribute) {
+			Fields otherRelationSchema, String storedJoinAttribute, String otherJoinAttribute, int window, int slide) {
 		this.storedRelation = storedRelation;
 		this.storedRelationSchema = new Fields(storedRelationSchema.toList());
 		this.otherRelation = otherRelation;
@@ -63,13 +78,17 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 			schema.addAll(storedRelationSchema.toList());
 			joinOutputSchema = new Fields(schema);
 		}
+		this.windowSize = window;
+		this.slide = slide;
+		timestampIndex = new TreeMap<Long, Values>();
+		tupleIndex = new HashMap<String, ArrayList<Long>>();
 	}
 	
 	@Override
 	public void init(List<Values> stateValues) {
 		this.stateValues = stateValues;
-		this.tupleIndex = new HashMap<String, ArrayList<Integer>>();
-		this.tuples = new ArrayList<Values>();
+		timestampIndex = new TreeMap<Long, Values>();
+		tupleIndex = new HashMap<String, ArrayList<Long>>();
 	}
 
 	@Override
@@ -90,23 +109,23 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 		/**
 		 * Receive a tuple that: attribute[0] : fields, attribute[1] : values
 		 */
+		Long currentTimestamp = System.currentTimeMillis();
 		Fields attributeNames = new Fields(((Fields) values.get(0)).toList());
 		Values attributeValues = (Values) values.get(1);
 		if(Arrays.equals(attributeNames.toList().toArray(), storedRelationSchema.toList().toArray())) {
 			/**
 			 * Store the new tuple
 			 */
-			tuples.add(attributeValues);
-			Integer position = tuples.lastIndexOf(attributeValues);
+			timestampIndex.put(currentTimestamp, attributeValues);
 			String joinAttributeValue = (String) attributeValues.get(storedRelationSchema.fieldIndex(storedJoinAttribute));
 			if(tupleIndex.containsKey(joinAttributeValue)) {
-				ArrayList<Integer> positionArray = tupleIndex.get(joinAttributeValue);
-				positionArray.add(position);
-				tupleIndex.put(joinAttributeValue, positionArray);
+				ArrayList<Long> timestampArray = tupleIndex.get(joinAttributeValue);
+				timestampArray.add(currentTimestamp);
+				tupleIndex.put(joinAttributeValue, timestampArray);
 			}else {
-				ArrayList<Integer> positionArray = new ArrayList<Integer>();
-				positionArray.add(position);
-				tupleIndex.put(joinAttributeValue, positionArray);
+				ArrayList<Long> timestampArray = new ArrayList<Long>();
+				timestampArray.add(currentTimestamp);
+				tupleIndex.put(joinAttributeValue, timestampArray);
 			}
 		}else if(Arrays.equals(attributeNames.toList().toArray(), otherRelationSchema.toList().toArray()) && activeTasks != null && activeTasks.size() > 0) {
 			/**
@@ -115,10 +134,10 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 			String joinAttributeValue = (String) attributeValues.get(otherRelationSchema.fieldIndex(otherJoinAttribute));
 			List<Values> joinResult = new ArrayList<Values>();
 			if(tupleIndex.containsKey(joinAttributeValue)) {
-				ArrayList<Integer> positionArray = tupleIndex.get(joinAttributeValue);
-				if(positionArray != null && positionArray.size() > 0) {
-					for(Integer index : positionArray) {
-						Values tuple = tuples.get(index);
+				ArrayList<Long> timestampArray = tupleIndex.get(joinAttributeValue);
+				if(timestampArray != null && timestampArray.size() > 0) {
+					for(Long timestamp : timestampArray) {
+						Values tuple = timestampIndex.get(timestamp);
 						Values result = new Values(tuple.toArray());
 						result.addAll(attributeValues);
 						joinResult.add(result);
@@ -136,6 +155,10 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 				}
 			}
 		}
+		/**
+		 * Maintain state: Evict tuples that are too old
+		 */
+		
 	}
 
 	@Override
@@ -143,7 +166,7 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 		stateValues.clear();
 		Values state = new Values();
 		state.add(tupleIndex);
-		state.add(tuples);
+		state.add(timestampIndex);
 		stateValues.add(state);
 		return stateValues;
 	}
