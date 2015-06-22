@@ -1,5 +1,6 @@
 package gr.katsip.synefo.storm.operators.relational.elastic;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -7,10 +8,20 @@ import java.util.LinkedList;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
-public class SlidingWindowJoin {
+public class SlidingWindowJoin implements Serializable {
 
-	public class BasicWindow {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -557386415760782256L;
+
+	public class BasicWindow implements Serializable {
 		
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 687583325823717593L;
+
 		public Long startingTimestamp;
 		
 		public Long endingTimestamp;
