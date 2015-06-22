@@ -67,8 +67,8 @@ public class TpchQueryFiveTopology {
 		/**
 		 * Stage 1a: join dispatchers
 		 */
-		JoinDispatcher dispatcher = new JoinDispatcher("customer", new Fields(Customer.schema), "order", 
-				new Fields(Order.schema), new Fields(dataSchema));
+		JoinDispatcher dispatcher = new JoinDispatcher("customer", new Fields(Customer.query5schema), "order", 
+				new Fields(Order.query5Schema), new Fields(dataSchema));
 		builder.setBolt("joindispatch", new SynefoJoinBolt("joindispatch", synefoIP, synefoPort, 
 			dispatcher, zooIP, true), 3)
 			.directGrouping("customer")
@@ -81,8 +81,8 @@ public class TpchQueryFiveTopology {
 		/**
 		 * Stage 1b : join joiners
 		 */
-		JoinJoiner joiner = new JoinJoiner("customer", new Fields(Customer.schema), "order", 
-				new Fields(Order.schema), "C_CUSTKEY", "O_CUSTKEY", 60, 1);
+		JoinJoiner joiner = new JoinJoiner("customer", new Fields(Customer.query5schema), "order", 
+				new Fields(Order.query5Schema), "C_CUSTKEY", "O_CUSTKEY", 60, 1);
 		joiner.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("joinjoincust", new SynefoJoinBolt("joinjoincust", synefoIP, synefoPort, 
 				joiner, zooIP, false), 3)
@@ -91,8 +91,8 @@ public class TpchQueryFiveTopology {
 		taskList = new ArrayList<String>();
 		taskList.add("drain");
 		topology.put("joinjoincust", taskList);
-		joiner = new JoinJoiner("order", new Fields(Order.schema), "customer", 
-				new Fields(Customer.schema), "O_CUSTKEY", "C_CUSTKEY", 60, 1);
+		joiner = new JoinJoiner("order", new Fields(Order.query5Schema), "customer", 
+				new Fields(Customer.query5schema), "O_CUSTKEY", "C_CUSTKEY", 60, 1);
 		joiner.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("joinjoinorder", new SynefoJoinBolt("joinjoinorder", synefoIP, synefoPort, 
 				joiner, zooIP, false), 3)
