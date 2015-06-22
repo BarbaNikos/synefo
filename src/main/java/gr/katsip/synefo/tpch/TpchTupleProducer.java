@@ -66,7 +66,7 @@ public class TpchTupleProducer implements AbstractTupleProducer, Serializable {
 					}
 				}
 				Values tuple = new Values();
-				tuple.add(schema);
+				tuple.add(projectedSchema);
 				tuple.add(values);
 				return tuple;
 			}else {
