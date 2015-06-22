@@ -30,10 +30,13 @@ public class TpchTupleProducer implements AbstractTupleProducer, Serializable {
 
 	private String dataProviderAddress;
 	
-	public TpchTupleProducer(String dataProviderAddress, String[] schema) {
+	private Fields projectedSchema;
+	
+	public TpchTupleProducer(String dataProviderAddress, String[] schema, String[] projectedSchema) {
 		dataProvider = null;
 		this.dataProviderAddress = dataProviderAddress;
 		this.schema = new Fields(schema);
+		this.projectedSchema = new Fields(projectedSchema);
 	}
 	
 	public void connect() {
@@ -57,8 +60,11 @@ public class TpchTupleProducer implements AbstractTupleProducer, Serializable {
 			if(dataProvider.isClosed() == false) {
 				String line = input.readLine();
 				String[] attributes = line.split("|");
-				for(String attribute : attributes)
-					values.add(attribute);
+				for(int i = 0; i < schema.size(); i++) {
+					if(projectedSchema.toList().contains(schema.get(i))) {
+						values.add(attributes[i]);
+					}
+				}
 				Values tuple = new Values();
 				tuple.add(schema);
 				tuple.add(values);

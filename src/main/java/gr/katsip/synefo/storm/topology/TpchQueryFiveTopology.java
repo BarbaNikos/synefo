@@ -49,9 +49,9 @@ public class TpchQueryFiveTopology {
 		 * Stage 0: 6 input streams (customer, lineitem, nation, orders, region, supplier)
 		 */
 		String[] dataSchema = { "attributes", "values" };
-		TpchTupleProducer customerProducer = new TpchTupleProducer(streamIPs[0], Customer.schema);
+		TpchTupleProducer customerProducer = new TpchTupleProducer(streamIPs[0], Customer.schema, Customer.query5schema);
 		customerProducer.setSchema(new Fields(dataSchema));
-		TpchTupleProducer orderProducer = new TpchTupleProducer(streamIPs[1], Order.schema);
+		TpchTupleProducer orderProducer = new TpchTupleProducer(streamIPs[1], Order.schema, Order.query5Schema);
 		orderProducer.setSchema(new Fields(dataSchema));
 		builder.setSpout("customer", 
 				new SynefoSpout("customer", synefoIP, synefoPort, customerProducer, zooIP), 1);
