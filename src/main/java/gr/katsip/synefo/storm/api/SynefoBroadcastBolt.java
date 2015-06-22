@@ -42,7 +42,7 @@ public class SynefoBroadcastBolt extends BaseRichBolt {
 	private static final long serialVersionUID = 8915909394531666552L;
 
 	Logger logger = LoggerFactory.getLogger(SynefoBolt.class);
-	
+
 	private static final String stormHome = "/opt/apache-storm-0.9.4/logs/";
 
 	private AsynchronousFileChannel statisticFileChannel = null;
@@ -120,7 +120,7 @@ public class SynefoBroadcastBolt extends BaseRichBolt {
 	private long[] opLatencyLocalTimestamp = new long[3];
 
 	private long opLatencySendTimestamp;
-	
+
 	public SynefoBroadcastBolt(String task_name, String synEFO_ip, Integer synEFO_port, 
 			AbstractOperator operator, String zooIP, boolean autoScale) {
 		taskName = task_name;
@@ -149,7 +149,7 @@ public class SynefoBroadcastBolt extends BaseRichBolt {
 		else
 			statOperatorFlag = false;
 	}
-	
+
 	/**
 	 * The function for registering to Synefo server
 	 */
@@ -244,7 +244,7 @@ public class SynefoBroadcastBolt extends BaseRichBolt {
 			((AbstractStatOperator) operator).updateOperatorName(
 					taskName + ":" + taskID + "@" + taskIP);
 	}
-	
+
 	public void prepare(@SuppressWarnings("rawtypes") Map conf, TopologyContext context, OutputCollector collector) {
 		this.collector = collector;
 		taskID = context.getThisTaskId();
@@ -394,10 +394,14 @@ public class SynefoBroadcastBolt extends BaseRichBolt {
 		Fields fields = new Fields(fieldList);
 		if(intActiveDownstreamTasks != null && intActiveDownstreamTasks.size() > 0) {
 			List<Values> returnedTuples = null;
-			if(statOperatorFlag)
+			Long executeStartTimestamp = System.currentTimeMillis();
+			if(statOperatorFlag) {
 				returnedTuples = ((AbstractStatOperator) operator).execute(statistics, fields, values);
-			else
+			}else {
 				returnedTuples = operator.execute(fields, values);
+			}
+			Long executeEndTimestamp = System.currentTimeMillis();
+			statistics.updateWindowOperationalLatency((executeEndTimestamp - executeStartTimestamp));
 			if(returnedTuples != null && returnedTuples.size() > 0) {
 				for(Values v : returnedTuples) {
 					produced_values = new Values();
@@ -408,14 +412,7 @@ public class SynefoBroadcastBolt extends BaseRichBolt {
 					for(Integer task : intActiveDownstreamTasks) {
 						collector.emitDirect(task, produced_values);
 					}
-//					collector.emitDirect(intActiveDownstreamTasks.get(downStreamIndex), produced_values);
-					//update selectivity statistics
 				}
-//				if(downStreamIndex >= (intActiveDownstreamTasks.size() - 1)) {
-//					downStreamIndex = 0;
-//				}else {
-//					downStreamIndex += 1;
-//				}
 			}
 			statistics.updateSelectivity(( (double) returnedTuples.size() / 1.0));
 			collector.ack(tuple);
@@ -443,10 +440,14 @@ public class SynefoBroadcastBolt extends BaseRichBolt {
 				}
 			}else {
 				List<Values> returnedTuples = null;
-				if(statOperatorFlag)
+				Long executeStartTimestamp = System.currentTimeMillis();
+				if(statOperatorFlag) {
 					returnedTuples = ((AbstractStatOperator) operator).execute(statistics, fields, values);
-				else
+				}else {
 					returnedTuples = operator.execute(fields, values);
+				}
+				Long executeEndTimestamp = System.currentTimeMillis();
+				statistics.updateWindowOperationalLatency((executeEndTimestamp - executeStartTimestamp));
 				if(returnedTuples != null && returnedTuples.size() > 0) {
 					for(Values v : returnedTuples) {
 						produced_values = new Values();
@@ -454,8 +455,6 @@ public class SynefoBroadcastBolt extends BaseRichBolt {
 						for(int i = 0; i < v.size(); i++) {
 							produced_values.add(v.get(i));
 						}
-						//						logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + 
-						//								this.taskIP + ") emits: " + produced_values);
 					}
 				}
 				statistics.updateSelectivity(( (double) returnedTuples.size() / 1.0));
@@ -517,14 +516,9 @@ public class SynefoBroadcastBolt extends BaseRichBolt {
 
 		if(reportCounter >= SynefoBroadcastBolt.statReportPeriod) {
 			if(statOperatorFlag == false) {
-//				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
-//						") timestamp: " + System.currentTimeMillis() + ", " + 
-//						"cpu: " + statistics.getCpuLoad() + 
-//						", memory: " + statistics.getMemory() + 
-//						", latency: " + statistics.getWindowLatency() + 
-//						", throughput: " + statistics.getWindowThroughput());
 				byte[] buffer = (System.currentTimeMillis() + "," + statistics.getCpuLoad() + "," + 
 						statistics.getMemory() + "," + statistics.getWindowLatency() + "," + 
+						statistics.getWindowOperationalLatency() + "," + 
 						statistics.getWindowThroughput() + "\n").toString().getBytes();
 				if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
 					statisticFileChannel.write(
@@ -647,7 +641,7 @@ public class SynefoBroadcastBolt extends BaseRichBolt {
 		logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
 				") received punctuation tuple: " + tuple.toString() + 
 				"(timestamp: " + System.currentTimeMillis() + ").");
-		
+
 		/**
 		 * Expected Header format: 
 		 * +EFO/ACTION:{ADD, REMOVE}/COMP:{taskName}:{taskID}/COMP_NUM:{Number of Components}/IP:{taskIP}/
@@ -688,12 +682,13 @@ public class SynefoBroadcastBolt extends BaseRichBolt {
 				}else {
 					logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
 							") timestamp: " + System.currentTimeMillis() + ", " + 
-							"cpu: " + 0.0 + 
-							", memory: " + 0.0 + 
-							", latency: " + 0 + 
+							"cpu: " + -1 + 
+							", memory: " + -1 + 
+							", latency: " + -1 + 
+							", operational-latency: " + -1 +
 							", throughput: " + 0);
-					buffer = (System.currentTimeMillis() + "," + 0.0 + "," + 
-							0.0 + "," + 0 + "," + 0 + "\n").toString().getBytes();
+					buffer = (System.currentTimeMillis() + "," + -1 + "," + 
+							-1 + "," + -1 + "," + -1 + "," + -1 + "\n").toString().getBytes();
 					if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
 						statisticFileChannel.write(
 								ByteBuffer.wrap(buffer), this.statisticFileOffset, "stat write", statisticFileHandler);
@@ -820,10 +815,10 @@ public class SynefoBroadcastBolt extends BaseRichBolt {
 				else
 					logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
 							") timestamp: " + System.currentTimeMillis() + ", " + 
-							"cpu: " + 0.0 + 
-							", memory: " + 0.0 + 
-							", latency: " + 0 + 
-							", throughput: " + 0);
+							"cpu: " + -1 + 
+							", memory: " + -1 + 
+							", latency: " + -1 + 
+							", throughput: " + -1);
 				/**
 				 * Re-initialize statistics object
 				 */
@@ -918,5 +913,5 @@ public class SynefoBroadcastBolt extends BaseRichBolt {
 		opLatencyReceivedTimestamp = new long[3];
 		opLatencyLocalTimestamp = new long[3];
 	}
-	
+
 }

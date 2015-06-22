@@ -42,7 +42,7 @@ public class SlidingWindowJoin {
 		circularCache = new LinkedList<BasicWindow>();
 		this.windowSize = windowSize;
 		this.slide = slide;
-		this.circularCacheSize = (int) Math.floor(this.windowSize / slide);
+		this.circularCacheSize = (int) (this.windowSize / slide);
 		this.tupleSchema = new Fields(tupleSchema.toList());
 		this.joinAttribute = joinAttribute;
 	}
@@ -51,7 +51,7 @@ public class SlidingWindowJoin {
 		if(circularCache.size() > 0 && circularCache.getFirst().startingTimestamp <= currentTimestamp && 
 				circularCache.getFirst().endingTimestamp >= currentTimestamp) {
 			/**
-			 * Insert tuple in the first window
+			 * Insert tuple in the first window, if the window is still valid
 			 */
 			ArrayList<Values> tupleList = null;
 			if(circularCache.getFirst().tuples.containsKey(tuple.get(tupleSchema.fieldIndex(joinAttribute)))) {
@@ -63,11 +63,14 @@ public class SlidingWindowJoin {
 			circularCache.getFirst().tuples.put((String) tuple.get(tupleSchema.fieldIndex(joinAttribute)), tupleList);
 		}else {
 			/**
-			 * Need to evict a basic window (the last one)
+			 * Need to evict a basic window (the last one), if we have used up all basic window slots
 			 */
 			if(circularCache.size() >= circularCacheSize) {
 				circularCache.removeLast();
 			}
+			/**
+			 * Creation of the new basic window
+			 */
 			BasicWindow basicWindow = new BasicWindow();
 			basicWindow.startingTimestamp = currentTimestamp;
 			basicWindow.endingTimestamp = currentTimestamp + slide;
@@ -75,16 +78,27 @@ public class SlidingWindowJoin {
 			ArrayList<Values> tupleList = new ArrayList<Values>();
 			tupleList.add(tuple);
 			basicWindow.tuples.put((String) tuple.get(tupleSchema.fieldIndex(joinAttribute)), tupleList);
+			circularCache.add(basicWindow);
 		}
 	}
 	
+	/**
+	 * method for attempting to join a tuple of the different relation
+	 * @param currentTimestamp the given timestamp of arrival for the tuple
+	 * @param tuple the actual tuple values
+	 * @param otherSchema the schema of the provided tuple
+	 * @param otherRelationJoinAttribute the name of the attribute in the given tuple
+	 * @return a list with the resulting tuples
+	 */
 	public ArrayList<Values> joinTuple(Long currentTimestamp, Values tuple, Fields otherSchema, String otherRelationJoinAttribute) {
 		String tupleJoinAttribute = (String) tuple.get(otherSchema.fieldIndex(otherRelationJoinAttribute));
 		ArrayList<Values> result = new ArrayList<Values>();
+		/**
+		 * Iterate over all valid windows according to the given timestamp
+		 */
 		for(BasicWindow basicWindow : circularCache) {
 			if(basicWindow.startingTimestamp <= currentTimestamp && basicWindow.endingTimestamp >= currentTimestamp) {
 				if(basicWindow.tuples.containsKey(tupleJoinAttribute)) {
-//					result.addAll(new ArrayList<Values>(basicWindow.tuples.get(tupleJoinAttribute)));
 					ArrayList<Values> storedTuples = basicWindow.tuples.get(tupleJoinAttribute);
 					for(Values t : storedTuples) {
 						Values joinTuple = new Values(t.toArray());
@@ -93,9 +107,17 @@ public class SlidingWindowJoin {
 					}
 				}
 			}else {
+				/**
+				 * If we overcome the current window, the loop breaks and the result 
+				 * can be returned
+				 */
 				break;
 			}
 		}
 		return result;
+	}
+	
+	public LinkedList<BasicWindow> getCircularCache() {
+		return circularCache;
 	}
 }

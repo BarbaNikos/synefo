@@ -424,7 +424,10 @@ public class SynefoJoinBolt extends BaseRichBolt {
 					e.printStackTrace();
 				}
 			}else {
+				Long executeStartTimestamp = System.currentTimeMillis();
 				operator.execute(collector, intRelationTaskIndex, intActiveDownstreamTasks, downStreamIndex, fields, values);
+				Long executeEndTimestamp = System.currentTimeMillis();
+				statistics.updateWindowOperationalLatency((executeEndTimestamp - executeStartTimestamp));
 			}
 			collector.ack(tuple);
 		}
@@ -484,6 +487,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 		if(reportCounter >= SynefoJoinBolt.statReportPeriod) {
 			byte[] buffer = (System.currentTimeMillis() + "," + statistics.getCpuLoad() + "," + 
 					statistics.getMemory() + "," + statistics.getWindowLatency() + "," + 
+					statistics.getWindowOperationalLatency() + "," + 
 					statistics.getWindowThroughput() + "\n").toString().getBytes();
 			if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
 				statisticFileChannel.write(
@@ -642,7 +646,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 				 * with zero statistics
 				 */
 				buffer = (System.currentTimeMillis() + "," + -1 + "," + 
-						-1 + "," + -1 + "," + -1 + "\n").toString().getBytes();
+						-1 + "," + -1 + "," + -1 + "," + -1 + "\n").toString().getBytes();
 				if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
 					statisticFileChannel.write(
 							ByteBuffer.wrap(buffer), this.statisticFileOffset, "stat write", statisticFileHandler);
@@ -764,7 +768,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 				 * with zero statistics
 				 */
 				buffer = (System.currentTimeMillis() + "," + -1 + "," + 
-						-1 + "," + -1 + "," + -1 + "\n").toString().getBytes();
+						-1 + "," + -1 + "," + -1 + "," + -1 + "\n").toString().getBytes();
 				if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
 					statisticFileChannel.write(
 							ByteBuffer.wrap(buffer), this.statisticFileOffset, "stat write", statisticFileHandler);

@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.TreeMap;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
@@ -36,9 +35,7 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 	
 	private Fields joinOutputSchema;
 	
-	private HashMap<String, ArrayList<Long>> tupleIndex = null;
-	
-	private TreeMap<Long, Values> timestampIndex = null;
+	private SlidingWindowJoin slidingWindowJoin;
 	
 	/**
 	 * Window size in seconds
@@ -75,15 +72,12 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 		}
 		this.windowSize = window;
 		this.slide = slide;
-		timestampIndex = new TreeMap<Long, Values>();
-		tupleIndex = new HashMap<String, ArrayList<Long>>();
+		slidingWindowJoin = new SlidingWindowJoin(windowSize, this.slide, storedRelationSchema, storedJoinAttribute);
 	}
 	
 	@Override
 	public void init(List<Values> stateValues) {
 		this.stateValues = stateValues;
-		timestampIndex = new TreeMap<Long, Values>();
-		tupleIndex = new HashMap<String, ArrayList<Long>>();
 	}
 
 	@Override
@@ -111,57 +105,32 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 			/**
 			 * Store the new tuple
 			 */
-			timestampIndex.put(currentTimestamp, attributeValues);
-			String joinAttributeValue = (String) attributeValues.get(storedRelationSchema.fieldIndex(storedJoinAttribute));
-			if(tupleIndex.containsKey(joinAttributeValue)) {
-				ArrayList<Long> timestampArray = tupleIndex.get(joinAttributeValue);
-				timestampArray.add(currentTimestamp);
-				tupleIndex.put(joinAttributeValue, timestampArray);
-			}else {
-				ArrayList<Long> timestampArray = new ArrayList<Long>();
-				timestampArray.add(currentTimestamp);
-				tupleIndex.put(joinAttributeValue, timestampArray);
-			}
-		}else if(Arrays.equals(attributeNames.toList().toArray(), otherRelationSchema.toList().toArray()) && activeTasks != null && activeTasks.size() > 0) {
+			slidingWindowJoin.insertTuple(currentTimestamp, attributeValues);
+		}else if(Arrays.equals(attributeNames.toList().toArray(), otherRelationSchema.toList().toArray()) && 
+				activeTasks != null && activeTasks.size() > 0) {
 			/**
 			 * Attempt to join with stored tuples
 			 */
-			String joinAttributeValue = (String) attributeValues.get(otherRelationSchema.fieldIndex(otherJoinAttribute));
-			List<Values> joinResult = new ArrayList<Values>();
-			if(tupleIndex.containsKey(joinAttributeValue)) {
-				ArrayList<Long> timestampArray = tupleIndex.get(joinAttributeValue);
-				if(timestampArray != null && timestampArray.size() > 0) {
-					for(Long timestamp : timestampArray) {
-						Values tuple = timestampIndex.get(timestamp);
-						Values result = new Values(tuple.toArray());
-						result.addAll(attributeValues);
-						joinResult.add(result);
-					}
-					for(Values result : joinResult) {
-						Values tuple = new Values();
-						tuple.add(joinOutputSchema);
-						tuple.add(result);
-						collector.emitDirect(activeTasks.get(taskIndex), tuple);
-						if(taskIndex >= activeTasks.size())
-							taskIndex = 0;
-						else
-							taskIndex += 1;
-					}
-				}
+			List<Values> joinResult = slidingWindowJoin.joinTuple(currentTimestamp, attributeValues, 
+					attributeNames, otherJoinAttribute);
+			for(Values result : joinResult) {
+				Values tuple = new Values();
+				tuple.add(joinOutputSchema);
+				tuple.add(result);
+				collector.emitDirect(activeTasks.get(taskIndex), tuple);
+				if(taskIndex >= activeTasks.size())
+					taskIndex = 0;
+				else
+					taskIndex += 1;
 			}
 		}
-		/**
-		 * Maintain state: Evict tuples that are too old
-		 */
-		
 	}
 
 	@Override
 	public List<Values> getStateValues() {
 		stateValues.clear();
 		Values state = new Values();
-		state.add(tupleIndex);
-		state.add(timestampIndex);
+		state.add(slidingWindowJoin);
 		stateValues.add(state);
 		return stateValues;
 	}

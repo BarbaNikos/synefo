@@ -19,10 +19,8 @@ public class TaskStatistics implements Serializable {
 	private long selectivitySamples;
 
 	private long latency;
-
-	private long previousLatency;
-
-	private long latencySamples;
+	
+	private long operationalLatency;
 
 	private double throughput;
 
@@ -39,8 +37,12 @@ public class TaskStatistics implements Serializable {
 	private final int sampleWindowSize = 100;
 
 	private LinkedList<Long> latencySampleWindow;
+	
+	private LinkedList<Long> operationalLatencySampleWindow;
 
 	private Long runningLatencyWindowSum;
+	
+	private Long runningOperationalLatencyWindowSum;
 
 	private double memory;
 	
@@ -74,7 +76,7 @@ public class TaskStatistics implements Serializable {
 		selectivity = 0.0;
 		selectivitySamples = 0;
 		latency = 0;
-		latencySamples = 0;
+		operationalLatency = 0;
 		throughput = 0;
 		throughputSamples = 0;
 		memory = 0.0;
@@ -84,7 +86,9 @@ public class TaskStatistics implements Serializable {
 		throughputSampleWindow = new LinkedList<Double>();
 		runningThroughputWindowSum = 0.0;
 		latencySampleWindow = new LinkedList<Long>();
+		operationalLatencySampleWindow = new LinkedList<Long>();
 		runningLatencyWindowSum = 0L;
+		runningOperationalLatencyWindowSum = 0L;
 		cpuSampleWindow = new LinkedList<Double>();
 		runningCpuWindowSum = 0.0;
 		memorySampleWindow = new LinkedList<Double>();
@@ -107,56 +111,6 @@ public class TaskStatistics implements Serializable {
 		return selectivity;
 	}
 
-	public void updateLatency() {
-		if(latencySamples == 0) {
-			this.latency = 0;
-			previousLatency = System.currentTimeMillis();
-			latencySamples +=1;
-		}else {
-			long currentTimestamp = System.currentTimeMillis();
-			long latency = currentTimestamp - previousLatency;
-			this.latency = this.latency + (latency - this.latency)/(latencySamples + 1);
-			latencySamples += 1;
-			previousLatency = currentTimestamp;
-		}
-	}
-
-	public void updateLatency(long latency) {
-		if(latencySamples == 0) {
-			this.latency = latency;
-			latencySamples +=1;
-		}else {
-			this.latency = this.latency + (latency - this.latency)/(latencySamples + 1);
-			latencySamples += 1;
-		}
-	}
-
-	public long getLatency() {
-		return latency;
-	}
-
-	public void updateThroughput() {
-		if(throughputSamples == 0) {
-			this.throughput = 0;
-			throughputPreviousTupleNumber = 1;
-			throughputPreviousTimestamp = System.currentTimeMillis();
-			throughputSamples += 1;
-		}else {
-			long _curr_timestamp = System.currentTimeMillis();
-			//Time difference in seconds
-			long _thrpt_time_delta = Math.abs(_curr_timestamp - throughputPreviousTimestamp);
-			if(_thrpt_time_delta >= 1000) {
-				double throughput = throughputPreviousTupleNumber + 1;
-				this.throughput = this.throughput + (throughput - this.throughput)/(throughputSamples + 1);
-				throughputSamples += 1;
-				throughputPreviousTupleNumber = 0;
-				throughputPreviousTimestamp = _curr_timestamp;
-			}else {
-				throughputPreviousTupleNumber += 1;
-			}
-		}
-	}
-
 	public void updateWindowThroughput() {
 		if(throughputSamples == 0) {
 			this.throughput = 0;
@@ -167,7 +121,7 @@ public class TaskStatistics implements Serializable {
 		}else {
 			long currTimestamp = System.currentTimeMillis();
 			long timeDelta = Math.abs(currTimestamp - throughputPreviousTimestamp);
-			if(timeDelta >= 1000) {
+			if(timeDelta >= 1000L) {
 				throughput = throughputPreviousTupleNumber + 1;
 				throughputPreviousTupleNumber = 0;
 				throughputPreviousTimestamp = currTimestamp;
@@ -196,6 +150,16 @@ public class TaskStatistics implements Serializable {
 		latencySlope.updateSlope(latency);
 	}
 	
+	public void updateWindowOperationalLatency(long operationalLatency) {
+		this.operationalLatency = operationalLatency;
+		if(operationalLatencySampleWindow.size() >= sampleWindowSize) {
+			Long removedValue = operationalLatencySampleWindow.poll();
+			runningOperationalLatencyWindowSum -= removedValue;
+		}
+		operationalLatencySampleWindow.offer(this.operationalLatency);
+		runningOperationalLatencyWindowSum += this.operationalLatency;
+	}
+	
 	public void updateCpuLoad() {
 		OperatingSystemMXBean bean = (com.sun.management.OperatingSystemMXBean) ManagementFactory
 				.getOperatingSystemMXBean();
@@ -208,10 +172,6 @@ public class TaskStatistics implements Serializable {
 		runningCpuWindowSum += cpuLoad;
 	}
 
-	public double getThroughput() {
-		return throughput;
-	}
-
 	public double getWindowThroughput() {
 		return throughputSampleWindow.size() > 0 ? (runningThroughputWindowSum / throughputSampleWindow.size()) : 0;
 	}
@@ -219,9 +179,12 @@ public class TaskStatistics implements Serializable {
 	public long getWindowLatency() {
 		return latencySampleWindow.size() > 0 ? (runningLatencyWindowSum / latencySampleWindow.size()) : 0;
 	}
+	
+	public long getWindowOperationalLatency() {
+		return operationalLatencySampleWindow.size() > 0 ? (runningOperationalLatencyWindowSum / operationalLatencySampleWindow.size()) : 0;
+	}
 
 	public double getCpuLoad() {
-//		return cpuLoad;
 		return cpuSampleWindow.size() > 0 ? (runningCpuWindowSum / cpuSampleWindow.size()) : 0.0;
 	}
 
@@ -230,7 +193,6 @@ public class TaskStatistics implements Serializable {
 		/**
 		 * The formula below gives the percent of the maximum available memory to the JVM
 		 */
-//		memory = (double) (runtime.maxMemory() - runtime.totalMemory()) / runtime.maxMemory();
 		memory = (double) runtime.totalMemory() / runtime.maxMemory();
 		if(memorySampleWindow.size() >= sampleWindowSize) {
 			Double removedValue = memorySampleWindow.poll();
@@ -262,7 +224,7 @@ public class TaskStatistics implements Serializable {
 		selectivity = 0.0;
 		selectivitySamples = 0;
 		latency = 0;
-		latencySamples = 0;
+		operationalLatency = 0;
 		throughput = 0;
 		throughputSamples = 0;
 		memory = 0.0;
@@ -272,11 +234,15 @@ public class TaskStatistics implements Serializable {
 		throughputSampleWindow = new LinkedList<Double>();
 		runningThroughputWindowSum = 0.0;
 		latencySampleWindow = new LinkedList<Long>();
+		operationalLatencySampleWindow = new LinkedList<Long>();
 		runningLatencyWindowSum = 0L;
+		runningOperationalLatencyWindowSum = 0L;
 		cpuSampleWindow = new LinkedList<Double>();
 		runningCpuWindowSum = 0.0;
 		memorySampleWindow = new LinkedList<Double>();
 		runningMemoryWindowSum = 0.0;
+		throughputSlope = new ControlBasedStatistics();
+		latencySlope = new ControlBasedStatistics();
 	}
 
 	@Override
