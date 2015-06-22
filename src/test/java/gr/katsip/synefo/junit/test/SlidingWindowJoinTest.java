@@ -23,7 +23,7 @@ public class SlidingWindowJoinTest {
 		SummaryStatistics insertStatistics = new SummaryStatistics();
 		Long startTime = System.currentTimeMillis();
 		SlidingWindowJoin slidingJoin = new SlidingWindowJoin(60000, 1000, lineitemSchema, LineItem.query5Schema[0]);
-		for(long i = 0L; i < 1000000000L; i++) {
+		for(long i = 0L; i < 10000000L; i++) {
 			Long currentTimestamp = System.currentTimeMillis();
 			Random random = new Random();
 			Integer orderKey = random.nextInt(10000000);
