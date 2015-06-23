@@ -164,5 +164,10 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 	public String relationStorage() {
 		return storedRelation;
 	}
+	
+	@Override
+	public long getStateSize() {
+		return slidingWindowJoin.getStateSize();
+	}
 
 }

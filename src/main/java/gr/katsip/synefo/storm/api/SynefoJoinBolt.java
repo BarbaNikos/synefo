@@ -485,8 +485,12 @@ public class SynefoJoinBolt extends BaseRichBolt {
 		}
 
 		if(reportCounter >= SynefoJoinBolt.statReportPeriod) {
+			long stateSize = -1;
+			if(this.operator.operatorStep().equals("JOIN")) {
+				stateSize = operator.getStateSize();
+			}
 			byte[] buffer = (System.currentTimeMillis() + "," + statistics.getCpuLoad() + "," + 
-					statistics.getMemory() + "," + statistics.getWindowLatency() + "," + 
+					statistics.getMemory() + "," + stateSize + "," + statistics.getWindowLatency() + "," + 
 					statistics.getWindowOperationalLatency() + "," + 
 					statistics.getWindowThroughput() + "\n").toString().getBytes();
 			if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
@@ -768,7 +772,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 				 * with zero statistics
 				 */
 				buffer = (System.currentTimeMillis() + "," + -1 + "," + 
-						-1 + "," + -1 + "," + -1 + "," + -1 + "\n").toString().getBytes();
+						-1 + "," + -1 + "," + -1 + "," + -1 + "," + -1 + "\n").toString().getBytes();
 				if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
 					statisticFileChannel.write(
 							ByteBuffer.wrap(buffer), this.statisticFileOffset, "stat write", statisticFileHandler);

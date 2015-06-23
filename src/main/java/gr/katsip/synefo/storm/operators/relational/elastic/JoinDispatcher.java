@@ -175,4 +175,9 @@ public class JoinDispatcher implements AbstractJoinOperator, Serializable {
 		return "NA";
 	}
 
+	@Override
+	public long getStateSize() {
+		return 0;
+	}
+
 }

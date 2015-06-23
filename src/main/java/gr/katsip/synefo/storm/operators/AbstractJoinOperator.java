@@ -30,4 +30,6 @@ public interface AbstractJoinOperator {
 	public String operatorStep();
 	
 	public String relationStorage();
+	
+	public long getStateSize();
 }

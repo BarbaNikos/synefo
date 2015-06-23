@@ -28,6 +28,8 @@ public class SlidingWindowJoin implements Serializable {
 		
 		public HashMap<String, ArrayList<Values>> tuples;
 		
+		public long basicWindowStateSize;
+		
 	}
 	
 	private int windowSize;
@@ -41,6 +43,8 @@ public class SlidingWindowJoin implements Serializable {
 	private Fields tupleSchema;
 	
 	private String joinAttribute;
+	
+	private long stateByteSize;
 	
 	/**
 	 * 
@@ -56,6 +60,7 @@ public class SlidingWindowJoin implements Serializable {
 		this.circularCacheSize = (int) (this.windowSize / slide);
 		this.tupleSchema = new Fields(tupleSchema.toList());
 		this.joinAttribute = joinAttribute;
+		this.stateByteSize = 0L;
 	}
 	
 	public void insertTuple(Long currentTimestamp, Values tuple) {
@@ -71,13 +76,16 @@ public class SlidingWindowJoin implements Serializable {
 				tupleList = new ArrayList<Values>();
 			}
 			tupleList.add(tuple);
+			circularCache.getFirst().basicWindowStateSize += tuple.toArray().toString().length();
 			circularCache.getFirst().tuples.put((String) tuple.get(tupleSchema.fieldIndex(joinAttribute)), tupleList);
+			stateByteSize += tuple.toArray().toString().length();
 		}else {
 			/**
 			 * Need to evict a basic window (the last one), if we have used up all basic window slots
 			 */
 			if(circularCache.size() >= circularCacheSize) {
-				circularCache.removeLast();
+				BasicWindow basicWindow = circularCache.removeLast();
+				stateByteSize -= basicWindow.basicWindowStateSize;
 			}
 			/**
 			 * Creation of the new basic window
@@ -89,7 +97,9 @@ public class SlidingWindowJoin implements Serializable {
 			ArrayList<Values> tupleList = new ArrayList<Values>();
 			tupleList.add(tuple);
 			basicWindow.tuples.put((String) tuple.get(tupleSchema.fieldIndex(joinAttribute)), tupleList);
+			basicWindow.basicWindowStateSize = tuple.toArray().toString().length();
 			circularCache.add(basicWindow);
+			stateByteSize += tuple.toArray().toString().length();
 		}
 	}
 	
@@ -131,4 +141,9 @@ public class SlidingWindowJoin implements Serializable {
 	public LinkedList<BasicWindow> getCircularCache() {
 		return circularCache;
 	}
+	
+	public long getStateSize() {
+		return stateByteSize;
+	}
+	
 }
