@@ -142,14 +142,14 @@ public class TpchQueryFiveTopology {
 		joiner = new JoinJoiner("supplier", new Fields(Supplier.query5Schema), 
 				"lineitem", new Fields(LineItem.query5Schema), "S_SUPPKEY", "L_SUPPKEY", 240000, 1000);
 		joiner.setOutputSchema(new Fields(dataSchema));
-		builder.setBolt("joinjoinsupp", new SynefoJoinBolt("joinjoinsupp", synefoIP, synefoPort, 
+		builder.setBolt("joinjoinsup", new SynefoJoinBolt("joinjoinsup", synefoIP, synefoPort, 
 				joiner, zooIP, false), 3)
 				.directGrouping("joindispatch2");
 		taskNumber += 3;
 		taskList = new ArrayList<String>();
 		taskList.add("drain");
 		topology.put("joinjoinline", new ArrayList<String>(taskList));
-		topology.put("joinjoinsupp", new ArrayList<String>(taskList));
+		topology.put("joinjoinsup", new ArrayList<String>(taskList));
 		/**
 		 * Stage 2: drain
 		 */
@@ -160,7 +160,7 @@ public class TpchQueryFiveTopology {
 				.directGrouping("joinjoincust")
 				.directGrouping("joinjoinorder")
 				.directGrouping("joinjoinline")
-				.directGrouping("joinjoinsupp");
+				.directGrouping("joinjoinsup");
 		taskNumber += 1;
 		topology.put("drain", new ArrayList<String>());
 		/**
