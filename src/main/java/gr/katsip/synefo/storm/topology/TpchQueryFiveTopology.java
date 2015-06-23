@@ -68,10 +68,10 @@ public class TpchQueryFiveTopology {
 				new SynefoSpout("order", synefoIP, synefoPort, orderProducer, zooIP), 1);
 		taskNumber += 1;
 		builder.setSpout("lineitem",
-				new SynefoSpout("order", synefoIP, synefoPort, lineitemProducer, zooIP), 1);
+				new SynefoSpout("lineitem", synefoIP, synefoPort, lineitemProducer, zooIP), 1);
 		taskNumber += 1;
 		builder.setSpout("supplier",
-				new SynefoSpout("upplier", synefoIP, synefoPort, supplierProducer, zooIP), 1);
+				new SynefoSpout("supplier", synefoIP, synefoPort, supplierProducer, zooIP), 1);
 		taskNumber += 1;
 		taskList = new ArrayList<String>();
 		taskList.add("joindispatch");
