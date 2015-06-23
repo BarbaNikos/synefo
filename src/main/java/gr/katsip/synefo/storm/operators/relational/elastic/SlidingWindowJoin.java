@@ -83,10 +83,11 @@ public class SlidingWindowJoin implements Serializable {
 			/**
 			 * Need to evict a basic window (the last one), if we have used up all basic window slots
 			 */
-			if(circularCache.size() >= circularCacheSize) {
-				BasicWindow basicWindow = circularCache.removeLast();
-				stateByteSize -= basicWindow.basicWindowStateSize;
-			}
+//			if(circularCache.size() >= circularCacheSize && circularCache.getLast().endingTimestamp < currentTimestamp) {
+//				BasicWindow basicWindow = circularCache.removeLast();
+//				stateByteSize -= basicWindow.basicWindowStateSize;
+//				System.out.println("SlidingWindowJoin: removed state size " + basicWindow.basicWindowStateSize + " bytes.");
+//			}
 			/**
 			 * Creation of the new basic window
 			 */

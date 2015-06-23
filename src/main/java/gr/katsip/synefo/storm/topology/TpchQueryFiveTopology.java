@@ -8,8 +8,11 @@ import gr.katsip.synefo.storm.operators.relational.ProjectOperator;
 import gr.katsip.synefo.storm.operators.relational.elastic.JoinDispatcher;
 import gr.katsip.synefo.storm.operators.relational.elastic.JoinJoiner;
 import gr.katsip.synefo.tpch.Customer;
+import gr.katsip.synefo.tpch.LineItem;
 import gr.katsip.synefo.tpch.Order;
+import gr.katsip.synefo.tpch.Supplier;
 import gr.katsip.synefo.tpch.TpchTupleProducer;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -17,6 +20,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
+
 import backtype.storm.Config;
 import backtype.storm.StormSubmitter;
 import backtype.storm.generated.AlreadyAliveException;
@@ -36,7 +40,7 @@ public class TpchQueryFiveTopology {
 		ArrayList<String> taskList;
 		Integer taskNumber = 0;
 		if(args.length < 3) {
-			System.err.println("Arguments: <synefo-IP> <stream-IP> <zoo-ip1:port1,zoo-ip2:port2,...,zoo-ipN:portN>");
+			System.err.println("Arguments: <synefo-IP> <stream-IP1:port1,stream-IP2:port2,...,streamIP4:port4> <zoo-ip1:port1,zoo-ip2:port2,...,zoo-ipN:portN>");
 			System.exit(1);
 		}else {
 			synefoIP = args[0];
@@ -53,17 +57,30 @@ public class TpchQueryFiveTopology {
 		customerProducer.setSchema(new Fields(dataSchema));
 		TpchTupleProducer orderProducer = new TpchTupleProducer(streamIPs[1], Order.schema, Order.query5Schema);
 		orderProducer.setSchema(new Fields(dataSchema));
+		TpchTupleProducer lineitemProducer = new TpchTupleProducer(streamIPs[2], LineItem.schema, LineItem.query5Schema);
+		lineitemProducer.setSchema(new Fields(dataSchema));
+		TpchTupleProducer supplierProducer = new TpchTupleProducer(streamIPs[3], Supplier.schema, Supplier.query5Schema);
+		supplierProducer.setSchema(new Fields(dataSchema));
 		builder.setSpout("customer", 
 				new SynefoSpout("customer", synefoIP, synefoPort, customerProducer, zooIP), 1);
 		taskNumber += 1;
 		builder.setSpout("order", 
 				new SynefoSpout("order", synefoIP, synefoPort, orderProducer, zooIP), 1);
 		taskNumber += 1;
+		builder.setSpout("lineitem",
+				new SynefoSpout("order", synefoIP, synefoPort, lineitemProducer, zooIP), 1);
+		taskNumber += 1;
+		builder.setSpout("supplier",
+				new SynefoSpout("upplier", synefoIP, synefoPort, supplierProducer, zooIP), 1);
+		taskNumber += 1;
 		taskList = new ArrayList<String>();
 		taskList.add("joindispatch");
 		topology.put("customer", taskList);
 		topology.put("order", new ArrayList<String>(taskList));
-		
+		taskList = new ArrayList<String>();
+		taskList.add("joindispatch2");
+		topology.put("supplier", new ArrayList<String>(taskList));
+		topology.put("lineitem", new ArrayList<String>(taskList));
 		/**
 		 * Stage 1a: join dispatchers
 		 */
@@ -78,6 +95,19 @@ public class TpchQueryFiveTopology {
 		taskList.add("joinjoincust");
 		taskList.add("joinjoinorder");
 		topology.put("joindispatch", taskList);
+		
+		dispatcher = new JoinDispatcher("lineitem", new Fields(LineItem.query5Schema), 
+				"supplier", new Fields(Supplier.query5Schema), new Fields(dataSchema));
+		builder.setBolt("joindispatch2", new SynefoJoinBolt("joindispatch2", synefoIP, synefoPort, 
+				dispatcher, zooIP, true), 3)
+		.directGrouping("lineitem")
+		.directGrouping("supplier");
+		taskNumber += 3;
+		taskList = new ArrayList<String>();
+		taskList.add("joinjoinline");
+		taskList.add("joinjoinsup");
+		topology.put("joindispatch2", taskList);
+		
 		/**
 		 * Stage 1b : join joiners
 		 */
@@ -101,6 +131,25 @@ public class TpchQueryFiveTopology {
 		taskList = new ArrayList<String>();
 		taskList.add("drain");
 		topology.put("joinjoinorder", taskList);
+		
+		joiner = new JoinJoiner("lineitem", new Fields(LineItem.query5Schema), 
+				"supplier", new Fields(Supplier.query5Schema), "L_SUPPKEY", "S_SUPPKEY", 240000, 1000);
+		joiner.setOutputSchema(new Fields(dataSchema));
+		builder.setBolt("joinjoinline", new SynefoJoinBolt("joinjoinline", synefoIP, synefoPort, 
+				joiner, zooIP, false), 3)
+		.directGrouping("joindispatch2");
+		taskNumber += 3;
+		joiner = new JoinJoiner("supplier", new Fields(Supplier.query5Schema), 
+				"lineitem", new Fields(LineItem.query5Schema), "S_SUPPKEY", "L_SUPPKEY", 240000, 1000);
+		joiner.setOutputSchema(new Fields(dataSchema));
+		builder.setBolt("joinjoinsupp", new SynefoJoinBolt("joinjoinsupp", synefoIP, synefoPort, 
+				joiner, zooIP, false), 3)
+				.directGrouping("joindispatch2");
+		taskNumber += 3;
+		taskList = new ArrayList<String>();
+		taskList.add("drain");
+		topology.put("joinjoinline", new ArrayList<String>(taskList));
+		topology.put("joinjoinsupp", new ArrayList<String>(taskList));
 		/**
 		 * Stage 2: drain
 		 */
@@ -108,7 +157,10 @@ public class TpchQueryFiveTopology {
 		projectOperator.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("drain", 
 				new SynefoBolt("drain", synefoIP, synefoPort, projectOperator, zooIP, true), 1)
-				.directGrouping("joinjoincust").directGrouping("joinjoinorder");
+				.directGrouping("joinjoincust")
+				.directGrouping("joinjoinorder")
+				.directGrouping("joinjoinline")
+				.directGrouping("joinjoinsupp");
 		taskNumber += 1;
 		topology.put("drain", new ArrayList<String>());
 		/**

@@ -23,6 +23,8 @@ public class TpchTupleProducer implements AbstractTupleProducer, Serializable {
 	private Fields schema;
 	
 	private transient Socket dataProvider;
+	
+	private Integer dataProviderPort;
 
 	private transient BufferedReader input;
 
@@ -34,14 +36,15 @@ public class TpchTupleProducer implements AbstractTupleProducer, Serializable {
 	
 	public TpchTupleProducer(String dataProviderAddress, String[] schema, String[] projectedSchema) {
 		dataProvider = null;
-		this.dataProviderAddress = dataProviderAddress;
+		this.dataProviderAddress = dataProviderAddress.split(":")[0];
+		this.dataProviderPort = Integer.parseInt(dataProviderAddress.split(":")[1]);
 		this.schema = new Fields(schema);
 		this.projectedSchema = new Fields(projectedSchema);
 	}
 	
 	public void connect() {
 		try {
-			dataProvider = new Socket(dataProviderAddress, 6666);
+			dataProvider = new Socket(dataProviderAddress, dataProviderPort);
 			output = new PrintWriter(dataProvider.getOutputStream(), true);
 			input = new BufferedReader(new InputStreamReader(dataProvider.getInputStream()));
 		} catch (UnknownHostException e) {

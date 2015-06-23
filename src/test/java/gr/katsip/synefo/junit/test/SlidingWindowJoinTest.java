@@ -21,9 +21,13 @@ public class SlidingWindowJoinTest {
 		Fields orderSchema = new Fields(Order.query5Schema);
 		Fields lineitemSchema = new Fields(LineItem.query5Schema);
 		SummaryStatistics insertStatistics = new SummaryStatistics();
+		SummaryStatistics stateSizeStatistics = new SummaryStatistics();
+		long sumOfStateSamples = 0L;
+		SummaryStatistics tupleSizeStatistics = new SummaryStatistics();
+		long sumOfTupleSizeSamples = 0L;
 		Long startTime = System.currentTimeMillis();
-		SlidingWindowJoin slidingJoin = new SlidingWindowJoin(60000, 1000, lineitemSchema, LineItem.query5Schema[0]);
-		for(long i = 0L; i < 10000L; i++) {
+		SlidingWindowJoin slidingJoin = new SlidingWindowJoin(360000, 360000, lineitemSchema, LineItem.query5Schema[0]);
+		for(long i = 0L; i < 100000000L; i++) {
 			Long currentTimestamp = System.currentTimeMillis();
 			Random random = new Random();
 			Integer orderKey = random.nextInt(10000000);
@@ -33,6 +37,14 @@ public class SlidingWindowJoinTest {
 			Values tuple = new Values(orderKey.toString(), suppKey.toString(), extendedPrice.toString(), discount.toString());
 			slidingJoin.insertTuple(currentTimestamp, tuple);
 			Long insertEndTimestamp = System.currentTimeMillis();
+			if(i == 0L) {
+				System.out.println(tuple);
+				System.out.println(tuple.toArray().toString().length());
+			}
+			stateSizeStatistics.addValue(slidingJoin.getStateSize());
+			sumOfStateSamples += slidingJoin.getStateSize();
+			tupleSizeStatistics.addValue(tuple.toArray().toString().length());
+			sumOfTupleSizeSamples += tuple.toArray().toString().length();
 			insertStatistics.addValue(insertEndTimestamp - currentTimestamp);
 		}
 		Long endTime = System.currentTimeMillis();
@@ -44,14 +56,17 @@ public class SlidingWindowJoinTest {
 			cacheStatistics.addValue(window.tuples.size());
 			sum += window.tuples.size();
 		}
+		System.out.println("State size average: " + sumOfStateSamples / 100000000L + " bytes.");
+		System.out.println("State size max: " + stateSizeStatistics.getMax() + " bytes.");
+		System.out.println("State size min: " + stateSizeStatistics.getMin() + " bytes.");
 		System.out.println("Average basic window size: " + sum / circularCache.size() + " tuples");
 		System.out.println("Max basic window size: " + cacheStatistics.getMax() + " tuples");
 		System.out.println("Min basic window size: " + cacheStatistics.getMin() + " tuples");
 		System.out.println("Variance of basic window size: " + cacheStatistics.getVariance() + " tuples");
 		System.out.println("Mean basic window size: " + cacheStatistics.getMean() + " tuples");
 		
-		System.out.println("Added 1000000000 tuples in " + (endTime - startTime) / 1000L + " seconds.");
-		System.out.println("Average time for each insertion: " + (insertStatistics.getSum() / 1000000000) + " msec.");
+		System.out.println("Added 1000000000 tuples in " + (endTime - startTime) / 100000000L + " seconds.");
+		System.out.println("Average time for each insertion: " + (insertStatistics.getSum() / 100000000L) + " msec.");
 		System.out.println("Mean value: " + insertStatistics.getMean() + " msec.");
 		System.out.println("Variance: " + insertStatistics.getVariance() + ".");
 		
