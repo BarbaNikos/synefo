@@ -85,10 +85,9 @@ public class JoinDispatcher implements AbstractJoinOperator, Serializable {
 						taskIndex += 1;
 					break;
 				}
+				taskIndex += 1;
 				if(taskIndex >= activeTasks.size())
 					taskIndex = 0;
-				else
-					taskIndex += 1;
 			}
 			/**
 			 * JOIN:
@@ -119,16 +118,14 @@ public class JoinDispatcher implements AbstractJoinOperator, Serializable {
 					tuple.add(attributeNames);
 					tuple.add(attributeValues);
 					collector.emitDirect(nextTask, tuple);
+					taskIndex += 1;
 					if(taskIndex >= activeTasks.size())
 						taskIndex = 0;
-					else
-						taskIndex += 1;
 					break;
 				}
+				taskIndex += 1;
 				if(taskIndex >= activeTasks.size())
 					taskIndex = 0;
-				else
-					taskIndex += 1;
 			}
 			/**
 			 * JOIN:

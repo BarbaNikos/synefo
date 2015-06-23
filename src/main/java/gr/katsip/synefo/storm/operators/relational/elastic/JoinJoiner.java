@@ -122,10 +122,9 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 				tuple.add(joinOutputSchema);
 				tuple.add(result);
 				collector.emitDirect(activeTasks.get(taskIndex), tuple);
+				taskIndex += 1;
 				if(taskIndex >= activeTasks.size())
 					taskIndex = 0;
-				else
-					taskIndex += 1;
 			}
 		}
 	}
