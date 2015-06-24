@@ -191,7 +191,7 @@ public class TpchQueryFiveTopology {
 		synEFOSocket.close();
 
 		conf.setDebug(false);
-		conf.setNumWorkers(8);
+//		conf.setNumWorkers(8);
 		conf.put(Config.TOPOLOGY_RECEIVER_BUFFER_SIZE, 8);
 		conf.put(Config.TOPOLOGY_TRANSFER_BUFFER_SIZE, 32);
 		conf.put(Config.TOPOLOGY_EXECUTOR_RECEIVE_BUFFER_SIZE, 16384);
