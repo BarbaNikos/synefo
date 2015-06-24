@@ -74,7 +74,7 @@ public class SlidingWindowJoin implements Serializable {
 	 * @param tuple the about-to-be-inserted tuple
 	 */
 	public void insertTuple(Long currentTimestamp, Values tuple) {
-		if(circularCache.size() > 0 && circularCache.getFirst().startingTimestamp <= currentTimestamp && 
+		if(circularCache.size() > 0 && circularCache.getFirst().startingTimestamp <= currentTimestamp && (circularCache.getFirst().startingTimestamp + slide) > currentTimestamp && 
 				circularCache.getFirst().endingTimestamp >= currentTimestamp) {
 			/**
 			 * Insert tuple in the first window, if the window is still valid
@@ -91,12 +91,13 @@ public class SlidingWindowJoin implements Serializable {
 			circularCache.getFirst().numberOfTuples += 1;
 			totalNumberOfTuples += 1;
 			stateByteSize += tuple.toArray().toString().length();
+//			System.out.println("++INSERTION++");
 		}else {
 			/**
 			 * Need to evict a basic-window (the last one), if we have used up all basic window slots 
 			 * and the last basic-window has expired.
 			 */
-			if(circularCache.size() >= circularCacheSize && circularCache.getLast().endingTimestamp < currentTimestamp) {
+			if(circularCache.size() >= circularCacheSize && circularCache.getLast().endingTimestamp <= currentTimestamp) {
 				BasicWindow basicWindow = circularCache.removeLast();
 				stateByteSize -= basicWindow.basicWindowStateSize;
 				totalNumberOfTuples -= basicWindow.numberOfTuples;
@@ -106,8 +107,12 @@ public class SlidingWindowJoin implements Serializable {
 			 * Creation of the new basic window
 			 */
 			BasicWindow basicWindow = new BasicWindow();
-			basicWindow.startingTimestamp = currentTimestamp;
-			basicWindow.endingTimestamp = currentTimestamp + slide;
+			if(circularCache.size() > 0) {
+				basicWindow.startingTimestamp = circularCache.getFirst().startingTimestamp + slide;
+			}else {
+				basicWindow.startingTimestamp = currentTimestamp;
+			}
+			basicWindow.endingTimestamp = basicWindow.startingTimestamp + windowSize;
 			basicWindow.tuples = new HashMap<String, ArrayList<Values>>();
 			ArrayList<Values> tupleList = new ArrayList<Values>();
 			tupleList.add(tuple);
@@ -117,6 +122,7 @@ public class SlidingWindowJoin implements Serializable {
 			circularCache.addFirst(basicWindow);
 			stateByteSize += tuple.toArray().toString().length();
 			totalNumberOfTuples += 1;
+//			System.out.println("++NEW BASIC WINDOW");
 		}
 	}
 	
@@ -142,6 +148,7 @@ public class SlidingWindowJoin implements Serializable {
 						Values joinTuple = new Values(t.toArray());
 						joinTuple.addAll(tuple);
 						result.add(joinTuple);
+						System.out.println("++JOIN++");
 					}
 				}
 			}else {

@@ -30,7 +30,7 @@ public class SlidingWindowJoinTest {
 		SummaryStatistics tupleSizeStatistics = new SummaryStatistics();
 		long sumOfTupleSizeSamples = 0L;
 		Long startTime = System.currentTimeMillis();
-		SlidingWindowJoin slidingJoin = new SlidingWindowJoin(180000L, 1000L, lineitemSchema, LineItem.query5Schema[0]);
+		SlidingWindowJoin slidingJoin = new SlidingWindowJoin(180000L, 500L, lineitemSchema, LineItem.query5Schema[0]);
 		ArrayList<Values> createdTuples = new ArrayList<Values>();
 		long period = 100000L;
 		for(long i = 0L; i < 20000000L; i++) {
@@ -83,6 +83,8 @@ public class SlidingWindowJoinTest {
 			joinStatistics.addValue((endTimestamp - startTimestamp));
 		}
 		System.out.println("Average time for each join: " + (joinStatistics.getSum() / createdTuples.size()));
+		System.out.println("Max time for a join: " + joinStatistics.getMax());
+		System.out.println("Min time for a join: " + joinStatistics.getMin());
 	}
 	
 	public double randomDecimal() {
