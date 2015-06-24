@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
-
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
@@ -30,11 +29,13 @@ public class SlidingWindowJoin implements Serializable {
 		
 		public long basicWindowStateSize;
 		
+		public long numberOfTuples;
+		
 	}
 	
-	private int windowSize;
+	private long windowSize;
 	
-	private int slide;
+	private long slide;
 	
 	private LinkedList<BasicWindow> circularCache;
 	
@@ -46,23 +47,32 @@ public class SlidingWindowJoin implements Serializable {
 	
 	private long stateByteSize;
 	
+	private long totalNumberOfTuples;
+	
 	/**
 	 * 
 	 * @param windowSize size of the window in milliseconds
 	 * @param slide size of slide in milliseconds
-	 * @param tupleSchema
-	 * @param joinAttribute
+	 * @param tupleSchema the schema of the tuples that will be stored
+	 * @param joinAttribute the name of the join attribute
 	 */
-	public SlidingWindowJoin(int windowSize, int slide, Fields tupleSchema, String joinAttribute) {
+	public SlidingWindowJoin(long windowSize, long slide, Fields tupleSchema, String joinAttribute) {
 		circularCache = new LinkedList<BasicWindow>();
 		this.windowSize = windowSize;
 		this.slide = slide;
 		this.circularCacheSize = (int) (this.windowSize / slide);
+		System.out.println("Circular cache size: " + circularCacheSize);
 		this.tupleSchema = new Fields(tupleSchema.toList());
 		this.joinAttribute = joinAttribute;
 		this.stateByteSize = 0L;
+		this.totalNumberOfTuples = 0L;
 	}
 	
+	/**
+	 * This method adds a given tuple to the store
+	 * @param currentTimestamp the timestamp of the insert operation in milliseconds
+	 * @param tuple the about-to-be-inserted tuple
+	 */
 	public void insertTuple(Long currentTimestamp, Values tuple) {
 		if(circularCache.size() > 0 && circularCache.getFirst().startingTimestamp <= currentTimestamp && 
 				circularCache.getFirst().endingTimestamp >= currentTimestamp) {
@@ -78,16 +88,20 @@ public class SlidingWindowJoin implements Serializable {
 			tupleList.add(tuple);
 			circularCache.getFirst().basicWindowStateSize += tuple.toArray().toString().length();
 			circularCache.getFirst().tuples.put((String) tuple.get(tupleSchema.fieldIndex(joinAttribute)), tupleList);
+			circularCache.getFirst().numberOfTuples += 1;
+			totalNumberOfTuples += 1;
 			stateByteSize += tuple.toArray().toString().length();
 		}else {
 			/**
-			 * Need to evict a basic window (the last one), if we have used up all basic window slots
+			 * Need to evict a basic-window (the last one), if we have used up all basic window slots 
+			 * and the last basic-window has expired.
 			 */
-//			if(circularCache.size() >= circularCacheSize && circularCache.getLast().endingTimestamp < currentTimestamp) {
-//				BasicWindow basicWindow = circularCache.removeLast();
-//				stateByteSize -= basicWindow.basicWindowStateSize;
-//				System.out.println("SlidingWindowJoin: removed state size " + basicWindow.basicWindowStateSize + " bytes.");
-//			}
+			if(circularCache.size() >= circularCacheSize && circularCache.getLast().endingTimestamp < currentTimestamp) {
+				BasicWindow basicWindow = circularCache.removeLast();
+				stateByteSize -= basicWindow.basicWindowStateSize;
+				totalNumberOfTuples -= basicWindow.numberOfTuples;
+				System.out.println("SlidingWindowJoin: removed state size " + basicWindow.basicWindowStateSize + " bytes.");
+			}
 			/**
 			 * Creation of the new basic window
 			 */
@@ -99,14 +113,16 @@ public class SlidingWindowJoin implements Serializable {
 			tupleList.add(tuple);
 			basicWindow.tuples.put((String) tuple.get(tupleSchema.fieldIndex(joinAttribute)), tupleList);
 			basicWindow.basicWindowStateSize = tuple.toArray().toString().length();
-			circularCache.add(basicWindow);
+			basicWindow.numberOfTuples = 1;
+			circularCache.addFirst(basicWindow);
 			stateByteSize += tuple.toArray().toString().length();
+			totalNumberOfTuples += 1;
 		}
 	}
 	
 	/**
 	 * method for attempting to join a tuple of the different relation
-	 * @param currentTimestamp the given timestamp of arrival for the tuple
+	 * @param currentTimestamp the given timestamp of arrival for the tuple in milliseconds
 	 * @param tuple the actual tuple values
 	 * @param otherSchema the schema of the provided tuple
 	 * @param otherRelationJoinAttribute the name of the attribute in the given tuple
@@ -119,7 +135,7 @@ public class SlidingWindowJoin implements Serializable {
 		 * Iterate over all valid windows according to the given timestamp
 		 */
 		for(BasicWindow basicWindow : circularCache) {
-			if(basicWindow.startingTimestamp <= currentTimestamp && basicWindow.endingTimestamp >= currentTimestamp) {
+			if(basicWindow.endingTimestamp >= currentTimestamp) {
 				if(basicWindow.tuples.containsKey(tupleJoinAttribute)) {
 					ArrayList<Values> storedTuples = basicWindow.tuples.get(tupleJoinAttribute);
 					for(Values t : storedTuples) {
@@ -130,7 +146,7 @@ public class SlidingWindowJoin implements Serializable {
 				}
 			}else {
 				/**
-				 * If we overcome the current window, the loop breaks and the result 
+				 * If we overcome the current window (go to not matching windows), the loop breaks and the result 
 				 * can be returned
 				 */
 				break;
@@ -145,6 +161,10 @@ public class SlidingWindowJoin implements Serializable {
 	
 	public long getStateSize() {
 		return stateByteSize;
+	}
+	
+	public long getNumberOfTuples() {
+		return totalNumberOfTuples;
 	}
 	
 }
