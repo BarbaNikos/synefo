@@ -33,7 +33,7 @@ public class SlidingWindowJoinTest {
 		SlidingWindowJoin slidingJoin = new SlidingWindowJoin(180000L, 500L, lineitemSchema, LineItem.query5Schema[0]);
 		ArrayList<Values> createdTuples = new ArrayList<Values>();
 		long period = 100000L;
-		for(long i = 0L; i < 20000000L; i++) {
+		for(long i = 0L; i < 200000L; i++) {
 			Random random = new Random();
 			Integer orderKey = random.nextInt(10000000);
 			Integer suppKey = random.nextInt(1000);
@@ -66,15 +66,15 @@ public class SlidingWindowJoinTest {
 			cacheStatistics.addValue(window.tuples.size());
 			sum += window.tuples.size();
 		}
-		System.out.println("State size average: " + sumOfStateSamples / 20000000L + " bytes.");
+		System.out.println("State size average: " + sumOfStateSamples / 200000L + " bytes.");
 		System.out.println("Average basic window size: " + sum / circularCache.size() + " tuples");
 		System.out.println("Max basic window size: " + cacheStatistics.getMax() + " tuples");
 		System.out.println("Min basic window size: " + cacheStatistics.getMin() + " tuples");
 		System.out.println("Variance of basic window size: " + cacheStatistics.getVariance() + " tuples");
 		System.out.println("Mean basic window size: " + cacheStatistics.getMean() + " tuples");
 		
-		System.out.println("Added 20000000 tuples in " + (endTime - startTime) / 20000000L + " seconds.");
-		System.out.println("Average time for each insertion: " + (insertStatistics.getSum() / 20000000L) + " msec.");
+		System.out.println("Added 200000 tuples in " + (endTime - startTime) / 200000L + " seconds.");
+		System.out.println("Average time for each insertion: " + (insertStatistics.getSum() / 200000L) + " msec.");
 		
 		for(Values t : createdTuples) {
 			Long startTimestamp = System.currentTimeMillis();
