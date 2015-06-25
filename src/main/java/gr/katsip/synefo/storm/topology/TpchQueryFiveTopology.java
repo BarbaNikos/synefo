@@ -162,7 +162,7 @@ public class TpchQueryFiveTopology {
 		 */
 		dispatcher = new JoinDispatcher("outputone", joinOutputOne, 
 				"outputtwo", joinOutputTwo, new Fields(dataSchema));
-		builder.setBolt("joindispatch3", new SynefoJoinBolt("joindispatch2", synefoIP, synefoPort, 
+		builder.setBolt("joindispatch3", new SynefoJoinBolt("joindispatch3", synefoIP, synefoPort, 
 				dispatcher, zooIP, false), 1)
 				.directGrouping("joinjoincust")
 				.directGrouping("joinjoinorder")
