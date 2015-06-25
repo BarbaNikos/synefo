@@ -32,4 +32,6 @@ public interface AbstractJoinOperator {
 	public String relationStorage();
 	
 	public long getStateSize();
+	
+	public Fields getJoinOutputSchema();
 }

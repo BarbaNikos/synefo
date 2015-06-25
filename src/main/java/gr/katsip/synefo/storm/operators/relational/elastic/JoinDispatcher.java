@@ -180,4 +180,9 @@ public class JoinDispatcher implements AbstractJoinOperator, Serializable {
 		return 0;
 	}
 
+	@Override
+	public Fields getJoinOutputSchema() {
+		return outputSchema;
+	}
+
 }

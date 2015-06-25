@@ -132,7 +132,8 @@ public class TpchQueryFiveTopology {
 		taskList.add("joindispatch3");
 		topology.put("joinjoinorder", taskList);
 
-		Fields joinOutputOne = joiner.getOutputSchema();
+		Fields joinOutputOne = joiner.getJoinOutputSchema();
+		System.out.println("output-one schema: " + joinOutputOne.toList().toString());
 
 		joiner = new JoinJoiner("lineitem", new Fields(LineItem.query5Schema), 
 				"supplier", new Fields(Supplier.query5Schema), "L_SUPPKEY", "S_SUPPKEY", 2400000, 1000);
@@ -153,7 +154,8 @@ public class TpchQueryFiveTopology {
 		topology.put("joinjoinline", new ArrayList<String>(taskList));
 		topology.put("joinjoinsup", new ArrayList<String>(taskList));
 
-		Fields joinOutputTwo = joiner.getOutputSchema();
+		Fields joinOutputTwo = joiner.getJoinOutputSchema();
+		System.out.println("output-two schema: " + joinOutputTwo.toList().toString());
 
 		/**
 		 * Stage 2a: Dispatch of combine stream

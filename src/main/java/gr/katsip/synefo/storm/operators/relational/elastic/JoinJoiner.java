@@ -170,4 +170,9 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 		return slidingWindowJoin.getStateSize();
 	}
 
+	@Override
+	public Fields getJoinOutputSchema() {
+		return new Fields(joinOutputSchema.toList());
+	}
+
 }
