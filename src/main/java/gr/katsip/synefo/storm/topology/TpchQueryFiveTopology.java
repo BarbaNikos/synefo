@@ -179,12 +179,14 @@ public class TpchQueryFiveTopology {
 		 */
 		joiner = new JoinJoiner("outputone", new Fields(joinOutputOne.toList()), "outputtwo", 
 				new Fields(joinOutputTwo.toList()), "O_ORDERKEY", "L_ORDERKEY", 2400000, 1000);
+		joiner.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("joinjoinoutputone", new SynefoJoinBolt("joinjoinoutputone", synefoIP, synefoPort, 
 				joiner, zooIP, false), 1)
 				.directGrouping("joindispatch3");
 		taskNumber += 1;
 		joiner = new JoinJoiner("outputtwo", new Fields(joinOutputTwo.toList()), "outputone", 
 				new Fields(joinOutputOne.toList()), "L_ORDERKEY", "O_ORDERKEY", 240000, 1000);
+		joiner.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("joinjoinoutputtwo", new SynefoJoinBolt("joinjoinoutputtwo", synefoIP, synefoPort, 
 				joiner, zooIP, false), 1)
 				.directGrouping("joindispatch3");
