@@ -87,27 +87,27 @@ public class TpchQueryFiveTopology {
 		JoinDispatcher dispatcher = new JoinDispatcher("customer", new Fields(Customer.query5schema), "order", 
 				new Fields(Order.query5Schema), new Fields(dataSchema));
 		builder.setBolt("joindispatch", new SynefoJoinBolt("joindispatch", synefoIP, synefoPort, 
-			dispatcher, zooIP, true), 3)
-			.directGrouping("customer")
-			.directGrouping("order");
-		taskNumber += 3;
+				dispatcher, zooIP, false), 1)
+				.directGrouping("customer")
+				.directGrouping("order");
+		taskNumber += 1;
 		taskList = new ArrayList<String>();
 		taskList.add("joinjoincust");
 		taskList.add("joinjoinorder");
 		topology.put("joindispatch", taskList);
-		
+
 		dispatcher = new JoinDispatcher("lineitem", new Fields(LineItem.query5Schema), 
 				"supplier", new Fields(Supplier.query5Schema), new Fields(dataSchema));
 		builder.setBolt("joindispatch2", new SynefoJoinBolt("joindispatch2", synefoIP, synefoPort, 
-				dispatcher, zooIP, true), 3)
-		.directGrouping("lineitem")
-		.directGrouping("supplier");
-		taskNumber += 3;
+				dispatcher, zooIP, false), 1)
+				.directGrouping("lineitem")
+				.directGrouping("supplier");
+		taskNumber += 1;
 		taskList = new ArrayList<String>();
 		taskList.add("joinjoinline");
 		taskList.add("joinjoinsup");
 		topology.put("joindispatch2", taskList);
-		
+
 		/**
 		 * Stage 1b : join joiners
 		 */
@@ -115,52 +115,92 @@ public class TpchQueryFiveTopology {
 				new Fields(Order.query5Schema), "C_CUSTKEY", "O_CUSTKEY", 240000, 1000);
 		joiner.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("joinjoincust", new SynefoJoinBolt("joinjoincust", synefoIP, synefoPort, 
-				joiner, zooIP, true), 3)
-		.directGrouping("joindispatch");
-		taskNumber += 3;
+				joiner, zooIP, false), 1)
+				.directGrouping("joindispatch");
+		taskNumber += 1;
 		taskList = new ArrayList<String>();
-		taskList.add("drain");
+		taskList.add("joindispatch3");
 		topology.put("joinjoincust", taskList);
 		joiner = new JoinJoiner("order", new Fields(Order.query5Schema), "customer", 
 				new Fields(Customer.query5schema), "O_CUSTKEY", "C_CUSTKEY", 240000, 1000);
 		joiner.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("joinjoinorder", new SynefoJoinBolt("joinjoinorder", synefoIP, synefoPort, 
-				joiner, zooIP, true), 3)
-		.directGrouping("joindispatch");
-		taskNumber += 3;
+				joiner, zooIP, false), 1)
+				.directGrouping("joindispatch");
+		taskNumber += 1;
 		taskList = new ArrayList<String>();
-		taskList.add("drain");
+		taskList.add("joindispatch3");
 		topology.put("joinjoinorder", taskList);
-		
+
+		Fields joinOutputOne = joiner.getOutputSchema();
+
 		joiner = new JoinJoiner("lineitem", new Fields(LineItem.query5Schema), 
 				"supplier", new Fields(Supplier.query5Schema), "L_SUPPKEY", "S_SUPPKEY", 240000, 1000);
 		joiner.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("joinjoinline", new SynefoJoinBolt("joinjoinline", synefoIP, synefoPort, 
-				joiner, zooIP, true), 3)
-		.directGrouping("joindispatch2");
-		taskNumber += 3;
+				joiner, zooIP, false), 1)
+				.directGrouping("joindispatch2");
+		taskNumber += 1;
 		joiner = new JoinJoiner("supplier", new Fields(Supplier.query5Schema), 
 				"lineitem", new Fields(LineItem.query5Schema), "S_SUPPKEY", "L_SUPPKEY", 240000, 1000);
 		joiner.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("joinjoinsup", new SynefoJoinBolt("joinjoinsup", synefoIP, synefoPort, 
-				joiner, zooIP, true), 3)
+				joiner, zooIP, false), 1)
 				.directGrouping("joindispatch2");
-		taskNumber += 3;
+		taskNumber += 1;
 		taskList = new ArrayList<String>();
-		taskList.add("drain");
+		taskList.add("joindispatch3");
 		topology.put("joinjoinline", new ArrayList<String>(taskList));
 		topology.put("joinjoinsup", new ArrayList<String>(taskList));
+
+		Fields joinOutputTwo = joiner.getOutputSchema();
+
 		/**
-		 * Stage 2: drain
+		 * Stage 2a: Dispatch of combine stream
+		 */
+		dispatcher = new JoinDispatcher("outputone", joinOutputOne, 
+				"outputtwo", joinOutputTwo, new Fields(dataSchema));
+		builder.setBolt("joindispatch3", new SynefoJoinBolt("joindispatch2", synefoIP, synefoPort, 
+				dispatcher, zooIP, false), 1)
+				.directGrouping("joinjoincust")
+				.directGrouping("joinjoinorder")
+				.directGrouping("joinjoinline")
+				.directGrouping("joinjoinsup");
+		taskNumber += 1;
+		taskList = new ArrayList<String>();
+		taskList.add("joinjoinoutputone");
+		taskList.add("joinjoinoutputtwo");
+		topology.put("joindispatch3", new ArrayList<String>(taskList));
+
+		/**
+		 * Stage 2b: Join of combine stream
+		 */
+		joiner = new JoinJoiner("outputone", new Fields(joinOutputOne.toList()), "outputtwo", 
+				new Fields(joinOutputTwo.toList()), "O_ORDERKEY", "L_ORDERKEY", 240000, 1000);
+		builder.setBolt("joinjoinoutputone", new SynefoJoinBolt("joinjoinoutputone", synefoIP, synefoPort, 
+				joiner, zooIP, false), 1)
+				.directGrouping("joindispatch3");
+		taskNumber += 1;
+		joiner = new JoinJoiner("outputtwo", new Fields(joinOutputTwo.toList()), "outputone", 
+				new Fields(joinOutputOne.toList()), "L_ORDERKEY", "O_ORDERKEY", 24000, 1000);
+		builder.setBolt("joinjoinoutputtwo", new SynefoJoinBolt("joinjoinoutputtwo", synefoIP, synefoPort, 
+				joiner, zooIP, false), 1)
+				.directGrouping("joindispatch3");
+		taskNumber += 1;
+		taskList = new ArrayList<String>();
+		taskList.add("drain");
+		topology.put("joinjoinoutputone", new ArrayList<String>(taskList));
+		topology.put("joinjoinoutputtwo", new ArrayList<String>(taskList));
+		
+		/**
+		 * Stage 3: drain
 		 */
 		ProjectOperator projectOperator = new ProjectOperator(new Fields(dataSchema));
 		projectOperator.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("drain", 
 				new SynefoBolt("drain", synefoIP, synefoPort, projectOperator, zooIP, true), 1)
-				.directGrouping("joinjoincust")
-				.directGrouping("joinjoinorder")
-				.directGrouping("joinjoinline")
-				.directGrouping("joinjoinsup");
+				.directGrouping("joinjoinoutputone")
+				.directGrouping("joinjoinoutputtwo");
 		taskNumber += 1;
 		topology.put("drain", new ArrayList<String>());
 		/**
@@ -192,16 +232,17 @@ public class TpchQueryFiveTopology {
 
 		conf.setDebug(false);
 		conf.setNumWorkers(16);
-		conf.put(Config.TOPOLOGY_WORKER_CHILDOPTS, "-Xmx4096m -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:NewSize=128m -XX:CMSInitiatingOccupancyFraction=70 -XX:-CMSConcurrentMTEnabled -Djava.net.preferIPv4Stack=true");
+		conf.put(Config.TOPOLOGY_WORKER_CHILDOPTS, 
+				"-Xmx4096m -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:NewSize=128m -XX:CMSInitiatingOccupancyFraction=70 -XX:-CMSConcurrentMTEnabled -Djava.net.preferIPv4Stack=true");
 		conf.put(Config.TOPOLOGY_RECEIVER_BUFFER_SIZE, 8);
 		conf.put(Config.TOPOLOGY_TRANSFER_BUFFER_SIZE, 32);
 		conf.put(Config.TOPOLOGY_EXECUTOR_RECEIVE_BUFFER_SIZE, 16384);
 		conf.put(Config.TOPOLOGY_EXECUTOR_SEND_BUFFER_SIZE, 16384);
 
-//		LocalCluster cluster = new LocalCluster();
-//		cluster.submitTopology("tpch-q5-top", conf, builder.createTopology());
-//		Thread.sleep(100000);
-//		cluster.shutdown();
+		//		LocalCluster cluster = new LocalCluster();
+		//		cluster.submitTopology("tpch-q5-top", conf, builder.createTopology());
+		//		Thread.sleep(100000);
+		//		cluster.shutdown();
 		StormSubmitter.submitTopology("tpch-q5-top", conf, builder.createTopology());
 	}
 }
