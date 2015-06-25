@@ -152,7 +152,7 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 	public void mergeState(Fields receivedStateSchema,
 			List<Values> receivedStateValues) {
 		// TODO Auto-generated method stub
-
+		
 	}
 
 	@Override

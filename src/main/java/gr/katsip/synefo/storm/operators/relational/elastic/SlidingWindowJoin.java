@@ -61,7 +61,6 @@ public class SlidingWindowJoin implements Serializable {
 		this.windowSize = windowSize;
 		this.slide = slide;
 		this.circularCacheSize = (int) (this.windowSize / slide);
-		System.out.println("Circular cache size: " + circularCacheSize);
 		this.tupleSchema = new Fields(tupleSchema.toList());
 		this.joinAttribute = joinAttribute;
 		this.stateByteSize = 0L;
@@ -91,7 +90,6 @@ public class SlidingWindowJoin implements Serializable {
 			circularCache.getFirst().numberOfTuples += 1;
 			totalNumberOfTuples += 1;
 			stateByteSize += tuple.toArray().toString().length();
-//			System.out.println("++INSERTION++");
 		}else {
 			/**
 			 * Need to evict a basic-window (the last one), if we have used up all basic window slots 
@@ -101,7 +99,6 @@ public class SlidingWindowJoin implements Serializable {
 				BasicWindow basicWindow = circularCache.removeLast();
 				stateByteSize -= basicWindow.basicWindowStateSize;
 				totalNumberOfTuples -= basicWindow.numberOfTuples;
-				System.out.println("SlidingWindowJoin: removed state size " + basicWindow.basicWindowStateSize + " bytes.");
 			}
 			/**
 			 * Creation of the new basic window
@@ -122,7 +119,6 @@ public class SlidingWindowJoin implements Serializable {
 			circularCache.addFirst(basicWindow);
 			stateByteSize += tuple.toArray().toString().length();
 			totalNumberOfTuples += 1;
-//			System.out.println("++NEW BASIC WINDOW");
 		}
 	}
 	
@@ -148,7 +144,6 @@ public class SlidingWindowJoin implements Serializable {
 						Values joinTuple = new Values(t.toArray());
 						joinTuple.addAll(tuple);
 						result.add(joinTuple);
-						System.out.println("++JOIN++");
 					}
 				}
 			}else {
