@@ -62,11 +62,11 @@ public class TpchTupleProducer implements AbstractTupleProducer, Serializable {
 	@Override
 	public Values nextTuple() {
 		//Added a debug slow-down to see what is going on.
-		if(counter >= 1000) {
-			Utils.sleep(1000);
-			counter = 0;
-		}else
-			counter += 1;
+//		if(counter >= 1000) {
+//			Utils.sleep(1000);
+//			counter = 0;
+//		}else
+//			counter += 1;
 		if(dataProvider == null)
 			connect();
 		Values values = new Values();
