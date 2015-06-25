@@ -7,8 +7,10 @@ import java.io.PrintWriter;
 import java.io.Serializable;
 import java.net.Socket;
 import java.net.UnknownHostException;
+
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
+import backtype.storm.utils.Utils;
 import gr.katsip.synefo.storm.producers.AbstractTupleProducer;
 
 public class TpchTupleProducer implements AbstractTupleProducer, Serializable {
@@ -34,12 +36,15 @@ public class TpchTupleProducer implements AbstractTupleProducer, Serializable {
 	
 	private Fields projectedSchema;
 	
+	private int counter;
+	
 	public TpchTupleProducer(String dataProviderAddress, String[] schema, String[] projectedSchema) {
 		dataProvider = null;
 		this.dataProviderAddress = dataProviderAddress.split(":")[0];
 		this.dataProviderPort = Integer.parseInt(dataProviderAddress.split(":")[1]);
 		this.schema = new Fields(schema);
 		this.projectedSchema = new Fields(projectedSchema);
+		counter = 0;
 	}
 	
 	public void connect() {
@@ -56,6 +61,12 @@ public class TpchTupleProducer implements AbstractTupleProducer, Serializable {
 
 	@Override
 	public Values nextTuple() {
+		//Added a debug slow-down to see what is going on.
+		if(counter >= 1000) {
+			Utils.sleep(1000);
+			counter = 0;
+		}else
+			counter += 1;
 		if(dataProvider == null)
 			connect();
 		Values values = new Values();
