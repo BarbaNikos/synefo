@@ -112,7 +112,7 @@ public class TpchQueryFiveTopology {
 		 * Stage 1b : join joiners
 		 */
 		JoinJoiner joiner = new JoinJoiner("customer", new Fields(Customer.query5schema), "order", 
-				new Fields(Order.query5Schema), "C_CUSTKEY", "O_CUSTKEY", 240000, 1000);
+				new Fields(Order.query5Schema), "C_CUSTKEY", "O_CUSTKEY", 2400000, 1000);
 		joiner.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("joinjoincust", new SynefoJoinBolt("joinjoincust", synefoIP, synefoPort, 
 				joiner, zooIP, false), 1)
@@ -122,7 +122,7 @@ public class TpchQueryFiveTopology {
 		taskList.add("joindispatch3");
 		topology.put("joinjoincust", taskList);
 		joiner = new JoinJoiner("order", new Fields(Order.query5Schema), "customer", 
-				new Fields(Customer.query5schema), "O_CUSTKEY", "C_CUSTKEY", 240000, 1000);
+				new Fields(Customer.query5schema), "O_CUSTKEY", "C_CUSTKEY", 2400000, 1000);
 		joiner.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("joinjoinorder", new SynefoJoinBolt("joinjoinorder", synefoIP, synefoPort, 
 				joiner, zooIP, false), 1)
@@ -135,14 +135,14 @@ public class TpchQueryFiveTopology {
 		Fields joinOutputOne = joiner.getOutputSchema();
 
 		joiner = new JoinJoiner("lineitem", new Fields(LineItem.query5Schema), 
-				"supplier", new Fields(Supplier.query5Schema), "L_SUPPKEY", "S_SUPPKEY", 240000, 1000);
+				"supplier", new Fields(Supplier.query5Schema), "L_SUPPKEY", "S_SUPPKEY", 2400000, 1000);
 		joiner.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("joinjoinline", new SynefoJoinBolt("joinjoinline", synefoIP, synefoPort, 
 				joiner, zooIP, false), 1)
 				.directGrouping("joindispatch2");
 		taskNumber += 1;
 		joiner = new JoinJoiner("supplier", new Fields(Supplier.query5Schema), 
-				"lineitem", new Fields(LineItem.query5Schema), "S_SUPPKEY", "L_SUPPKEY", 240000, 1000);
+				"lineitem", new Fields(LineItem.query5Schema), "S_SUPPKEY", "L_SUPPKEY", 2400000, 1000);
 		joiner.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("joinjoinsup", new SynefoJoinBolt("joinjoinsup", synefoIP, synefoPort, 
 				joiner, zooIP, false), 1)
@@ -176,13 +176,13 @@ public class TpchQueryFiveTopology {
 		 * Stage 2b: Join of combine stream
 		 */
 		joiner = new JoinJoiner("outputone", new Fields(joinOutputOne.toList()), "outputtwo", 
-				new Fields(joinOutputTwo.toList()), "O_ORDERKEY", "L_ORDERKEY", 240000, 1000);
+				new Fields(joinOutputTwo.toList()), "O_ORDERKEY", "L_ORDERKEY", 2400000, 1000);
 		builder.setBolt("joinjoinoutputone", new SynefoJoinBolt("joinjoinoutputone", synefoIP, synefoPort, 
 				joiner, zooIP, false), 1)
 				.directGrouping("joindispatch3");
 		taskNumber += 1;
 		joiner = new JoinJoiner("outputtwo", new Fields(joinOutputTwo.toList()), "outputone", 
-				new Fields(joinOutputOne.toList()), "L_ORDERKEY", "O_ORDERKEY", 24000, 1000);
+				new Fields(joinOutputOne.toList()), "L_ORDERKEY", "O_ORDERKEY", 240000, 1000);
 		builder.setBolt("joinjoinoutputtwo", new SynefoJoinBolt("joinjoinoutputtwo", synefoIP, synefoPort, 
 				joiner, zooIP, false), 1)
 				.directGrouping("joindispatch3");
