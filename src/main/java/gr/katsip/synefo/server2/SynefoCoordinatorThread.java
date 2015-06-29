@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -41,6 +42,8 @@ public class SynefoCoordinatorThread implements Runnable {
 	private AtomicInteger taskNumber = null;
 
 	private ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation = null;
+	
+	private ConcurrentLinkedQueue<String> pendingAddressUpdates;
 
 	public SynefoCoordinatorThread(String zooHost, 
 			HashMap<String, Pair<Number, Number>> resourceThresholds, 
@@ -53,7 +56,8 @@ public class SynefoCoordinatorThread implements Runnable {
 			AtomicInteger queryId, 
 			CEStormDatabaseManager ceDb, 
 			AtomicInteger taskNumber, 
-			ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation) {
+			ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation, 
+			ConcurrentLinkedQueue<String> pendingAddressUpdates) {
 		this.physicalTopology = physicalTopology;
 		this.activeTopology = runningTopology;
 		this.taskIdentifierIndex = taskNameToIdMap;
@@ -66,6 +70,7 @@ public class SynefoCoordinatorThread implements Runnable {
 		this.ceDb = ceDb;
 		this.taskNumber = taskNumber;
 		this.taskToJoinRelation = taskToJoinRelation;
+		this.pendingAddressUpdates = pendingAddressUpdates;
 	}
 
 	public void run() {
@@ -134,6 +139,29 @@ public class SynefoCoordinatorThread implements Runnable {
 
 		userInterfaceThread = new Thread(new SynEFOUserInterface(tamer, physicalTopology, demoMode, queryId, ceDb));
 		userInterfaceThread.start();
+		/**
+		 * Fault-tolerance mechanism for when an executor dies 
+		 * and respawns in a different machine
+		 */
+		while(operationFlag.get()) {
+			while(this.pendingAddressUpdates.isEmpty()) {
+				try {
+					Thread.sleep(200);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+			/**
+			 * Update address in ScaleFunction for active and physical topology
+			 */
+			String addressChange = pendingAddressUpdates.poll();
+			String taskName = addressChange.split("[:@]")[0];
+			Integer identifier = Integer.parseInt(addressChange.split("[:@]")[1]);
+			String newAddress = addressChange.split("[:@]")[2];
+			tamer.scaleFunction.updateTaskAddress(taskName, identifier, newAddress, taskAddressIndex.get(taskName + ":" + identifier));
+			taskAddressIndex.remove(taskName + ":" + identifier);
+			taskAddressIndex.put(taskName + ":" + identifier, newAddress);
+		}
 	}
 	
 	public static ConcurrentHashMap<String, ArrayList<String>> updatePhysicalTopology(ConcurrentHashMap<String, String> taskAddressIndex, 

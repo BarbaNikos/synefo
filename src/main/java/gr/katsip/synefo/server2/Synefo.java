@@ -8,8 +8,10 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import gr.katsip.cestorm.db.CEStormDatabaseManager;
 import gr.katsip.synefo.storm.api.Pair;
 
@@ -42,6 +44,8 @@ public class Synefo {
 	private AtomicInteger taskNumber;
 	
 	private CEStormDatabaseManager ceDb = null;
+	
+	private ConcurrentLinkedQueue<String> pendingAddressUpdates;
 
 	public Synefo(String zooHost, HashMap<String, Pair<Number, Number>> _resource_thresholds, CEStormDatabaseManager ceDb) {
 		physicalTopology = new ConcurrentHashMap<String, ArrayList<String>>();
@@ -49,6 +53,7 @@ public class Synefo {
 		taskIdentifierIndex = new ConcurrentHashMap<String, Integer>();
 		taskIPs = new ConcurrentHashMap<String, String>();
 		taskToJoinRelation = new ConcurrentHashMap<Integer, JoinOperator>();
+		pendingAddressUpdates = new ConcurrentLinkedQueue<String>();
 		serverSocket = null;
 		try {
 			serverSocket = new ServerSocket(5555);
@@ -76,14 +81,14 @@ public class Synefo {
 		OutputStream _out = null;
 		InputStream _in = null;
 		(new Thread(new SynefoCoordinatorThread(zooHost, resourceThresholds, physicalTopology, 
-				activeTopology, taskIdentifierIndex, taskIPs, operationFlag, demoMode, queryId, ceDb, taskNumber, taskToJoinRelation))).start();
+				activeTopology, taskIdentifierIndex, taskIPs, operationFlag, demoMode, queryId, ceDb, taskNumber, taskToJoinRelation, pendingAddressUpdates))).start();
 		while(killCommand == false) {
 			try {
 				_stormComponent = serverSocket.accept();
 				_out = _stormComponent.getOutputStream();
 				_in = _stormComponent.getInputStream();
 				(new Thread(new SynefoThread(physicalTopology, activeTopology, taskIdentifierIndex, _in, _out, taskIPs, 
-						operationFlag, demoMode, queryId, taskNumber, taskToJoinRelation))).start();
+						operationFlag, demoMode, queryId, taskNumber, taskToJoinRelation, pendingAddressUpdates))).start();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

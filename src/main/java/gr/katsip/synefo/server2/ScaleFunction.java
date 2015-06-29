@@ -172,6 +172,48 @@ public class ScaleFunction {
 		}
 		activeTopology.put(addedNode, activeDownStreamNodes);
 	}
+	
+	public void updateTaskAddress(String taskName, Integer identifier, String newAddress, String previousAddress) {
+		ArrayList<String> parentNodes = null;
+		activeTopologyLock.writeLock().lock();
+		if(physicalTopology.containsKey(taskName + ":" + identifier + "@" + previousAddress)) {
+			parentNodes = ScaleFunction.getInverseTopology(physicalTopology).get(taskName + ":" + identifier + "@" + previousAddress);
+			if(parentNodes != null) {
+				for(String parent : parentNodes) {
+					ArrayList<String> childTasks = physicalTopology.get(parent);
+					for(int i = 0; i < childTasks.size(); i++) {
+						if(childTasks.get(i).equals(taskName + ":" + identifier + "@" + previousAddress)) {
+							childTasks.set(i, taskName + ":" + identifier + "@" + newAddress);
+							physicalTopology.put(parent, childTasks);
+							break;
+						}
+					}
+				}
+			}
+			ArrayList<String> childTasks = physicalTopology.get(taskName + ":" + identifier + "@" + previousAddress);
+			physicalTopology.put(taskName + ":" + identifier + "@" + newAddress, childTasks);
+			physicalTopology.remove(taskName + ":" + identifier + "@" + previousAddress);
+		}
+		if(activeTopology.containsKey(taskName + ":" + identifier + "@" + previousAddress)) {
+			parentNodes = ScaleFunction.getInverseTopology(activeTopology).get(taskName + ":" + identifier + "@" + previousAddress);
+			if(parentNodes != null) {
+				for(String parent : parentNodes) {
+					ArrayList<String> childTasks = activeTopology.get(parent);
+					for(int i = 0; i < childTasks.size(); i++) {
+						if(childTasks.get(i).equals(taskName + ":" + identifier + "@" + previousAddress)) {
+							childTasks.set(i, taskName + ":" + identifier + "@" + newAddress);
+							activeTopology.put(parent, childTasks);
+							break;
+						}
+					}
+				}
+			}
+			ArrayList<String> childTasks = activeTopology.get(taskName + ":" + identifier + "@" + previousAddress);
+			activeTopology.put(taskName + ":" + identifier + "@" + newAddress, childTasks);
+			activeTopology.remove(taskName + ":" + identifier + "@" + previousAddress);
+		}
+		activeTopologyLock.writeLock().unlock();
+	}
 
 	public static String getParentNode(ConcurrentHashMap<String, ArrayList<String>> physicalTopology, String task_name, String task_id) {
 		Iterator<Entry<String, ArrayList<String>>> itr = physicalTopology.entrySet().iterator();

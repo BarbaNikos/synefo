@@ -8,6 +8,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -38,31 +39,34 @@ public class SynefoThread implements Runnable {
 	private String taskIP;
 
 	private ConcurrentHashMap<String, String> taskAddressIndex;
-	
+
 	private AtomicBoolean operationFlag;
-	
+
 	private boolean demoMode;
-	
+
 	private AtomicInteger queryId;
-	
+
 	private AtomicInteger taskNumber = null;
-	
+
 	private ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation = null;
+
+	private ConcurrentLinkedQueue<String> pendingAddressUpdates;
 
 	public SynefoThread(ConcurrentHashMap<String, ArrayList<String>> physicalTopology, 
 			ConcurrentHashMap<String, ArrayList<String>> activeTopology, 
-			ConcurrentHashMap<String, Integer> taskNameToIdMap, 
-			InputStream in, OutputStream out,  
-			ConcurrentHashMap<String, String> taskIPs, 
+			ConcurrentHashMap<String, Integer> taskIdentifierIndex, 
+			InputStream in, OutputStream out, 
+			ConcurrentHashMap<String, String> taskAddressIndex, 
 			AtomicBoolean operationFlag, 
 			boolean demoMode, 
 			AtomicInteger queryId, 
 			AtomicInteger taskNumber, 
-			ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation) {
+			ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation, 
+			ConcurrentLinkedQueue<String> pendingAddressUpdates) {
 		this.in = in;
 		this.out = out;
-		this.taskIdentifierIndex = taskNameToIdMap;
-		this.taskAddressIndex = taskIPs;
+		this.taskIdentifierIndex = taskIdentifierIndex;
+		this.taskAddressIndex = taskAddressIndex;
 		try {
 			output = new ObjectOutputStream(this.out);
 			input = new ObjectInputStream(this.in);
@@ -76,6 +80,7 @@ public class SynefoThread implements Runnable {
 		this.queryId = queryId;
 		this.taskNumber = taskNumber;
 		this.taskToJoinRelation = taskToJoinRelation;
+		this.pendingAddressUpdates = pendingAddressUpdates;
 	}
 
 	public void run() {
@@ -122,6 +127,21 @@ public class SynefoThread implements Runnable {
 					") has RE-connected.");
 			ArrayList<String> _downStream = null;
 			ArrayList<String> _activeDownStream = null;
+			/**
+			 * Update internal structures with new ip (if it has changed)
+			 * physical-topology (can be updated by synefo-thread)
+			 * active-topology (should be updated by scale-function)
+			 * task-address-index (can be updated by synefo-thread)
+			 */
+			if(taskAddressIndex.get(taskName + ":" + identifier).equals(taskIP) == false) {
+				this.pendingAddressUpdates.offer(taskName + ":" + identifier + "@" + taskIP);
+				while(taskAddressIndex.get(taskName + ":" + identifier).equals(taskIP) == false)
+					try {
+						Thread.sleep(300);
+					} catch (InterruptedException e2) {
+						e2.printStackTrace();
+					}
+			}
 			if(physicalTopology.containsKey(taskName + ":" + identifier + "@" + taskIP)) {
 				_downStream = new ArrayList<String>(physicalTopology.get(taskName + ":" + identifier + "@" + taskIP));
 				if(activeTopology.containsKey(taskName + ":" + identifier + "@" + taskIP)) {
@@ -144,10 +164,6 @@ public class SynefoThread implements Runnable {
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}
-			/**
-			 * After coordination, keep listening 
-			 * for received task statistics messages
-			 */
 			System.out.println("+efo SPOUT: " + taskName + "@" + taskIP + 
 					"(" + identifier + ") RE-CONNECTED successfully.");
 			try {
@@ -223,7 +239,7 @@ public class SynefoThread implements Runnable {
 					relation);
 			this.taskToJoinRelation.putIfAbsent(identifier, operator);
 		}
-		
+
 		identifier = Integer.parseInt(values.get("TASK_ID"));
 		taskName = values.get("TASK_NAME");
 		taskIP = values.get("TASK_IP");
@@ -231,6 +247,21 @@ public class SynefoThread implements Runnable {
 		 * This node has previously died so it is going to come back-up
 		 */
 		if(operationFlag.get() == true) {
+			/**
+			 * Update internal structures with new ip (if it has changed)
+			 * physical-topology (can be updated by synefo-thread)
+			 * active-topology (should be updated by scale-function)
+			 * task-address-index (can be updated by synefo-thread)
+			 */
+			if(taskAddressIndex.get(taskName + ":" + identifier).equals(taskIP) == false) {
+				this.pendingAddressUpdates.offer(taskName + ":" + identifier + "@" + taskIP);
+				while(taskAddressIndex.get(taskName + ":" + identifier).equals(taskIP) == false)
+					try {
+						Thread.sleep(300);
+					} catch (InterruptedException e2) {
+						e2.printStackTrace();
+					}
+			}
 			System.out.println("+efo BOLT: " + taskName + "(" + identifier + "@" + taskIP + 
 					") has RE-connected.");
 			HashMap<String, ArrayList<String>> relationTaskIndex = null;
@@ -294,10 +325,6 @@ public class SynefoThread implements Runnable {
 					e.printStackTrace();
 				}
 			}
-			/**
-			 * After coordination, keep listening 
-			 * for received task statistics messages
-			 */
 			System.out.println("+efo BOLT: " + taskName + "@" + taskIP + 
 					"(" + identifier + ") RE-CONNECTED successfully.");
 			try {
