@@ -142,7 +142,7 @@ public class MinimalTpchTopology {
 		synEFOSocket.close();
 
 //		conf.setDebug(true);
-//		conf.setNumWorkers(4);
+		conf.setNumWorkers(4);
 		conf.put(Config.TOPOLOGY_WORKER_CHILDOPTS, 
 				"-Xmx4096m -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:NewSize=128m -XX:CMSInitiatingOccupancyFraction=70 -XX:-CMSConcurrentMTEnabled -Djava.net.preferIPv4Stack=true");
 		conf.put(Config.TOPOLOGY_RECEIVER_BUFFER_SIZE, 8);

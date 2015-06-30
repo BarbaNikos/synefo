@@ -271,11 +271,11 @@ public class SynefoThread implements Runnable {
 			_downStream = new ArrayList<String>(physicalTopology.get(taskName + ":" + identifier + "@" + taskIP));
 			if(activeTopology.containsKey(taskName + ":" + identifier + "@" + taskIP)) {
 				System.out.println("+efo BOLT: " + taskName + "(" + identifier + "@" + taskIP + 
-						") retrieved active topology record after RE-CONNECTION");
+						") retrieved active topology");
 				_activeDownStream = new ArrayList<String>(activeTopology.get(taskName + ":" + identifier + "@" + taskIP));
 			}else { 
 				System.out.println("+efo BOLT: " + taskName + "(" + identifier + "@" + taskIP + 
-						") no active-topology record has been found for RE-CONNECTED bolt.");
+						") no active-topology record has been found for bolt.");
 				_activeDownStream = new ArrayList<String>();
 				for(String task : _downStream) {
 					if(activeTopology.containsKey(task))
@@ -284,7 +284,7 @@ public class SynefoThread implements Runnable {
 			}
 		}else {
 			System.out.println("+efo BOLT: " + taskName + "(" + identifier + "@" + taskIP + 
-					") no physical-topology record has been found for RE-CONNECTED bolt.");
+					") no physical-topology record has been found bolt.");
 			_downStream = new ArrayList<String>();
 			_activeDownStream = new ArrayList<String>();
 		}
