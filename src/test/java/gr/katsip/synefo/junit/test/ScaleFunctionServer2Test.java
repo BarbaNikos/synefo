@@ -76,6 +76,7 @@ public class ScaleFunctionServer2Test {
 				ScaleFunction.getInverseTopology(updatedTopology), taskToJoinRelation);
 		scaleFunction = new ScaleFunction(updatedTopology, activeTopology, taskToJoinRelation);
 		scaleFunction.updateTaskAddress("joiner_6", 6, "2.2.2.2", "1.1.1.1");
+		scaleFunction.updateTaskAddress("spout_9", 9, "2.2.2.2", "1.1.1.1");
 		System.out.println("Physical updated: " + scaleFunction.physicalTopology.toString());
 		System.out.println("Active updated: " + activeTopology.toString());
 		String activeJoiner = "";

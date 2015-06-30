@@ -282,6 +282,8 @@ public class SynefoThread implements Runnable {
 						_activeDownStream.add(task);
 				}
 			}
+			System.out.println("+efo BOLT: " + taskName + "@" + taskIP + 
+					"(" + identifier + ") downstream task list: " + _activeDownStream.toString());
 		}else {
 			System.out.println("+efo BOLT: " + taskName + "(" + identifier + "@" + taskIP + 
 					") no physical-topology record has been found bolt.");
