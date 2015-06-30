@@ -122,11 +122,9 @@ public class SynefoThread implements Runnable {
 		/**
 		 * This node has previously died so it is going to come back-up
 		 */
-		if(operationFlag.get() == true) {
+		if(operationFlag.get()) {
 			System.out.println("+EFO-SPOUT: " + taskName + "(" + identifier + "@" + taskIP + 
 					") has RE-connected.");
-			ArrayList<String> _downStream = null;
-			ArrayList<String> _activeDownStream = null;
 			/**
 			 * Update internal structures with new ip (if it has changed)
 			 * physical-topology (can be updated by synefo-thread)
@@ -142,55 +140,24 @@ public class SynefoThread implements Runnable {
 						e2.printStackTrace();
 					}
 			}
-			if(physicalTopology.containsKey(taskName + ":" + identifier + "@" + taskIP)) {
-				_downStream = new ArrayList<String>(physicalTopology.get(taskName + ":" + identifier + "@" + taskIP));
-				if(activeTopology.containsKey(taskName + ":" + identifier + "@" + taskIP)) {
-					System.out.println("+efo SPOUT: " + taskName + "(" + identifier + "@" + taskIP + 
-							") retrieved active topology after RE-CONNECTION");
-					_activeDownStream = new ArrayList<String>(activeTopology.get(taskName + ":" + identifier + "@" + taskIP));
-				}
-			}else {
-				System.out.println("+efo SPOUT: " + taskName + "(" + identifier + "@" + taskIP + 
-						") no physical-topology record has been found for RE-CONNECTED bolt.");
-			}
+		}else {
+			taskAddressIndex.putIfAbsent(taskName + ":" + identifier, taskIP);
+			taskIdentifierIndex.putIfAbsent(taskName, identifier);
+			System.out.println("+efo SPOUT: " + taskName + "(" + identifier + "@" + taskIP + 
+					") connected.");
 			/**
-			 * Send back the downstream topology info
+			 * Wait until the Coordinator thread 
+			 * updates the physicalTopology with 
+			 * the Task IDs. This is done by 
+			 * emptying the _nameToIdMap
 			 */
-			try {
-				output.writeObject(_downStream);
-				output.flush();
-				output.writeObject(_activeDownStream);
-				output.flush();
-			} catch (IOException e1) {
-				e1.printStackTrace();
-			}
-			System.out.println("+efo SPOUT: " + taskName + "@" + taskIP + 
-					"(" + identifier + ") RE-CONNECTED successfully.");
-			try {
-				output.flush();
-				output.close();
-				input.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			return;
+			while(taskIdentifierIndex.size() > 0)
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e2) {
+					e2.printStackTrace();
+				}
 		}
-		taskAddressIndex.putIfAbsent(taskName + ":" + identifier, taskIP);
-		taskIdentifierIndex.putIfAbsent(taskName, identifier);
-		System.out.println("+efo SPOUT: " + taskName + "(" + identifier + "@" + taskIP + 
-				") connected.");
-		/**
-		 * Wait until the Coordinator thread 
-		 * updates the physicalTopology with 
-		 * the Task IDs. This is done by 
-		 * emptying the _nameToIdMap
-		 */
-		while(taskIdentifierIndex.size() > 0)
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e2) {
-				e2.printStackTrace();
-			}
 		ArrayList<String> _downStream = null;
 		ArrayList<String> _activeDownStream = null;
 		if(physicalTopology.containsKey(taskName + ":" + identifier + "@" + taskIP)) {
@@ -218,7 +185,7 @@ public class SynefoThread implements Runnable {
 			e1.printStackTrace();
 		}
 		System.out.println("+efo SPOUT: " + taskName + "(" + identifier + "@" + taskIP + 
-				") registered successfully.");
+					") retrieved information successfully.");
 		try {
 			output.flush();
 			output.close();
@@ -239,14 +206,13 @@ public class SynefoThread implements Runnable {
 					relation);
 			this.taskToJoinRelation.putIfAbsent(identifier, operator);
 		}
-
 		identifier = Integer.parseInt(values.get("TASK_ID"));
 		taskName = values.get("TASK_NAME");
 		taskIP = values.get("TASK_IP");
 		/**
 		 * This node has previously died so it is going to come back-up
 		 */
-		if(operationFlag.get() == true) {
+		if(operationFlag.get()) {
 			/**
 			 * Update internal structures with new ip (if it has changed)
 			 * physical-topology (can be updated by synefo-thread)
@@ -264,100 +230,24 @@ public class SynefoThread implements Runnable {
 			}
 			System.out.println("+efo BOLT: " + taskName + "(" + identifier + "@" + taskIP + 
 					") has RE-connected.");
-			HashMap<String, ArrayList<String>> relationTaskIndex = null;
-			if(operator != null && operator.getStep() == JoinOperator.Step.DISPATCH) {
-				relationTaskIndex = new HashMap<String, ArrayList<String>>();
-				for(String task : physicalTopology.get(taskName + ":" + "@" + taskIP)) {
-					Integer identifier = Integer.parseInt(task.split("[:@]")[1]);
-					JoinOperator op = taskToJoinRelation.get(identifier);
-					if(relationTaskIndex.containsKey(op.getRelation())) {
-						ArrayList<String> ops = relationTaskIndex.get(op.getRelation());
-						ops.add(task);
-						relationTaskIndex.put(op.getRelation(), ops);
-					}else {
-						ArrayList<String> ops = new ArrayList<String>();
-						ops.add(task);
-						relationTaskIndex.put(op.getRelation(), ops);
-					}
-				}
-			}
-			ArrayList<String> _downStream = null;
-			ArrayList<String> _activeDownStream = null;
-			if(physicalTopology.containsKey(taskName + ":" + identifier + "@" + taskIP)) {
-				_downStream = new ArrayList<String>(physicalTopology.get(taskName + ":" + identifier + "@" + taskIP));
-				if(activeTopology.containsKey(taskName + ":" + identifier + "@" + taskIP)) {
-					System.out.println("+efo BOLT: " + taskName + "(" + identifier + "@" + taskIP + 
-							") retrieved active topology record after RE-CONNECTION");
-					_activeDownStream = new ArrayList<String>(activeTopology.get(taskName + ":" + identifier + "@" + taskIP));
-				}else { 
-					System.out.println("+efo BOLT: " + taskName + "(" + identifier + "@" + taskIP + 
-							") no active-topology record has been found for RE-CONNECTED bolt.");
-					_activeDownStream = new ArrayList<String>();
-					for(String task : _downStream) {
-						if(activeTopology.containsKey(task))
-							_activeDownStream.add(task);
-					}
-				}
-			}else {
-				System.out.println("+efo BOLT: " + taskName + "(" + identifier + "@" + taskIP + 
-						") no physical-topology record has been found for RE-CONNECTED bolt.");
-			}
+		}else {
+			taskAddressIndex.putIfAbsent(taskName + ":" + identifier, taskIP);
+			taskIdentifierIndex.putIfAbsent(taskName, identifier);
+			System.out.println("+efo BOLT: " + taskName + "(" + identifier + "@" + taskIP + 
+					") connected.");
 			/**
-			 * Send back the downstream topology info
+			 * Wait until the Coordinator thread 
+			 * updates the physicalTopology with 
+			 * the Task IDs. This is done by 
+			 * emptying the _nameToIdMap
 			 */
-			try {
-				output.writeObject(_downStream);
-				output.flush();
-				output.writeObject(_activeDownStream);
-				output.flush();
-			} catch (IOException e1) {
-				e1.printStackTrace();
-			}
-			/**
-			 * In case of a JOIN (Dispatcher) operator, we need to send the 
-			 * information of the downstream operators.
-			 */
-			if(operator != null && operator.getStep() == JoinOperator.Step.DISPATCH) {
+			while(taskIdentifierIndex.size() > 0)
 				try {
-					output.writeObject(relationTaskIndex);
-					output.flush();
-				} catch (IOException e) {
-					e.printStackTrace();
+					Thread.sleep(100);
+				} catch (InterruptedException e2) {
+					e2.printStackTrace();
 				}
-			}
-			System.out.println("+efo BOLT: " + taskName + "@" + taskIP + 
-					"(" + identifier + ") RE-CONNECTED successfully.");
-			try {
-				output.flush();
-				output.close();
-				input.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			return;
 		}
-		taskAddressIndex.putIfAbsent(taskName + ":" + identifier, taskIP);
-		taskIdentifierIndex.putIfAbsent(taskName, identifier);
-		System.out.println("+efo BOLT: " + taskName + "(" + identifier + "@" + taskIP + 
-				") connected.");
-		/**
-		 * Wait until the Coordinator thread 
-		 * updates the physicalTopology with 
-		 * the Task IDs. This is done by 
-		 * emptying the _nameToIdMap
-		 */
-		while(taskIdentifierIndex.size() > 0)
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e2) {
-				e2.printStackTrace();
-			}
-		ArrayList<String> _downStream = null;
-		ArrayList<String> _activeDownStream = null;
-		/**
-		 * In case the operator is a JOIN (DISPATCH) we need to populate 
-		 * the information of its two downstream join operators
-		 */
 		HashMap<String, ArrayList<String>> relationTaskIndex = null;
 		if(operator != null && operator.getStep() == JoinOperator.Step.DISPATCH) {
 			relationTaskIndex = new HashMap<String, ArrayList<String>>();
@@ -375,23 +265,26 @@ public class SynefoThread implements Runnable {
 				}
 			}
 		}
+		ArrayList<String> _downStream = null;
+		ArrayList<String> _activeDownStream = null;
 		if(physicalTopology.containsKey(taskName + ":" + identifier + "@" + taskIP)) {
 			_downStream = new ArrayList<String>(physicalTopology.get(taskName + ":" + identifier + "@" + taskIP));
 			if(activeTopology.containsKey(taskName + ":" + identifier + "@" + taskIP)) {
 				System.out.println("+efo BOLT: " + taskName + "(" + identifier + "@" + taskIP + 
-						") retrieving active topology.");
+						") retrieved active topology record after RE-CONNECTION");
 				_activeDownStream = new ArrayList<String>(activeTopology.get(taskName + ":" + identifier + "@" + taskIP));
-			}else {
+			}else { 
+				System.out.println("+efo BOLT: " + taskName + "(" + identifier + "@" + taskIP + 
+						") no active-topology record has been found for RE-CONNECTED bolt.");
 				_activeDownStream = new ArrayList<String>();
 				for(String task : _downStream) {
-					if(activeTopology.containsKey(task)) {
+					if(activeTopology.containsKey(task))
 						_activeDownStream.add(task);
-					}
 				}
 			}
-			System.out.println("+efo BOLT: " + taskName + "@" + taskIP + 
-					"(" + identifier + ") downstream task list: " + _activeDownStream.toString());
 		}else {
+			System.out.println("+efo BOLT: " + taskName + "(" + identifier + "@" + taskIP + 
+					") no physical-topology record has been found for RE-CONNECTED bolt.");
 			_downStream = new ArrayList<String>();
 			_activeDownStream = new ArrayList<String>();
 		}
@@ -414,19 +307,12 @@ public class SynefoThread implements Runnable {
 			try {
 				output.writeObject(relationTaskIndex);
 				output.flush();
-				String response = (String) input.readObject();
-				if(!response.equals("OK"))
-					System.out.println("+efo BOLT: " + taskName + "@" + taskIP + " sent back a N-ACK.");
-			} catch (IOException | ClassNotFoundException e) {
+			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
-		/**
-		 * After coordination, keep listening 
-		 * for received task statistics messages
-		 */
 		System.out.println("+efo BOLT: " + taskName + "@" + taskIP + 
-				"(" + identifier + ") registered successfully.");
+				"(" + identifier + ") retrieved information successfully.");
 		try {
 			output.flush();
 			output.close();
