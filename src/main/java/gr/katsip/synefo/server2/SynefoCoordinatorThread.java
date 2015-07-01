@@ -191,7 +191,6 @@ public class SynefoCoordinatorThread implements Runnable {
 				updatedTopology.put(parentTask, new ArrayList<String>());
 			}
 		}
-//		System.out.println("updatePhysicalTop() about to return: " + updatedTopology.toString());
 		return updatedTopology;
 	}
 
@@ -209,7 +208,7 @@ public class SynefoCoordinatorThread implements Runnable {
 				Iterator<Entry<String, Integer>> downstreamTaskIterator = taskNameToIdMap.entrySet().iterator();
 				while(downstreamTaskIterator.hasNext()) {
 					Entry<String, Integer> downstreamPair = downstreamTaskIterator.next();
-					if(downstreamPair.getKey().contains(downstreamTask)) {
+					if(downstreamPair.getKey().split("_")[0].equals(downstreamTask)) {
 						downstreamTaskWithIdList.add(downstreamPair.getKey());
 					}
 				}

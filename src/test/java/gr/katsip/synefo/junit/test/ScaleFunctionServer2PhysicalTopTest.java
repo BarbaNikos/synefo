@@ -1,9 +1,10 @@
 package gr.katsip.synefo.junit.test;
 
 import static org.junit.Assert.*;
+import gr.katsip.synefo.server2.SynefoCoordinatorThread;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.junit.Test;
 
@@ -11,7 +12,7 @@ public class ScaleFunctionServer2PhysicalTopTest {
 
 	@Test
 	public void test() {
-		HashMap<String, ArrayList<String>> topology = new HashMap<String, ArrayList<String>>();
+		ConcurrentHashMap<String, ArrayList<String>> topology = new ConcurrentHashMap<String, ArrayList<String>>();
 		ArrayList<String> taskList;
 		taskList = new ArrayList<String>();
 		taskList.add("joindispatch");
@@ -59,13 +60,51 @@ public class ScaleFunctionServer2PhysicalTopTest {
 		topology.put("drain", new ArrayList<String>());
 		System.out.println(topology.toString());
 		
-		HashMap<String, Integer> taskNameToIdMap = new HashMap<String, Integer>();
-		taskNameToIdMap.put("order_1", 1);
-		taskNameToIdMap.put("customer_2", 2);
-		taskNameToIdMap.put("supplier_3", 3);
-		taskNameToIdMap.put("lineitem_4", 4);
-		taskNameToIdMap.put("joindispatch_5", 5);
-		taskNameToIdMap.put("joindispatch2_6", 6);
+		ConcurrentHashMap<String, Integer> taskIdentifierIndex = new ConcurrentHashMap<String, Integer>();
+		ConcurrentHashMap<String, String> taskAddressIndex = new ConcurrentHashMap<String, String>();
+		taskIdentifierIndex.put("order_1", 1);
+		taskAddressIndex.put("order_1:1", "1.1.1.1");
+		taskIdentifierIndex.put("customer_2", 2);
+		taskAddressIndex.put("customer_2:2", "1.1.1.1");
+		taskIdentifierIndex.put("supplier_3", 3);
+		taskAddressIndex.put("supplier_3:3", "1.1.1.1");
+		taskIdentifierIndex.put("lineitem_4", 4);
+		taskAddressIndex.put("lineitem_4:4", "1.1.1.1");
+		
+		taskIdentifierIndex.put("joindispatch_5", 5);
+		taskAddressIndex.put("joindispatch_5:5", "1.1.1.1");
+		
+		taskIdentifierIndex.put("joindispatch2_6", 6);
+		taskAddressIndex.put("joindispatch2_6:6", "1.1.1.1");
+		taskIdentifierIndex.put("joinjoincust_7", 7);
+		taskAddressIndex.put("joinjoincust_7:7", "1.1.1.1");
+		taskIdentifierIndex.put("joinjoinorder_8", 8);
+		taskAddressIndex.put("joinjoinorder_8:8", "1.1.1.1");
+		taskIdentifierIndex.put("joinjoinline_9", 9);
+		taskAddressIndex.put("joinjoinline_9:9", "1.1.1.1");
+		taskIdentifierIndex.put("joinjoinsup_10", 10);
+		taskAddressIndex.put("joinjoinsup_10:10", "1.1.1.1");
+		taskIdentifierIndex.put("joindispatch3_11", 11);
+		taskAddressIndex.put("joindispatch3_11:11", "1.1.1.1");
+		taskIdentifierIndex.put("joinjoinoutputone_12", 12);
+		taskAddressIndex.put("joinjoinoutputone_12:12", "1.1.1.1");
+		taskIdentifierIndex.put("joinjoinoutputtwo_13", 13);
+		taskAddressIndex.put("joinjoinoutputtwo_13:13", "1.1.1.1");
+		taskIdentifierIndex.put("drain_14", 14);
+		taskAddressIndex.put("drain_14:14", "1.1.1.1");
+		
+		ConcurrentHashMap<String, ArrayList<String>> expandedPhysicalTopology = SynefoCoordinatorThread.physicalTopologyTaskExpand(
+				taskIdentifierIndex, topology);
+		
+		System.out.println("expanded-phys-top: " + expandedPhysicalTopology.toString());
+		
+		topology.clear();
+		topology.putAll(expandedPhysicalTopology);
+		ConcurrentHashMap<String, ArrayList<String>> updatedPhysicalTopology = SynefoCoordinatorThread.updatePhysicalTopology(
+				taskAddressIndex, taskIdentifierIndex, topology);
+		System.out.println("updated-phys-top: " + updatedPhysicalTopology);
+		
+		
 	}
 
 }
