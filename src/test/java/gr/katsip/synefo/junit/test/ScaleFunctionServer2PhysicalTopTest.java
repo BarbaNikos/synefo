@@ -58,6 +58,14 @@ public class ScaleFunctionServer2PhysicalTopTest {
 		
 		topology.put("drain", new ArrayList<String>());
 		System.out.println(topology.toString());
+		
+		HashMap<String, Integer> taskNameToIdMap = new HashMap<String, Integer>();
+		taskNameToIdMap.put("order_1", 1);
+		taskNameToIdMap.put("customer_2", 2);
+		taskNameToIdMap.put("supplier_3", 3);
+		taskNameToIdMap.put("lineitem_4", 4);
+		taskNameToIdMap.put("joindispatch_5", 5);
+		taskNameToIdMap.put("joindispatch2_6", 6);
 	}
 
 }
