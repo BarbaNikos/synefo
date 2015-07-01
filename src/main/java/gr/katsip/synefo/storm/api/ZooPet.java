@@ -150,10 +150,12 @@ public class ZooPet {
 					Thread.sleep(100);
 				}
 				if(zk.exists("/synefo/bolt-tasks", false) != null) {
-					zk.create("/synefo/bolt-tasks/" + taskName + ":" + taskID + "@" + taskIP, 
-							("/synefo/bolt-tasks/" + taskName + ":" + taskID + "@" + taskIP).getBytes(), 
-							Ids.OPEN_ACL_UNSAFE, 
-							CreateMode.PERSISTENT);
+					if(zk.exists("/synefo/bolt-tasks/" + taskName + ":" + taskID + "@" + taskIP, false) == null) {
+						zk.create("/synefo/bolt-tasks/" + taskName + ":" + taskID + "@" + taskIP, 
+								("/synefo/bolt-tasks/" + taskName + ":" + taskID + "@" + taskIP).getBytes(), 
+								Ids.OPEN_ACL_UNSAFE, 
+								CreateMode.PERSISTENT);
+					}
 					Stat stat = new Stat();
 					String thresholds = new String(zk.getData("/synefo/scale-out-event", false, stat));
 					String[] thresholdTokens = thresholds.split(",");
