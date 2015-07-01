@@ -1,6 +1,7 @@
 package gr.katsip.synefo.storm.api;
 
 //import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 //import java.io.InputStream;
 //import java.io.InputStreamReader;
@@ -496,9 +497,12 @@ public class SynefoSpout extends BaseRichSpout {
 		}
 		if(this.statisticFileChannel == null) {
 			try {
-				statisticFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
-						taskName + ":" + taskId + "@" + taskIP + "-stats.log"), 
-						StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+				File f = new File(stormHome + 
+						taskName + ":" + taskId + "@" + taskIP + "-stats.log");
+				if(f.exists() == false)
+					statisticFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
+							taskName + ":" + taskId + "@" + taskIP + "-stats.log"), 
+							StandardOpenOption.WRITE, StandardOpenOption.CREATE);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -512,9 +516,12 @@ public class SynefoSpout extends BaseRichSpout {
 		}
 		if(this.scaleEventFileChannel == null) {
 			try {
-				scaleEventFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
-						taskName + ":" + taskId + "@" + taskIP + "-scale-events.log"), 
-						StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+				File f = new File(stormHome + 
+						taskName + ":" + taskId + "@" + taskIP + "-scale-events.log");
+				if(f.exists() == false)
+					scaleEventFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
+							taskName + ":" + taskId + "@" + taskIP + "-scale-events.log"), 
+							StandardOpenOption.WRITE, StandardOpenOption.CREATE);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
