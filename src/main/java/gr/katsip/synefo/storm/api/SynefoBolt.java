@@ -280,6 +280,12 @@ public class SynefoBolt extends BaseRichBolt {
 					statisticFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
 							taskName + ":" + taskID + "@" + taskIP + "-stats.log"), 
 							StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+				else {
+					statisticFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
+							taskName + ":" + taskID + "@" + taskIP + "-stats.log"), 
+							StandardOpenOption.WRITE);
+					this.statisticFileOffset = statisticFileChannel.size();
+				}
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -299,6 +305,12 @@ public class SynefoBolt extends BaseRichBolt {
 					scaleEventFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
 							taskName + ":" + taskID + "@" + taskIP + "-scale-events.log"), 
 							StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+				else {
+					scaleEventFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
+							taskName + ":" + taskID + "@" + taskIP + "-scale-events.log"), 
+							StandardOpenOption.WRITE);
+					this.scaleEventFileOffset = scaleEventFileChannel.size();
+				}
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

@@ -503,6 +503,12 @@ public class SynefoSpout extends BaseRichSpout {
 					statisticFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
 							taskName + ":" + taskId + "@" + taskIP + "-stats.log"), 
 							StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+				else {
+					statisticFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
+							taskName + ":" + taskId + "@" + taskIP + "-stats.log"), 
+							StandardOpenOption.WRITE);
+					this.statisticFileOffset = statisticFileChannel.size();
+				}
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -522,6 +528,12 @@ public class SynefoSpout extends BaseRichSpout {
 					scaleEventFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
 							taskName + ":" + taskId + "@" + taskIP + "-scale-events.log"), 
 							StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+				else {
+					scaleEventFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
+							taskName + ":" + taskId + "@" + taskIP + "-scale-events.log"), 
+							StandardOpenOption.WRITE);
+					this.scaleEventFileOffset = scaleEventFileChannel.size();
+				}
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
