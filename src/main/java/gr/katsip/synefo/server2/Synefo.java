@@ -30,6 +30,8 @@ public class Synefo {
 	private ConcurrentHashMap<String, String> taskIPs;
 	
 	private ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation;
+	
+	private ConcurrentHashMap<String, Integer> taskWorkerPortIndex;
 
 	private HashMap<String, Pair<Number, Number>> resourceThresholds;
 
@@ -51,6 +53,7 @@ public class Synefo {
 		physicalTopology = new ConcurrentHashMap<String, ArrayList<String>>();
 		activeTopology = new ConcurrentHashMap<String, ArrayList<String>>();
 		taskIdentifierIndex = new ConcurrentHashMap<String, Integer>();
+		taskWorkerPortIndex = new ConcurrentHashMap<String, Integer>();
 		taskIPs = new ConcurrentHashMap<String, String>();
 		taskToJoinRelation = new ConcurrentHashMap<Integer, JoinOperator>();
 		pendingAddressUpdates = new ConcurrentLinkedQueue<String>();
@@ -81,13 +84,13 @@ public class Synefo {
 		OutputStream _out = null;
 		InputStream _in = null;
 		(new Thread(new SynefoCoordinatorThread(zooHost, resourceThresholds, physicalTopology, 
-				activeTopology, taskIdentifierIndex, taskIPs, operationFlag, demoMode, queryId, ceDb, taskNumber, taskToJoinRelation, pendingAddressUpdates))).start();
+				activeTopology, taskIdentifierIndex, taskWorkerPortIndex, taskIPs, operationFlag, demoMode, queryId, ceDb, taskNumber, taskToJoinRelation, pendingAddressUpdates))).start();
 		while(killCommand == false) {
 			try {
 				_stormComponent = serverSocket.accept();
 				_out = _stormComponent.getOutputStream();
 				_in = _stormComponent.getInputStream();
-				(new Thread(new SynefoThread(physicalTopology, activeTopology, taskIdentifierIndex, _in, _out, taskIPs, 
+				(new Thread(new SynefoThread(physicalTopology, activeTopology, taskIdentifierIndex, taskWorkerPortIndex, _in, _out, taskIPs, 
 						operationFlag, demoMode, queryId, taskNumber, taskToJoinRelation, pendingAddressUpdates))).start();
 			} catch (IOException e) {
 				e.printStackTrace();

@@ -24,6 +24,8 @@ public class SynefoCoordinatorThread implements Runnable {
 	private ZooMaster tamer;
 
 	private ConcurrentHashMap<String, String> taskAddressIndex;
+	
+	private ConcurrentHashMap<String, Integer> taskWorkerPortIndex;
 
 	private HashMap<String, Pair<Number, Number>> resourceThresholds;
 
@@ -50,6 +52,7 @@ public class SynefoCoordinatorThread implements Runnable {
 			ConcurrentHashMap<String, ArrayList<String>> physicalTopology, 
 			ConcurrentHashMap<String, ArrayList<String>> runningTopology, 
 			ConcurrentHashMap<String, Integer> taskNameToIdMap, 
+			ConcurrentHashMap<String, Integer> taskWorkerPortIndex, 
 			ConcurrentHashMap<String, String> taskIPs,
 			AtomicBoolean operationFlag, 
 			boolean demoMode, 
@@ -61,6 +64,7 @@ public class SynefoCoordinatorThread implements Runnable {
 		this.physicalTopology = physicalTopology;
 		this.activeTopology = runningTopology;
 		this.taskIdentifierIndex = taskNameToIdMap;
+		this.taskWorkerPortIndex = taskWorkerPortIndex;
 		this.taskAddressIndex = taskIPs;
 		this.resourceThresholds = resourceThresholds;
 		this.zooHost = zooHost;

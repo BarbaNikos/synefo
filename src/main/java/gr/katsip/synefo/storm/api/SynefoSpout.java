@@ -71,6 +71,8 @@ public class SynefoSpout extends BaseRichSpout {
 	private static final int latencySequencePeriod = 250;
 
 	private String taskName;
+	
+	private Integer workerPort;
 
 	private SpoutOutputCollector collector;
 
@@ -123,6 +125,7 @@ public class SynefoSpout extends BaseRichSpout {
 	public SynefoSpout(String task_name, String synEFO_ip, Integer synEFO_port, 
 			AbstractTupleProducer tupleProducer, String zooIP) {
 		taskName = task_name;
+		workerPort = -1;
 		downstreamTasks = null;
 		activeDownstreamTasks = null;
 		synefoIP = synEFO_ip;
@@ -153,6 +156,7 @@ public class SynefoSpout extends BaseRichSpout {
 		msg._type = Type.REG;
 		msg._values.put("TASK_TYPE", "SPOUT");
 		msg._values.put("TASK_NAME", taskName);
+		msg._values.put("WORKER_PORT", Integer.toString(workerPort));
 		try {
 			taskIP = InetAddress.getLocalHost().getHostAddress();
 			msg._values.put("TASK_IP", taskIP);
@@ -482,6 +486,7 @@ public class SynefoSpout extends BaseRichSpout {
 			SpoutOutputCollector collector) {
 		this.collector = collector;
 		taskId = context.getThisTaskId();
+		workerPort = context.getThisWorkerPort();
 		/**
 		 * Update taskName with task-id so that multi-core is supported
 		 */

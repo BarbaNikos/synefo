@@ -31,12 +31,16 @@ public class SynefoThread implements Runnable {
 	private ConcurrentHashMap<String, ArrayList<String>> activeTopology;
 
 	private ConcurrentHashMap<String, Integer> taskIdentifierIndex;
+	
+	private ConcurrentHashMap<String, Integer> taskWorkerPortIndex;
 
 	private Integer identifier;
 
 	private String taskName;
 
 	private String taskIP;
+	
+	private Integer workerPort;
 
 	private ConcurrentHashMap<String, String> taskAddressIndex;
 
@@ -55,8 +59,9 @@ public class SynefoThread implements Runnable {
 	public SynefoThread(ConcurrentHashMap<String, ArrayList<String>> physicalTopology, 
 			ConcurrentHashMap<String, ArrayList<String>> activeTopology, 
 			ConcurrentHashMap<String, Integer> taskIdentifierIndex, 
+			ConcurrentHashMap<String, Integer> taskWorkerPortIndex,
 			InputStream in, OutputStream out, 
-			ConcurrentHashMap<String, String> taskAddressIndex, 
+			ConcurrentHashMap<String, String> taskAddressIndex,  
 			AtomicBoolean operationFlag, 
 			boolean demoMode, 
 			AtomicInteger queryId, 
@@ -67,6 +72,7 @@ public class SynefoThread implements Runnable {
 		this.out = out;
 		this.taskIdentifierIndex = taskIdentifierIndex;
 		this.taskAddressIndex = taskAddressIndex;
+		this.taskWorkerPortIndex = taskWorkerPortIndex;
 		try {
 			output = new ObjectOutputStream(this.out);
 			input = new ObjectInputStream(this.in);
@@ -119,6 +125,7 @@ public class SynefoThread implements Runnable {
 		identifier = Integer.parseInt(values.get("TASK_ID"));
 		taskName = values.get("TASK_NAME");
 		taskIP = values.get("TASK_IP");
+		workerPort = Integer.parseInt(values.get("WORKER_PORT"));
 		/**
 		 * This node has previously died so it is going to come back-up
 		 */
@@ -140,8 +147,15 @@ public class SynefoThread implements Runnable {
 						e2.printStackTrace();
 					}
 			}
+			/**
+			 * TODO: Update internal structure with new worker port (if it has changed)
+			 */
+			if(taskWorkerPortIndex.get(taskName + ":" + identifier).equals(workerPort) == false) {
+				
+			}
 		}else {
 			taskAddressIndex.putIfAbsent(taskName + ":" + identifier, taskIP);
+			taskWorkerPortIndex.putIfAbsent(taskName + ":" + identifier, workerPort);
 			taskIdentifierIndex.putIfAbsent(taskName, identifier);
 			System.out.println("+efo SPOUT: " + taskName + "(" + identifier + "@" + taskIP + 
 					") connected.");
@@ -209,6 +223,7 @@ public class SynefoThread implements Runnable {
 		identifier = Integer.parseInt(values.get("TASK_ID"));
 		taskName = values.get("TASK_NAME");
 		taskIP = values.get("TASK_IP");
+		workerPort = Integer.parseInt(values.get("WORKER_PORT"));
 		/**
 		 * This node has previously died so it is going to come back-up
 		 */
@@ -228,10 +243,17 @@ public class SynefoThread implements Runnable {
 						e2.printStackTrace();
 					}
 			}
+			/**
+			 * TODO: Update internal structure with new worker port (if it has changed)
+			 */
+			if(taskWorkerPortIndex.get(taskName + ":" + identifier).equals(workerPort) == false) {
+				
+			}
 			System.out.println("+efo BOLT: " + taskName + "(" + identifier + "@" + taskIP + 
 					") has RE-connected.");
 		}else {
 			taskAddressIndex.putIfAbsent(taskName + ":" + identifier, taskIP);
+			taskWorkerPortIndex.putIfAbsent(taskName + ":" + identifier, workerPort);
 			taskIdentifierIndex.putIfAbsent(taskName, identifier);
 			System.out.println("+efo BOLT: " + taskName + "(" + identifier + "@" + taskIP + 
 					") connected.");

@@ -68,6 +68,8 @@ public class SynefoJoinBolt extends BaseRichBolt {
 	private static final int latencySequencePeriod = 250;
 
 	private String taskName;
+	
+	private Integer workerPort;
 
 	private OutputCollector collector;
 
@@ -134,6 +136,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 	public SynefoJoinBolt(String task_name, String synEFO_ip, Integer synEFO_port, 
 			AbstractJoinOperator operator, String zooIP, boolean autoScale) {
 		taskName = task_name;
+		workerPort = -1;
 		synefoServerIP = synEFO_ip;
 		synefoServerPort = synEFO_port;
 		downstreamTasks = null;
@@ -177,6 +180,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 		msg._values.put("JOIN_RELATION", operator.relationStorage());
 		msg._values.put("TASK_NAME", taskName);
 		msg._values.put("TASK_ID", Integer.toString(taskID));
+		msg._values.put("WORKER_PORT", Integer.toString(workerPort));
 		try {
 			socket = new Socket(synefoServerIP, synefoServerPort);
 			output = new ObjectOutputStream(socket.getOutputStream());
@@ -270,6 +274,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 	public void prepare(@SuppressWarnings("rawtypes") Map conf, TopologyContext context, OutputCollector collector) {
 		this.collector = collector;
 		taskID = context.getThisTaskId();
+		workerPort = context.getThisWorkerPort();
 		/**
 		 * Update the taskName and extend it with the task-id (support for multi-core)
 		 */
