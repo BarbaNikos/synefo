@@ -22,6 +22,7 @@ import java.nio.channels.CompletionHandler;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -392,6 +393,13 @@ public class SynefoJoinBolt extends BaseRichBolt {
 					/**
 					 * Calculate latency
 					 */
+					byte[] buffer = ("OP_LATENCY: local-timestamps: " + Arrays.toString(this.opLatencyLocalTimestamp) + 
+							" received-timestamps: " + Arrays.toString(this.opLatencyReceivedTimestamp) + "\n").toString().getBytes();
+					if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
+						statisticFileChannel.write(
+								ByteBuffer.wrap(buffer), this.statisticFileOffset, "stat write", statisticFileHandler);
+						statisticFileOffset += buffer.length;
+					}
 					latency = ( 
 							Math.abs(this.opLatencyLocalTimestamp[2] - this.opLatencyLocalTimestamp[1] - 1000 - 
 									(this.opLatencyReceivedTimestamp[2] - this.opLatencyReceivedTimestamp[1] - 1000)) + 
