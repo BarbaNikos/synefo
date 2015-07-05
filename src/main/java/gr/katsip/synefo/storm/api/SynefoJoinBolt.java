@@ -300,6 +300,12 @@ public class SynefoJoinBolt extends BaseRichBolt {
 							taskName + ":" + taskID + "@" + taskIP + "-stats.log"), 
 							StandardOpenOption.WRITE);
 					this.statisticFileOffset = statisticFileChannel.size();
+					byte[] buffer = (System.currentTimeMillis() + "," + "STATS-EXIST\n").toString().getBytes();
+					if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
+						statisticFileChannel.write(
+								ByteBuffer.wrap(buffer), this.statisticFileOffset, "stat write", statisticFileHandler);
+						statisticFileOffset += buffer.length;
+					}
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
