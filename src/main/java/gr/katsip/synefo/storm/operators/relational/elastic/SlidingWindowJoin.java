@@ -143,7 +143,12 @@ public class SlidingWindowJoin implements Serializable {
 					for(Values t : storedTuples) {
 						Values joinTuple = new Values(t.toArray());
 						joinTuple.addAll(tuple);
-						result.add(joinTuple);
+						/**
+						 * The following is to limit the number of duplicate tuples produced
+						 * (extra bandwidth)
+						 */
+						if(result.indexOf(joinTuple) == -1)
+							result.add(joinTuple);
 					}
 				}
 			}else {

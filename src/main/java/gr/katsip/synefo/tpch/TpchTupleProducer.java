@@ -62,13 +62,16 @@ public class TpchTupleProducer implements AbstractTupleProducer, Serializable {
 		try {
 			if(dataProvider.isClosed() == false) {
 				String line = input.readLine();
-				String[] attributes = line.split("|");
+				String[] attributes = line.split("\\|");
 				if(attributes.length < schema.size())
 					return null;
 				for(int i = 0; i < schema.size(); i++) {
 					if(projectedSchema.toList().contains(schema.get(i))) {
 						values.add(attributes[i]);
 					}
+					/**
+					 * The above sends out only the required attributes
+					 */
 				}
 				Values tuple = new Values();
 				tuple.add(projectedSchema);
