@@ -5,7 +5,6 @@ import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.lib.SynefoMessage.Type;
 import gr.katsip.synefo.storm.operators.AbstractJoinOperator;
 import gr.katsip.synefo.utils.SynefoConstant;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,16 +21,13 @@ import java.nio.channels.CompletionHandler;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;

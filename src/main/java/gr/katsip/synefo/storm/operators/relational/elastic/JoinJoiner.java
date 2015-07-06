@@ -5,6 +5,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+
+import org.apache.commons.lang.ArrayUtils;
+
 import backtype.storm.task.OutputCollector;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
@@ -61,14 +64,14 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 		if(this.otherRelationSchema.fieldIndex(this.otherJoinAttribute) < 0) {
 			throw new IllegalArgumentException("Not compatible other-relation schema with the join-attribute for the other relation");
 		}
+		String[] storedRelationArray = new String[storedRelationSchema.toList().size()];
+		storedRelationArray = storedRelationSchema.toList().toArray(storedRelationArray);
+		String[] otherRelationArray = new String[otherRelationSchema.toList().size()];
+		otherRelationArray = otherRelationSchema.toList().toArray(otherRelationArray);
 		if(this.storedRelation.compareTo(this.otherRelation) <= 0) {
-			List<String> schema = storedRelationSchema.toList();
-			schema.addAll(otherRelationSchema.toList());
-			joinOutputSchema = new Fields(schema);
+			joinOutputSchema = new Fields((String[]) ArrayUtils.addAll(storedRelationArray, otherRelationArray));
 		}else {
-			List<String> schema = otherRelationSchema.toList();
-			schema.addAll(storedRelationSchema.toList());
-			joinOutputSchema = new Fields(schema);
+			joinOutputSchema = new Fields((String[]) ArrayUtils.addAll(otherRelationArray, storedRelationArray));
 		}
 		this.windowSize = window;
 		this.slide = slide;

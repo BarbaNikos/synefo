@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.junit.Test;
 
@@ -48,39 +49,46 @@ public class SlidingJoinCorrectnessTest {
 		int joinedTuples = 0;
 		int count = 0;
 		SummaryStatistics orderJoinStatistics = new SummaryStatistics();
+		ArrayList<Values> customerOrderResult = new ArrayList<Values>();
 		while((line = reader.readLine()) != null) {
 			String[] attributes = line.split("\\|");
 			Values order = new Values();
 			order.add(attributes[0]);
 			order.add(attributes[1]);
 			order.add(attributes[4]);
-			if(attributes[4].equals("|")) {
-				System.out.println("line:" + line);
-				System.out.println("attributes: " + Arrays.toString(attributes));
-				break;
-			}
-//			System.out.println("order: " + order.toString());
 			orderSlidingJoin.insertTuple(System.currentTimeMillis(), order);
 			long start = System.currentTimeMillis();
 			ArrayList<Values> result = customerSlidingJoin.joinTuple(System.currentTimeMillis(), 
 					order, new Fields(Order.query5Schema), "O_CUSTKEY");
+			customerOrderResult.addAll(result);
 			long end = System.currentTimeMillis();
 			orderJoinStatistics.addValue((end - start));
 			joinedTuples += result.size();
 			count += 1;
-			if(count % 1021 == 0) {
-				System.out.println("Joined tuples: " + joinedTuples);
-				for(Values t : result) {
-					System.out.println("\t " + t.toString());
-				}
-			}
+//			if(count % 1021 == 0) {
+//				System.out.println("Joined tuples: " + joinedTuples);
+//				for(Values t : result) {
+//					System.out.println("\t " + t.toString());
+//				}
+//			}
 		}
+		Fields customerOrderFields = new Fields((String[]) ArrayUtils.addAll(Customer.query5schema, Order.query5Schema));
+		System.out.println("Customer-Order schema: " + customerOrderFields.toList().toString());
+		System.out.println("sample: " + customerOrderResult.get(0).toString());
 		reader.close();
+		String[] customerOrder = new String[customerOrderFields.toList().size()];
+		customerOrder = customerOrderFields.toList().toArray(customerOrder);
+		SlidingWindowJoin customerOrderSlidingJoin = new SlidingWindowJoin(3600000, 1000, 
+				new Fields(customerOrderFields.toList()), customerOrder[2]);
+		for(Values tuple : customerOrderResult) {
+			customerOrderSlidingJoin.insertTuple(System.currentTimeMillis(), tuple);
+		}
 		File lineitems = new File("lineitem.tbl");
 		reader = new BufferedReader(new FileReader(lineitems));
 		joinedTuples = 0;
 		count = 0;
 		SummaryStatistics lineitemJoinStatistics = new SummaryStatistics();
+		ArrayList<Values> customerOrderLineitemResult = new ArrayList<Values>();
 		while((line = reader.readLine()) != null) {
 			String[] attributes = line.split("\\|");
 			Values lineitem = new Values();
@@ -90,20 +98,29 @@ public class SlidingJoinCorrectnessTest {
 			lineitem.add(attributes[6]);
 			lineitemSlidingJoin.insertTuple(System.currentTimeMillis(), lineitem);
 			long start = System.currentTimeMillis();
-			ArrayList<Values> result = orderSlidingJoin.joinTuple(System.currentTimeMillis(), 
+			ArrayList<Values> result = customerOrderSlidingJoin.joinTuple(System.currentTimeMillis(), 
 					lineitem, new Fields(LineItem.query5Schema), "L_ORDERKEY");
 			long end = System.currentTimeMillis();
+			customerOrderLineitemResult.addAll(result);
 			lineitemJoinStatistics.addValue((end - start));
 			joinedTuples += result.size();
 			count += 1;
-			if(count % 1021 == 0) {
-				System.out.println("Joined tuples: " + joinedTuples);
-				for(Values t : result) {
-					System.out.println("\t " + t.toString());
-				}
-			}
+//			if(count % 1021 == 0) {
+//				System.out.println("Joined tuples: " + joinedTuples);
+//				for(Values t : result) {
+//					System.out.println("\t " + t.toString());
+//				}
+//			}
 		}
+		Fields customerOrderLineitemFields = new Fields((String[]) ArrayUtils.addAll(customerOrder, LineItem.query5Schema));
 		System.out.println("+++Join Statistics+++");
+		System.out.println("Customer-Order-Lineitem schema: " + customerOrderLineitemFields.toList().toString());
+		System.out.println("Sample-1: " + customerOrderLineitemResult.get(0).toString());
+		System.out.println("Sample-2: " + customerOrderLineitemResult.get(1).toString());
+		System.out.println("Sample-3: " + customerOrderLineitemResult.get(2).toString());
+		System.out.println("Sample-4: " + customerOrderLineitemResult.get(customerOrderLineitemResult.size() - 3).toString());
+		System.out.println("Sample-5: " + customerOrderLineitemResult.get(customerOrderLineitemResult.size() - 2).toString());
+		System.out.println("Sample-6: " + customerOrderLineitemResult.get(customerOrderLineitemResult.size() - 1).toString());
 		System.out.println("Order average: " + (orderJoinStatistics.getSum() / orderJoinStatistics.getN()));
 		System.out.println("Order mean: " + orderJoinStatistics.getMean());
 		System.out.println("Number of \"Order\" tuples stored: " + orderSlidingJoin.getNumberOfTuples());
