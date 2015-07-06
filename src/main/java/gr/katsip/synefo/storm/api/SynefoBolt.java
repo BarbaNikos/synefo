@@ -393,13 +393,13 @@ public class SynefoBolt extends BaseRichBolt {
 					this.opLatencyLocalTimestamp[2] = System.currentTimeMillis();
 					opLatencyReceiveState = OpLatencyState.r_3;
 					long latency = -1;
-					byte[] buffer = ("OP_LATENCY: local-timestamps: " + Arrays.toString(this.opLatencyLocalTimestamp) + 
-							" received-timestamps: " + Arrays.toString(this.opLatencyReceivedTimestamp) + "\n").toString().getBytes();
-					if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
-						statisticFileChannel.write(
-								ByteBuffer.wrap(buffer), this.statisticFileOffset, "stat write", statisticFileHandler);
-						statisticFileOffset += buffer.length;
-					}
+//					byte[] buffer = ("OP_LATENCY: local-timestamps: " + Arrays.toString(this.opLatencyLocalTimestamp) + 
+//							" received-timestamps: " + Arrays.toString(this.opLatencyReceivedTimestamp) + "\n").toString().getBytes();
+//					if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
+//						statisticFileChannel.write(
+//								ByteBuffer.wrap(buffer), this.statisticFileOffset, "stat write", statisticFileHandler);
+//						statisticFileOffset += buffer.length;
+//					}
 					/**
 					 * Calculate latency
 					 */
