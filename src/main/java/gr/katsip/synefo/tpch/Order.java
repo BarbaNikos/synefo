@@ -27,8 +27,8 @@ public class Order {
 	};
 	
 	public static final String[] query5Schema = {
-		"O_CUSTKEY", 
 		"O_ORDERKEY", 
+		"O_CUSTKEY", 
 		"O_ORDERDATE"
 	};
 }
