@@ -75,7 +75,8 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 		}
 		this.windowSize = window;
 		this.slide = slide;
-		slidingWindowJoin = new SlidingWindowJoin(windowSize, this.slide, storedRelationSchema, storedJoinAttribute);
+		slidingWindowJoin = new SlidingWindowJoin(windowSize, this.slide, storedRelationSchema, 
+				storedJoinAttribute, storedRelation, otherRelation);
 	}
 	
 	@Override

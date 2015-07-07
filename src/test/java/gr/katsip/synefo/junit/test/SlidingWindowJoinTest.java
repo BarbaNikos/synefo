@@ -30,7 +30,7 @@ public class SlidingWindowJoinTest {
 		SummaryStatistics tupleSizeStatistics = new SummaryStatistics();
 		long sumOfTupleSizeSamples = 0L;
 		Long startTime = System.currentTimeMillis();
-		SlidingWindowJoin slidingJoin = new SlidingWindowJoin(180000L, 500L, lineitemSchema, LineItem.query5Schema[0]);
+		SlidingWindowJoin slidingJoin = new SlidingWindowJoin(180000L, 500L, lineitemSchema, LineItem.query5Schema[0], "lineitem", "supplier");
 		ArrayList<Values> createdTuples = new ArrayList<Values>();
 		long period = 100000L;
 		for(long i = 0L; i < 200000L; i++) {

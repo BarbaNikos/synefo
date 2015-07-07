@@ -28,12 +28,12 @@ public class SlidingJoinCorrectnessTest {
 	@Test
 	public void test() throws IOException {
 		SlidingWindowJoin customerSlidingJoin = new SlidingWindowJoin(3600000, 1000, 
-				new Fields(Customer.query5schema), Customer.query5schema[0]);
+				new Fields(Customer.query5schema), Customer.query5schema[0], "customer", "order");
 		SlidingWindowJoin orderSlidingJoin = new SlidingWindowJoin(3600000, 1000, 
-				new Fields(Order.query5Schema), Order.query5Schema[0]);
+				new Fields(Order.query5Schema), Order.query5Schema[0], "order", "customer");
 		SlidingWindowJoin lineitemSlidingJoin = new SlidingWindowJoin(3600000, 1000, 
-				new Fields(LineItem.query5Schema), LineItem.query5Schema[0]);
-		File customers = new File("customer.tbl");
+				new Fields(LineItem.query5Schema), LineItem.query5Schema[0], "lineitem", "order");
+		File customers = new File("D:\\TPC-H\\tpch_2_17_0\\dbgen\\customer.tbl");
 		BufferedReader reader = new BufferedReader(new FileReader(customers));
 		String line = "";
 		while((line = reader.readLine()) != null) {
@@ -44,7 +44,7 @@ public class SlidingJoinCorrectnessTest {
 			customerSlidingJoin.insertTuple(System.currentTimeMillis(), tuple);
 		}
 		reader.close();
-		File orders = new File("orders.tbl");
+		File orders = new File("D:\\TPC-H\\tpch_2_17_0\\dbgen\\orders.tbl");
 		reader = new BufferedReader(new FileReader(orders));
 		int joinedTuples = 0;
 		int count = 0;
@@ -79,11 +79,11 @@ public class SlidingJoinCorrectnessTest {
 		String[] customerOrder = new String[customerOrderFields.toList().size()];
 		customerOrder = customerOrderFields.toList().toArray(customerOrder);
 		SlidingWindowJoin customerOrderSlidingJoin = new SlidingWindowJoin(3600000, 1000, 
-				new Fields(customerOrderFields.toList()), customerOrder[2]);
+				new Fields(customerOrderFields.toList()), customerOrder[2], "customerorder", "lineitem");
 		for(Values tuple : customerOrderResult) {
 			customerOrderSlidingJoin.insertTuple(System.currentTimeMillis(), tuple);
 		}
-		File lineitems = new File("lineitem.tbl");
+		File lineitems = new File("D:\\TPC-H\\tpch_2_17_0\\dbgen\\lineitem.tbl");
 		reader = new BufferedReader(new FileReader(lineitems));
 		joinedTuples = 0;
 		count = 0;

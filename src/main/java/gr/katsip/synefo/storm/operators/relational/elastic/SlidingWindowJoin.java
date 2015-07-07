@@ -49,6 +49,10 @@ public class SlidingWindowJoin implements Serializable {
 	
 	private long totalNumberOfTuples;
 	
+	private String storedRelation;
+	
+	private String otherRelation;
+	
 	/**
 	 * 
 	 * @param windowSize size of the window in milliseconds
@@ -56,15 +60,17 @@ public class SlidingWindowJoin implements Serializable {
 	 * @param tupleSchema the schema of the tuples that will be stored
 	 * @param joinAttribute the name of the join attribute
 	 */
-	public SlidingWindowJoin(long windowSize, long slide, Fields tupleSchema, String joinAttribute) {
+	public SlidingWindowJoin(long windowSize, long slide, Fields tupleSchema, String joinAttribute, String storedRelation, String otherRelation) {
 		circularCache = new LinkedList<BasicWindow>();
 		this.windowSize = windowSize;
 		this.slide = slide;
-		this.circularCacheSize = (int) (this.windowSize / slide);
+		this.circularCacheSize = (int) Math.ceil(this.windowSize / slide);
 		this.tupleSchema = new Fields(tupleSchema.toList());
 		this.joinAttribute = joinAttribute;
 		this.stateByteSize = 0L;
 		this.totalNumberOfTuples = 0L;
+		this.storedRelation = storedRelation;
+		this.otherRelation = otherRelation;
 	}
 	
 	/**
@@ -142,7 +148,13 @@ public class SlidingWindowJoin implements Serializable {
 					ArrayList<Values> storedTuples = basicWindow.tuples.get(tupleJoinAttribute);
 					for(Values t : storedTuples) {
 						Values joinTuple = new Values(t.toArray());
-						joinTuple.addAll(tuple);
+						if(storedRelation.compareTo(this.otherRelation) <= 0) {
+							joinTuple = new Values(t.toArray());
+							joinTuple.addAll(tuple);
+						}else {
+							joinTuple = new Values(tuple.toArray());
+							joinTuple.addAll(t);
+						}
 						/**
 						 * The following is to limit the number of duplicate tuples produced
 						 * (extra bandwidth)
