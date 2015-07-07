@@ -73,12 +73,14 @@ public class Server2Test {
 //		System.out.println(updatedTopology.toString());
 		
 		System.out.println("++++ NOW to THE JOIN TEST ++++");
-		
 		activeTopology = SynefoCoordinatorThread.getInitialActiveTopologyWithJoinOperators(
 				updatedTopology, 
-				ScaleFunction.getInverseTopology(updatedTopology), taskToJoinRelation);
-//		System.out.println(activeTopology.toString());
-		
+				ScaleFunction.getInverseTopology(updatedTopology), taskToJoinRelation, false);
+		System.out.println("Active topology with minimalFlag set to false: " + activeTopology.toString());
+		activeTopology = SynefoCoordinatorThread.getInitialActiveTopologyWithJoinOperators(
+				updatedTopology, 
+				ScaleFunction.getInverseTopology(updatedTopology), taskToJoinRelation, true);
+		System.out.println("Active topology with minimalFlag set to true: " + activeTopology.toString());
 		ScaleFunction scaleFunction = new ScaleFunction(
 				updatedTopology, activeTopology, taskToJoinRelation);
 		String scaleInCommand = scaleFunction.produceScaleInCommand("dispatcher_7:7@1.1.1.1", "joiner_4:4@1.1.1.1");

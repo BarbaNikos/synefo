@@ -129,10 +129,14 @@ public class SynefoCoordinatorThread implements Runnable {
 		physicalTopology.putAll(updatedPhysicalTopology);
 		System.out.println("updated-phys-top: " + physicalTopology.toString());
 		activeTopology.clear();
+		/**
+		 * Set the following flag to true if you need the minimal 
+		 * active topology to start.
+		 */
 		activeTopology.putAll(SynefoCoordinatorThread.getInitialActiveTopologyWithJoinOperators(
 				physicalTopology, 
 				ScaleFunction.getInverseTopology(physicalTopology), 
-				taskToJoinRelation));
+				taskToJoinRelation, false));
 		
 		tamer.setPhysicalTopology();
 		tamer.setActiveTopology();
@@ -225,11 +229,18 @@ public class SynefoCoordinatorThread implements Runnable {
 	public static ConcurrentHashMap<String, ArrayList<String>> getInitialActiveTopologyWithJoinOperators(
 			ConcurrentHashMap<String, ArrayList<String>> physicalTopology, 
 			ConcurrentHashMap<String, ArrayList<String>> inverseTopology, 
-			ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation) {
+			ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation, boolean minimalFlag) {
 		ConcurrentHashMap<String, ArrayList<String>> activeTopology = new ConcurrentHashMap<String, ArrayList<String>>();
 		ArrayList<String> activeTasks = new ArrayList<String>();
 		ConcurrentHashMap<String, ArrayList<String>> layerTopology = ScaleFunction.produceTopologyLayers(
 				physicalTopology, inverseTopology);
+		/**
+		 * If minimal flag is set to false, then all existing nodes 
+		 * will be set as active
+		 */
+		if(minimalFlag == false) {
+			activeTopology.putAll(physicalTopology);
+		}
 		/**
 		 * Add all source operators first
 		 */

@@ -71,9 +71,14 @@ public class ScaleFunctionServer2Test {
 				taskIdentifierIndex, physicalTopology);
 		ConcurrentHashMap<String, ArrayList<String>> updatedTopology = SynefoCoordinatorThread.updatePhysicalTopology(
 				taskAddressIndex, taskIdentifierIndex, expandedPhysicalTopology);
+		ConcurrentHashMap<String, ArrayList<String>> fullActiveTopology = SynefoCoordinatorThread.getInitialActiveTopologyWithJoinOperators(
+				updatedTopology, 
+				ScaleFunction.getInverseTopology(updatedTopology), taskToJoinRelation, false);
+		System.out.println("Active topology with minimalFlag set to false: " + fullActiveTopology.toString());
 		activeTopology = SynefoCoordinatorThread.getInitialActiveTopologyWithJoinOperators(
 				updatedTopology, 
-				ScaleFunction.getInverseTopology(updatedTopology), taskToJoinRelation);
+				ScaleFunction.getInverseTopology(updatedTopology), taskToJoinRelation, true);
+		System.out.println("Active topology with minimalFlag set to true: " + activeTopology.toString());
 		scaleFunction = new ScaleFunction(updatedTopology, activeTopology, taskToJoinRelation);
 		scaleFunction.updateTaskAddress("joiner_6", 6, "2.2.2.2", "1.1.1.1");
 		scaleFunction.updateTaskAddress("spout_9", 9, "2.2.2.2", "1.1.1.1");
