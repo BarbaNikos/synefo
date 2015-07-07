@@ -71,6 +71,7 @@ public class ScaleFunctionServer2Test {
 				taskIdentifierIndex, physicalTopology);
 		ConcurrentHashMap<String, ArrayList<String>> updatedTopology = SynefoCoordinatorThread.updatePhysicalTopology(
 				taskAddressIndex, taskIdentifierIndex, expandedPhysicalTopology);
+		System.out.println("physical topology: " + updatedTopology.toString());
 		ConcurrentHashMap<String, ArrayList<String>> fullActiveTopology = SynefoCoordinatorThread.getInitialActiveTopologyWithJoinOperators(
 				updatedTopology, 
 				ScaleFunction.getInverseTopology(updatedTopology), taskToJoinRelation, false);

@@ -240,6 +240,7 @@ public class SynefoCoordinatorThread implements Runnable {
 		 */
 		if(minimalFlag == false) {
 			activeTopology.putAll(physicalTopology);
+			return activeTopology;
 		}
 		/**
 		 * Add all source operators first
