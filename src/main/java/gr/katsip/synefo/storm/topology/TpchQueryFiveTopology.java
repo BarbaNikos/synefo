@@ -87,10 +87,10 @@ public class TpchQueryFiveTopology {
 		JoinDispatcher dispatcher = new JoinDispatcher("customer", new Fields(Customer.query5schema), "order", 
 				new Fields(Order.query5Schema), new Fields(dataSchema));
 		builder.setBolt("joindispatch", new SynefoJoinBolt("joindispatch", synefoIP, synefoPort, 
-				dispatcher, zooIP, true), 3)
+				dispatcher, zooIP, false), 1)
 				.directGrouping("customer")
 				.directGrouping("order");
-		taskNumber += 3;
+		taskNumber += 1;
 		taskList = new ArrayList<String>();
 		taskList.add("joinjoincust");
 		taskList.add("joinjoinorder");
@@ -99,10 +99,10 @@ public class TpchQueryFiveTopology {
 		dispatcher = new JoinDispatcher("lineitem", new Fields(LineItem.query5Schema), 
 				"supplier", new Fields(Supplier.query5Schema), new Fields(dataSchema));
 		builder.setBolt("joindispatch2", new SynefoJoinBolt("joindispatch2", synefoIP, synefoPort, 
-				dispatcher, zooIP, true), 3)
+				dispatcher, zooIP, false), 1)
 				.directGrouping("lineitem")
 				.directGrouping("supplier");
-		taskNumber += 3;
+		taskNumber += 1;
 		taskList = new ArrayList<String>();
 		taskList.add("joinjoinline");
 		taskList.add("joinjoinsup");
@@ -163,12 +163,12 @@ public class TpchQueryFiveTopology {
 		dispatcher = new JoinDispatcher("outputone", joinOutputOne, 
 				"outputtwo", joinOutputTwo, new Fields(dataSchema));
 		builder.setBolt("joindispatch3", new SynefoJoinBolt("joindispatch3", synefoIP, synefoPort, 
-				dispatcher, zooIP, true), 3)
+				dispatcher, zooIP, false), 1)
 				.directGrouping("joinjoincust")
 				.directGrouping("joinjoinorder")
 				.directGrouping("joinjoinline")
 				.directGrouping("joinjoinsup");
-		taskNumber += 3;
+		taskNumber += 1;
 		taskList = new ArrayList<String>();
 		taskList.add("joinjoinoutputone");
 		taskList.add("joinjoinoutputtwo");
