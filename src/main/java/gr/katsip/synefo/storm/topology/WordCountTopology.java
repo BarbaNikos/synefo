@@ -3,6 +3,7 @@ package gr.katsip.synefo.storm.topology;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+
 import backtype.storm.Config;
 import backtype.storm.StormSubmitter;
 import backtype.storm.spout.SpoutOutputCollector;
@@ -36,7 +37,7 @@ public class WordCountTopology {
 	        _isDistributed = isDistributed;
 	    }
 	        
-	    public void open(Map conf, TopologyContext context, SpoutOutputCollector collector) {
+	    public void open(@SuppressWarnings("rawtypes") Map conf, TopologyContext context, SpoutOutputCollector collector) {
 	        _collector = collector;
 	    }
 	    
@@ -83,7 +84,7 @@ public class WordCountTopology {
 		private static final long serialVersionUID = -4704330343507226230L;
 		OutputCollector _collector;
 	    @Override
-	    public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
+	    public void prepare(@SuppressWarnings("rawtypes") Map conf, TopologyContext context, OutputCollector collector) {
 	      _collector = collector;
 	    }
 	    @Override
