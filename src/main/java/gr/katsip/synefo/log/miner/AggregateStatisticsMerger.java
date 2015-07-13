@@ -51,6 +51,7 @@ public class AggregateStatisticsMerger {
 				SummaryStatistics stateSizeStatistics = new SummaryStatistics();
 				SummaryStatistics latencyStatistics = new SummaryStatistics();
 				SummaryStatistics operationalLatencyStatistics = new SummaryStatistics();
+				SummaryStatistics alternativeLatencyStatistics = new SummaryStatistics();
 				SummaryStatistics throughputStatistics = new SummaryStatistics();
 				BufferedReader reader = new BufferedReader(new FileReader(logFile));
 				String line = "";
@@ -63,12 +64,14 @@ public class AggregateStatisticsMerger {
 					Long stateSize = Long.parseLong(dataPoint[3]);
 					Long latency = Long.parseLong(dataPoint[4]);
 					Long operationalLatency = Long.parseLong(dataPoint[5]);
-					Double throughput = Double.parseDouble(dataPoint[6]);
+					Long alternativeLatency = (long) Math.abs(Double.parseDouble(dataPoint[6]));
+					Double throughput = Double.parseDouble(dataPoint[7]);
 					cpuStatistics.addValue(cpu);
 					memoryStatistics.addValue(memory);
 					stateSizeStatistics.addValue(stateSize);
 					latencyStatistics.addValue(latency);
 					operationalLatencyStatistics.addValue(operationalLatency);
+					alternativeLatencyStatistics.addValue(alternativeLatency);
 					throughputStatistics.addValue(throughput);
 				}
 				reader.close();
@@ -78,6 +81,7 @@ public class AggregateStatisticsMerger {
 				operatorStat.add(stateSizeStatistics);
 				operatorStat.add(latencyStatistics);
 				operatorStat.add(operationalLatencyStatistics);
+				operatorStat.add(alternativeLatencyStatistics);
 				operatorStat.add(throughputStatistics);
 				operatorStatIndex.put(operatorName, operatorStat);
 			}
@@ -93,17 +97,21 @@ public class AggregateStatisticsMerger {
 			while(operatorItr.hasNext()) {
 				Entry<String, ArrayList<String>> operator = operatorItr.next();
 				SummaryStatistics operatorLatencyStatistics = new SummaryStatistics();
+				SummaryStatistics operatorAlternateLatencyStatistics = new SummaryStatistics();
 				SummaryStatistics operatorThroughputStatistics = new SummaryStatistics();
 				ArrayList<String> operators = operator.getValue();
 				for(String op : operators) {
 					ArrayList<SummaryStatistics> operatorStatistics = operatorStatIndex.get(op);
 					operatorLatencyStatistics.addValue(
 							(operatorStatistics.get(3).getSum() / operatorStatistics.get(3).getN()));
-					operatorThroughputStatistics.addValue(
+					operatorAlternateLatencyStatistics.addValue(
 							(operatorStatistics.get(5).getSum() / operatorStatistics.get(5).getN()));
+					operatorThroughputStatistics.addValue(
+							(operatorStatistics.get(6).getSum() / operatorStatistics.get(6).getN()));
 				}
 				ArrayList<SummaryStatistics> operatorAggregateStatistics = new ArrayList<SummaryStatistics>();
 				operatorAggregateStatistics.add(operatorLatencyStatistics);
+				operatorAggregateStatistics.add(operatorAlternateLatencyStatistics);
 				operatorAggregateStatistics.add(operatorThroughputStatistics);
 				aggregateStatistics.put(operator.getKey(), operatorAggregateStatistics);
 			}
@@ -119,10 +127,11 @@ public class AggregateStatisticsMerger {
 			PrintWriter writer = new PrintWriter(aggregateOutputFile);
 			Iterator<Entry<String, ArrayList<SummaryStatistics>>> statItr = 
 					aggregateStatistics.entrySet().iterator();
+			writer.println("#latency\talt-latency\taccumulated-throughput");
 			while(statItr.hasNext()) {
 				Entry<String, ArrayList<SummaryStatistics>> stat = statItr.next();
 				ArrayList<SummaryStatistics> stats = stat.getValue();
-				writer.println(stat.getKey() + "," + (stats.get(0).getSum() / stats.get(0).getN()) + "," + (stats.get(1).getSum()) );
+				writer.println(stat.getKey() + "\t" + (stats.get(0).getSum() / stats.get(0).getN()) + "\t" + (stats.get(1).getSum() / stats.get(1).getN()) + "\t" + (stats.get(2).getSum()) );
 			}
 			writer.flush();
 			writer.close();

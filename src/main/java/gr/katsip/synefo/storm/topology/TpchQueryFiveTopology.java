@@ -40,14 +40,16 @@ public class TpchQueryFiveTopology {
 		HashMap<String, ArrayList<String>> topology = new HashMap<String, ArrayList<String>>();
 		ArrayList<String> taskList;
 		Integer taskNumber = 0;
-		if(args.length < 4) {
-			System.err.println("Arguments: <synefo-IP> <stream-IP1:port1,stream-IP2:port2,...,streamIP4:port4> <zoo-ip1:port1,zoo-ip2:port2,...,zoo-ipN:portN> <S: scale factor>");
+		Integer windowSizeInMinutes = -1;
+		if(args.length < 5) {
+			System.err.println("Arguments: <synefo-IP> <stream-IP1:port1,stream-IP2:port2,...,streamIP4:port4> <zoo-ip1:port1,zoo-ip2:port2,...,zoo-ipN:portN> <S: scale factor> <W: window size in minutes>");
 			System.exit(1);
 		}else {
 			synefoIP = args[0];
 			streamIPs = args[1].split(",");
 			zooIP = args[2];
 			scaleFactor = Integer.parseInt(args[3]);
+			windowSizeInMinutes = 60000 * Integer.parseInt(args[4]);
 		}
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
@@ -114,7 +116,7 @@ public class TpchQueryFiveTopology {
 		 * Stage 1b : join joiners
 		 */
 		JoinJoiner joiner = new JoinJoiner("customer", new Fields(Customer.query5schema), "order", 
-				new Fields(Order.query5Schema), "C_CUSTKEY", "O_CUSTKEY", 2400000, 1000);
+				new Fields(Order.query5Schema), "C_CUSTKEY", "O_CUSTKEY", windowSizeInMinutes, 1000);
 		joiner.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("joinjoincust", new SynefoJoinBolt("joinjoincust", synefoIP, synefoPort, 
 				joiner, zooIP, false), scaleFactor)
@@ -124,7 +126,7 @@ public class TpchQueryFiveTopology {
 		taskList.add("joindispatch3");
 		topology.put("joinjoincust", taskList);
 		joiner = new JoinJoiner("order", new Fields(Order.query5Schema), "customer", 
-				new Fields(Customer.query5schema), "O_CUSTKEY", "C_CUSTKEY", 2400000, 1000);
+				new Fields(Customer.query5schema), "O_CUSTKEY", "C_CUSTKEY", windowSizeInMinutes, 1000);
 		joiner.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("joinjoinorder", new SynefoJoinBolt("joinjoinorder", synefoIP, synefoPort, 
 				joiner, zooIP, false), scaleFactor)
@@ -138,14 +140,14 @@ public class TpchQueryFiveTopology {
 		System.out.println("output-one schema: " + joinOutputOne.toList().toString());
 
 		joiner = new JoinJoiner("lineitem", new Fields(LineItem.query5Schema), 
-				"supplier", new Fields(Supplier.query5Schema), "L_SUPPKEY", "S_SUPPKEY", 2400000, 1000);
+				"supplier", new Fields(Supplier.query5Schema), "L_SUPPKEY", "S_SUPPKEY", windowSizeInMinutes, 1000);
 		joiner.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("joinjoinline", new SynefoJoinBolt("joinjoinline", synefoIP, synefoPort, 
 				joiner, zooIP, false), scaleFactor)
 				.directGrouping("joindispatch2");
 		taskNumber += scaleFactor;
 		joiner = new JoinJoiner("supplier", new Fields(Supplier.query5Schema), 
-				"lineitem", new Fields(LineItem.query5Schema), "S_SUPPKEY", "L_SUPPKEY", 2400000, 1000);
+				"lineitem", new Fields(LineItem.query5Schema), "S_SUPPKEY", "L_SUPPKEY", windowSizeInMinutes, 1000);
 		joiner.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("joinjoinsup", new SynefoJoinBolt("joinjoinsup", synefoIP, synefoPort, 
 				joiner, zooIP, false), scaleFactor)
@@ -180,14 +182,14 @@ public class TpchQueryFiveTopology {
 		 * Stage 2b: Join of combine stream
 		 */
 		joiner = new JoinJoiner("outputone", new Fields(joinOutputOne.toList()), "outputtwo", 
-				new Fields(joinOutputTwo.toList()), "O_ORDERKEY", "L_ORDERKEY", 2400000, 1000);
+				new Fields(joinOutputTwo.toList()), "O_ORDERKEY", "L_ORDERKEY", windowSizeInMinutes, 1000);
 		joiner.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("joinjoinoutputone", new SynefoJoinBolt("joinjoinoutputone", synefoIP, synefoPort, 
 				joiner, zooIP, false), scaleFactor)
 				.directGrouping("joindispatch3");
 		taskNumber += scaleFactor;
 		joiner = new JoinJoiner("outputtwo", new Fields(joinOutputTwo.toList()), "outputone", 
-				new Fields(joinOutputOne.toList()), "L_ORDERKEY", "O_ORDERKEY", 240000, 1000);
+				new Fields(joinOutputOne.toList()), "L_ORDERKEY", "O_ORDERKEY", windowSizeInMinutes, 1000);
 		joiner.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("joinjoinoutputtwo", new SynefoJoinBolt("joinjoinoutputtwo", synefoIP, synefoPort, 
 				joiner, zooIP, false), scaleFactor)
