@@ -122,7 +122,7 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 				/**
 				 * Add timestamp for synefo
 				 */
-				tuple.add((new Long(System.currentTimeMillis()).toString()));
+				tuple.add((new Long(currentTimestamp).toString()));
 				tuple.add(joinOutputSchema);
 				tuple.add(result);
 				collector.emitDirect(activeTasks.get(taskIndex), tuple);

@@ -92,6 +92,8 @@ public class SynefoBolt extends BaseRichBolt {
 	private Integer synefoServerPort = -1;
 
 	private TaskStatistics statistics;
+	
+	private TaskStatistics backupStatistics;
 
 	private AbstractOperator operator;
 
@@ -141,7 +143,6 @@ public class SynefoBolt extends BaseRichBolt {
 		intDownstreamTasks = null;
 		activeDownstreamTasks = null;
 		intActiveDownstreamTasks = null;
-		statistics = new TaskStatistics();
 		this.operator = operator;
 		stateValues = new ArrayList<Values>();
 		this.operator.init(stateValues);
@@ -331,10 +332,13 @@ public class SynefoBolt extends BaseRichBolt {
 			};
 			scaleEventFileOffset = 0L;
 		}
+		statistics = new TaskStatistics();
+		backupStatistics = new TaskStatistics();
 	}
 
 
 	public void execute(Tuple tuple) {
+		Long currentTimestamp = System.currentTimeMillis();
 		boolean queryLatencyFlag = false;
 		/**
 		 * If punctuation tuple is received:
@@ -390,13 +394,6 @@ public class SynefoBolt extends BaseRichBolt {
 					this.opLatencyLocalTimestamp[2] = System.currentTimeMillis();
 					opLatencyReceiveState = OpLatencyState.r_3;
 					long latency = -1;
-//					byte[] buffer = ("OP_LATENCY: local-timestamps: " + Arrays.toString(this.opLatencyLocalTimestamp) + 
-//							" received-timestamps: " + Arrays.toString(this.opLatencyReceivedTimestamp) + "\n").toString().getBytes();
-//					if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
-//						statisticFileChannel.write(
-//								ByteBuffer.wrap(buffer), this.statisticFileOffset, "stat write", statisticFileHandler);
-//						statisticFileOffset += buffer.length;
-//					}
 					/**
 					 * Calculate latency
 					 */
@@ -415,6 +412,7 @@ public class SynefoBolt extends BaseRichBolt {
 				return;
 			}else {
 				synefoTimestamp = Long.parseLong(synefoHeader);
+				backupStatistics.updateWindowLatency((currentTimestamp - synefoTimestamp));
 			}
 		}
 		/**
@@ -504,7 +502,6 @@ public class SynefoBolt extends BaseRichBolt {
 		/**
 		 * Part where additional timestamps are sent for operator-latency metric
 		 */
-		long currentTimestamp = System.currentTimeMillis();
 		if(opLatencySendState.equals(OpLatencyState.s_1) && Math.abs(currentTimestamp - opLatencySendTimestamp) >= 1000) {
 			this.opLatencySendState = OpLatencyState.s_2;
 			this.opLatencySendTimestamp = currentTimestamp;
@@ -555,7 +552,7 @@ public class SynefoBolt extends BaseRichBolt {
 			if(statOperatorFlag == false) {
 				byte[] buffer = (System.currentTimeMillis() + "," + statistics.getCpuLoad() + "," + 
 						statistics.getMemory() + "," + statistics.getWindowLatency() + "," + 
-						statistics.getWindowOperationalLatency() + "," + 
+						statistics.getWindowOperationalLatency() + "," + backupStatistics.getWindowLatency() + "," + 
 						statistics.getWindowThroughput() + "\n").toString().getBytes();
 				if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
 					statisticFileChannel.write(
@@ -572,9 +569,6 @@ public class SynefoBolt extends BaseRichBolt {
 
 		if(autoScale && warmFlag == true)
 			zooPet.setLatency(statistics.getWindowLatency());
-		//		if(autoScale && warmFlag)
-		//			zooPet.setThroughput(statistics.getWindowThroughput());
-		//			zooPet.setThroughput(statistics.getThroughput());
 		String scaleCommand = "";
 		synchronized(zooPet) {
 			if(zooPet.pendingCommands.isEmpty() == false) {

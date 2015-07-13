@@ -36,16 +36,18 @@ public class TpchQueryFiveTopology {
 		Integer synefoPort = 5555;
 		String[] streamIPs = null;
 		String zooIP = "";
+		Integer scaleFactor = -1;
 		HashMap<String, ArrayList<String>> topology = new HashMap<String, ArrayList<String>>();
 		ArrayList<String> taskList;
 		Integer taskNumber = 0;
-		if(args.length < 3) {
-			System.err.println("Arguments: <synefo-IP> <stream-IP1:port1,stream-IP2:port2,...,streamIP4:port4> <zoo-ip1:port1,zoo-ip2:port2,...,zoo-ipN:portN>");
+		if(args.length < 4) {
+			System.err.println("Arguments: <synefo-IP> <stream-IP1:port1,stream-IP2:port2,...,streamIP4:port4> <zoo-ip1:port1,zoo-ip2:port2,...,zoo-ipN:portN> <S: scale factor>");
 			System.exit(1);
 		}else {
 			synefoIP = args[0];
 			streamIPs = args[1].split(",");
 			zooIP = args[2];
+			scaleFactor = Integer.parseInt(args[3]);
 		}
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
@@ -87,10 +89,10 @@ public class TpchQueryFiveTopology {
 		JoinDispatcher dispatcher = new JoinDispatcher("customer", new Fields(Customer.query5schema), "order", 
 				new Fields(Order.query5Schema), new Fields(dataSchema));
 		builder.setBolt("joindispatch", new SynefoJoinBolt("joindispatch", synefoIP, synefoPort, 
-				dispatcher, zooIP, false), 3)
+				dispatcher, zooIP, false), scaleFactor)
 				.directGrouping("customer")
 				.directGrouping("order");
-		taskNumber += 3;
+		taskNumber += scaleFactor;
 		taskList = new ArrayList<String>();
 		taskList.add("joinjoincust");
 		taskList.add("joinjoinorder");
@@ -99,10 +101,10 @@ public class TpchQueryFiveTopology {
 		dispatcher = new JoinDispatcher("lineitem", new Fields(LineItem.query5Schema), 
 				"supplier", new Fields(Supplier.query5Schema), new Fields(dataSchema));
 		builder.setBolt("joindispatch2", new SynefoJoinBolt("joindispatch2", synefoIP, synefoPort, 
-				dispatcher, zooIP, false), 3)
+				dispatcher, zooIP, false), scaleFactor)
 				.directGrouping("lineitem")
 				.directGrouping("supplier");
-		taskNumber += 3;
+		taskNumber += scaleFactor;
 		taskList = new ArrayList<String>();
 		taskList.add("joinjoinline");
 		taskList.add("joinjoinsup");
@@ -115,9 +117,9 @@ public class TpchQueryFiveTopology {
 				new Fields(Order.query5Schema), "C_CUSTKEY", "O_CUSTKEY", 2400000, 1000);
 		joiner.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("joinjoincust", new SynefoJoinBolt("joinjoincust", synefoIP, synefoPort, 
-				joiner, zooIP, false), 3)
+				joiner, zooIP, false), scaleFactor)
 				.directGrouping("joindispatch");
-		taskNumber += 3;
+		taskNumber += scaleFactor;
 		taskList = new ArrayList<String>();
 		taskList.add("joindispatch3");
 		topology.put("joinjoincust", taskList);
@@ -125,9 +127,9 @@ public class TpchQueryFiveTopology {
 				new Fields(Customer.query5schema), "O_CUSTKEY", "C_CUSTKEY", 2400000, 1000);
 		joiner.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("joinjoinorder", new SynefoJoinBolt("joinjoinorder", synefoIP, synefoPort, 
-				joiner, zooIP, false), 3)
+				joiner, zooIP, false), scaleFactor)
 				.directGrouping("joindispatch");
-		taskNumber += 3;
+		taskNumber += scaleFactor;
 		taskList = new ArrayList<String>();
 		taskList.add("joindispatch3");
 		topology.put("joinjoinorder", taskList);
@@ -139,16 +141,16 @@ public class TpchQueryFiveTopology {
 				"supplier", new Fields(Supplier.query5Schema), "L_SUPPKEY", "S_SUPPKEY", 2400000, 1000);
 		joiner.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("joinjoinline", new SynefoJoinBolt("joinjoinline", synefoIP, synefoPort, 
-				joiner, zooIP, false), 3)
+				joiner, zooIP, false), scaleFactor)
 				.directGrouping("joindispatch2");
-		taskNumber += 3;
+		taskNumber += scaleFactor;
 		joiner = new JoinJoiner("supplier", new Fields(Supplier.query5Schema), 
 				"lineitem", new Fields(LineItem.query5Schema), "S_SUPPKEY", "L_SUPPKEY", 2400000, 1000);
 		joiner.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("joinjoinsup", new SynefoJoinBolt("joinjoinsup", synefoIP, synefoPort, 
-				joiner, zooIP, false), 3)
+				joiner, zooIP, false), scaleFactor)
 				.directGrouping("joindispatch2");
-		taskNumber += 3;
+		taskNumber += scaleFactor;
 		taskList = new ArrayList<String>();
 		taskList.add("joindispatch3");
 		topology.put("joinjoinline", new ArrayList<String>(taskList));
@@ -163,12 +165,12 @@ public class TpchQueryFiveTopology {
 		dispatcher = new JoinDispatcher("outputone", joinOutputOne, 
 				"outputtwo", joinOutputTwo, new Fields(dataSchema));
 		builder.setBolt("joindispatch3", new SynefoJoinBolt("joindispatch3", synefoIP, synefoPort, 
-				dispatcher, zooIP, false), 3)
+				dispatcher, zooIP, false), scaleFactor)
 				.directGrouping("joinjoincust")
 				.directGrouping("joinjoinorder")
 				.directGrouping("joinjoinline")
 				.directGrouping("joinjoinsup");
-		taskNumber += 3;
+		taskNumber += scaleFactor;
 		taskList = new ArrayList<String>();
 		taskList.add("joinjoinoutputone");
 		taskList.add("joinjoinoutputtwo");
@@ -181,16 +183,16 @@ public class TpchQueryFiveTopology {
 				new Fields(joinOutputTwo.toList()), "O_ORDERKEY", "L_ORDERKEY", 2400000, 1000);
 		joiner.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("joinjoinoutputone", new SynefoJoinBolt("joinjoinoutputone", synefoIP, synefoPort, 
-				joiner, zooIP, false), 3)
+				joiner, zooIP, false), scaleFactor)
 				.directGrouping("joindispatch3");
-		taskNumber += 3;
+		taskNumber += scaleFactor;
 		joiner = new JoinJoiner("outputtwo", new Fields(joinOutputTwo.toList()), "outputone", 
 				new Fields(joinOutputOne.toList()), "L_ORDERKEY", "O_ORDERKEY", 240000, 1000);
 		joiner.setOutputSchema(new Fields(dataSchema));
 		builder.setBolt("joinjoinoutputtwo", new SynefoJoinBolt("joinjoinoutputtwo", synefoIP, synefoPort, 
-				joiner, zooIP, false), 3)
+				joiner, zooIP, false), scaleFactor)
 				.directGrouping("joindispatch3");
-		taskNumber += 3;
+		taskNumber += scaleFactor;
 		taskList = new ArrayList<String>();
 		taskList.add("drain");
 		topology.put("joinjoinoutputone", new ArrayList<String>(taskList));

@@ -82,6 +82,8 @@ public class SynefoBroadcastBolt extends BaseRichBolt {
 	private Integer synefoServerPort = -1;
 
 	private TaskStatistics statistics;
+	
+	private TaskStatistics backupStatistics;
 
 	private AbstractOperator operator;
 
@@ -130,7 +132,6 @@ public class SynefoBroadcastBolt extends BaseRichBolt {
 		intDownstreamTasks = null;
 		activeDownstreamTasks = null;
 		intActiveDownstreamTasks = null;
-		statistics = new TaskStatistics();
 		this.operator = operator;
 		stateValues = new ArrayList<Values>();
 		this.operator.init(stateValues);
@@ -300,10 +301,13 @@ public class SynefoBroadcastBolt extends BaseRichBolt {
 			};
 			scaleEventFileOffset = 0L;
 		}
+		statistics = new TaskStatistics();
+		backupStatistics = new TaskStatistics();
 	}
 
 
 	public void execute(Tuple tuple) {
+		Long currentTimestamp = System.currentTimeMillis();
 		boolean queryLatencyFlag = false;
 		/**
 		 * If punctuation tuple is received:
@@ -381,6 +385,7 @@ public class SynefoBroadcastBolt extends BaseRichBolt {
 				return;
 			}else {
 				synefoTimestamp = Long.parseLong(synefoHeader);
+				backupStatistics.updateWindowLatency((currentTimestamp - synefoTimestamp));
 			}
 		}
 		/**
@@ -467,7 +472,6 @@ public class SynefoBroadcastBolt extends BaseRichBolt {
 		/**
 		 * Part where additional timestamps are sent for operator-latency metric
 		 */
-		long currentTimestamp = System.currentTimeMillis();
 		if(opLatencySendState.equals(OpLatencyState.s_1) && Math.abs(currentTimestamp - opLatencySendTimestamp) >= 1000) {
 			this.opLatencySendState = OpLatencyState.s_2;
 			this.opLatencySendTimestamp = currentTimestamp;
@@ -535,9 +539,6 @@ public class SynefoBroadcastBolt extends BaseRichBolt {
 
 		if(autoScale && warmFlag == true)
 			zooPet.setLatency(statistics.getWindowLatency());
-		//		if(autoScale && warmFlag)
-		//			zooPet.setThroughput(statistics.getWindowThroughput());
-		//			zooPet.setThroughput(statistics.getThroughput());
 		String scaleCommand = "";
 		synchronized(zooPet) {
 			if(zooPet.pendingCommands.isEmpty() == false) {

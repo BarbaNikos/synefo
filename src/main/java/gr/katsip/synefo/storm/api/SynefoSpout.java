@@ -1,14 +1,9 @@
 package gr.katsip.synefo.storm.api;
 
-//import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-//import java.io.InputStream;
-//import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-//import java.io.OutputStream;
-//import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -17,14 +12,11 @@ import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-//import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.lib.SynefoMessage.Type;
@@ -265,6 +257,9 @@ public class SynefoSpout extends BaseRichSpout {
 		stats.updateCpuLoad();
 		stats.updateWindowThroughput();
 		long currentTimestamp = System.currentTimeMillis();
+		/**
+		 * Operator latency sequence specifics.
+		 */
 		if(opLatencySendState.equals(OpLatencyState.s_1) && Math.abs(currentTimestamp - opLatencySendTimestamp) >= 1000) {
 			this.opLatencySendState = OpLatencyState.s_2;
 			this.opLatencySendTimestamp = currentTimestamp;
@@ -288,10 +283,13 @@ public class SynefoSpout extends BaseRichSpout {
 				collector.emitDirect(d_task, v);
 			}
 		}
+		/**
+		 * END of Operator latency specifics.
+		 */
+		/**
+		 * Initiation of operator latency sequence
+		 */
 		if(latencyPeriodCounter >= SynefoSpout.latencySequencePeriod) {
-			/**
-			 * Initiate operator latency sequence
-			 */
 			if(opLatencySendState.equals(OpLatencyState.na)) {
 				this.opLatencySendState = OpLatencyState.s_1;
 				this.opLatencySendTimestamp = System.currentTimeMillis();
@@ -308,14 +306,11 @@ public class SynefoSpout extends BaseRichSpout {
 		}else {
 			latencyPeriodCounter += 1;
 		}
-
+		/**
+		 * END of Initiation of operator latency sequence
+		 */
 		if(reportCounter >= SynefoSpout.statReportPeriod) {
 			if(statTupleProducerFlag == false) {
-//				logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
-//						") timestamp: " + System.currentTimeMillis() + ", " + 
-//						"cpu: " + stats.getCpuLoad() + 
-//						", memory: " + stats.getMemory() +  
-//						", input-rate: " + stats.getWindowThroughput());
 				byte[] buffer = (System.currentTimeMillis() + "," + stats.getCpuLoad() + "," + 
 						stats.getMemory() + "," + stats.getWindowLatency() + "," + 
 						stats.getWindowThroughput() + "\n").toString().getBytes();
@@ -396,7 +391,6 @@ public class SynefoSpout extends BaseRichSpout {
 		}else {
 			reportCounter += 1;
 		}
-
 		String scaleCommand = "";
 		synchronized(pet) {
 			if(pet.pendingCommands.isEmpty() == false) {

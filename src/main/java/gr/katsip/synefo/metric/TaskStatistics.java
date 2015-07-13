@@ -6,7 +6,6 @@ import java.util.LinkedList;
 
 import com.sun.management.OperatingSystemMXBean;
 
-@SuppressWarnings("restriction")
 public class TaskStatistics implements Serializable {
 
 	/**
