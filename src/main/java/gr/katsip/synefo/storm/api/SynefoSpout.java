@@ -43,9 +43,9 @@ public class SynefoSpout extends BaseRichSpout {
 	private static final long serialVersionUID = -7244170192535254357L;
 
 	Logger logger = LoggerFactory.getLogger(SynefoSpout.class);
-	
+
 	private static final String stormHome = "/opt/apache-storm-0.9.4/logs/";
-	
+
 	private AsynchronousFileChannel statisticFileChannel = null;
 
 	private CompletionHandler<Integer, Object> statisticFileHandler = null;
@@ -63,7 +63,7 @@ public class SynefoSpout extends BaseRichSpout {
 	private static final int latencySequencePeriod = 250;
 
 	private String taskName;
-	
+
 	private Integer workerPort;
 
 	private SpoutOutputCollector collector;
@@ -95,7 +95,7 @@ public class SynefoSpout extends BaseRichSpout {
 	private String zooIP;
 
 	private int reportCounter;
-	
+
 	private int latencyPeriodCounter;
 
 	private boolean statTupleProducerFlag;
@@ -224,6 +224,50 @@ public class SynefoSpout extends BaseRichSpout {
 					taskName + ":" + taskId + "@" + taskIP);
 	}
 
+	public void initiateLatencyMonitor() {
+		this.opLatencySendState = OpLatencyState.s_1;
+		this.opLatencySendTimestamp = System.currentTimeMillis();
+		Values v = new Values();
+		v.add(SynefoConstant.OP_LATENCY_METRIC + ":" + 
+				OpLatencyState.s_1.toString() + ":" + opLatencySendTimestamp);
+		for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
+			v.add(null);
+		}
+		for(Integer d_task : intActiveDownstreamTasks) {
+			collector.emitDirect(d_task, v);
+		}
+	}
+
+	public void progressLatencySequence(long currentTimestamp) {
+		Values latencyMetricTuple = new Values();
+		if(opLatencySendState.equals(OpLatencyState.s_1) && 
+				Math.abs(currentTimestamp - opLatencySendTimestamp) >= 1000) {
+			this.opLatencySendState = OpLatencyState.s_2;
+			this.opLatencySendTimestamp = currentTimestamp;
+			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + ":" + 
+					OpLatencyState.s_2.toString() + ":" + opLatencySendTimestamp);
+			for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
+				latencyMetricTuple.add(null);
+			}
+			for(Integer d_task : intActiveDownstreamTasks) {
+				collector.emitDirect(d_task, latencyMetricTuple);
+			}
+		}else if(opLatencySendState.equals(OpLatencyState.s_2) && 
+				Math.abs(currentTimestamp - opLatencySendTimestamp) >= 1000) {
+			this.opLatencySendTimestamp = currentTimestamp;
+			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + ":" + 
+					OpLatencyState.s_3.toString() + ":" + opLatencySendTimestamp);
+			for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
+				latencyMetricTuple.add(null);
+			}
+			for(Integer d_task : intActiveDownstreamTasks) {
+				collector.emitDirect(d_task, latencyMetricTuple);
+			}
+			this.opLatencySendState = OpLatencyState.na;
+			this.latencyPeriodCounter = 0;
+		}
+	}
+
 	public void nextTuple() {
 		/**
 		 * In this execution names are sent in a round-robin 
@@ -257,52 +301,13 @@ public class SynefoSpout extends BaseRichSpout {
 		stats.updateCpuLoad();
 		stats.updateWindowThroughput();
 		long currentTimestamp = System.currentTimeMillis();
-		/**
-		 * Operator latency sequence specifics.
-		 */
-		if(opLatencySendState.equals(OpLatencyState.s_1) && Math.abs(currentTimestamp - opLatencySendTimestamp) >= 1000) {
-			this.opLatencySendState = OpLatencyState.s_2;
-			this.opLatencySendTimestamp = currentTimestamp;
-			Values v = new Values();
-			v.add(SynefoConstant.OP_LATENCY_METRIC + ":" + OpLatencyState.s_2.toString() + ":" + opLatencySendTimestamp);
-			for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
-				v.add(null);
-			}
-			for(Integer d_task : intActiveDownstreamTasks) {
-				collector.emitDirect(d_task, v);
-			}
-		}else if(opLatencySendState.equals(OpLatencyState.s_2) && Math.abs(currentTimestamp - opLatencySendTimestamp) >= 1000) {
-			this.opLatencySendState = OpLatencyState.na;
-			this.opLatencySendTimestamp = currentTimestamp;
-			Values v = new Values();
-			v.add(SynefoConstant.OP_LATENCY_METRIC + ":" + OpLatencyState.s_3.toString() + ":" + opLatencySendTimestamp);
-			for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
-				v.add(null);
-			}
-			for(Integer d_task : intActiveDownstreamTasks) {
-				collector.emitDirect(d_task, v);
-			}
-		}
-		/**
-		 * END of Operator latency specifics.
-		 */
+		progressLatencySequence(currentTimestamp);
 		/**
 		 * Initiation of operator latency sequence
 		 */
-		if(latencyPeriodCounter >= SynefoSpout.latencySequencePeriod) {
-			if(opLatencySendState.equals(OpLatencyState.na)) {
-				this.opLatencySendState = OpLatencyState.s_1;
-				this.opLatencySendTimestamp = System.currentTimeMillis();
-				Values v = new Values();
-				v.add(SynefoConstant.OP_LATENCY_METRIC + ":" + OpLatencyState.s_1.toString() + ":" + opLatencySendTimestamp);
-				for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
-					v.add(null);
-				}
-				for(Integer d_task : intActiveDownstreamTasks) {
-					collector.emitDirect(d_task, v);
-				}
-			}
-			latencyPeriodCounter = 0;
+		if(latencyPeriodCounter >= SynefoSpout.latencySequencePeriod && 
+				opLatencySendState.equals(OpLatencyState.na)) {
+			initiateLatencyMonitor();
 		}else {
 			latencyPeriodCounter += 1;
 		}
@@ -321,73 +326,6 @@ public class SynefoSpout extends BaseRichSpout {
 				}
 			}
 			reportCounter = 0;
-			/**
-			 * TODO: Temporarily got rid of it because it does not seem to work.
-			 * Send out a QUERY_LATENCY_METRIC tuple to measure the latency per query
-			 */
-			//			try {
-			//				Socket socket;
-			//				ObjectOutputStream output = null;
-			//				ObjectInputStream input = null;
-			//				socket = null;
-			//				SynefoMessage msg = new SynefoMessage();
-			//				msg._type = Type.REG;
-			//				msg._values.put("TASK_TYPE", "TIME");
-			//				
-			//				socket = new Socket(synefoIP, synefoPort);
-			//				output = new ObjectOutputStream(socket.getOutputStream());
-			//				input = new ObjectInputStream(socket.getInputStream());
-			//				output.writeObject(msg);
-			//				output.flush();
-			//				msg = null;
-			//				Long receivedTimestamp = null;
-			//				try {
-			//					receivedTimestamp = (Long) input.readObject();
-			//				} catch (ClassNotFoundException e) {
-			//					e.printStackTrace();
-			//				}
-			//				/**
-			//				 * Closing channels of communication with 
-			//				 * SynEFO server
-			//				 */
-			//				output.flush();
-			//				output.close();
-			//				input.close();
-			//				socket.close();
-			//				
-			//				Socket timeClient = new Socket(synefoIP, 5556);
-			////				OutputStream out = timeClient.getOutputStream();
-			//				PrintWriter out = new PrintWriter(timeClient.getOutputStream(), true);
-			////				InputStream in = timeClient.getInputStream();
-			//				BufferedReader in = new BufferedReader(new InputStreamReader(timeClient.getInputStream()));
-			////				byte[] buffer = new byte[8];
-			////				Long receivedTimestamp = (long) 0;
-			//				Long receivedTimestamp = Long.parseLong(in.readLine());
-			////				if(in.read(buffer) == 8) {
-			////					ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
-			////					receivedTimestamp = byteBuffer.getLong();
-			////				}
-			////				receivedTimestamp = (long) 1L;
-			////				buffer = ByteBuffer.allocate(8).putLong(receivedTimestamp).array();
-			//				out.println("OK");
-			////				out.write(buffer);
-			//				out.flush();
-			//				in.close();
-			//				out.close();
-			//				timeClient.close();
-			//				Values latencyTuple = new Values();
-			//				latencyTuple.add(new String(SynefoConstant.QUERY_LATENCY_METRIC + ":" + receivedTimestamp));
-			//				for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
-			//					latencyTuple.add(null);
-			//				}
-			//				logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
-			//						") about to emit query-latency tuple: " + latencyTuple.toString());
-			//				for(int task : intActiveDownstreamTasks) {
-			//					collector.emitDirect(task, latencyTuple);
-			//				}
-			//			} catch (IOException e) {
-			//				e.printStackTrace();
-			//			}
 		}else {
 			reportCounter += 1;
 		}
