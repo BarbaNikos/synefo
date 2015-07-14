@@ -113,6 +113,8 @@ public class SynefoSpout extends BaseRichSpout {
 	private OpLatencyState opLatencySendState;
 
 	private long opLatencySendTimestamp;
+	
+	private int sequenceNumber;
 
 	public SynefoSpout(String task_name, String synEFO_ip, Integer synEFO_port, 
 			AbstractTupleProducer tupleProducer, String zooIP) {
@@ -133,6 +135,7 @@ public class SynefoSpout extends BaseRichSpout {
 			statTupleProducerFlag = true;
 		else
 			statTupleProducerFlag = false;
+		sequenceNumber = 0;
 	}
 
 	/**
@@ -222,13 +225,14 @@ public class SynefoSpout extends BaseRichSpout {
 		if(statTupleProducerFlag == true)
 			((AbstractStatTupleProducer) tupleProducer).updateProducerName(
 					taskName + ":" + taskId + "@" + taskIP);
+		sequenceNumber = 0;
 	}
 
 	public void initiateLatencyMonitor() {
 		this.opLatencySendState = OpLatencyState.s_1;
 		this.opLatencySendTimestamp = System.currentTimeMillis();
 		Values v = new Values();
-		v.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskId + ":" + 
+		v.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskId + "#" + sequenceNumber + ":" + 
 				OpLatencyState.s_1.toString() + ":" + opLatencySendTimestamp);
 		for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
 			v.add(null);
@@ -265,6 +269,7 @@ public class SynefoSpout extends BaseRichSpout {
 			}
 			this.opLatencySendState = OpLatencyState.na;
 			this.latencyPeriodCounter = 0;
+			sequenceNumber += 1;
 		}
 	}
 

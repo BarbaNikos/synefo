@@ -5,6 +5,7 @@ import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.lib.SynefoMessage.Type;
 import gr.katsip.synefo.storm.operators.AbstractJoinOperator;
 import gr.katsip.synefo.utils.SynefoConstant;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -24,8 +25,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
@@ -111,15 +114,17 @@ public class SynefoJoinBolt extends BaseRichBolt {
 		r_3
 	}
 
-	private HashMap<Integer, OpLatencyState> opLatencyReceiveState;
+	private HashMap<String, OpLatencyState> opLatencyReceiveState;
 
-	private HashMap<Integer, long[]> opLatencyReceivedTimestamp;
+	private HashMap<String, long[]> opLatencyReceivedTimestamp;
 
-	private HashMap<Integer, long[]> opLatencyLocalTimestamp;
+	private HashMap<String, long[]> opLatencyLocalTimestamp;
 	
 	private HashMap<String, ArrayList<String>> relationTaskIndex;
 
 	private HashMap<String, ArrayList<Integer>> intRelationTaskIndex;
+	
+	private int sequenceNumber;
 
 	public SynefoJoinBolt(String task_name, String synEFO_ip, Integer synEFO_port, 
 			AbstractJoinOperator operator, String zooIP, boolean autoScale) {
@@ -138,9 +143,10 @@ public class SynefoJoinBolt extends BaseRichBolt {
 		reportCounter = 0;
 		this.autoScale = autoScale;
 		warmFlag = false;
-		opLatencyReceiveState = new HashMap<Integer, OpLatencyState>();
-		opLatencyReceivedTimestamp = new HashMap<Integer, long[]>();
-		opLatencyLocalTimestamp = new HashMap<Integer, long[]>();
+		opLatencyReceiveState = new HashMap<String, OpLatencyState>();
+		opLatencyReceivedTimestamp = new HashMap<String, long[]>();
+		opLatencyLocalTimestamp = new HashMap<String, long[]>();
+		sequenceNumber = 0;
 		relationTaskIndex = null;
 		intRelationTaskIndex = null;
 	}
@@ -253,6 +259,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 				taskName + ":" + taskID + 
 				") registered to synEFO successfully, timestamp: " + System.currentTimeMillis() + ".");
 		this.downStreamIndex = new Integer(0);
+		sequenceNumber = 0;
 	}
 
 	public void prepare(@SuppressWarnings("rawtypes") Map conf, TopologyContext context, OutputCollector collector) {
@@ -335,26 +342,26 @@ public class SynefoJoinBolt extends BaseRichBolt {
 		long[] receivedLatency = null;
 		long[] localLatency = null;
 		String[] tokens = synefoHeader.split(":");
-		Integer senderTask = Integer.parseInt(tokens[0].split("-")[1]);
+		String sequenceIdentifier = tokens[0].split("-")[1];
 		String opLatencyState = tokens[1];
 		Long opLatencyTimestamp = Long.parseLong(tokens[2]);
 		if(opLatencyReceiveState.equals(OpLatencyState.na) && opLatencyState.equals(OpLatencyState.s_1.toString())) {
 			receivedLatency = new long[3];
 			localLatency = new long[3];
-			if(opLatencyReceivedTimestamp.containsKey(senderTask))
-				opLatencyReceivedTimestamp.remove(senderTask);
-			if(opLatencyLocalTimestamp.containsKey(senderTask))
-				opLatencyLocalTimestamp.remove(senderTask);
+			if(opLatencyReceivedTimestamp.containsKey(sequenceIdentifier))
+				opLatencyReceivedTimestamp.remove(sequenceIdentifier);
+			if(opLatencyLocalTimestamp.containsKey(sequenceIdentifier))
+				opLatencyLocalTimestamp.remove(sequenceIdentifier);
 			receivedLatency[0] = opLatencyTimestamp;
 			localLatency[0] = currentTimestamp;
-			opLatencyReceiveState.put(senderTask, OpLatencyState.r_1);
-			opLatencyReceivedTimestamp.put(senderTask, receivedLatency);
-			opLatencyLocalTimestamp.put(senderTask, localLatency);
+			opLatencyReceiveState.put(sequenceIdentifier, OpLatencyState.r_1);
+			opLatencyReceivedTimestamp.put(sequenceIdentifier, receivedLatency);
+			opLatencyLocalTimestamp.put(sequenceIdentifier, localLatency);
 			/**
 			 * Prepare OP_LATENCY_METRIC - sequence 1 to send.
 			 */
 			Values latencyMetricTuple = new Values();
-			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskID + ":" + 
+			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskID + "#" + sequenceNumber + ":" + 
 					OpLatencyState.s_1.toString() + ":" + currentTimestamp);
 			for(int i = 0; i < operator.getOutputSchema().size(); i++) {
 				latencyMetricTuple.add(null);
@@ -362,19 +369,20 @@ public class SynefoJoinBolt extends BaseRichBolt {
 			for(Integer d_task : intActiveDownstreamTasks) {
 				collector.emitDirect(d_task, latencyMetricTuple);
 			}
-		}else if(opLatencyReceiveState.equals(OpLatencyState.r_1) && opLatencyState.equals(OpLatencyState.s_2.toString())) {
-			opLatencyReceiveState.put(senderTask, OpLatencyState.r_2);
-			receivedLatency = opLatencyReceivedTimestamp.get(senderTask);
+		}else if(opLatencyReceiveState.equals(OpLatencyState.r_1) && 
+				opLatencyState.equals(OpLatencyState.s_2.toString()) && opLatencyReceivedTimestamp.containsKey(sequenceIdentifier)) {
+			opLatencyReceiveState.put(sequenceIdentifier, OpLatencyState.r_2);
+			receivedLatency = opLatencyReceivedTimestamp.get(sequenceIdentifier);
 			receivedLatency[1] = opLatencyTimestamp;
-			opLatencyReceivedTimestamp.put(senderTask, receivedLatency);
-			localLatency = opLatencyLocalTimestamp.get(senderTask);
+			opLatencyReceivedTimestamp.put(sequenceIdentifier, receivedLatency);
+			localLatency = opLatencyLocalTimestamp.get(sequenceIdentifier);
 			localLatency[1] = currentTimestamp;
-			opLatencyLocalTimestamp.put(senderTask, localLatency);
+			opLatencyLocalTimestamp.put(sequenceIdentifier, localLatency);
 			/**
 			 * Prepare OP_LATENCY_METRIC - sequence 2 to send.
 			 */
 			Values latencyMetricTuple = new Values();
-			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskID + ":" + 
+			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskID + "#" + sequenceNumber + ":" + 
 					OpLatencyState.s_2.toString() + ":" + currentTimestamp);
 			for(int i = 0; i < operator.getOutputSchema().size(); i++) {
 				latencyMetricTuple.add(null);
@@ -382,19 +390,20 @@ public class SynefoJoinBolt extends BaseRichBolt {
 			for(Integer d_task : intActiveDownstreamTasks) {
 				collector.emitDirect(d_task, latencyMetricTuple);
 			}
-		}else if(opLatencyReceiveState.equals(OpLatencyState.r_2) && opLatencyState.equals(OpLatencyState.s_3.toString())) {
-			opLatencyReceiveState.put(senderTask, OpLatencyState.r_3);
-			receivedLatency = opLatencyReceivedTimestamp.get(senderTask);
+		}else if(opLatencyReceiveState.equals(OpLatencyState.r_2) && 
+				opLatencyState.equals(OpLatencyState.s_3.toString()) && opLatencyReceivedTimestamp.containsKey(sequenceIdentifier)) {
+			opLatencyReceiveState.put(sequenceIdentifier, OpLatencyState.r_3);
+			receivedLatency = opLatencyReceivedTimestamp.get(sequenceIdentifier);
 			receivedLatency[2] = opLatencyTimestamp;
-			opLatencyReceivedTimestamp.put(senderTask, receivedLatency);
-			localLatency = opLatencyLocalTimestamp.get(senderTask);
+			opLatencyReceivedTimestamp.put(sequenceIdentifier, receivedLatency);
+			localLatency = opLatencyLocalTimestamp.get(sequenceIdentifier);
 			localLatency[2] = currentTimestamp;
-			opLatencyLocalTimestamp.put(senderTask, localLatency);
+			opLatencyLocalTimestamp.put(sequenceIdentifier, localLatency);
 			/**
 			 * Prepare OP_LATENCY_METRIC - sequence 3 to send.
 			 */
 			Values latencyMetricTuple = new Values();
-			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskID + ":" + 
+			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskID + "#" + sequenceNumber + ":" + 
 					OpLatencyState.s_3.toString() + ":" + currentTimestamp);
 			for(int i = 0; i < operator.getOutputSchema().size(); i++) {
 				latencyMetricTuple.add(null);
@@ -412,10 +421,18 @@ public class SynefoJoinBolt extends BaseRichBolt {
 							Math.abs(localLatency[1] - localLatency[0] - 1000 - 
 									(receivedLatency[1] - receivedLatency[0] - 1000))
 					) / 2;
+			String logLine = System.currentTimeMillis() + " sequence-num: " + sequenceIdentifier + ", latency: " + latency;
+			byte[] buffer = logLine.getBytes();
+			if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
+				scaleEventFileChannel.write(
+						ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
+				scaleEventFileOffset += buffer.length;
+			}
 			statistics.updateWindowLatency(latency);
-			opLatencyReceiveState.remove(senderTask);
-			opLatencyLocalTimestamp.remove(senderTask);
-			opLatencyReceivedTimestamp.remove(senderTask);
+			opLatencyReceiveState.remove(sequenceIdentifier);
+			opLatencyLocalTimestamp.remove(sequenceIdentifier);
+			opLatencyReceivedTimestamp.remove(sequenceIdentifier);
+			sequenceNumber += 1;
 		}
 	}
 
