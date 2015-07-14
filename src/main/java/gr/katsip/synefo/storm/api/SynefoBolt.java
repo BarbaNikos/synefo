@@ -335,6 +335,13 @@ public class SynefoBolt extends BaseRichBolt {
 		String sequenceIdentifier = tokens[0].split("-")[1];
 		String opLatencyState = tokens[1];
 		Long opLatencyTimestamp = Long.parseLong(tokens[2]);
+		String logLine = System.currentTimeMillis() + " sequence-num: " + sequenceIdentifier + ", op-state: " + opLatencyState + "\n";
+		byte[] buffer = logLine.getBytes();
+		if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
+			scaleEventFileChannel.write(
+					ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
+			scaleEventFileOffset += buffer.length;
+		}
 		if(opLatencyReceiveState.containsKey(sequenceIdentifier) == false && opLatencyState.equals(OpLatencyState.s_1.toString())) {
 			receivedLatency = new long[3];
 			localLatency = new long[3];
@@ -350,9 +357,9 @@ public class SynefoBolt extends BaseRichBolt {
 			/**
 			 * Prepare OP_LATENCY_METRIC - sequence 1 to send.
 			 */
-			String logLine = System.currentTimeMillis() + " sequence-num: " + sequenceIdentifier + ", op-state: " + 
+			logLine = System.currentTimeMillis() + " sequence-num: " + sequenceIdentifier + ", op-state: " + 
 					opLatencyState + ", current state: " + opLatencyReceiveState.get(sequenceIdentifier).toString() + "\n";
-			byte[] buffer = logLine.getBytes();
+			buffer = logLine.getBytes();
 			if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
 				scaleEventFileChannel.write(
 						ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
@@ -379,9 +386,9 @@ public class SynefoBolt extends BaseRichBolt {
 			/**
 			 * Prepare OP_LATENCY_METRIC - sequence 2 to send.
 			 */
-			String logLine = System.currentTimeMillis() + " sequence-num: " + sequenceIdentifier + ", op-state: " + 
+			logLine = System.currentTimeMillis() + " sequence-num: " + sequenceIdentifier + ", op-state: " + 
 					opLatencyState + ", current state: " + opLatencyReceiveState.get(sequenceIdentifier).toString() + "\n";
-			byte[] buffer = logLine.getBytes();
+			buffer = logLine.getBytes();
 			if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
 				scaleEventFileChannel.write(
 						ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
@@ -408,9 +415,9 @@ public class SynefoBolt extends BaseRichBolt {
 			/**
 			 * Prepare OP_LATENCY_METRIC - sequence 3 to send.
 			 */
-			String logLine = System.currentTimeMillis() + " sequence-num: " + sequenceIdentifier + ", op-state: " + 
+			logLine = System.currentTimeMillis() + " sequence-num: " + sequenceIdentifier + ", op-state: " + 
 					opLatencyState + ", current state: " + opLatencyReceiveState.get(sequenceIdentifier).toString() + "\n";
-			byte[] buffer = logLine.getBytes();
+			buffer = logLine.getBytes();
 			if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
 				scaleEventFileChannel.write(
 						ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
