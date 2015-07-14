@@ -15,8 +15,10 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.lib.SynefoMessage.Type;
@@ -229,7 +231,7 @@ public class SynefoSpout extends BaseRichSpout {
 	}
 
 	public void initiateLatencyMonitor() {
-		this.opLatencySendState = OpLatencyState.s_1;
+		opLatencySendState = OpLatencyState.s_1;
 		this.opLatencySendTimestamp = System.currentTimeMillis();
 		Values v = new Values();
 		v.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskId + "#" + sequenceNumber + ":" + 
@@ -240,6 +242,13 @@ public class SynefoSpout extends BaseRichSpout {
 		for(Integer d_task : intActiveDownstreamTasks) {
 			collector.emitDirect(d_task, v);
 		}
+		String logLine = System.currentTimeMillis() + " initiating sequence number: " + sequenceNumber + ", op-state: " + opLatencySendState + "\n";
+		byte[] buffer = logLine.getBytes();
+		if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
+			scaleEventFileChannel.write(
+					ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
+			scaleEventFileOffset += buffer.length;
+		}
 	}
 
 	public void progressLatencySequence(long currentTimestamp) {
@@ -248,7 +257,7 @@ public class SynefoSpout extends BaseRichSpout {
 				Math.abs(currentTimestamp - opLatencySendTimestamp) >= 1000) {
 			this.opLatencySendState = OpLatencyState.s_2;
 			this.opLatencySendTimestamp = currentTimestamp;
-			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskId + ":" + 
+			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskId + "#" + sequenceNumber + ":" + 
 					OpLatencyState.s_2.toString() + ":" + opLatencySendTimestamp);
 			for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
 				latencyMetricTuple.add(null);
@@ -259,7 +268,7 @@ public class SynefoSpout extends BaseRichSpout {
 		}else if(opLatencySendState.equals(OpLatencyState.s_2) && 
 				Math.abs(currentTimestamp - opLatencySendTimestamp) >= 1000) {
 			this.opLatencySendTimestamp = currentTimestamp;
-			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskId + ":" + 
+			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskId + "#" + sequenceNumber + ":" + 
 					OpLatencyState.s_3.toString() + ":" + opLatencySendTimestamp);
 			for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
 				latencyMetricTuple.add(null);
@@ -311,7 +320,7 @@ public class SynefoSpout extends BaseRichSpout {
 		 * Initiation of operator latency sequence
 		 */
 		if(latencyPeriodCounter >= SynefoSpout.latencySequencePeriod && 
-				opLatencySendState.equals(OpLatencyState.na)) {
+				opLatencySendState == OpLatencyState.na) {
 			initiateLatencyMonitor();
 		}else {
 			latencyPeriodCounter += 1;
