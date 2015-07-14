@@ -14,6 +14,7 @@ import java.nio.channels.CompletionHandler;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -117,11 +118,11 @@ public class SynefoBolt extends BaseRichBolt {
 		r_3
 	}
 
-	private OpLatencyState opLatencyReceiveState;
+	private HashMap<Integer, OpLatencyState> opLatencyReceiveState;
 
-	private long[] opLatencyReceivedTimestamp = new long[3];
+	private HashMap<Integer, long[]> opLatencyReceivedTimestamp;
 
-	private long[] opLatencyLocalTimestamp = new long[3];
+	private HashMap<Integer, long[]> opLatencyLocalTimestamp;
 
 	public SynefoBolt(String task_name, String synEFO_ip, Integer synEFO_port, 
 			AbstractOperator operator, String zooIP, boolean autoScale) {
@@ -140,9 +141,9 @@ public class SynefoBolt extends BaseRichBolt {
 		reportCounter = 0;
 		this.autoScale = autoScale;
 		warmFlag = false;
-		opLatencyReceiveState = OpLatencyState.na;
-		opLatencyReceivedTimestamp = new long[3];
-		opLatencyLocalTimestamp = new long[3];
+		opLatencyReceiveState = new HashMap<Integer, OpLatencyState>();
+		opLatencyReceivedTimestamp = new HashMap<Integer, long[]>();
+		opLatencyLocalTimestamp = new HashMap<Integer, long[]>();
 		if(operator instanceof AbstractStatOperator)
 			statOperatorFlag = true;
 		else
@@ -324,19 +325,30 @@ public class SynefoBolt extends BaseRichBolt {
 	}
 
 	public void handleOperatorLatencyTuple(String synefoHeader, long currentTimestamp) {
+		long[] receivedLatency = null;
+		long[] localLatency = null;
 		String[] tokens = synefoHeader.split(":");
+		Integer senderTask = Integer.parseInt(tokens[0].split("-")[1]);
 		String opLatencyState = tokens[1];
 		Long opLatencyTimestamp = Long.parseLong(tokens[2]);
 		if(opLatencyReceiveState.equals(OpLatencyState.na) && opLatencyState.equals(OpLatencyState.s_1.toString())) {
-			this.opLatencyReceivedTimestamp[0] = opLatencyTimestamp;
-			this.opLatencyLocalTimestamp[0] = currentTimestamp;
-			opLatencyReceiveState = OpLatencyState.r_1;
+			receivedLatency = new long[3];
+			localLatency = new long[3];
+			if(opLatencyReceivedTimestamp.containsKey(senderTask))
+				opLatencyReceivedTimestamp.remove(senderTask);
+			if(opLatencyLocalTimestamp.containsKey(senderTask))
+				opLatencyLocalTimestamp.remove(senderTask);
+			receivedLatency[0] = opLatencyTimestamp;
+			localLatency[0] = currentTimestamp;
+			opLatencyReceiveState.put(senderTask, OpLatencyState.r_1);
+			opLatencyReceivedTimestamp.put(senderTask, receivedLatency);
+			opLatencyLocalTimestamp.put(senderTask, localLatency);
 			/**
 			 * Prepare OP_LATENCY_METRIC - sequence 1 to send.
 			 */
 			Values latencyMetricTuple = new Values();
-			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + ":" + 
-					OpLatencyState.s_1.toString() + ":" + this.opLatencyLocalTimestamp[0]);
+			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskID + ":" + 
+					OpLatencyState.s_1.toString() + ":" + currentTimestamp);
 			for(int i = 0; i < operator.getOutputSchema().size(); i++) {
 				latencyMetricTuple.add(null);
 			}
@@ -344,15 +356,19 @@ public class SynefoBolt extends BaseRichBolt {
 				collector.emitDirect(d_task, latencyMetricTuple);
 			}
 		}else if(opLatencyReceiveState.equals(OpLatencyState.r_1) && opLatencyState.equals(OpLatencyState.s_2.toString())) {
-			this.opLatencyReceivedTimestamp[1] = opLatencyTimestamp;
-			this.opLatencyLocalTimestamp[1] = currentTimestamp;
-			opLatencyReceiveState = OpLatencyState.r_2;
+			opLatencyReceiveState.replace(senderTask, OpLatencyState.r_2);
+			receivedLatency = opLatencyReceivedTimestamp.get(senderTask);
+			receivedLatency[1] = opLatencyTimestamp;
+			opLatencyReceivedTimestamp.put(senderTask, receivedLatency);
+			localLatency = opLatencyLocalTimestamp.get(senderTask);
+			localLatency[1] = currentTimestamp;
+			opLatencyLocalTimestamp.put(senderTask, localLatency);
 			/**
 			 * Prepare OP_LATENCY_METRIC - sequence 2 to send.
 			 */
 			Values latencyMetricTuple = new Values();
-			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + ":" + 
-					OpLatencyState.s_2.toString() + ":" + this.opLatencyLocalTimestamp[1]);
+			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskID + ":" + 
+					OpLatencyState.s_2.toString() + ":" + currentTimestamp);
 			for(int i = 0; i < operator.getOutputSchema().size(); i++) {
 				latencyMetricTuple.add(null);
 			}
@@ -360,15 +376,19 @@ public class SynefoBolt extends BaseRichBolt {
 				collector.emitDirect(d_task, latencyMetricTuple);
 			}
 		}else if(opLatencyReceiveState.equals(OpLatencyState.r_2) && opLatencyState.equals(OpLatencyState.s_3.toString())) {
-			this.opLatencyReceivedTimestamp[2] = opLatencyTimestamp;
-			this.opLatencyLocalTimestamp[2] = currentTimestamp;
-			opLatencyReceiveState = OpLatencyState.r_3;
+			opLatencyReceiveState.replace(senderTask, OpLatencyState.r_3);
+			receivedLatency = opLatencyReceivedTimestamp.get(senderTask);
+			receivedLatency[2] = opLatencyTimestamp;
+			opLatencyReceivedTimestamp.put(senderTask, receivedLatency);
+			localLatency = opLatencyLocalTimestamp.get(senderTask);
+			localLatency[2] = currentTimestamp;
+			opLatencyLocalTimestamp.put(senderTask, localLatency);
 			/**
 			 * Prepare OP_LATENCY_METRIC - sequence 3 to send.
 			 */
 			Values latencyMetricTuple = new Values();
-			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + ":" + 
-					OpLatencyState.s_3.toString() + ":" + this.opLatencyLocalTimestamp[2]);
+			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskID + ":" + 
+					OpLatencyState.s_3.toString() + ":" + currentTimestamp);
 			for(int i = 0; i < operator.getOutputSchema().size(); i++) {
 				latencyMetricTuple.add(null);
 			}
@@ -380,15 +400,15 @@ public class SynefoBolt extends BaseRichBolt {
 			 * Calculate latency
 			 */
 			latency = ( 
-					Math.abs(this.opLatencyLocalTimestamp[2] - this.opLatencyLocalTimestamp[1] - 1000 - 
-							(this.opLatencyReceivedTimestamp[2] - this.opLatencyReceivedTimestamp[1] - 1000)) + 
-							Math.abs(this.opLatencyLocalTimestamp[1] - this.opLatencyLocalTimestamp[0] - 1000 - 
-									(this.opLatencyReceivedTimestamp[1] - this.opLatencyReceivedTimestamp[0] - 1000))
+					Math.abs(localLatency[2] - localLatency[1] - 1000 - 
+							(receivedLatency[2] - receivedLatency[1] - 1000)) + 
+							Math.abs(localLatency[1] - localLatency[0] - 1000 - 
+									(receivedLatency[1] - receivedLatency[0] - 1000))
 					) / 2;
 			statistics.updateWindowLatency(latency);
-			this.opLatencyReceiveState = OpLatencyState.na;
-			opLatencyLocalTimestamp = new long[3];
-			opLatencyReceivedTimestamp = new long[3];
+			opLatencyReceiveState.remove(senderTask);
+			opLatencyLocalTimestamp.remove(senderTask);
+			opLatencyReceivedTimestamp.remove(senderTask);
 		}
 	}
 
@@ -574,9 +594,9 @@ public class SynefoBolt extends BaseRichBolt {
 			/**
 			 * Re-initialize Operator-latency metrics
 			 */
-			opLatencyReceiveState = OpLatencyState.na;
-			opLatencyReceivedTimestamp = new long[3];
-			opLatencyLocalTimestamp = new long[3];
+			opLatencyReceiveState.clear();
+			opLatencyReceivedTimestamp.clear();
+			opLatencyLocalTimestamp.clear();
 			reportCounter = 0;
 		}
 	}
@@ -864,9 +884,9 @@ public class SynefoBolt extends BaseRichBolt {
 		/**
 		 * Re-initialize operator-latency metrics
 		 */
-		opLatencyReceiveState = OpLatencyState.na;
-		opLatencyReceivedTimestamp = new long[3];
-		opLatencyLocalTimestamp = new long[3];
+		opLatencyReceiveState.clear();
+		opLatencyReceivedTimestamp.clear();
+		opLatencyLocalTimestamp.clear();
 	}
 
 }

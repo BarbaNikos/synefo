@@ -228,7 +228,7 @@ public class SynefoSpout extends BaseRichSpout {
 		this.opLatencySendState = OpLatencyState.s_1;
 		this.opLatencySendTimestamp = System.currentTimeMillis();
 		Values v = new Values();
-		v.add(SynefoConstant.OP_LATENCY_METRIC + ":" + 
+		v.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskId + ":" + 
 				OpLatencyState.s_1.toString() + ":" + opLatencySendTimestamp);
 		for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
 			v.add(null);
@@ -244,7 +244,7 @@ public class SynefoSpout extends BaseRichSpout {
 				Math.abs(currentTimestamp - opLatencySendTimestamp) >= 1000) {
 			this.opLatencySendState = OpLatencyState.s_2;
 			this.opLatencySendTimestamp = currentTimestamp;
-			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + ":" + 
+			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskId + ":" + 
 					OpLatencyState.s_2.toString() + ":" + opLatencySendTimestamp);
 			for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
 				latencyMetricTuple.add(null);
@@ -255,7 +255,7 @@ public class SynefoSpout extends BaseRichSpout {
 		}else if(opLatencySendState.equals(OpLatencyState.s_2) && 
 				Math.abs(currentTimestamp - opLatencySendTimestamp) >= 1000) {
 			this.opLatencySendTimestamp = currentTimestamp;
-			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + ":" + 
+			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskId + ":" + 
 					OpLatencyState.s_3.toString() + ":" + opLatencySendTimestamp);
 			for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
 				latencyMetricTuple.add(null);
