@@ -242,13 +242,13 @@ public class SynefoSpout extends BaseRichSpout {
 		for(Integer d_task : intActiveDownstreamTasks) {
 			collector.emitDirect(d_task, v);
 		}
-		String logLine = System.currentTimeMillis() + " initiating sequence number: " + sequenceNumber + ", op-state: " + opLatencySendState + "\n";
-		byte[] buffer = logLine.getBytes();
-		if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
-			scaleEventFileChannel.write(
-					ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
-			scaleEventFileOffset += buffer.length;
-		}
+//		String logLine = System.currentTimeMillis() + " initiating sequence number: " + sequenceNumber + ", op-state: " + opLatencySendState + "\n";
+//		byte[] buffer = logLine.getBytes();
+//		if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
+//			scaleEventFileChannel.write(
+//					ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
+//			scaleEventFileOffset += buffer.length;
+//		}
 	}
 
 	public void progressLatencySequence(long currentTimestamp) {
