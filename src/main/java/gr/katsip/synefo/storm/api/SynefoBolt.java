@@ -356,7 +356,7 @@ public class SynefoBolt extends BaseRichBolt {
 				collector.emitDirect(d_task, latencyMetricTuple);
 			}
 		}else if(opLatencyReceiveState.equals(OpLatencyState.r_1) && opLatencyState.equals(OpLatencyState.s_2.toString())) {
-			opLatencyReceiveState.replace(senderTask, OpLatencyState.r_2);
+			opLatencyReceiveState.put(senderTask, OpLatencyState.r_2);
 			receivedLatency = opLatencyReceivedTimestamp.get(senderTask);
 			receivedLatency[1] = opLatencyTimestamp;
 			opLatencyReceivedTimestamp.put(senderTask, receivedLatency);
@@ -376,7 +376,7 @@ public class SynefoBolt extends BaseRichBolt {
 				collector.emitDirect(d_task, latencyMetricTuple);
 			}
 		}else if(opLatencyReceiveState.equals(OpLatencyState.r_2) && opLatencyState.equals(OpLatencyState.s_3.toString())) {
-			opLatencyReceiveState.replace(senderTask, OpLatencyState.r_3);
+			opLatencyReceiveState.put(senderTask, OpLatencyState.r_3);
 			receivedLatency = opLatencyReceivedTimestamp.get(senderTask);
 			receivedLatency[2] = opLatencyTimestamp;
 			opLatencyReceivedTimestamp.put(senderTask, receivedLatency);
