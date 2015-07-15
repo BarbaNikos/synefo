@@ -95,7 +95,7 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 	}
 
 	@Override
-	public void execute(OutputCollector collector,
+	public int execute(OutputCollector collector,
 			HashMap<String, ArrayList<Integer>> taskRelationIndex,
 			ArrayList<Integer> activeTasks, Integer taskIndex, Fields fields,
 			Values values) {
@@ -131,6 +131,7 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 					taskIndex = 0;
 			}
 		}
+		return taskIndex;
 	}
 
 	@Override

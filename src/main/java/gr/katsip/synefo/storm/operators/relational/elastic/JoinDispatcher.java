@@ -55,7 +55,7 @@ public class JoinDispatcher implements AbstractJoinOperator, Serializable {
 	}
 
 	@Override
-	public void execute(OutputCollector collector,
+	public int execute(OutputCollector collector,
 			HashMap<String, ArrayList<Integer>> taskRelationIndex,
 			ArrayList<Integer> activeTasks, Integer taskIndex, Fields fields,
 			Values values) {
@@ -142,6 +142,7 @@ public class JoinDispatcher implements AbstractJoinOperator, Serializable {
 				}
 			}
 		}
+		return taskIndex;
 	}
 
 	@Override

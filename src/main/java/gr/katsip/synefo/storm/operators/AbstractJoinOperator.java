@@ -16,7 +16,7 @@ public interface AbstractJoinOperator {
 
 	public void setOutputSchema(Fields output_schema);
 
-	public void execute(OutputCollector collector, HashMap<String, ArrayList<Integer>> taskRelationIndex, 
+	public int execute(OutputCollector collector, HashMap<String, ArrayList<Integer>> taskRelationIndex, 
 			ArrayList<Integer> activeTasks, Integer taskIndex, Fields fields, Values values);
 
 	public List<Values> getStateValues();

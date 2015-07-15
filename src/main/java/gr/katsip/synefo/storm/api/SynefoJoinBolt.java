@@ -508,12 +508,12 @@ public class SynefoJoinBolt extends BaseRichBolt {
 		fieldList.remove(0);
 		Fields fields = new Fields(fieldList);
 		if(intActiveDownstreamTasks != null && intActiveDownstreamTasks.size() > 0) {
-			operator.execute(collector, intRelationTaskIndex, intActiveDownstreamTasks, 
+			downStreamIndex = operator.execute(collector, intRelationTaskIndex, intActiveDownstreamTasks, 
 					downStreamIndex, fields, values);
 			collector.ack(tuple);
 		}else {
 			Long executeStartTimestamp = System.currentTimeMillis();
-			operator.execute(collector, intRelationTaskIndex, intActiveDownstreamTasks, 
+			downStreamIndex = operator.execute(collector, intRelationTaskIndex, intActiveDownstreamTasks, 
 					downStreamIndex, fields, values);
 			Long executeEndTimestamp = System.currentTimeMillis();
 			statistics.updateWindowOperationalLatency((executeEndTimestamp - executeStartTimestamp));
