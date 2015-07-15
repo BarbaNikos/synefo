@@ -301,8 +301,8 @@ public class SynefoBroadcastBolt extends BaseRichBolt {
 			};
 			scaleEventFileOffset = 0L;
 		}
-		statistics = new TaskStatistics();
-		backupStatistics = new TaskStatistics();
+		statistics = new TaskStatistics(statReportPeriod);
+		backupStatistics = new TaskStatistics(statReportPeriod);
 	}
 
 
@@ -699,7 +699,8 @@ public class SynefoBroadcastBolt extends BaseRichBolt {
 				/**
 				 * Re-initialize statistics object
 				 */
-				statistics = new TaskStatistics();
+				statistics = new TaskStatistics(statReportPeriod);
+				backupStatistics = new TaskStatistics(statReportPeriod);
 				/**
 				 * If this component is added, open a ServerSocket
 				 */
@@ -823,7 +824,8 @@ public class SynefoBroadcastBolt extends BaseRichBolt {
 				/**
 				 * Re-initialize statistics object
 				 */
-				statistics = new TaskStatistics();
+				statistics = new TaskStatistics(statReportPeriod);
+				backupStatistics = new TaskStatistics(statReportPeriod);
 				try {
 					ServerSocket _socket = new ServerSocket(6000 + taskID);
 					logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 

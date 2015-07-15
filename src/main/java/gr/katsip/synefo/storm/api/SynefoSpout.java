@@ -126,7 +126,7 @@ public class SynefoSpout extends BaseRichSpout {
 		activeDownstreamTasks = null;
 		synefoIP = synEFO_ip;
 		synefoPort = synEFO_port;
-		stats = new TaskStatistics();
+		stats = new TaskStatistics(statReportPeriod);
 		this.tupleProducer = tupleProducer;
 		this.zooIP = zooIP;
 		reportCounter = 0;
@@ -340,6 +340,7 @@ public class SynefoSpout extends BaseRichSpout {
 				}
 			}
 			reportCounter = 0;
+			this.stats = new TaskStatistics(statReportPeriod);
 		}else {
 			reportCounter += 1;
 		}

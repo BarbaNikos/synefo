@@ -24,7 +24,7 @@ public class StatisticTest {
 			}else if(synefoHeader.contains(SynefoConstant.OP_LATENCY_METRIC)) {
 				System.out.println("Operator-Latency-Metric");
 			}
-			TaskStatistics stats = new TaskStatistics();
+			TaskStatistics stats = new TaskStatistics(100);
 			int j = 0;
 			for(int i = 0; i < 10000; i++) {
 				stats.updateWindowThroughput();

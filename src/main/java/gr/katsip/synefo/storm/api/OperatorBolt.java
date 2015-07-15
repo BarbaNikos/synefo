@@ -100,7 +100,7 @@ public class OperatorBolt extends BaseRichBolt {
 		this.intDownstreamTasks = null;
 		synefoServerIP = synEFO_ip;
 		synefoServerPort = synEFO_port;
-		statistics = new TaskStatistics();
+		statistics = new TaskStatistics(5000);
 		opLatencyReceiveState = OpLatencyState.na;
 		opLatencySendState = OpLatencyState.na;
 		opLatencySendTimestamp = 0L;

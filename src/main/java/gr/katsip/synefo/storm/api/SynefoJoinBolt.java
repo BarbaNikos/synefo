@@ -334,8 +334,8 @@ public class SynefoJoinBolt extends BaseRichBolt {
 			};
 			scaleEventFileOffset = 0L;
 		}
-		statistics = new TaskStatistics();
-		backupStatistics = new TaskStatistics();
+		statistics = new TaskStatistics(statReportPeriod);
+		backupStatistics = new TaskStatistics(statReportPeriod);
 	}
 	
 	public void handleOperatorLatencyTuple(String synefoHeader, long currentTimestamp) {
@@ -540,6 +540,8 @@ public class SynefoJoinBolt extends BaseRichBolt {
 			reportCounter = 0;
 			if(warmFlag == false)
 				warmFlag = true;
+			statistics = new TaskStatistics(statReportPeriod);
+			backupStatistics = new TaskStatistics(statReportPeriod);
 		}else {
 			reportCounter += 1;
 		}
@@ -692,7 +694,8 @@ public class SynefoJoinBolt extends BaseRichBolt {
 				/**
 				 * Re-initialize statistics object
 				 */
-				statistics = new TaskStatistics();
+				statistics = new TaskStatistics(statReportPeriod);
+				backupStatistics = new TaskStatistics(statReportPeriod);
 				/**
 				 * If this component is added, open a ServerSocket
 				 */
@@ -814,7 +817,8 @@ public class SynefoJoinBolt extends BaseRichBolt {
 				/**
 				 * Re-initialize statistics object
 				 */
-				statistics = new TaskStatistics();
+				statistics = new TaskStatistics(statReportPeriod);
+				backupStatistics = new TaskStatistics(statReportPeriod);
 				try {
 					ServerSocket _socket = new ServerSocket(6000 + taskID);
 					logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 

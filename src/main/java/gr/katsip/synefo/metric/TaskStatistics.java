@@ -33,7 +33,7 @@ public class TaskStatistics implements Serializable {
 
 	private Double runningThroughputWindowSum;
 
-	private final int sampleWindowSize = 100;
+	private int sampleWindowSize;
 
 	private LinkedList<Long> latencySampleWindow;
 	
@@ -71,7 +71,8 @@ public class TaskStatistics implements Serializable {
 
 	private ControlBasedStatistics latencySlope;
 
-	public TaskStatistics() {
+	public TaskStatistics(int windowSampleSize) {
+		this.sampleWindowSize = windowSampleSize;
 		selectivity = 0.0;
 		selectivitySamples = 0;
 		latency = 0;

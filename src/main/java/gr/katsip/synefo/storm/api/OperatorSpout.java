@@ -79,7 +79,7 @@ public class OperatorSpout extends BaseRichSpout {
 		downstreamTasks = null;
 		this.synefoIP = synefoIP;
 		this.synefoPort = synefoPort;
-		stats = new TaskStatistics();
+		stats = new TaskStatistics(5000);
 		this.tupleProducer = tupleProducer;
 		reportCounter = 0;
 		opLatencySendState = OpLatencyState.na;
