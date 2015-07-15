@@ -442,7 +442,7 @@ public class SynefoBolt extends BaseRichBolt {
 							Math.abs(localLatency[1] - localLatency[0] - 1000 - 
 									(receivedLatency[1] - receivedLatency[0] - 1000))
 					) / 2;
-			String logLine = System.currentTimeMillis() + " sequence-num: " + sequenceIdentifier + ", latency: " + latency + "\n";
+			String logLine = System.currentTimeMillis() + ", " + latency + "\n";
 			byte[] buffer = logLine.getBytes();
 			if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
 				scaleEventFileChannel.write(
