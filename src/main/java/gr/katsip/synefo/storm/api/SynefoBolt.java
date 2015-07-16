@@ -436,10 +436,11 @@ public class SynefoBolt extends BaseRichBolt {
 			/**
 			 * Calculate latency
 			 */
-			latency = ( 
-					(localLatency[2] - localLatency[1] - (receivedLatency[2] - receivedLatency[1])) + 
-					(localLatency[1] - localLatency[0] - (receivedLatency[1] - receivedLatency[0]))
-					) / 2;
+			latency = ( (localLatency[1] - receivedLatency[0] - (receivedLatency[1] - localLatency[0])) + (localLatency[2] - receivedLatency[1] - (receivedLatency[2] - localLatency[1])) ) / 2;
+//			latency = ( 
+//					(localLatency[2] - localLatency[1] - (receivedLatency[2] - receivedLatency[1])) + 
+//					(localLatency[1] - localLatency[0] - (receivedLatency[1] - receivedLatency[0]))
+//					) / 2;
 //			latency = ( 
 //					Math.abs(localLatency[2] - localLatency[1] - 1000 - 
 //							(receivedLatency[2] - receivedLatency[1] - 1000)) + 
