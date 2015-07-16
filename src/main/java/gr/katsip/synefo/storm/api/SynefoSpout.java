@@ -230,9 +230,9 @@ public class SynefoSpout extends BaseRichSpout {
 		sequenceNumber = 0;
 	}
 
-	public void initiateLatencyMonitor() {
+	public void initiateLatencyMonitor(long currentTimestamp) {
 		opLatencySendState = OpLatencyState.s_1;
-		this.opLatencySendTimestamp = System.currentTimeMillis();
+		this.opLatencySendTimestamp = currentTimestamp;
 		Values v = new Values();
 		v.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskId + "#" + sequenceNumber + ":" + 
 				OpLatencyState.s_1.toString() + ":" + opLatencySendTimestamp);
@@ -242,13 +242,6 @@ public class SynefoSpout extends BaseRichSpout {
 		for(Integer d_task : intActiveDownstreamTasks) {
 			collector.emitDirect(d_task, v);
 		}
-//		String logLine = System.currentTimeMillis() + " initiating sequence number: " + sequenceNumber + ", op-state: " + opLatencySendState + "\n";
-//		byte[] buffer = logLine.getBytes();
-//		if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
-//			scaleEventFileChannel.write(
-//					ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
-//			scaleEventFileOffset += buffer.length;
-//		}
 	}
 
 	public void progressLatencySequence(long currentTimestamp) {
@@ -279,6 +272,8 @@ public class SynefoSpout extends BaseRichSpout {
 			this.opLatencySendState = OpLatencyState.na;
 			this.latencyPeriodCounter = 0;
 			sequenceNumber += 1;
+		}else {
+			latencyPeriodCounter += 1;
 		}
 	}
 
@@ -288,6 +283,7 @@ public class SynefoSpout extends BaseRichSpout {
 		 * fashion to all downstream tasks. The words array is 
 		 * iterated from start to beginning.
 		 */
+		long currentTimestamp = System.currentTimeMillis();
 		if(intActiveDownstreamTasks != null && intActiveDownstreamTasks.size() > 0) {
 			Values values = new Values();
 			/**
@@ -314,20 +310,14 @@ public class SynefoSpout extends BaseRichSpout {
 		stats.updateMemory();
 		stats.updateCpuLoad();
 		stats.updateWindowThroughput();
-		long currentTimestamp = System.currentTimeMillis();
-		progressLatencySequence(currentTimestamp);
-		/**
-		 * Initiation of operator latency sequence
-		 */
+		
 		if(latencyPeriodCounter >= SynefoSpout.latencySequencePeriod && 
 				opLatencySendState == OpLatencyState.na) {
-			initiateLatencyMonitor();
+			initiateLatencyMonitor(currentTimestamp);
 		}else {
-			latencyPeriodCounter += 1;
+			progressLatencySequence(currentTimestamp);
 		}
-		/**
-		 * END of Initiation of operator latency sequence
-		 */
+		
 		if(reportCounter >= SynefoSpout.statReportPeriod) {
 			if(statTupleProducerFlag == false) {
 				byte[] buffer = (System.currentTimeMillis() + "," + stats.getCpuLoad() + "," + 
