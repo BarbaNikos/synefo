@@ -437,12 +437,17 @@ public class SynefoBolt extends BaseRichBolt {
 			 * Calculate latency
 			 */
 			latency = ( 
-					Math.abs(localLatency[2] - localLatency[1] - 1000 - 
-							(receivedLatency[2] - receivedLatency[1] - 1000)) + 
-							Math.abs(localLatency[1] - localLatency[0] - 1000 - 
-									(receivedLatency[1] - receivedLatency[0] - 1000))
+					(localLatency[2] - localLatency[1] - (receivedLatency[2] - receivedLatency[1])) + 
+					(localLatency[1] - localLatency[0] - (receivedLatency[1] - receivedLatency[0]))
 					) / 2;
-			String logLine = System.currentTimeMillis() + ", " + latency + "\n";
+//			latency = ( 
+//					Math.abs(localLatency[2] - localLatency[1] - 1000 - 
+//							(receivedLatency[2] - receivedLatency[1] - 1000)) + 
+//							Math.abs(localLatency[1] - localLatency[0] - 1000 - 
+//									(receivedLatency[1] - receivedLatency[0] - 1000))
+//					) / 2;
+			String logLine = System.currentTimeMillis() + ", " + latency + ",[" + localLatency[2] + "-" + localLatency[1] + "-" + localLatency[0] + 
+					"-" + receivedLatency[2] + "-" + receivedLatency[1] + "-" + receivedLatency[0] + "]" + "\n";
 			byte[] buffer = logLine.getBytes();
 			if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
 				scaleEventFileChannel.write(
