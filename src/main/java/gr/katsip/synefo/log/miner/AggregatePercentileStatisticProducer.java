@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
@@ -22,6 +23,7 @@ public class AggregatePercentileStatisticProducer {
 		File directory = new File(args[0]);
 		HashMap<String, DescriptiveStatistics> percentileStatistics = 
 				new HashMap<String, DescriptiveStatistics>();
+		HashMap<String, ArrayList<String>> violations = new HashMap<String, ArrayList<String>>();
 		if(directory.isDirectory()) {
 			File[] files = directory.listFiles();
 			for(File logFile : files) {
@@ -43,7 +45,9 @@ public class AggregatePercentileStatisticProducer {
 					operatorStatistics = new DescriptiveStatistics();
 				}
 				BufferedReader reader = new BufferedReader(new FileReader(logFile));
+				
 				String line = "";
+				ArrayList<String> operatorViolations = new ArrayList<String>();
 				while((line = reader.readLine()) != null) {
 					String[] timestamps = line.split(",")[2].replaceAll("\\[", "").replaceAll("\\]", "").split("-");
 					Long latency = Long.parseLong(line.split(",")[1].replaceAll(" ", ""));
@@ -69,17 +73,25 @@ public class AggregatePercentileStatisticProducer {
 						localDisorder += 1;
 					if(receivedOne > receivedTwo || receivedOne > receivedThree || receivedTwo > receivedThree)
 						receivedDisorder += 1;
-					if((localThree - localTwo) > 1000L || (localTwo - localOne) > 1000L)
+					if(Math.abs(localThree - localTwo) > 1000 || Math.abs(localTwo - localOne) > 1000) {
 						moreThanSecond += 1;
-					if((localThree - localTwo) < 1000L || (localTwo - localOne) < 1000L)
+					}
+					if(Math.abs(localThree - localTwo) < 1000 || Math.abs(localTwo - localOne) < 1000) {
 						lessThanSecond += 1;
-					if(Math.abs(receivedThree - receivedTwo) > 1000 || Math.abs(receivedTwo - receivedOne) > 1000)
+					}
+					if(Math.abs(receivedThree - receivedTwo) > 1000 || Math.abs(receivedTwo - receivedOne) > 1000) {
 						recMoreThanSecond += 1;
-					if(Math.abs(receivedThree - receivedTwo) < 1000 || Math.abs(receivedTwo - receivedOne) < 1000) {
+					}
+					if(Math.abs(receivedThree - receivedTwo) < 1000) {
 						recLessThanSecond += 1;
-						System.out.println("Diff: " + Math.abs(receivedThree - receivedTwo) + ", " + Math.abs(receivedTwo - receivedOne));
+						System.out.println("2");
+						operatorViolations.add(Arrays.toString(timestamps));
+					}
+					if(Math.abs(receivedTwo - receivedOne) < 1000) {
+						System.out.println("1");
 					}
 				}
+				violations.put(operatorName, operatorViolations);
 				reader.close();
 				percentileStatistics.put(operator, operatorStatistics);
 			}
@@ -111,6 +123,21 @@ public class AggregatePercentileStatisticProducer {
 		System.out.println("More than second: " + moreThanSecond + ", less than second: " + lessThanSecond);
 		System.out.println("(Rec) More than second: " + recMoreThanSecond + ", (Rec) less than second: " + recLessThanSecond);
 		System.out.println("all cases: " + allCases);
+		File violationsFile = new File(args[0] + File.separator + "violations.txt");
+		if(violationsFile.exists())
+			violationsFile.createNewFile();
+		PrintWriter writer = new PrintWriter(violationsFile);
+		Iterator<Entry<String, ArrayList<String>>> itr2 = violations.entrySet().iterator();
+		while(itr2.hasNext()) {
+			Entry<String, ArrayList<String>> op = itr2.next();
+			System.out.println("Violations for " + op.getKey() + " are reported.");
+			writer.println("####" + op.getKey() + "####");
+			for(String violation : op.getValue()) {
+				writer.println(violation);
+			}
+			writer.println("**************************");
+		}
+		writer.close();
 	}
 
 }
