@@ -489,13 +489,13 @@ public class SynefoBolt extends BaseRichBolt {
 					return;
 				}
 			}else if(synefoHeader.contains(SynefoConstant.OP_LATENCY_METRIC) && opLatencyHeader.equals(SynefoConstant.OP_LATENCY_METRIC)) {
-				String logLine = System.currentTimeMillis() + "," + synefoHeader + "\n";
-				byte[] buffer = logLine.getBytes();
-				if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
-					scaleEventFileChannel.write(
-							ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
-					scaleEventFileOffset += buffer.length;
-				}
+//				String logLine = System.currentTimeMillis() + "," + synefoHeader + "\n";
+//				byte[] buffer = logLine.getBytes();
+//				if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
+//					scaleEventFileChannel.write(
+//							ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
+//					scaleEventFileOffset += buffer.length;
+//				}
 				handleOperatorLatencyTuple(synefoHeader, currentTimestamp);
 				collector.ack(tuple);
 				return;
