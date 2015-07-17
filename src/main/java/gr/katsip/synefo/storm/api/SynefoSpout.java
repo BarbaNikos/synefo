@@ -231,6 +231,8 @@ public class SynefoSpout extends BaseRichSpout {
 	}
 
 	public void initiateLatencyMonitor(long currentTimestamp) {
+		if(Math.abs(currentTimestamp - opLatencySendTimestamp) < 1000)
+			return;
 		opLatencySendState = OpLatencyState.s_1;
 		this.opLatencySendTimestamp = currentTimestamp;
 		Values v = new Values();
