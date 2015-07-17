@@ -242,12 +242,26 @@ public class SynefoSpout extends BaseRichSpout {
 		for(Integer d_task : intActiveDownstreamTasks) {
 			collector.emitDirect(d_task, v);
 		}
+		String logLine = opLatencySendTimestamp + "," + opLatencySendState.toString() + "\n";
+		byte[] buffer = logLine.getBytes();
+		if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
+			scaleEventFileChannel.write(
+					ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
+			scaleEventFileOffset += buffer.length;
+		}
 	}
 
 	public void progressLatencySequence(long currentTimestamp) {
 		Values latencyMetricTuple = new Values();
 		if(opLatencySendState.equals(OpLatencyState.s_1) && 
 				Math.abs(currentTimestamp - opLatencySendTimestamp) >= 1000) {
+			String logLine = opLatencySendTimestamp + "," + currentTimestamp + "," + opLatencySendState.toString() + "\n";
+			byte[] buffer = logLine.getBytes();
+			if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
+				scaleEventFileChannel.write(
+						ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
+				scaleEventFileOffset += buffer.length;
+			}
 			this.opLatencySendState = OpLatencyState.s_2;
 			this.opLatencySendTimestamp = currentTimestamp;
 			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskId + "#" + sequenceNumber + ":" + 
@@ -260,6 +274,13 @@ public class SynefoSpout extends BaseRichSpout {
 			}
 		}else if(opLatencySendState.equals(OpLatencyState.s_2) && 
 				Math.abs(currentTimestamp - opLatencySendTimestamp) >= 1000) {
+			String logLine = opLatencySendTimestamp + "," + currentTimestamp + "," + opLatencySendState.toString() + "\n";
+			byte[] buffer = logLine.getBytes();
+			if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
+				scaleEventFileChannel.write(
+						ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
+				scaleEventFileOffset += buffer.length;
+			}
 			this.opLatencySendTimestamp = currentTimestamp;
 			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskId + "#" + sequenceNumber + ":" + 
 					OpLatencyState.s_3.toString() + ":" + opLatencySendTimestamp);
