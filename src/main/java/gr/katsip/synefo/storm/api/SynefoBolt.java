@@ -476,6 +476,7 @@ public class SynefoBolt extends BaseRichBolt {
 			return;
 		}
 		String synefoHeader = tuple.getString(tuple.getFields().fieldIndex("SYNEFO_HEADER"));
+		String opLatencyHeader = synefoHeader.split("-")[0];
 		Long synefoTimestamp = null;
 		if(synefoHeader != null && synefoHeader.equals("") == false) {
 			if(synefoHeader.contains("/") && synefoHeader.contains(SynefoConstant.PUNCT_TUPLE_TAG) == true 
@@ -487,7 +488,14 @@ public class SynefoBolt extends BaseRichBolt {
 					collector.ack(tuple);
 					return;
 				}
-			}else if(synefoHeader.contains(SynefoConstant.OP_LATENCY_METRIC)) {
+			}else if(synefoHeader.contains(SynefoConstant.OP_LATENCY_METRIC) && opLatencyHeader.equals(SynefoConstant.OP_LATENCY_METRIC)) {
+				String logLine = System.currentTimeMillis() + "," + synefoHeader + "\n";
+				byte[] buffer = logLine.getBytes();
+				if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
+					scaleEventFileChannel.write(
+							ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
+					scaleEventFileOffset += buffer.length;
+				}
 				handleOperatorLatencyTuple(synefoHeader, currentTimestamp);
 				collector.ack(tuple);
 				return;
