@@ -327,7 +327,7 @@ public class SynefoBolt extends BaseRichBolt {
 		statistics = new TaskStatistics(statReportPeriod);
 		backupStatistics = new TaskStatistics(statReportPeriod);
 	}
-
+	
 	public void handleOperatorLatencyTuple(String synefoHeader, long currentTimestamp) {
 		ArrayList<Long> receivedLatency = null;
 		ArrayList<Long> localLatency = null;

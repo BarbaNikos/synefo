@@ -230,11 +230,11 @@ public class SynefoSpout extends BaseRichSpout {
 		sequenceNumber = 0;
 	}
 
-	public void initiateLatencyMonitor(long currentTimestamp) {
+	public void initiateLatencySequence(long currentTimestamp) {
 		opLatencySendState = OpLatencyState.s_1;
 		this.opLatencySendTimestamp = currentTimestamp;
 		Values v = new Values();
-		v.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskId + "#" + sequenceNumber + ":" + 
+		v.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskId + "#" + sequenceNumber + "#" + taskId + ":" + 
 				OpLatencyState.s_1.toString() + ":" + opLatencySendTimestamp);
 		for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
 			v.add(null);
@@ -264,7 +264,7 @@ public class SynefoSpout extends BaseRichSpout {
 			}
 			this.opLatencySendState = OpLatencyState.s_2;
 			this.opLatencySendTimestamp = currentTimestamp;
-			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskId + "#" + sequenceNumber + ":" + 
+			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskId + "#" + sequenceNumber + "#" + taskId + ":" + 
 					OpLatencyState.s_2.toString() + ":" + opLatencySendTimestamp);
 			for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
 				latencyMetricTuple.add(null);
@@ -282,7 +282,7 @@ public class SynefoSpout extends BaseRichSpout {
 				scaleEventFileOffset += buffer.length;
 			}
 			this.opLatencySendTimestamp = currentTimestamp;
-			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskId + "#" + sequenceNumber + ":" + 
+			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskId + "#" + sequenceNumber + "#" + taskId + ":" + 
 					OpLatencyState.s_3.toString() + ":" + opLatencySendTimestamp);
 			for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
 				latencyMetricTuple.add(null);
@@ -334,7 +334,7 @@ public class SynefoSpout extends BaseRichSpout {
 		
 		if(latencyPeriodCounter >= SynefoSpout.latencySequencePeriod && 
 				opLatencySendState == OpLatencyState.na) {
-			initiateLatencyMonitor(currentTimestamp);
+			initiateLatencySequence(currentTimestamp);
 		}else {
 			progressLatencySequence(currentTimestamp);
 		}
