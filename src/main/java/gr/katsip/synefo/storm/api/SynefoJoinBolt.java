@@ -384,6 +384,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 			for(Integer d_task : intActiveDownstreamTasks) {
 				collector.emitDirect(d_task, latencyMetricTuple);
 			}
+			sequenceNumber += 1;
 		}else if(opLatencyReceiveState.containsKey(sequenceIdentifier) && opLatencyReceiveState.get(sequenceIdentifier) == OpLatencyState.r_1 && 
 				opLatencyState == OpLatencyState.s_2 && opLatencyReceivedTimestamp.containsKey(sequenceIdentifier)) {
 			opLatencyReceiveState.put(sequenceIdentifier, OpLatencyState.r_2);
@@ -517,7 +518,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 			opLatencyReceiveState.remove(sequenceIdentifier);
 			opLatencyLocalTimestamp.remove(sequenceIdentifier);
 			opLatencyReceivedTimestamp.remove(sequenceIdentifier);
-			sequenceNumber += 1;
+//			sequenceNumber += 1;
 		}
 	}
 
