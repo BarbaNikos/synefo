@@ -124,6 +124,8 @@ public class SynefoJoinBolt extends BaseRichBolt {
 
 	private HashMap<String, ArrayList<Integer>> intRelationTaskIndex;
 	
+	private HashMap<String, Integer> sequenceIdentifierIndex;
+	
 	private int sequenceNumber;
 
 	public SynefoJoinBolt(String task_name, String synEFO_ip, Integer synEFO_port, 
@@ -146,6 +148,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 		opLatencyReceiveState = new HashMap<String, OpLatencyState>();
 		opLatencyReceivedTimestamp = new HashMap<String, ArrayList<Long>>();
 		opLatencyLocalTimestamp = new HashMap<String, ArrayList<Long>>();
+		sequenceIdentifierIndex = new HashMap<String, Integer>();
 		sequenceNumber = 0;
 		relationTaskIndex = null;
 		intRelationTaskIndex = null;
@@ -364,6 +367,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 			opLatencyReceiveState.put(sequenceIdentifier, OpLatencyState.r_1);
 			opLatencyReceivedTimestamp.put(sequenceIdentifier, receivedLatency);
 			opLatencyLocalTimestamp.put(sequenceIdentifier, localLatency);
+			sequenceIdentifierIndex.put(sequenceIdentifier, sequenceNumber);
 			/**
 			 * Prepare OP_LATENCY_METRIC - sequence 1 to send.
 			 */
@@ -426,7 +430,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 				scaleEventFileOffset += buffer.length;
 			}
 			Values latencyMetricTuple = new Values();
-			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskID + "#" + sequenceNumber + ":" + 
+			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskID + "#" + sequenceIdentifierIndex.get(sequenceIdentifier) + ":" + 
 					OpLatencyState.s_2.toString() + ":" + currentTimestamp);
 			for(int i = 0; i < operator.getOutputSchema().size(); i++) {
 				latencyMetricTuple.add(null);
@@ -475,7 +479,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 				scaleEventFileOffset += buffer.length;
 			}
 			Values latencyMetricTuple = new Values();
-			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskID + "#" + sequenceNumber + ":" + 
+			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskID + "#" + sequenceIdentifierIndex.get(sequenceIdentifier) + ":" + 
 					OpLatencyState.s_3.toString() + ":" + currentTimestamp);
 			for(int i = 0; i < operator.getOutputSchema().size(); i++) {
 				latencyMetricTuple.add(null);
@@ -518,7 +522,6 @@ public class SynefoJoinBolt extends BaseRichBolt {
 			opLatencyReceiveState.remove(sequenceIdentifier);
 			opLatencyLocalTimestamp.remove(sequenceIdentifier);
 			opLatencyReceivedTimestamp.remove(sequenceIdentifier);
-//			sequenceNumber += 1;
 		}
 	}
 

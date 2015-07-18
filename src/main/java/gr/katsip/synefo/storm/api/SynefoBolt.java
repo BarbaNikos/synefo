@@ -125,6 +125,8 @@ public class SynefoBolt extends BaseRichBolt {
 	private HashMap<String, ArrayList<Long>> opLatencyReceivedTimestamp;
 
 	private HashMap<String, ArrayList<Long>> opLatencyLocalTimestamp;
+	
+	private HashMap<String, Integer> sequenceIdentifierIndex;
 
 	private int sequenceNumber;
 
@@ -148,6 +150,7 @@ public class SynefoBolt extends BaseRichBolt {
 		opLatencyReceiveState = new HashMap<String, OpLatencyState>();
 		opLatencyReceivedTimestamp = new HashMap<String, ArrayList<Long>>();
 		opLatencyLocalTimestamp = new HashMap<String, ArrayList<Long>>();
+		sequenceIdentifierIndex = new HashMap<String, Integer>();
 		sequenceNumber = 0;
 		if(operator instanceof AbstractStatOperator)
 			statOperatorFlag = true;
@@ -356,6 +359,7 @@ public class SynefoBolt extends BaseRichBolt {
 			opLatencyReceiveState.put(sequenceIdentifier, OpLatencyState.r_1);
 			opLatencyReceivedTimestamp.put(sequenceIdentifier, receivedLatency);
 			opLatencyLocalTimestamp.put(sequenceIdentifier, localLatency);
+			sequenceIdentifierIndex.put(sequenceIdentifier, sequenceNumber);
 			/**
 			 * Prepare OP_LATENCY_METRIC - sequence 1 to send.
 			 */
@@ -418,7 +422,7 @@ public class SynefoBolt extends BaseRichBolt {
 				scaleEventFileOffset += buffer.length;
 			}
 			Values latencyMetricTuple = new Values();
-			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskID + "#" + sequenceNumber + ":" + 
+			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskID + "#" + sequenceIdentifierIndex.get(sequenceIdentifier) + ":" + 
 					OpLatencyState.s_2.toString() + ":" + currentTimestamp);
 			for(int i = 0; i < operator.getOutputSchema().size(); i++) {
 				latencyMetricTuple.add(null);
@@ -467,7 +471,7 @@ public class SynefoBolt extends BaseRichBolt {
 				scaleEventFileOffset += buffer.length;
 			}
 			Values latencyMetricTuple = new Values();
-			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskID + "#" + sequenceNumber + ":" + 
+			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskID + "#" + sequenceIdentifierIndex.get(sequenceIdentifier) + ":" + 
 					OpLatencyState.s_3.toString() + ":" + currentTimestamp);
 			for(int i = 0; i < operator.getOutputSchema().size(); i++) {
 				latencyMetricTuple.add(null);
@@ -510,7 +514,6 @@ public class SynefoBolt extends BaseRichBolt {
 			opLatencyReceiveState.remove(sequenceIdentifier);
 			opLatencyLocalTimestamp.remove(sequenceIdentifier);
 			opLatencyReceivedTimestamp.remove(sequenceIdentifier);
-//			sequenceNumber += 1;
 		}
 	}
 
