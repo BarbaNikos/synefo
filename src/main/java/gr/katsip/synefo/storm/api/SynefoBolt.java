@@ -127,6 +127,14 @@ public class SynefoBolt extends BaseRichBolt {
 	private HashMap<String, ArrayList<Long>> opLatencyLocalTimestamp;
 	
 	private HashMap<String, Integer> sequenceIdentifierIndex;
+	
+	private HashMap<String, String> sequenceInitiator;
+	
+	private HashMap<String, ArrayList<Long>> receivedTimestampIndex;
+	
+	private HashMap<String, ArrayList<Long>> localTimestampIndex;
+	
+	private HashMap<String, OpLatencyState> sequenceStateIndex;
 
 	private int sequenceNumber;
 
@@ -151,6 +159,10 @@ public class SynefoBolt extends BaseRichBolt {
 		opLatencyReceivedTimestamp = new HashMap<String, ArrayList<Long>>();
 		opLatencyLocalTimestamp = new HashMap<String, ArrayList<Long>>();
 		sequenceIdentifierIndex = new HashMap<String, Integer>();
+		sequenceInitiator = new HashMap<String, String>();
+		receivedTimestampIndex = new HashMap<String, ArrayList<Long>>();
+		localTimestampIndex = new HashMap<String, ArrayList<Long>>();
+		sequenceStateIndex = new HashMap<String, OpLatencyState>();
 		sequenceNumber = 0;
 		if(operator instanceof AbstractStatOperator)
 			statOperatorFlag = true;
@@ -331,6 +343,191 @@ public class SynefoBolt extends BaseRichBolt {
 		}
 		statistics = new TaskStatistics(statReportPeriod);
 		backupStatistics = new TaskStatistics(statReportPeriod);
+	}
+	
+	public void manageLatencySequence(String synefoHeader, long currentTimestamp) {
+		ArrayList<Long> receivedTimestamps = null;
+		ArrayList<Long> localTimestamps = null;
+		String[] headerTokens = synefoHeader.split(":");
+		/**
+		 * [0] -> initial-sender-task-id
+		 * [1] -> initial-sender-sequence-number
+		 * [2] -> upstream-sender-task-id
+		 */
+		String[] sequenceTokens = headerTokens[0].split("-")[1].split("#");
+		String sequenceName = sequenceTokens[0] + "#" + sequenceTokens[1];
+		OpLatencyState receivedLatencyState = OpLatencyState.valueOf(headerTokens[1]);
+		Long receivedTimestamp = Long.parseLong(headerTokens[2]);
+		String logLine = currentTimestamp + " (1) sequence-num: " + sequenceName + ", op-state: " + receivedLatencyState + "\n";
+		byte[] buffer = logLine.getBytes();
+		if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
+			scaleEventFileChannel.write(
+					ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
+			scaleEventFileOffset += buffer.length;
+		}
+		if(sequenceInitiator.containsKey(sequenceName)) {
+			/**
+			 * Check if the sequence upstream task id is the current 
+			 * one in the index
+			 */
+			if(sequenceInitiator.get(sequenceName).equals(sequenceTokens[2])) {
+				/**
+				 * 3 different cases of sequence
+				 */
+				if(receivedLatencyState == OpLatencyState.s_2 && 
+						sequenceStateIndex.get(sequenceName) == OpLatencyState.r_1) {
+					sequenceStateIndex.put(sequenceName, OpLatencyState.r_2);
+					receivedTimestamps = receivedTimestampIndex.get(sequenceName);
+					receivedTimestamps.add(receivedTimestamp);
+					receivedTimestampIndex.put(sequenceName, receivedTimestamps);
+					localTimestamps = localTimestampIndex.get(sequenceName);
+					localTimestamps.add(currentTimestamp);
+					localTimestampIndex.put(sequenceName, localTimestamps);
+					/**
+					 * Check for errors
+					 */
+					if(Math.abs(receivedTimestamps.get(1) - receivedTimestamps.get(0)) < 1000) {
+						logLine = currentTimestamp + ",A," + receivedTimestamps.get(1) + "," + 
+								+ receivedTimestamps.get(0) + "\n";
+						buffer = logLine.getBytes();
+						if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
+							scaleEventFileChannel.write(
+									ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
+							scaleEventFileOffset += buffer.length;
+						}
+					}
+					if(Math.abs(localTimestamps.get(1) - localTimestamps.get(0)) < 1000) {
+						logLine = currentTimestamp + ",B," + localTimestamps.get(1) + "," + 
+								+ localTimestamps.get(0) + "\n";
+						buffer = logLine.getBytes();
+						if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
+							scaleEventFileChannel.write(
+									ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
+							scaleEventFileOffset += buffer.length;
+						}
+					}
+					Values latencyMetricTuple = new Values();
+					latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + sequenceName + 
+							"#" + taskID + ":" + 
+							OpLatencyState.s_2.toString() + ":" + 
+							currentTimestamp);
+					for(int i = 0; i < operator.getOutputSchema().size(); i++)
+						latencyMetricTuple.add(null);
+					for(Integer d_task : intActiveDownstreamTasks)
+						collector.emitDirect(d_task, latencyMetricTuple);
+				}else if(receivedLatencyState == OpLatencyState.s_3 && 
+						sequenceStateIndex.get(sequenceName) == OpLatencyState.r_2) {
+					sequenceStateIndex.put(sequenceName, OpLatencyState.r_3);
+					receivedTimestamps = receivedTimestampIndex.get(sequenceName);
+					receivedTimestamps.add(receivedTimestamp);
+					receivedTimestampIndex.put(sequenceName, receivedTimestamps);
+					localTimestamps = localTimestampIndex.get(sequenceName);
+					localTimestamps.add(currentTimestamp);
+					localTimestampIndex.put(sequenceName, localTimestamps);
+					/**
+					 * Check for errors
+					 */
+					if(Math.abs(receivedTimestamps.get(2) - receivedTimestamps.get(1)) < 1000) {
+						logLine = currentTimestamp + ",C," + receivedTimestamps.get(2) + "," + 
+								+ receivedTimestamps.get(1) + "\n";
+						buffer = logLine.getBytes();
+						if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
+							scaleEventFileChannel.write(
+									ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
+							scaleEventFileOffset += buffer.length;
+						}
+					}
+					if(Math.abs(localTimestamps.get(2) - localTimestamps.get(1)) < 1000) {
+						logLine = currentTimestamp + ",D," + localTimestamps.get(2) + "," + 
+								+ localTimestamps.get(1) + "\n";
+						buffer = logLine.getBytes();
+						if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
+							scaleEventFileChannel.write(
+									ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
+							scaleEventFileOffset += buffer.length;
+						}
+					}
+					Values latencyMetricTuple = new Values();
+					latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + sequenceName + 
+							"#" + taskID + ":" + 
+							OpLatencyState.s_3.toString() + ":" + 
+							currentTimestamp);
+					for(int i = 0; i < operator.getOutputSchema().size(); i++)
+						latencyMetricTuple.add(null);
+					for(Integer d_task : intActiveDownstreamTasks)
+						collector.emitDirect(d_task, latencyMetricTuple);
+					/**
+					 * Calculate latency
+					 */
+					long latency = ( (localTimestamps.get(1) - localTimestamps.get(0) - (receivedTimestamps.get(1) - localTimestamps.get(0))) + 
+							(localTimestamps.get(2) - receivedTimestamps.get(1) - (receivedTimestamps.get(2) - localTimestamps.get(1))) ) / 2;
+//					latency = ( 
+//							(localLatency[2] - localLatency[1] - (receivedLatency[2] - receivedLatency[1])) + 
+//							(localLatency[1] - localLatency[0] - (receivedLatency[1] - receivedLatency[0]))
+//							) / 2;
+//					latency = ( 
+//							Math.abs(localLatency[2] - localLatency[1] - 1000 - 
+//									(receivedLatency[2] - receivedLatency[1] - 1000)) + 
+//									Math.abs(localLatency[1] - localLatency[0] - 1000 - 
+//											(receivedLatency[1] - receivedLatency[0] - 1000))
+//							) / 2;
+					logLine = currentTimestamp + ", " + latency + ",[" + localTimestamps.get(2) + "-" + localTimestamps.get(1) + "-" + localTimestamps.get(0) + 
+							"-" + receivedTimestamps.get(2) + "-" + receivedTimestamps.get(1) + "-" + receivedTimestamps.get(0) + "]" + "\n";
+					buffer = logLine.getBytes();
+					if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
+						scaleEventFileChannel.write(
+								ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
+						scaleEventFileOffset += buffer.length;
+					}
+					logLine = "received timestamps: " + opLatencyReceivedTimestamp.toString() + "\n";
+					buffer = logLine.getBytes();
+					if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
+						scaleEventFileChannel.write(
+								ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
+						scaleEventFileOffset += buffer.length;
+					}
+				}else {
+					/**
+					 * Something went wrong
+					 */
+				}
+			}else {
+				/**
+				 * Need to disregard the message because its a duplicate
+				 */
+			}
+		}else {
+			/**
+			 * New sequence arrived, need to initiate it
+			 */
+			if(receivedLatencyState == OpLatencyState.s_1) {
+				sequenceInitiator.put(sequenceName, sequenceTokens[2]);
+				sequenceStateIndex.put(sequenceName, OpLatencyState.r_1);
+				receivedTimestamps = new ArrayList<Long>();
+				receivedTimestamps.add(receivedTimestamp);
+				receivedTimestampIndex.put(sequenceName, receivedTimestamps);
+				localTimestamps = new ArrayList<Long>();
+				localTimestamps.add(currentTimestamp);
+				localTimestampIndex.put(sequenceName, localTimestamps);
+				/**
+				 * Need to forward the message accordingly, by updating only the second task-id and 
+				 * the timestamp
+				 */
+				Values latencyMetricTuple = new Values();
+				latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + sequenceName + 
+						"#" + taskID + ":" + 
+						OpLatencyState.s_1.toString() + ":" + 
+						currentTimestamp);
+				for(int i = 0; i < operator.getOutputSchema().size(); i++)
+					latencyMetricTuple.add(null);
+				for(Integer d_task : intActiveDownstreamTasks)
+					collector.emitDirect(d_task, latencyMetricTuple);
+			}else {
+				/**
+				 * Do nothing, missed the sequence from its beginning
+				 */
+			}
+		}
 	}
 	
 	public void handleOperatorLatencyTuple(String synefoHeader, long currentTimestamp) {
