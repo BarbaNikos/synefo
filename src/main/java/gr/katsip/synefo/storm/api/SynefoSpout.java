@@ -62,7 +62,7 @@ public class SynefoSpout extends BaseRichSpout {
 
 	private static final int statReportPeriod = 5000;
 
-	private static final int latencySequencePeriod = 250;
+	private static final int latencySequencePeriod = 1000;
 
 	private String taskName;
 
@@ -231,8 +231,6 @@ public class SynefoSpout extends BaseRichSpout {
 	}
 
 	public void initiateLatencyMonitor(long currentTimestamp) {
-		if(Math.abs(currentTimestamp - opLatencySendTimestamp) < 1000)
-			return;
 		opLatencySendState = OpLatencyState.s_1;
 		this.opLatencySendTimestamp = currentTimestamp;
 		Values v = new Values();
@@ -255,7 +253,7 @@ public class SynefoSpout extends BaseRichSpout {
 
 	public void progressLatencySequence(long currentTimestamp) {
 		Values latencyMetricTuple = new Values();
-		if(opLatencySendState.equals(OpLatencyState.s_1) && 
+		if(opLatencySendState == OpLatencyState.s_1 && 
 				Math.abs(currentTimestamp - opLatencySendTimestamp) >= 1000) {
 			String logLine = opLatencySendTimestamp + "," + currentTimestamp + "," + opLatencySendState.toString() + "\n";
 			byte[] buffer = logLine.getBytes();
@@ -274,7 +272,7 @@ public class SynefoSpout extends BaseRichSpout {
 			for(Integer d_task : intActiveDownstreamTasks) {
 				collector.emitDirect(d_task, latencyMetricTuple);
 			}
-		}else if(opLatencySendState.equals(OpLatencyState.s_2) && 
+		}else if(opLatencySendState == OpLatencyState.s_2 && 
 				Math.abs(currentTimestamp - opLatencySendTimestamp) >= 1000) {
 			String logLine = opLatencySendTimestamp + "," + currentTimestamp + "," + opLatencySendState.toString() + "\n";
 			byte[] buffer = logLine.getBytes();
