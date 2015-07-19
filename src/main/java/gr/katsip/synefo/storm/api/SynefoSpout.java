@@ -304,13 +304,13 @@ public class SynefoSpout extends BaseRichSpout {
 		 * fashion to all downstream tasks. The words array is 
 		 * iterated from start to beginning.
 		 */
-		long currentTimestamp = System.currentTimeMillis();
+		Long currentTimestamp = System.currentTimeMillis();
 		if(intActiveDownstreamTasks != null && intActiveDownstreamTasks.size() > 0) {
 			Values values = new Values();
 			/**
 			 * Add SYNEFO_HEADER (SYNEFO_TIMESTAMP) value in the beginning
 			 */
-			values.add((new Long(System.currentTimeMillis())).toString());
+			values.add(currentTimestamp.toString());
 			Values returnedValues = null;
 			if(statTupleProducerFlag == true)
 				returnedValues = ((AbstractStatTupleProducer) tupleProducer).nextTuple(stats);
@@ -332,12 +332,15 @@ public class SynefoSpout extends BaseRichSpout {
 		stats.updateCpuLoad();
 		stats.updateWindowThroughput();
 		
-		if(latencyPeriodCounter >= SynefoSpout.latencySequencePeriod && 
-				opLatencySendState == OpLatencyState.na) {
-			initiateLatencySequence(currentTimestamp);
-		}else {
-			progressLatencySequence(currentTimestamp);
-		}
+		/**
+		 * Disabled the end-to-end latency metric just until I figure it out
+		 */
+//		if(latencyPeriodCounter >= SynefoSpout.latencySequencePeriod && 
+//				opLatencySendState == OpLatencyState.na) {
+//			initiateLatencySequence(currentTimestamp);
+//		}else {
+//			progressLatencySequence(currentTimestamp);
+//		}
 		
 		if(reportCounter >= SynefoSpout.statReportPeriod) {
 			if(statTupleProducerFlag == false) {
