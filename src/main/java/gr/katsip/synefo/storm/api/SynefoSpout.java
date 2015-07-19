@@ -242,7 +242,7 @@ public class SynefoSpout extends BaseRichSpout {
 		for(Integer d_task : intActiveDownstreamTasks) {
 			collector.emitDirect(d_task, v);
 		}
-		String logLine = opLatencySendTimestamp + "," + opLatencySendState.toString() + "\n";
+		String logLine = currentTimestamp + "," + taskId + "#" + sequenceNumber + "," + opLatencySendTimestamp + "," + opLatencySendState.toString() + "\n";
 		byte[] buffer = logLine.getBytes();
 		if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
 			scaleEventFileChannel.write(
@@ -255,7 +255,7 @@ public class SynefoSpout extends BaseRichSpout {
 		Values latencyMetricTuple = new Values();
 		if(opLatencySendState == OpLatencyState.s_1 && 
 				Math.abs(currentTimestamp - opLatencySendTimestamp) >= 1000) {
-			String logLine = opLatencySendTimestamp + "," + currentTimestamp + "," + opLatencySendState.toString() + "\n";
+			String logLine = currentTimestamp + "," + taskId + "#" + sequenceNumber + "," + opLatencySendTimestamp + "," + opLatencySendState.toString() + "\n";
 			byte[] buffer = logLine.getBytes();
 			if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
 				scaleEventFileChannel.write(
@@ -274,7 +274,7 @@ public class SynefoSpout extends BaseRichSpout {
 			}
 		}else if(opLatencySendState == OpLatencyState.s_2 && 
 				Math.abs(currentTimestamp - opLatencySendTimestamp) >= 1000) {
-			String logLine = opLatencySendTimestamp + "," + currentTimestamp + "," + opLatencySendState.toString() + "\n";
+			String logLine = currentTimestamp + "," + taskId + "#" + sequenceNumber + "," + opLatencySendTimestamp + "," + opLatencySendState.toString() + "\n";
 			byte[] buffer = logLine.getBytes();
 			if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
 				scaleEventFileChannel.write(
