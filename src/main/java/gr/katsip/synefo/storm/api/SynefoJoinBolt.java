@@ -5,7 +5,6 @@ import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.lib.SynefoMessage.Type;
 import gr.katsip.synefo.storm.operators.AbstractJoinOperator;
 import gr.katsip.synefo.utils.SynefoConstant;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -25,10 +24,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
@@ -113,20 +110,18 @@ public class SynefoJoinBolt extends BaseRichBolt {
 		r_2,
 		r_3
 	}
-
-	private HashMap<String, OpLatencyState> opLatencyReceiveState;
-
-	private HashMap<String, ArrayList<Long>> opLatencyReceivedTimestamp;
-
-	private HashMap<String, ArrayList<Long>> opLatencyLocalTimestamp;
 	
 	private HashMap<String, ArrayList<String>> relationTaskIndex;
 
 	private HashMap<String, ArrayList<Integer>> intRelationTaskIndex;
 	
-	private HashMap<String, Integer> sequenceIdentifierIndex;
+	private HashMap<String, String> sequenceInitiator;
 	
-	private int sequenceNumber;
+	private HashMap<String, ArrayList<Long>> receivedTimestampIndex;
+	
+	private HashMap<String, ArrayList<Long>> localTimestampIndex;
+	
+	private HashMap<String, OpLatencyState> sequenceStateIndex;
 
 	public SynefoJoinBolt(String task_name, String synEFO_ip, Integer synEFO_port, 
 			AbstractJoinOperator operator, String zooIP, boolean autoScale) {
@@ -145,11 +140,6 @@ public class SynefoJoinBolt extends BaseRichBolt {
 		reportCounter = 0;
 		this.autoScale = autoScale;
 		warmFlag = false;
-		opLatencyReceiveState = new HashMap<String, OpLatencyState>();
-		opLatencyReceivedTimestamp = new HashMap<String, ArrayList<Long>>();
-		opLatencyLocalTimestamp = new HashMap<String, ArrayList<Long>>();
-		sequenceIdentifierIndex = new HashMap<String, Integer>();
-		sequenceNumber = 0;
 		relationTaskIndex = null;
 		intRelationTaskIndex = null;
 	}
@@ -262,7 +252,10 @@ public class SynefoJoinBolt extends BaseRichBolt {
 				taskName + ":" + taskID + 
 				") registered to synEFO successfully, timestamp: " + System.currentTimeMillis() + ".");
 		this.downStreamIndex = new Integer(0);
-		sequenceNumber = 0;
+		sequenceInitiator = new HashMap<String, String>();
+		receivedTimestampIndex = new HashMap<String, ArrayList<Long>>();
+		localTimestampIndex = new HashMap<String, ArrayList<Long>>();
+		sequenceStateIndex = new HashMap<String, OpLatencyState>();
 	}
 
 	public void prepare(@SuppressWarnings("rawtypes") Map conf, TopologyContext context, OutputCollector collector) {
@@ -341,187 +334,195 @@ public class SynefoJoinBolt extends BaseRichBolt {
 		backupStatistics = new TaskStatistics(statReportPeriod);
 	}
 	
-	public void handleOperatorLatencyTuple(String synefoHeader, long currentTimestamp) {
-		ArrayList<Long> receivedLatency = null;
-		ArrayList<Long> localLatency = null;
-		String[] tokens = synefoHeader.split(":");
-		String sequenceIdentifier = tokens[0].split("-")[1];
-		OpLatencyState opLatencyState = OpLatencyState.valueOf(tokens[1]);
-		Long opLatencyTimestamp = Long.parseLong(tokens[2]);
-		String logLine = currentTimestamp + " (1) sequence-num: " + sequenceIdentifier + ", op-state: " + opLatencyState + "\n";
+	public void manageLatencySequence(String synefoHeader, long currentTimestamp) {
+		ArrayList<Long> receivedTimestamps = null;
+		ArrayList<Long> localTimestamps = null;
+		String[] headerTokens = synefoHeader.split(":");
+		/**
+		 * [0] -> initial-sender-task-id
+		 * [1] -> initial-sender-sequence-number
+		 * [2] -> upstream-sender-task-id
+		 */
+		String[] sequenceTokens = headerTokens[0].split("-")[1].split("#");
+		String sequenceName = sequenceTokens[0] + "#" + sequenceTokens[1];
+		OpLatencyState receivedLatencyState = OpLatencyState.valueOf(headerTokens[1]);
+		Long receivedTimestamp = Long.parseLong(headerTokens[2]);
+		String logLine = currentTimestamp + " (1) sequence-num: " + sequenceName + ", op-state: " + receivedLatencyState + "\n";
 		byte[] buffer = logLine.getBytes();
 		if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
 			scaleEventFileChannel.write(
 					ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
 			scaleEventFileOffset += buffer.length;
 		}
-		if(opLatencyReceiveState.containsKey(sequenceIdentifier) == false && opLatencyState == OpLatencyState.s_1) {
-			receivedLatency = new ArrayList<Long>();
-			localLatency = new ArrayList<Long>();
-			if(opLatencyReceivedTimestamp.containsKey(sequenceIdentifier))
-				opLatencyReceivedTimestamp.remove(sequenceIdentifier);
-			if(opLatencyLocalTimestamp.containsKey(sequenceIdentifier))
-				opLatencyLocalTimestamp.remove(sequenceIdentifier);
-			receivedLatency.add(opLatencyTimestamp);
-			localLatency.add(currentTimestamp);
-			opLatencyReceiveState.put(sequenceIdentifier, OpLatencyState.r_1);
-			opLatencyReceivedTimestamp.put(sequenceIdentifier, receivedLatency);
-			opLatencyLocalTimestamp.put(sequenceIdentifier, localLatency);
-			sequenceIdentifierIndex.put(sequenceIdentifier, sequenceNumber);
+		if(sequenceInitiator.containsKey(sequenceName)) {
 			/**
-			 * Prepare OP_LATENCY_METRIC - sequence 1 to send.
+			 * Check if the sequence upstream task id is the current 
+			 * one in the index
 			 */
-			logLine = currentTimestamp + " (2) sequence-num: " + sequenceIdentifier + ", op-state: " + 
-					opLatencyState + ", current state: " + opLatencyReceiveState.get(sequenceIdentifier).toString() + "\n";
-			buffer = logLine.getBytes();
-			if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
-				scaleEventFileChannel.write(
-						ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
-				scaleEventFileOffset += buffer.length;
-			}
-			Values latencyMetricTuple = new Values();
-			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskID + "#" + sequenceNumber + ":" + 
-					OpLatencyState.s_1.toString() + ":" + currentTimestamp);
-			for(int i = 0; i < operator.getOutputSchema().size(); i++) {
-				latencyMetricTuple.add(null);
-			}
-			for(Integer d_task : intActiveDownstreamTasks) {
-				collector.emitDirect(d_task, latencyMetricTuple);
-			}
-			sequenceNumber += 1;
-		}else if(opLatencyReceiveState.containsKey(sequenceIdentifier) && opLatencyReceiveState.get(sequenceIdentifier) == OpLatencyState.r_1 && 
-				opLatencyState == OpLatencyState.s_2 && opLatencyReceivedTimestamp.containsKey(sequenceIdentifier)) {
-			opLatencyReceiveState.put(sequenceIdentifier, OpLatencyState.r_2);
-			receivedLatency = opLatencyReceivedTimestamp.get(sequenceIdentifier);
-			receivedLatency.add(opLatencyTimestamp);
-			opLatencyReceivedTimestamp.put(sequenceIdentifier, receivedLatency);
-			localLatency = opLatencyLocalTimestamp.get(sequenceIdentifier);
-			localLatency.add(currentTimestamp);
-			if(Math.abs(receivedLatency.get(1) - receivedLatency.get(0)) < 1000) {
-				logLine = currentTimestamp + ",A," + receivedLatency.get(1) + "," + 
-						+ receivedLatency.get(0) + "\n";
-				buffer = logLine.getBytes();
-				if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
-					scaleEventFileChannel.write(
-							ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
-					scaleEventFileOffset += buffer.length;
+			if(sequenceInitiator.get(sequenceName).equals(sequenceTokens[2])) {
+				/**
+				 * 3 different cases of sequence
+				 */
+				if(receivedLatencyState == OpLatencyState.s_2 && 
+						sequenceStateIndex.get(sequenceName) == OpLatencyState.r_1) {
+					sequenceStateIndex.put(sequenceName, OpLatencyState.r_2);
+					receivedTimestamps = receivedTimestampIndex.get(sequenceName);
+					receivedTimestamps.add(receivedTimestamp);
+					receivedTimestampIndex.put(sequenceName, receivedTimestamps);
+					localTimestamps = localTimestampIndex.get(sequenceName);
+					localTimestamps.add(currentTimestamp);
+					localTimestampIndex.put(sequenceName, localTimestamps);
+					/**
+					 * Check for errors
+					 */
+					if(Math.abs(receivedTimestamps.get(1) - receivedTimestamps.get(0)) < 1000) {
+						logLine = currentTimestamp + ",A," + receivedTimestamps.get(1) + "," + 
+								+ receivedTimestamps.get(0) + "," + sequenceName + "\n";
+						buffer = logLine.getBytes();
+						if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
+							scaleEventFileChannel.write(
+									ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
+							scaleEventFileOffset += buffer.length;
+						}
+					}
+					if(Math.abs(localTimestamps.get(1) - localTimestamps.get(0)) < 1000) {
+						logLine = currentTimestamp + ",B," + localTimestamps.get(1) + "," + 
+								+ localTimestamps.get(0) + "," + sequenceName + "\n";
+						buffer = logLine.getBytes();
+						if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
+							scaleEventFileChannel.write(
+									ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
+							scaleEventFileOffset += buffer.length;
+						}
+					}
+					Values latencyMetricTuple = new Values();
+					latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + sequenceName + 
+							"#" + taskID + ":" + 
+							OpLatencyState.s_2.toString() + ":" + 
+							currentTimestamp);
+					for(int i = 0; i < operator.getOutputSchema().size(); i++)
+						latencyMetricTuple.add(null);
+					for(Integer d_task : intActiveDownstreamTasks)
+						collector.emitDirect(d_task, latencyMetricTuple);
+				}else if(receivedLatencyState == OpLatencyState.s_3 && 
+						sequenceStateIndex.get(sequenceName) == OpLatencyState.r_2) {
+					sequenceStateIndex.put(sequenceName, OpLatencyState.r_3);
+					receivedTimestamps = receivedTimestampIndex.get(sequenceName);
+					receivedTimestamps.add(receivedTimestamp);
+					receivedTimestampIndex.put(sequenceName, receivedTimestamps);
+					localTimestamps = localTimestampIndex.get(sequenceName);
+					localTimestamps.add(currentTimestamp);
+					localTimestampIndex.put(sequenceName, localTimestamps);
+					/**
+					 * Check for errors
+					 */
+					if(Math.abs(receivedTimestamps.get(2) - receivedTimestamps.get(1)) < 1000) {
+						logLine = currentTimestamp + ",C," + receivedTimestamps.get(2) + "," + 
+								+ receivedTimestamps.get(1) + "," + sequenceName + "\n";
+						buffer = logLine.getBytes();
+						if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
+							scaleEventFileChannel.write(
+									ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
+							scaleEventFileOffset += buffer.length;
+						}
+					}
+					if(Math.abs(localTimestamps.get(2) - localTimestamps.get(1)) < 1000) {
+						logLine = currentTimestamp + ",D," + localTimestamps.get(2) + "," + 
+								+ localTimestamps.get(1) + "," + sequenceName + "\n";
+						buffer = logLine.getBytes();
+						if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
+							scaleEventFileChannel.write(
+									ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
+							scaleEventFileOffset += buffer.length;
+						}
+					}
+					Values latencyMetricTuple = new Values();
+					latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + sequenceName + 
+							"#" + taskID + ":" + 
+							OpLatencyState.s_3.toString() + ":" + 
+							currentTimestamp);
+					for(int i = 0; i < operator.getOutputSchema().size(); i++)
+						latencyMetricTuple.add(null);
+					for(Integer d_task : intActiveDownstreamTasks)
+						collector.emitDirect(d_task, latencyMetricTuple);
+					/**
+					 * Calculate latency
+					 */
+					long latency = ( (localTimestamps.get(1) - localTimestamps.get(0) - (receivedTimestamps.get(1) - localTimestamps.get(0))) + 
+							(localTimestamps.get(2) - receivedTimestamps.get(1) - (receivedTimestamps.get(2) - localTimestamps.get(1))) ) / 2;
+//					latency = ( 
+//							(localLatency[2] - localLatency[1] - (receivedLatency[2] - receivedLatency[1])) + 
+//							(localLatency[1] - localLatency[0] - (receivedLatency[1] - receivedLatency[0]))
+//							) / 2;
+//					latency = ( 
+//							Math.abs(localLatency[2] - localLatency[1] - 1000 - 
+//									(receivedLatency[2] - receivedLatency[1] - 1000)) + 
+//									Math.abs(localLatency[1] - localLatency[0] - 1000 - 
+//											(receivedLatency[1] - receivedLatency[0] - 1000))
+//							) / 2;
+					logLine = currentTimestamp + ", " + latency + ",[" + localTimestamps.get(2) + "-" + localTimestamps.get(1) + "-" + localTimestamps.get(0) + 
+							"-" + receivedTimestamps.get(2) + "-" + receivedTimestamps.get(1) + "-" + receivedTimestamps.get(0) + "]" + "\n";
+					buffer = logLine.getBytes();
+					if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
+						scaleEventFileChannel.write(
+								ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
+						scaleEventFileOffset += buffer.length;
+					}
+					logLine = "received timestamps: " + receivedTimestamps.toString() + "\n";
+					buffer = logLine.getBytes();
+					if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
+						scaleEventFileChannel.write(
+								ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
+						scaleEventFileOffset += buffer.length;
+					}
+					/**
+					 * Cleanup timestamps and update task-Statistics
+					 */
+					receivedTimestampIndex.remove(sequenceName);
+					localTimestampIndex.remove(sequenceName);
+					statistics.updateWindowLatency(latency);
+					
+				}else {
+					/**
+					 * Something went wrong
+					 */
 				}
+			}else {
+				/**
+				 * Need to disregard the message because its a duplicate
+				 */
 			}
-			if(Math.abs(localLatency.get(1) - localLatency.get(0)) < 1000) {
-				logLine = currentTimestamp + ",B," + localLatency.get(1) + "," + 
-						+ localLatency.get(0) + "\n";
-				buffer = logLine.getBytes();
-				if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
-					scaleEventFileChannel.write(
-							ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
-					scaleEventFileOffset += buffer.length;
-				}
-			}
-			opLatencyLocalTimestamp.put(sequenceIdentifier, localLatency);
+		}else {
 			/**
-			 * Prepare OP_LATENCY_METRIC - sequence 2 to send.
+			 * New sequence arrived, need to initiate it
 			 */
-			logLine = currentTimestamp + " (3) sequence-num: " + sequenceIdentifier + ", op-state: " + 
-					opLatencyState + ", current state: " + opLatencyReceiveState.get(sequenceIdentifier).toString() + "\n";
-			buffer = logLine.getBytes();
-			if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
-				scaleEventFileChannel.write(
-						ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
-				scaleEventFileOffset += buffer.length;
+			if(receivedLatencyState == OpLatencyState.s_1) {
+				sequenceInitiator.put(sequenceName, sequenceTokens[2]);
+				sequenceStateIndex.put(sequenceName, OpLatencyState.r_1);
+				receivedTimestamps = new ArrayList<Long>();
+				receivedTimestamps.add(receivedTimestamp);
+				receivedTimestampIndex.put(sequenceName, receivedTimestamps);
+				localTimestamps = new ArrayList<Long>();
+				localTimestamps.add(currentTimestamp);
+				localTimestampIndex.put(sequenceName, localTimestamps);
+				/**
+				 * Need to forward the message accordingly, by updating only the second task-id and 
+				 * the timestamp
+				 */
+				Values latencyMetricTuple = new Values();
+				latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + sequenceName + 
+						"#" + taskID + ":" + 
+						OpLatencyState.s_1.toString() + ":" + 
+						currentTimestamp);
+				for(int i = 0; i < operator.getOutputSchema().size(); i++)
+					latencyMetricTuple.add(null);
+				for(Integer d_task : intActiveDownstreamTasks)
+					collector.emitDirect(d_task, latencyMetricTuple);
+			}else {
+				/**
+				 * Do nothing, missed the sequence from its beginning
+				 */
 			}
-			Values latencyMetricTuple = new Values();
-			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskID + "#" + sequenceIdentifierIndex.get(sequenceIdentifier) + ":" + 
-					OpLatencyState.s_2.toString() + ":" + currentTimestamp);
-			for(int i = 0; i < operator.getOutputSchema().size(); i++) {
-				latencyMetricTuple.add(null);
-			}
-			for(Integer d_task : intActiveDownstreamTasks) {
-				collector.emitDirect(d_task, latencyMetricTuple);
-			}
-		}else if(opLatencyReceiveState.containsKey(sequenceIdentifier) && opLatencyReceiveState.get(sequenceIdentifier) == OpLatencyState.r_2 && 
-				opLatencyState == OpLatencyState.s_3 && opLatencyReceivedTimestamp.containsKey(sequenceIdentifier)) {
-			opLatencyReceiveState.put(sequenceIdentifier, OpLatencyState.r_3);
-			receivedLatency = opLatencyReceivedTimestamp.get(sequenceIdentifier);
-			receivedLatency.add(opLatencyTimestamp);
-			opLatencyReceivedTimestamp.put(sequenceIdentifier, receivedLatency);
-			localLatency = opLatencyLocalTimestamp.get(sequenceIdentifier);
-			localLatency.add(currentTimestamp);
-			opLatencyLocalTimestamp.put(sequenceIdentifier, localLatency);
-			if(Math.abs(receivedLatency.get(2) - receivedLatency.get(1)) < 1000) {
-				logLine = currentTimestamp + ",C," + receivedLatency.get(2) + "," + 
-						+ receivedLatency.get(1) + "\n";
-				buffer = logLine.getBytes();
-				if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
-					scaleEventFileChannel.write(
-							ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
-					scaleEventFileOffset += buffer.length;
-				}
-			}
-			if(Math.abs(localLatency.get(2) - localLatency.get(1)) < 1000) {
-				logLine = currentTimestamp + ",D," + localLatency.get(2) + "," + 
-						+ localLatency.get(1) + "\n";
-				buffer = logLine.getBytes();
-				if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
-					scaleEventFileChannel.write(
-							ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
-					scaleEventFileOffset += buffer.length;
-				}
-			}
-			/**
-			 * Prepare OP_LATENCY_METRIC - sequence 3 to send.
-			 */
-			logLine = currentTimestamp + " (4) sequence-num: " + sequenceIdentifier + ", op-state: " + 
-					opLatencyState + ", current state: " + opLatencyReceiveState.get(sequenceIdentifier).toString() + "\n";
-			buffer = logLine.getBytes();
-			if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
-				scaleEventFileChannel.write(
-						ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
-				scaleEventFileOffset += buffer.length;
-			}
-			Values latencyMetricTuple = new Values();
-			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskID + "#" + sequenceIdentifierIndex.get(sequenceIdentifier) + ":" + 
-					OpLatencyState.s_3.toString() + ":" + currentTimestamp);
-			for(int i = 0; i < operator.getOutputSchema().size(); i++) {
-				latencyMetricTuple.add(null);
-			}
-			for(Integer d_task : intActiveDownstreamTasks) {
-				collector.emitDirect(d_task, latencyMetricTuple);
-			}
-			long latency = -1;
-			/**
-			 * Calculate latency
-			 */
-			latency = ( (localLatency.get(1) - receivedLatency.get(0) - (receivedLatency.get(1) - localLatency.get(0))) + 
-					(localLatency.get(2) - receivedLatency.get(1) - (receivedLatency.get(2) - localLatency.get(1))) ) / 2;
-//			latency = ( 
-//					(localLatency[2] - localLatency[1] - (receivedLatency[2] - receivedLatency[1])) + 
-//					(localLatency[1] - localLatency[0] - (receivedLatency[1] - receivedLatency[0]))
-//					) / 2;
-//			latency = ( 
-//					Math.abs(localLatency[2] - localLatency[1] - 1000 - 
-//							(receivedLatency[2] - receivedLatency[1] - 1000)) + 
-//							Math.abs(localLatency[1] - localLatency[0] - 1000 - 
-//									(receivedLatency[1] - receivedLatency[0] - 1000))
-//					) / 2;
-			logLine = currentTimestamp + ", " + latency + ",[" + localLatency.get(2) + "-" + localLatency.get(1) + "-" + localLatency.get(0) + 
-					"-" + receivedLatency.get(2) + "-" + receivedLatency.get(1) + "-" + receivedLatency.get(0) + "]" + "\n";
-			buffer = logLine.getBytes();
-			if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
-				scaleEventFileChannel.write(
-						ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
-				scaleEventFileOffset += buffer.length;
-			}
-			logLine = "received timestamps: " + opLatencyReceivedTimestamp.toString() + "\n";
-			buffer = logLine.getBytes();
-			if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
-				scaleEventFileChannel.write(
-						ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
-				scaleEventFileOffset += buffer.length;
-			}
-			statistics.updateWindowLatency(latency);
-			opLatencyReceiveState.remove(sequenceIdentifier);
-			opLatencyLocalTimestamp.remove(sequenceIdentifier);
-			opLatencyReceivedTimestamp.remove(sequenceIdentifier);
 		}
 	}
 
@@ -550,14 +551,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 					return;
 				}
 			}else if(synefoHeader.contains(SynefoConstant.OP_LATENCY_METRIC) && opLatencyHeader.equals(SynefoConstant.OP_LATENCY_METRIC)) {
-//				String logLine = System.currentTimeMillis() + "," + synefoHeader + "\n";
-//				byte[] buffer = logLine.getBytes();
-//				if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
-//					scaleEventFileChannel.write(
-//							ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
-//					scaleEventFileOffset += buffer.length;
-//				}
-				handleOperatorLatencyTuple(synefoHeader, currentTimestamp);
+				manageLatencySequence(synefoHeader, currentTimestamp);
 				collector.ack(tuple);
 				return;
 			}else {
@@ -691,9 +685,6 @@ public class SynefoJoinBolt extends BaseRichBolt {
 			/**
 			 * Re-initialize Operator-latency metrics
 			 */
-			opLatencyReceiveState.clear();
-			opLatencyReceivedTimestamp.clear();
-			opLatencyLocalTimestamp.clear();
 			reportCounter = 0;
 		}
 	}
@@ -967,9 +958,6 @@ public class SynefoJoinBolt extends BaseRichBolt {
 		/**
 		 * Re-initialize operator-latency metrics
 		 */
-		opLatencyReceiveState.clear();
-		opLatencyReceivedTimestamp.clear();
-		opLatencyLocalTimestamp.clear();
 	}
 
 }
