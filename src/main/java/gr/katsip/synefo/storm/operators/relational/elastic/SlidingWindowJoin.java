@@ -168,6 +168,7 @@ public class SlidingWindowJoin implements Serializable {
 				 * If we overcome the current window (go to not matching windows), the loop breaks and the result 
 				 * can be returned
 				 */
+//				System.out.println("+++EXPIRED+++");
 				break;
 			}
 		}
