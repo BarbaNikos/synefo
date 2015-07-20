@@ -98,7 +98,7 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 	public int execute(OutputCollector collector,
 			HashMap<String, ArrayList<Integer>> taskRelationIndex,
 			ArrayList<Integer> activeTasks, Integer taskIndex, Fields fields,
-			Values values) {
+			Values values, Long tupleTimestamp) {
 		/**
 		 * Receive a tuple that: attribute[0] : fields, attribute[1] : values
 		 */
@@ -122,7 +122,7 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 				/**
 				 * Add timestamp for synefo
 				 */
-				tuple.add((new Long(currentTimestamp).toString()));
+				tuple.add(tupleTimestamp.toString());
 				tuple.add(joinOutputSchema);
 				tuple.add(result);
 				collector.emitDirect(activeTasks.get(taskIndex), tuple);

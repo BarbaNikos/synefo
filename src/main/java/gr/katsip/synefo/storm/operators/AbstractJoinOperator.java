@@ -17,7 +17,7 @@ public interface AbstractJoinOperator {
 	public void setOutputSchema(Fields output_schema);
 
 	public int execute(OutputCollector collector, HashMap<String, ArrayList<Integer>> taskRelationIndex, 
-			ArrayList<Integer> activeTasks, Integer taskIndex, Fields fields, Values values);
+			ArrayList<Integer> activeTasks, Integer taskIndex, Fields fields, Values values, Long tupleTimestamp);
 
 	public List<Values> getStateValues();
 

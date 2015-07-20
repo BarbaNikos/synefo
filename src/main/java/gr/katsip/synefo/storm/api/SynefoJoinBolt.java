@@ -563,19 +563,23 @@ public class SynefoJoinBolt extends BaseRichBolt {
 		 * Remove from both values and fields SYNEFO_HEADER (SYNEFO_TIMESTAMP)
 		 */
 		Values values = new Values(tuple.getValues().toArray());
-		values.remove(0);
+		Long tupleTimestamp = Long.parseLong((String) values.remove(0));
 		List<String> fieldList = tuple.getFields().toList();
 		fieldList.remove(0);
 		Fields fields = new Fields(fieldList);
 		if(intActiveDownstreamTasks != null && intActiveDownstreamTasks.size() > 0) {
+			/**
+			 * Need to provide also the tupleTimestamp
+			 */
 			downStreamIndex = operator.execute(collector, intRelationTaskIndex, intActiveDownstreamTasks, 
-					downStreamIndex, fields, values);
+					downStreamIndex, fields, values, tupleTimestamp);
 			collector.ack(tuple);
 		}else {
 			Long executeStartTimestamp = System.currentTimeMillis();
 			downStreamIndex = operator.execute(collector, intRelationTaskIndex, intActiveDownstreamTasks, 
-					downStreamIndex, fields, values);
+					downStreamIndex, fields, values, tupleTimestamp);
 			Long executeEndTimestamp = System.currentTimeMillis();
+			statistics.updateWindowLatency((currentTimestamp - tupleTimestamp));
 			statistics.updateWindowOperationalLatency((executeEndTimestamp - executeStartTimestamp));
 			collector.ack(tuple);
 		}

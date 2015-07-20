@@ -560,7 +560,10 @@ public class SynefoBolt extends BaseRichBolt {
 		 */
 		Values produced_values = null;
 		Values values = new Values(tuple.getValues().toArray());
-		values.remove(0);
+		/**
+		 * Extract the timestamp given by the Spout
+		 */
+		Long tupleTimestamp = Long.parseLong((String) values.remove(0));
 		List<String> fieldList = tuple.getFields().toList();
 		fieldList.remove(0);
 		Fields fields = new Fields(fieldList);
@@ -576,7 +579,10 @@ public class SynefoBolt extends BaseRichBolt {
 			if(returnedTuples != null && returnedTuples.size() > 0) {
 				for(Values v : returnedTuples) {
 					produced_values = new Values();
-					produced_values.add((new Long(System.currentTimeMillis())).toString());
+					/**
+					 * Retain the tuple's timestamp (timestamped from the Spout)
+					 */
+					produced_values.add(tupleTimestamp.toString());
 					for(int i = 0; i < v.size(); i++) {
 						produced_values.add(v.get(i));
 					}
@@ -598,6 +604,10 @@ public class SynefoBolt extends BaseRichBolt {
 			else
 				returnedTuples = operator.execute(fields, values);
 			Long executeEndTimestamp = System.currentTimeMillis();
+			/**
+			 * Update the overall latency of the tuple (since this is a drain operator) 
+			 */
+			statistics.updateWindowLatency((currentTimestamp - tupleTimestamp));
 			statistics.updateWindowOperationalLatency((executeEndTimestamp - executeStartTimestamp));
 			statistics.updateSelectivity(( (double) returnedTuples.size() / 1.0));
 			collector.ack(tuple);

@@ -58,7 +58,7 @@ public class JoinDispatcher implements AbstractJoinOperator, Serializable {
 	public int execute(OutputCollector collector,
 			HashMap<String, ArrayList<Integer>> taskRelationIndex,
 			ArrayList<Integer> activeTasks, Integer taskIndex, Fields fields,
-			Values values) {
+			Values values, Long tupleTimestamp) {
 		/**
 		 * Receive a tuple that: attribute[0] : fields, attribute[1] : values
 		 */
@@ -75,7 +75,7 @@ public class JoinDispatcher implements AbstractJoinOperator, Serializable {
 				Integer nextTask = activeTasks.get(taskIndex);
 				if(leftRelationTasks.contains(nextTask)) {
 					Values tuple = new Values();
-					tuple.add((new Long(System.currentTimeMillis())).toString());
+					tuple.add(tupleTimestamp.toString());
 					tuple.add(attributeNames);
 					tuple.add(attributeValues);
 					collector.emitDirect(nextTask, tuple);
@@ -95,7 +95,7 @@ public class JoinDispatcher implements AbstractJoinOperator, Serializable {
 			 * After giving it an additional SYNEFO_HEADER field
 			 */
 			Values tuple = new Values();
-			tuple.add((new Long(System.currentTimeMillis())).toString());
+			tuple.add(tupleTimestamp.toString());
 			tuple.add(attributeNames);
 			tuple.add(attributeValues);
 			for(Integer rightRelationTask : taskRelationIndex.get(rightRelation)) {
@@ -114,7 +114,7 @@ public class JoinDispatcher implements AbstractJoinOperator, Serializable {
 				Integer nextTask = activeTasks.get(taskIndex);
 				if(rightRelationTasks.contains(nextTask)) {
 					Values tuple = new Values();
-					tuple.add((new Long(System.currentTimeMillis())).toString());
+					tuple.add(tupleTimestamp.toString());
 					tuple.add(attributeNames);
 					tuple.add(attributeValues);
 					collector.emitDirect(nextTask, tuple);
@@ -133,7 +133,7 @@ public class JoinDispatcher implements AbstractJoinOperator, Serializable {
 			 * After giving it an additional SYNEFO_HEADER field
 			 */
 			Values tuple = new Values();
-			tuple.add((new Long(System.currentTimeMillis())).toString());
+			tuple.add(tupleTimestamp.toString());
 			tuple.add(attributeNames);
 			tuple.add(attributeValues);
 			for(Integer leftRelationTask : taskRelationIndex.get(leftRelation)) {

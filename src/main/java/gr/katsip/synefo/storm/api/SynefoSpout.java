@@ -345,7 +345,7 @@ public class SynefoSpout extends BaseRichSpout {
 		if(reportCounter >= SynefoSpout.statReportPeriod) {
 			if(statTupleProducerFlag == false) {
 				byte[] buffer = (System.currentTimeMillis() + "," + stats.getCpuLoad() + "," + 
-						stats.getMemory() + "," + stats.getWindowLatency() + "," + 
+						stats.getMemory() + "," + -5 + "," + 
 						stats.getWindowThroughput() + "\n").toString().getBytes();
 				if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
 					statisticFileChannel.write(
