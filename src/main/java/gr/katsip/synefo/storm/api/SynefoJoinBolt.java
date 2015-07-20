@@ -82,8 +82,6 @@ public class SynefoJoinBolt extends BaseRichBolt {
 	private Integer synefoServerPort = -1;
 
 	private TaskStatistics statistics;
-	
-	private TaskStatistics backupStatistics;
 
 	private AbstractJoinOperator operator;
 
@@ -331,7 +329,6 @@ public class SynefoJoinBolt extends BaseRichBolt {
 			scaleEventFileOffset = 0L;
 		}
 		statistics = new TaskStatistics(statReportPeriod);
-		backupStatistics = new TaskStatistics(statReportPeriod);
 	}
 	
 	public void manageLatencySequence(String synefoHeader, long currentTimestamp) {
@@ -556,14 +553,13 @@ public class SynefoJoinBolt extends BaseRichBolt {
 				return;
 			}else {
 				synefoTimestamp = Long.parseLong(synefoHeader);
-				backupStatistics.updateWindowLatency((currentTimestamp - synefoTimestamp));
 			}
 		}
 		/**
 		 * Remove from both values and fields SYNEFO_HEADER (SYNEFO_TIMESTAMP)
 		 */
 		Values values = new Values(tuple.getValues().toArray());
-		Long tupleTimestamp = Long.parseLong((String) values.remove(0));
+		values.remove(0);
 		List<String> fieldList = tuple.getFields().toList();
 		fieldList.remove(0);
 		Fields fields = new Fields(fieldList);
@@ -571,15 +567,18 @@ public class SynefoJoinBolt extends BaseRichBolt {
 			/**
 			 * Need to provide also the tupleTimestamp
 			 */
+			Long executeStartTimestamp = System.currentTimeMillis();
 			downStreamIndex = operator.execute(collector, intRelationTaskIndex, intActiveDownstreamTasks, 
-					downStreamIndex, fields, values, tupleTimestamp);
+					downStreamIndex, fields, values, synefoTimestamp);
+			Long executeEndTimestamp = System.currentTimeMillis();
+			statistics.updateWindowOperationalLatency((executeEndTimestamp - executeStartTimestamp));
 			collector.ack(tuple);
 		}else {
 			Long executeStartTimestamp = System.currentTimeMillis();
 			downStreamIndex = operator.execute(collector, intRelationTaskIndex, intActiveDownstreamTasks, 
-					downStreamIndex, fields, values, tupleTimestamp);
+					downStreamIndex, fields, values, synefoTimestamp);
 			Long executeEndTimestamp = System.currentTimeMillis();
-			statistics.updateWindowLatency((currentTimestamp - tupleTimestamp));
+			statistics.updateWindowLatency((currentTimestamp - synefoTimestamp));
 			statistics.updateWindowOperationalLatency((executeEndTimestamp - executeStartTimestamp));
 			collector.ack(tuple);
 		}
@@ -594,7 +593,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 			}
 			byte[] buffer = (System.currentTimeMillis() + "," + statistics.getCpuLoad() + "," + 
 					statistics.getMemory() + "," + stateSize + "," + statistics.getWindowLatency() + "," + 
-					statistics.getWindowOperationalLatency() + "," + backupStatistics.getWindowLatency() + "," + 
+					statistics.getWindowOperationalLatency() + "," + 
 					statistics.getWindowThroughput() + "\n").toString().getBytes();
 			if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
 				statisticFileChannel.write(
@@ -605,7 +604,6 @@ public class SynefoJoinBolt extends BaseRichBolt {
 			if(warmFlag == false)
 				warmFlag = true;
 			statistics = new TaskStatistics(statReportPeriod);
-			backupStatistics = new TaskStatistics(statReportPeriod);
 		}else {
 			reportCounter += 1;
 		}
@@ -756,7 +754,6 @@ public class SynefoJoinBolt extends BaseRichBolt {
 				 * Re-initialize statistics object
 				 */
 				statistics = new TaskStatistics(statReportPeriod);
-				backupStatistics = new TaskStatistics(statReportPeriod);
 				/**
 				 * If this component is added, open a ServerSocket
 				 */
@@ -879,7 +876,6 @@ public class SynefoJoinBolt extends BaseRichBolt {
 				 * Re-initialize statistics object
 				 */
 				statistics = new TaskStatistics(statReportPeriod);
-				backupStatistics = new TaskStatistics(statReportPeriod);
 				try {
 					ServerSocket _socket = new ServerSocket(6000 + taskID);
 					logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
