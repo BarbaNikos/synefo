@@ -8,6 +8,7 @@ public class StatDebugMain {
 			System.exit(1);
 		}else {
 			StatCollector statCollector = new StatCollector(args[0]);
+			statCollector.init();
 		}
 	}
 
