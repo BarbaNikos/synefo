@@ -239,9 +239,9 @@ public class TpchQueryFiveTopology {
 		synEFOSocket.close();
 
 		conf.setDebug(false);
-		conf.setNumWorkers(20);
+		conf.setNumWorkers(5);
 		conf.put(Config.TOPOLOGY_WORKER_CHILDOPTS, 
-				"-Xmx4096m -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:NewSize=128m -XX:CMSInitiatingOccupancyFraction=70 -XX:-CMSConcurrentMTEnabled -Djava.net.preferIPv4Stack=true");
+				"-Xmx8192m -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:NewSize=128m -XX:CMSInitiatingOccupancyFraction=70 -XX:-CMSConcurrentMTEnabled -Djava.net.preferIPv4Stack=true");
 		conf.put(Config.TOPOLOGY_RECEIVER_BUFFER_SIZE, 8);
 		conf.put(Config.TOPOLOGY_TRANSFER_BUFFER_SIZE, 32);
 		conf.put(Config.TOPOLOGY_EXECUTOR_RECEIVE_BUFFER_SIZE, 16384);
