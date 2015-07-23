@@ -123,6 +123,8 @@ public class SynefoJoinBolt extends BaseRichBolt {
 	private HashMap<String, ArrayList<Long>> localTimestampIndex;
 	
 	private HashMap<String, OpLatencyState> sequenceStateIndex;
+	
+	private long latestSynefoTimestamp;
 
 	public SynefoJoinBolt(String task_name, String synEFO_ip, Integer synEFO_port, 
 			AbstractJoinOperator operator, String zooIP, boolean autoScale) {
@@ -143,6 +145,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 		warmFlag = false;
 		relationTaskIndex = null;
 		intRelationTaskIndex = null;
+		latestSynefoTimestamp = -1;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -257,6 +260,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 		receivedTimestampIndex = new HashMap<String, ArrayList<Long>>();
 		localTimestampIndex = new HashMap<String, ArrayList<Long>>();
 		sequenceStateIndex = new HashMap<String, OpLatencyState>();
+		latestSynefoTimestamp = -1;
 	}
 
 	public void prepare(@SuppressWarnings("rawtypes") Map conf, TopologyContext context, OutputCollector collector) {
@@ -588,7 +592,12 @@ public class SynefoJoinBolt extends BaseRichBolt {
 				scaleEventFileChannel.write(ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
 				scaleEventFileOffset += buffer.length;
 			}
-			statistics.updateWindowLatency((currentTimestamp - synefoTimestamp));
+			if(latestSynefoTimestamp == -1)
+				latestSynefoTimestamp = synefoTimestamp;
+			if(latestSynefoTimestamp < synefoTimestamp) {
+				statistics.updateWindowLatency((currentTimestamp - synefoTimestamp));
+				latestSynefoTimestamp = synefoTimestamp;
+			}
 			statistics.updateWindowOperationalLatency((executeEndTimestamp - executeStartTimestamp));
 			collector.ack(tuple);
 		}

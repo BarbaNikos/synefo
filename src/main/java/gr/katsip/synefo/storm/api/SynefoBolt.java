@@ -126,6 +126,8 @@ public class SynefoBolt extends BaseRichBolt {
 	
 	private HashMap<String, OpLatencyState> sequenceStateIndex;
 	
+	private long latestSynefoTimestamp;
+	
 	public SynefoBolt(String task_name, String synEFO_ip, Integer synEFO_port, 
 			AbstractOperator operator, String zooIP, boolean autoScale) {
 		taskName = task_name;
@@ -147,6 +149,7 @@ public class SynefoBolt extends BaseRichBolt {
 			statOperatorFlag = true;
 		else
 			statOperatorFlag = false;
+		latestSynefoTimestamp = -1;
 	}
 
 	/**
@@ -249,6 +252,7 @@ public class SynefoBolt extends BaseRichBolt {
 		receivedTimestampIndex = new HashMap<String, ArrayList<Long>>();
 		localTimestampIndex = new HashMap<String, ArrayList<Long>>();
 		sequenceStateIndex = new HashMap<String, OpLatencyState>();
+		latestSynefoTimestamp = -1;
 	}
 
 	public void prepare(@SuppressWarnings("rawtypes") Map conf, TopologyContext context, OutputCollector collector) {
@@ -610,7 +614,12 @@ public class SynefoBolt extends BaseRichBolt {
 				scaleEventFileChannel.write(ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
 				scaleEventFileOffset += buffer.length;
 			}
-			statistics.updateWindowLatency((currentTimestamp - synefoTimestamp));
+			if(latestSynefoTimestamp == -1)
+				latestSynefoTimestamp = synefoTimestamp;
+			if(latestSynefoTimestamp < synefoTimestamp) {
+				statistics.updateWindowLatency((currentTimestamp - synefoTimestamp));
+				latestSynefoTimestamp = synefoTimestamp;
+			}
 			statistics.updateWindowOperationalLatency((executeEndTimestamp - executeStartTimestamp));
 			statistics.updateSelectivity(( (double) returnedTuples.size() / 1.0));
 			collector.ack(tuple);
