@@ -543,7 +543,8 @@ public class SynefoBolt extends BaseRichBolt {
 					collector.ack(tuple);
 					return;
 				}
-			}else if(synefoHeader.contains(SynefoConstant.OP_LATENCY_METRIC) && opLatencyHeader.equals(SynefoConstant.OP_LATENCY_METRIC)) {
+			}else if(synefoHeader.contains(SynefoConstant.OP_LATENCY_METRIC) && 
+					opLatencyHeader.equals(SynefoConstant.OP_LATENCY_METRIC)) {
 				manageLatencySequence(synefoHeader, currentTimestamp);
 				collector.ack(tuple);
 				return;
@@ -614,8 +615,11 @@ public class SynefoBolt extends BaseRichBolt {
 
 		if(reportCounter >= SynefoBolt.statReportPeriod) {
 			if(statOperatorFlag == false) {
-				byte[] buffer = (System.currentTimeMillis() + "," + statistics.getCpuLoad() + "," + 
-						statistics.getMemory() + ",-1," + statistics.getWindowLatency() + "," + 
+				/**
+				 * timestamp, cpu, memory, state-size, latency, operational-latency, throughput
+				 */
+				byte[] buffer = (currentTimestamp + "," + statistics.getCpuLoad() + "," + 
+						statistics.getMemory() + ",N/A," + statistics.getWindowLatency() + "," + 
 						statistics.getWindowOperationalLatency() + "," + 
 						statistics.getWindowThroughput() + "\n").toString().getBytes();
 				if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
@@ -652,7 +656,7 @@ public class SynefoBolt extends BaseRichBolt {
 			downStreamIndex = 0;
 			if(action.toLowerCase().contains("activate") || action.toLowerCase().contains("deactivate")) {
 				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + ") located scale-command: " + 
-						scaleCommand + ", about to update routing tables (timestamp: " + System.currentTimeMillis() + ").");
+						scaleCommand + ", about to update routing tables (timestamp: " + currentTimestamp + ").");
 				if(action.toLowerCase().equals("activate")) {
 					if(activeDownstreamTasks.contains(taskWithIp) == false && intActiveDownstreamTasks.contains(task_id) == false) {
 						if(activeDownstreamTasks.indexOf(taskWithIp) < 0)
@@ -668,10 +672,10 @@ public class SynefoBolt extends BaseRichBolt {
 				}
 				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + ") located scale-command: " + 
 						scaleCommand + ", updated routing tables: " + intActiveDownstreamTasks + 
-						"(timestamp: " + System.currentTimeMillis() + ").");
+						"(timestamp: " + currentTimestamp + ").");
 			}else {
 				logger.info("+EFO-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + ") located scale-command: " + 
-						scaleCommand + ", about to produce punctuation tuple (timestamp: " + System.currentTimeMillis() + ").");
+						scaleCommand + ", about to produce punctuation tuple (timestamp: " + currentTimestamp + ").");
 				if(action.toLowerCase().contains("add")) {
 					if(activeDownstreamTasks.contains(taskWithIp) == false && intActiveDownstreamTasks.contains(task_id) == false) {
 						if(activeDownstreamTasks.indexOf(taskWithIp) < 0)
