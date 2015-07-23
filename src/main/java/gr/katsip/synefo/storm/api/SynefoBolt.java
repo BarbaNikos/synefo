@@ -604,6 +604,12 @@ public class SynefoBolt extends BaseRichBolt {
 			/**
 			 * Update the overall latency of the tuple (since this is a drain operator) 
 			 */
+			String logLine = currentTimestamp + "," + synefoTimestamp + "," + (currentTimestamp - synefoTimestamp) + "\n";
+			byte[] buffer = logLine.getBytes();
+			if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
+				scaleEventFileChannel.write(ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
+				scaleEventFileOffset += buffer.length;
+			}
 			statistics.updateWindowLatency((currentTimestamp - synefoTimestamp));
 			statistics.updateWindowOperationalLatency((executeEndTimestamp - executeStartTimestamp));
 			statistics.updateSelectivity(( (double) returnedTuples.size() / 1.0));
