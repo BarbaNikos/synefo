@@ -15,7 +15,7 @@ public class TimestampMiner {
 			for(File logFile : files) {
 				if(!logFile.isFile() || !logFile.getName().contains("-scale-events.log"))
 					continue;
-				String operator = logFile.getName().split("_")[0];
+//				String operator = logFile.getName().split("_")[0];
 				BufferedReader reader = new BufferedReader(new FileReader(logFile));
 				String line = "";
 				while((line = reader.readLine()) != null) {
