@@ -15,14 +15,11 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.lib.SynefoMessage.Type;
-import gr.katsip.synefo.storm.producers.AbstractStatTupleProducer;
 import gr.katsip.synefo.storm.producers.AbstractTupleProducer;
 import gr.katsip.synefo.utils.SynefoConstant;
 import backtype.storm.spout.SpoutOutputCollector;
@@ -60,9 +57,7 @@ public class SynefoSpout extends BaseRichSpout {
 
 	private Long scaleEventFileOffset = 0L;
 
-	private static final int statReportPeriod = 5000;
-
-	private static final int latencySequencePeriod = 1000;
+	private static final int statReportPeriod = 10000;
 
 	private String taskName;
 
@@ -98,26 +93,6 @@ public class SynefoSpout extends BaseRichSpout {
 
 	private int reportCounter;
 
-	private int latencyPeriodCounter;
-
-	private boolean statTupleProducerFlag;
-
-	private enum OpLatencyState {
-		na,
-		s_1,
-		s_2,
-		s_3,
-		r_1,
-		r_2,
-		r_3
-	}
-
-	private OpLatencyState opLatencySendState;
-
-	private long opLatencySendTimestamp;
-	
-	private int sequenceNumber;
-
 	public SynefoSpout(String task_name, String synEFO_ip, Integer synEFO_port, 
 			AbstractTupleProducer tupleProducer, String zooIP) {
 		taskName = task_name;
@@ -130,14 +105,6 @@ public class SynefoSpout extends BaseRichSpout {
 		this.tupleProducer = tupleProducer;
 		this.zooIP = zooIP;
 		reportCounter = 0;
-		latencyPeriodCounter = 0;
-		opLatencySendState = OpLatencyState.na;
-		opLatencySendTimestamp = 0L;
-		if(tupleProducer instanceof AbstractStatTupleProducer)
-			statTupleProducerFlag = true;
-		else
-			statTupleProducerFlag = false;
-		sequenceNumber = 0;
 	}
 
 	/**
@@ -220,82 +187,6 @@ public class SynefoSpout extends BaseRichSpout {
 				taskName + ":" + taskId + "@" + taskIP + 
 				") registered to +EFO successfully (timestamp: " + 
 				System.currentTimeMillis() + ").");
-		/**
-		 * Updating operator name for saving the statistics data 
-		 * in the database server accordingly
-		 */
-		if(statTupleProducerFlag == true)
-			((AbstractStatTupleProducer) tupleProducer).updateProducerName(
-					taskName + ":" + taskId + "@" + taskIP);
-		sequenceNumber = 0;
-	}
-
-	public void initiateLatencySequence(long currentTimestamp) {
-		opLatencySendState = OpLatencyState.s_1;
-		this.opLatencySendTimestamp = currentTimestamp;
-		Values v = new Values();
-		v.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskId + "#" + sequenceNumber + "#" + taskId + ":" + 
-				OpLatencyState.s_1.toString() + ":" + opLatencySendTimestamp);
-		for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
-			v.add(null);
-		}
-		for(Integer d_task : intActiveDownstreamTasks) {
-			collector.emitDirect(d_task, v);
-		}
-		String logLine = currentTimestamp + "," + taskId + "#" + sequenceNumber + "," + opLatencySendTimestamp + "," + opLatencySendState.toString() + "\n";
-		byte[] buffer = logLine.getBytes();
-		if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
-			scaleEventFileChannel.write(
-					ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
-			scaleEventFileOffset += buffer.length;
-		}
-	}
-
-	public void progressLatencySequence(long currentTimestamp) {
-		Values latencyMetricTuple = new Values();
-		if(opLatencySendState == OpLatencyState.s_1 && 
-				Math.abs(currentTimestamp - opLatencySendTimestamp) >= 1000) {
-			String logLine = currentTimestamp + "," + taskId + "#" + sequenceNumber + "," + opLatencySendTimestamp + "," + opLatencySendState.toString() + "\n";
-			byte[] buffer = logLine.getBytes();
-			if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
-				scaleEventFileChannel.write(
-						ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
-				scaleEventFileOffset += buffer.length;
-			}
-			this.opLatencySendState = OpLatencyState.s_2;
-			this.opLatencySendTimestamp = currentTimestamp;
-			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskId + "#" + sequenceNumber + "#" + taskId + ":" + 
-					OpLatencyState.s_2.toString() + ":" + opLatencySendTimestamp);
-			for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
-				latencyMetricTuple.add(null);
-			}
-			for(Integer d_task : intActiveDownstreamTasks) {
-				collector.emitDirect(d_task, latencyMetricTuple);
-			}
-		}else if(opLatencySendState == OpLatencyState.s_2 && 
-				Math.abs(currentTimestamp - opLatencySendTimestamp) >= 1000) {
-			String logLine = currentTimestamp + "," + taskId + "#" + sequenceNumber + "," + opLatencySendTimestamp + "," + opLatencySendState.toString() + "\n";
-			byte[] buffer = logLine.getBytes();
-			if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
-				scaleEventFileChannel.write(
-						ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
-				scaleEventFileOffset += buffer.length;
-			}
-			this.opLatencySendTimestamp = currentTimestamp;
-			latencyMetricTuple.add(SynefoConstant.OP_LATENCY_METRIC + "-" + taskId + "#" + sequenceNumber + "#" + taskId + ":" + 
-					OpLatencyState.s_3.toString() + ":" + opLatencySendTimestamp);
-			for(int i = 0; i < tupleProducer.getSchema().size(); i++) {
-				latencyMetricTuple.add(null);
-			}
-			for(Integer d_task : intActiveDownstreamTasks) {
-				collector.emitDirect(d_task, latencyMetricTuple);
-			}
-			this.opLatencySendState = OpLatencyState.na;
-			this.latencyPeriodCounter = 0;
-			sequenceNumber += 1;
-		}else {
-			latencyPeriodCounter += 1;
-		}
 	}
 
 	public void nextTuple() {
@@ -312,10 +203,7 @@ public class SynefoSpout extends BaseRichSpout {
 			 */
 			values.add(currentTimestamp.toString());
 			Values returnedValues = null;
-			if(statTupleProducerFlag == true)
-				returnedValues = ((AbstractStatTupleProducer) tupleProducer).nextTuple(stats);
-			else
-				returnedValues = tupleProducer.nextTuple();
+			returnedValues = tupleProducer.nextTuple();
 			if(returnedValues != null) {
 				for(int i = 0; i < returnedValues.size(); i++) {
 					values.add(returnedValues.get(i));
@@ -338,29 +226,17 @@ public class SynefoSpout extends BaseRichSpout {
 		stats.updateCpuLoad();
 		stats.updateWindowThroughput();
 		
-		/**
-		 * Disabled the end-to-end latency metric just until I figure it out
-		 */
-//		if(latencyPeriodCounter >= SynefoSpout.latencySequencePeriod && 
-//				opLatencySendState == OpLatencyState.na) {
-//			initiateLatencySequence(currentTimestamp);
-//		}else {
-//			progressLatencySequence(currentTimestamp);
-//		}
-		
 		if(reportCounter >= SynefoSpout.statReportPeriod) {
-			if(statTupleProducerFlag == false) {
-				/**
-				 * timestamp, cpu, memory, latency, throughput
-				 */
-				byte[] buffer = (currentTimestamp + "," + stats.getCpuLoad() + "," + 
-						stats.getMemory() + ",N/A," + 
-						stats.getWindowThroughput() + "\n").toString().getBytes();
-				if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
-					statisticFileChannel.write(
-							ByteBuffer.wrap(buffer), this.statisticFileOffset, "stat write", statisticFileHandler);
-					statisticFileOffset += buffer.length;
-				}
+			/**
+			 * timestamp, cpu, memory, latency, throughput
+			 */
+			byte[] buffer = (currentTimestamp + "," + stats.getCpuLoad() + "," + 
+					stats.getMemory() + ",N/A," + 
+					stats.getWindowThroughput() + "\n").toString().getBytes();
+			if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
+				statisticFileChannel.write(
+						ByteBuffer.wrap(buffer), this.statisticFileOffset, "stat write", statisticFileHandler);
+				statisticFileOffset += buffer.length;
 			}
 			reportCounter = 0;
 			this.stats = new TaskStatistics(statReportPeriod);
@@ -442,13 +318,7 @@ public class SynefoSpout extends BaseRichSpout {
 				logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
 						") active downstream tasks list after adding/removing node: " + activeDownstreamTasks.toString());
 			}
-			/**
-			 * Re-initialize Operator-latency metrics
-			 */
-			opLatencySendState = OpLatencyState.na;
-			opLatencySendTimestamp = 0L;
 			reportCounter = 0;
-			latencyPeriodCounter = 0;
 		}
 	}
 

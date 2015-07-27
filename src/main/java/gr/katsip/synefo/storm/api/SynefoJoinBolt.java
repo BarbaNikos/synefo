@@ -360,10 +360,6 @@ public class SynefoJoinBolt extends BaseRichBolt {
 								"stat write", scaleEventFileHandler);
 						scaleEventFileOffset += buffer.length;
 					}
-				}else {
-					/**
-					 * Do nothing (time does not make sense)
-					 */
 				}
 			}
 			collector.ack(tuple);
