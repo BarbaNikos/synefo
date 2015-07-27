@@ -216,12 +216,6 @@ public class SynefoSpout extends BaseRichSpout {
 				}
 			}
 		}
-		String logLine = currentTimestamp + "\n";
-		byte[] buffer2 = logLine.getBytes();
-		if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
-			scaleEventFileChannel.write(ByteBuffer.wrap(buffer2), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
-			scaleEventFileOffset += buffer2.length;
-		}
 		stats.updateMemory();
 		stats.updateCpuLoad();
 		stats.updateWindowThroughput();
