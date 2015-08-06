@@ -214,16 +214,16 @@ public class WordCountTopology {
 	public static void main(String[] args) throws Exception {
 		TopologyBuilder builder = new TopologyBuilder();
 		builder.setSpout("word", new TestWordSpout(), 4).setMaxSpoutPending(300);
-		builder.setBolt("step1", new IntermediateBolt(), 4).shuffleGrouping("word");
-		builder.setBolt("step2", new IntermediateBolt(), 4).shuffleGrouping("step1");
-		builder.setBolt("step3", new IntermediateBolt(), 4).shuffleGrouping("step2");
-		builder.setBolt("step4", new IntermediateBolt(), 4).shuffleGrouping("step3");
-		builder.setBolt("sink", new SinkBolt(), 4).shuffleGrouping("step4");
+		builder.setBolt("step1", new IntermediateBolt(), 2).setNumTasks(4).shuffleGrouping("word");
+		builder.setBolt("step2", new IntermediateBolt(), 2).setNumTasks(4).shuffleGrouping("step1");
+		builder.setBolt("step3", new IntermediateBolt(), 2).setNumTasks(4).shuffleGrouping("step2");
+		builder.setBolt("step4", new IntermediateBolt(), 2).setNumTasks(4).shuffleGrouping("step3");
+		builder.setBolt("sink", new SinkBolt(), 2).setNumTasks(4).shuffleGrouping("step4");
 
 		Config conf = new Config();
 		conf.setDebug(false);
 		conf.registerMetricsConsumer(LoggingMetricsConsumer.class, 2);
-//		conf.setNumWorkers(20);
+		conf.setNumWorkers(5);
 		conf.put(Config.TOPOLOGY_WORKER_CHILDOPTS, 
 				"-Xmx4096m -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:NewSize=128m -XX:CMSInitiatingOccupancyFraction=70 -XX:-CMSConcurrentMTEnabled -Djava.net.preferIPv4Stack=true");
 		conf.put(Config.TOPOLOGY_RECEIVER_BUFFER_SIZE, 8);
