@@ -11,6 +11,7 @@ import backtype.storm.Config;
 import backtype.storm.Constants;
 import backtype.storm.StormSubmitter;
 import backtype.storm.metric.LoggingMetricsConsumer;
+import backtype.storm.metric.api.AssignableMetric;
 import backtype.storm.metric.api.MeanReducer;
 import backtype.storm.metric.api.ReducedMetric;
 import backtype.storm.spout.SpoutOutputCollector;
@@ -95,7 +96,9 @@ public class WordCountTopology {
 		 */
 		private static final long serialVersionUID = -3473126381154414151L;
 		
-		private transient ReducedMetric latencyMetric;
+		private transient ReducedMetric aggregateLatencyMetric;
+		
+		private transient AssignableMetric latencyMetric;
 		
 		private Long latestTimestamp;
 		
@@ -109,8 +112,10 @@ public class WordCountTopology {
 		}
 		
 		private void initMetrics(TopologyContext context) {
-			latencyMetric = new ReducedMetric(new MeanReducer());
+			latencyMetric = new AssignableMetric(null);
+			aggregateLatencyMetric = new ReducedMetric(new MeanReducer());
 			context.registerMetric("latency", latencyMetric, 5);
+			context.registerMetric("aggr-latency", aggregateLatencyMetric, 5);
 		}
 
 		@Override
@@ -128,7 +133,8 @@ public class WordCountTopology {
 				}else {
 					Long timeDifference = currentTimestamp - latestTimestamp;
 					if(timeDifference >= 5000) {
-						latencyMetric.update(timeDifference);
+						aggregateLatencyMetric.update(timeDifference);
+						latencyMetric.setValue(timeDifference);
 					}
 				}
 				_collector.ack(tuple);
