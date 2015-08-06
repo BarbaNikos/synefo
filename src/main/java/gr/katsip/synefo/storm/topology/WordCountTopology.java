@@ -3,10 +3,16 @@ package gr.katsip.synefo.storm.topology;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import backtype.storm.Config;
+import backtype.storm.Constants;
 import backtype.storm.StormSubmitter;
+import backtype.storm.metric.LoggingMetricsConsumer;
+import backtype.storm.metric.api.MeanReducer;
+import backtype.storm.metric.api.ReducedMetric;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -89,20 +95,58 @@ public class WordCountTopology {
 		 */
 		private static final long serialVersionUID = -3473126381154414151L;
 		
+		private transient ReducedMetric latencyMetric;
+		
+		private Long latestTimestamp;
+		
 		OutputCollector _collector;
+		
+		private boolean isTickTuple(Tuple tuple) {
+			String sourceComponent = tuple.getSourceComponent();
+			String sourceStreamId = tuple.getSourceStreamId();
+			return sourceComponent.equals(Constants.SYSTEM_COMPONENT_ID) && 
+					sourceStreamId.equals(Constants.SYSTEM_TICK_STREAM_ID);
+		}
+		
+		private void initMetrics(TopologyContext context) {
+			latencyMetric = new ReducedMetric(new MeanReducer());
+			context.registerMetric("latency", latencyMetric, 5);
+		}
 
 		@Override
 		public void prepare(@SuppressWarnings("rawtypes") Map conf, TopologyContext context, OutputCollector collector) {
 			_collector = collector;
+			latestTimestamp = -1L;
 		}
 		@Override
 		public void execute(Tuple tuple) {
-			Values v = new Values();
-			v.add(tuple.getString(0));
-			v.add(tuple.getString(1));
-			_collector.emit(v);
-			_collector.ack(tuple);
+			Long currentTimestamp = System.currentTimeMillis();
+			if(isTickTuple(tuple)) {
+				if(latestTimestamp == -1L) {
+					latestTimestamp = currentTimestamp;
+				}else {
+					Long timeDifference = currentTimestamp - latestTimestamp;
+					if(timeDifference >= 5000) {
+						latencyMetric.update(timeDifference);
+					}
+				}
+				_collector.ack(tuple);
+			}else {
+				Values v = new Values();
+				v.add(tuple.getString(0));
+				v.add(tuple.getString(1));
+				_collector.emit(v);
+				_collector.ack(tuple);
+			}
 		}
+		
+		@Override
+		public Map<String, Object> getComponentConfiguration() {
+			Config conf = new Config();
+			conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 5);
+			return conf;
+		}
+		
 		@Override
 		public void declareOutputFields(OutputFieldsDeclarer declarer) {
 			String[] schema = { "timestamp", "word" };
@@ -162,7 +206,7 @@ public class WordCountTopology {
 
 	public static void main(String[] args) throws Exception {
 		TopologyBuilder builder = new TopologyBuilder();
-		builder.setSpout("word", new TestWordSpout(), 4);
+		builder.setSpout("word", new TestWordSpout(), 4).setMaxSpoutPending(300);
 		builder.setBolt("step1", new IntermediateBolt(), 4).shuffleGrouping("word");
 		builder.setBolt("step2", new IntermediateBolt(), 4).shuffleGrouping("step1");
 		builder.setBolt("step3", new IntermediateBolt(), 4).shuffleGrouping("step2");
@@ -171,7 +215,8 @@ public class WordCountTopology {
 
 		Config conf = new Config();
 		conf.setDebug(false);
-		conf.setNumWorkers(20);
+		conf.registerMetricsConsumer(LoggingMetricsConsumer.class, 2);
+//		conf.setNumWorkers(20);
 		conf.put(Config.TOPOLOGY_WORKER_CHILDOPTS, 
 				"-Xmx4096m -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:NewSize=128m -XX:CMSInitiatingOccupancyFraction=70 -XX:-CMSConcurrentMTEnabled -Djava.net.preferIPv4Stack=true");
 		conf.put(Config.TOPOLOGY_RECEIVER_BUFFER_SIZE, 8);
