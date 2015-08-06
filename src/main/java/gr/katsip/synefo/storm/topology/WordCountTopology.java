@@ -117,6 +117,7 @@ public class WordCountTopology {
 		public void prepare(@SuppressWarnings("rawtypes") Map conf, TopologyContext context, OutputCollector collector) {
 			_collector = collector;
 			latestTimestamp = -1L;
+			initMetrics(context);
 		}
 		@Override
 		public void execute(Tuple tuple) {
