@@ -31,6 +31,9 @@ import org.slf4j.LoggerFactory;
 
 import backtype.storm.Config;
 import backtype.storm.Constants;
+import backtype.storm.metric.api.AssignableMetric;
+import backtype.storm.metric.api.MeanReducer;
+import backtype.storm.metric.api.ReducedMetric;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
@@ -48,21 +51,21 @@ public class SynefoJoinBolt extends BaseRichBolt {
 
 	Logger logger = LoggerFactory.getLogger(SynefoJoinBolt.class);
 
-	private static final String stormHome = "/opt/apache-storm-0.9.4/logs/";
+//	private static final String stormHome = "/opt/apache-storm-0.9.4/logs/";
 
-	private AsynchronousFileChannel statisticFileChannel = null;
+//	private AsynchronousFileChannel statisticFileChannel = null;
+//
+//	private CompletionHandler<Integer, Object> statisticFileHandler = null;
+//
+//	private AsynchronousFileChannel scaleEventFileChannel = null;
+//
+//	private CompletionHandler<Integer, Object> scaleEventFileHandler = null;
+//
+//	private Long statisticFileOffset = 0L;
+//
+//	private Long scaleEventFileOffset = 0L;
 
-	private CompletionHandler<Integer, Object> statisticFileHandler = null;
-
-	private AsynchronousFileChannel scaleEventFileChannel = null;
-
-	private CompletionHandler<Integer, Object> scaleEventFileHandler = null;
-
-	private Long statisticFileOffset = 0L;
-
-	private Long scaleEventFileOffset = 0L;
-
-	private static final int statReportPeriod = 10000;
+//	private static final int statReportPeriod = 10000;
 
 	private String taskName;
 	
@@ -86,7 +89,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 
 	private Integer synefoServerPort = -1;
 
-	private TaskStatistics statistics;
+//	private TaskStatistics statistics;
 
 	private AbstractJoinOperator operator;
 
@@ -109,6 +112,10 @@ public class SynefoJoinBolt extends BaseRichBolt {
 	private HashMap<String, ArrayList<Integer>> intRelationTaskIndex;
 	
 	private long latestSynefoTimestamp;
+	
+	private transient ReducedMetric aggregateLatencyMetric;
+	
+	private transient AssignableMetric latencyMetric;
 
 	public SynefoJoinBolt(String task_name, String synEFO_ip, Integer synEFO_port, 
 			AbstractJoinOperator operator, String zooIP, boolean autoScale) {
@@ -243,6 +250,13 @@ public class SynefoJoinBolt extends BaseRichBolt {
 		latestSynefoTimestamp = -1;
 	}
 
+	private void initMetrics(TopologyContext context) {
+		latencyMetric = new AssignableMetric(null);
+		aggregateLatencyMetric = new ReducedMetric(new MeanReducer());
+		context.registerMetric("latency", latencyMetric, 5);
+		context.registerMetric("aggr-latency", aggregateLatencyMetric, 5);
+	}
+	
 	public void prepare(@SuppressWarnings("rawtypes") Map conf, TopologyContext context, OutputCollector collector) {
 		this.collector = collector;
 		taskID = context.getThisTaskId();
@@ -259,63 +273,64 @@ public class SynefoJoinBolt extends BaseRichBolt {
 		zooPet = new ZooPet(zooIP, taskName, taskID, taskIP);
 		if(downstreamTasks == null && activeDownstreamTasks == null)
 			registerToSynEFO();
-		if(this.statisticFileChannel == null) {
-			try {
-				File f = new File(stormHome + 
-						taskName + ":" + taskID + "@" + taskIP + "-stats.log");
-				if(f.exists() == false)
-					statisticFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
-							taskName + ":" + taskID + "@" + taskIP + "-stats.log"), 
-							StandardOpenOption.WRITE, StandardOpenOption.CREATE);
-				else {
-					statisticFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
-							taskName + ":" + taskID + "@" + taskIP + "-stats.log"), 
-							StandardOpenOption.WRITE);
-					this.statisticFileOffset = statisticFileChannel.size();
-					byte[] buffer = (System.currentTimeMillis() + "," + "STATS-EXIST\n").toString().getBytes();
-					if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
-						statisticFileChannel.write(
-								ByteBuffer.wrap(buffer), this.statisticFileOffset, "stat write", statisticFileHandler);
-						statisticFileOffset += buffer.length;
-					}
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			statisticFileHandler = new CompletionHandler<Integer, Object>() {
-				@Override
-				public void completed(Integer result, Object attachment) {}
-				@Override
-				public void failed(Throwable exc, Object attachment) {}
-			};
-			statisticFileOffset = 0L;
-		}
-		if(this.scaleEventFileChannel == null) {
-			try {
-				File f = new File(stormHome + 
-						taskName + ":" + taskID + "@" + taskIP + "-scale-events.log");
-				if(f.exists() == false)
-					scaleEventFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
-							taskName + ":" + taskID + "@" + taskIP + "-scale-events.log"), 
-							StandardOpenOption.WRITE, StandardOpenOption.CREATE);
-				else {
-					scaleEventFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
-							taskName + ":" + taskID + "@" + taskIP + "-scale-events.log"), 
-							StandardOpenOption.WRITE);
-					this.scaleEventFileOffset = scaleEventFileChannel.size();
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			scaleEventFileHandler = new CompletionHandler<Integer, Object>() {
-				@Override
-				public void completed(Integer result, Object attachment) {}
-				@Override
-				public void failed(Throwable exc, Object attachment) {}
-			};
-			scaleEventFileOffset = 0L;
-		}
-		statistics = new TaskStatistics(statReportPeriod);
+//		if(this.statisticFileChannel == null) {
+//			try {
+//				File f = new File(stormHome + 
+//						taskName + ":" + taskID + "@" + taskIP + "-stats.log");
+//				if(f.exists() == false)
+//					statisticFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
+//							taskName + ":" + taskID + "@" + taskIP + "-stats.log"), 
+//							StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+//				else {
+//					statisticFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
+//							taskName + ":" + taskID + "@" + taskIP + "-stats.log"), 
+//							StandardOpenOption.WRITE);
+//					this.statisticFileOffset = statisticFileChannel.size();
+//					byte[] buffer = (System.currentTimeMillis() + "," + "STATS-EXIST\n").toString().getBytes();
+//					if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
+//						statisticFileChannel.write(
+//								ByteBuffer.wrap(buffer), this.statisticFileOffset, "stat write", statisticFileHandler);
+//						statisticFileOffset += buffer.length;
+//					}
+//				}
+//			} catch (IOException e) {
+//				e.printStackTrace();
+//			}
+//			statisticFileHandler = new CompletionHandler<Integer, Object>() {
+//				@Override
+//				public void completed(Integer result, Object attachment) {}
+//				@Override
+//				public void failed(Throwable exc, Object attachment) {}
+//			};
+//			statisticFileOffset = 0L;
+//		}
+//		if(this.scaleEventFileChannel == null) {
+//			try {
+//				File f = new File(stormHome + 
+//						taskName + ":" + taskID + "@" + taskIP + "-scale-events.log");
+//				if(f.exists() == false)
+//					scaleEventFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
+//							taskName + ":" + taskID + "@" + taskIP + "-scale-events.log"), 
+//							StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+//				else {
+//					scaleEventFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
+//							taskName + ":" + taskID + "@" + taskIP + "-scale-events.log"), 
+//							StandardOpenOption.WRITE);
+//					this.scaleEventFileOffset = scaleEventFileChannel.size();
+//				}
+//			} catch (IOException e) {
+//				e.printStackTrace();
+//			}
+//			scaleEventFileHandler = new CompletionHandler<Integer, Object>() {
+//				@Override
+//				public void completed(Integer result, Object attachment) {}
+//				@Override
+//				public void failed(Throwable exc, Object attachment) {}
+//			};
+//			scaleEventFileOffset = 0L;
+//		}
+//		statistics = new TaskStatistics(statReportPeriod);
+		initMetrics(context);
 	}
 	
 	@Override
@@ -349,17 +364,19 @@ public class SynefoJoinBolt extends BaseRichBolt {
 				Long timeDifference = currentTimestamp - latestSynefoTimestamp;
 				latestSynefoTimestamp = currentTimestamp;
 				if(timeDifference >= 5000) {
-					statistics.updateWindowLatency((timeDifference - 5000));
+//					statistics.updateWindowLatency((timeDifference - 5000));
 					/**
 					 * log the calculated latency
 					 */
-					String logLine = currentTimestamp + "," + (timeDifference - 5000) + "\n";
-					byte[] buffer = logLine.getBytes();
-					if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
-						scaleEventFileChannel.write(ByteBuffer.wrap(buffer), this.scaleEventFileOffset, 
-								"stat write", scaleEventFileHandler);
-						scaleEventFileOffset += buffer.length;
-					}
+//					String logLine = currentTimestamp + "," + (timeDifference - 5000) + "\n";
+//					byte[] buffer = logLine.getBytes();
+//					if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
+//						scaleEventFileChannel.write(ByteBuffer.wrap(buffer), this.scaleEventFileOffset, 
+//								"stat write", scaleEventFileHandler);
+//						scaleEventFileOffset += buffer.length;
+//					}
+					aggregateLatencyMetric.update(timeDifference);
+					latencyMetric.setValue(timeDifference);
 				}
 			}
 			collector.ack(tuple);
@@ -403,51 +420,51 @@ public class SynefoJoinBolt extends BaseRichBolt {
 			/**
 			 * Need to provide also the tupleTimestamp
 			 */
-			Long executeStartTimestamp = System.currentTimeMillis();
+//			Long executeStartTimestamp = System.currentTimeMillis();
 			downStreamIndex = operator.execute(collector, intRelationTaskIndex, intActiveDownstreamTasks, 
 					downStreamIndex, fields, values, synefoTimestamp);
-			Long executeEndTimestamp = System.currentTimeMillis();
-			statistics.updateWindowOperationalLatency((executeEndTimestamp - executeStartTimestamp));
+//			Long executeEndTimestamp = System.currentTimeMillis();
+//			statistics.updateWindowOperationalLatency((executeEndTimestamp - executeStartTimestamp));
 			collector.ack(tuple);
 		}else {
-			Long executeStartTimestamp = System.currentTimeMillis();
+//			Long executeStartTimestamp = System.currentTimeMillis();
 			downStreamIndex = operator.execute(collector, intRelationTaskIndex, intActiveDownstreamTasks, 
 					downStreamIndex, fields, values, synefoTimestamp);
-			Long executeEndTimestamp = System.currentTimeMillis();
-			statistics.updateWindowOperationalLatency((executeEndTimestamp - executeStartTimestamp));
+//			Long executeEndTimestamp = System.currentTimeMillis();
+//			statistics.updateWindowOperationalLatency((executeEndTimestamp - executeStartTimestamp));
 			collector.ack(tuple);
 		}
-		statistics.updateMemory();
-		statistics.updateCpuLoad();
-		statistics.updateWindowThroughput();
+//		statistics.updateMemory();
+//		statistics.updateCpuLoad();
+//		statistics.updateWindowThroughput();
 
-		if(reportCounter >= SynefoJoinBolt.statReportPeriod) {
-			long stateSize = -1;
-			if(this.operator.operatorStep().equals("JOIN")) {
-				stateSize = operator.getStateSize();
-			}
-			/**
-			 * timestamp, cpu, memory, state-size, latency, operational-latency, throughput
-			 */
-			byte[] buffer = (currentTimestamp + "," + statistics.getCpuLoad() + "," + 
-					statistics.getMemory() + "," + stateSize + "," + statistics.getWindowLatency() + "," + 
-					statistics.getWindowOperationalLatency() + "," + 
-					statistics.getWindowThroughput() + "\n").toString().getBytes();
-			if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
-				statisticFileChannel.write(
-						ByteBuffer.wrap(buffer), this.statisticFileOffset, "stat write", statisticFileHandler);
-				statisticFileOffset += buffer.length;
-			}
-			reportCounter = 0;
-			if(warmFlag == false)
-				warmFlag = true;
-			statistics = new TaskStatistics(statReportPeriod);
-		}else {
-			reportCounter += 1;
-		}
+//		if(reportCounter >= SynefoJoinBolt.statReportPeriod) {
+//			long stateSize = -1;
+//			if(this.operator.operatorStep().equals("JOIN")) {
+//				stateSize = operator.getStateSize();
+//			}
+//			/**
+//			 * timestamp, cpu, memory, state-size, latency, operational-latency, throughput
+//			 */
+//			byte[] buffer = (currentTimestamp + "," + statistics.getCpuLoad() + "," + 
+//					statistics.getMemory() + "," + stateSize + "," + statistics.getWindowLatency() + "," + 
+//					statistics.getWindowOperationalLatency() + "," + 
+//					statistics.getWindowThroughput() + "\n").toString().getBytes();
+//			if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
+//				statisticFileChannel.write(
+//						ByteBuffer.wrap(buffer), this.statisticFileOffset, "stat write", statisticFileHandler);
+//				statisticFileOffset += buffer.length;
+//			}
+//			reportCounter = 0;
+//			if(warmFlag == false)
+//				warmFlag = true;
+//			statistics = new TaskStatistics(statReportPeriod);
+//		}else {
+//			reportCounter += 1;
+//		}
 
-		if(autoScale && warmFlag == true)
-			zooPet.setLatency(statistics.getWindowLatency());
+//		if(autoScale && warmFlag == true)
+//			zooPet.setLatency(statistics.getWindowLatency());
 		String scaleCommand = "";
 		synchronized(zooPet) {
 			if(zooPet.pendingCommands.isEmpty() == false) {
@@ -564,12 +581,12 @@ public class SynefoJoinBolt extends BaseRichBolt {
 		/**
 		 * 
 		 */
-		byte[] buffer = ("timestamp: " + currentTimestamp + "," + scaleAction + "\n").toString().getBytes();
-		if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
-			scaleEventFileChannel.write(
-					ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
-			scaleEventFileOffset += buffer.length;
-		}
+//		byte[] buffer = ("timestamp: " + currentTimestamp + "," + scaleAction + "\n").toString().getBytes();
+//		if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
+//			scaleEventFileChannel.write(
+//					ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
+//			scaleEventFileOffset += buffer.length;
+//		}
 		if(scaleAction != null && scaleAction.equals(SynefoConstant.ADD_ACTION)) {
 			logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
 					") received an ADD action (timestamp: " + currentTimestamp + ").");
@@ -585,16 +602,16 @@ public class SynefoJoinBolt extends BaseRichBolt {
 				/**
 				 * timestamp, cpu, memory, state-size, latency, operational-latency, throughput
 				 */
-				buffer = (currentTimestamp + ",-1,-1,-1,-1,-1\n").toString().getBytes();
-				if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
-					statisticFileChannel.write(
-							ByteBuffer.wrap(buffer), this.statisticFileOffset, "stat write", statisticFileHandler);
-					statisticFileOffset += buffer.length;
-				}
+//				buffer = (currentTimestamp + ",-1,-1,-1,-1,-1\n").toString().getBytes();
+//				if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
+//					statisticFileChannel.write(
+//							ByteBuffer.wrap(buffer), this.statisticFileOffset, "stat write", statisticFileHandler);
+//					statisticFileOffset += buffer.length;
+//				}
 				/**
 				 * Re-initialize statistics object
 				 */
-				statistics = new TaskStatistics(statReportPeriod);
+//				statistics = new TaskStatistics(statReportPeriod);
 				/**
 				 * If this component is added, open a ServerSocket
 				 */
@@ -706,17 +723,17 @@ public class SynefoJoinBolt extends BaseRichBolt {
 				 * If statistics are reported to a database, add a data-point 
 				 * with zero statistics
 				 */
-				buffer = (System.currentTimeMillis() + "," + -1 + "," + 
-						-1 + "," + -1 + "," + -1 + "," + -1 + "," + -1 + "\n").toString().getBytes();
-				if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
-					statisticFileChannel.write(
-							ByteBuffer.wrap(buffer), this.statisticFileOffset, "stat write", statisticFileHandler);
-					statisticFileOffset += buffer.length;
-				}
+//				buffer = (System.currentTimeMillis() + "," + -1 + "," + 
+//						-1 + "," + -1 + "," + -1 + "," + -1 + "," + -1 + "\n").toString().getBytes();
+//				if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
+//					statisticFileChannel.write(
+//							ByteBuffer.wrap(buffer), this.statisticFileOffset, "stat write", statisticFileHandler);
+//					statisticFileOffset += buffer.length;
+//				}
 				/**
 				 * Re-initialize statistics object
 				 */
-				statistics = new TaskStatistics(statReportPeriod);
+//				statistics = new TaskStatistics(statReportPeriod);
 				try {
 					ServerSocket _socket = new ServerSocket(6000 + taskID);
 					logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
