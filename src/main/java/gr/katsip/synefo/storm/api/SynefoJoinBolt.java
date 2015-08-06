@@ -99,9 +99,9 @@ public class SynefoJoinBolt extends BaseRichBolt {
 
 	private String zooIP;
 
-	private int reportCounter;
-
-	private boolean autoScale;
+//	private int reportCounter;
+//
+//	private boolean autoScale;
 
 	private boolean warmFlag;
 
@@ -131,8 +131,8 @@ public class SynefoJoinBolt extends BaseRichBolt {
 		stateValues = new ArrayList<Values>();
 		this.operator.init(stateValues);
 		this.zooIP = zooIP;
-		reportCounter = 0;
-		this.autoScale = autoScale;
+//		reportCounter = 0;
+//		this.autoScale = autoScale;
 		warmFlag = false;
 		relationTaskIndex = null;
 		intRelationTaskIndex = null;
@@ -375,8 +375,8 @@ public class SynefoJoinBolt extends BaseRichBolt {
 //								"stat write", scaleEventFileHandler);
 //						scaleEventFileOffset += buffer.length;
 //					}
-					aggregateLatencyMetric.update(timeDifference);
-					latencyMetric.setValue(timeDifference);
+					aggregateLatencyMetric.update((timeDifference - 5000));
+					latencyMetric.setValue((timeDifference - 5000));
 				}
 			}
 			collector.ack(tuple);
@@ -542,7 +542,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 			/**
 			 * Re-initialize Operator-latency metrics
 			 */
-			reportCounter = 0;
+//			reportCounter = 0;
 			latestSynefoTimestamp = -1;
 		}
 	}
@@ -812,7 +812,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 			}
 		}
 		zooPet.resetSubmittedScaleFlag();
-		reportCounter = 0;
+//		reportCounter = 0;
 		latestSynefoTimestamp = -1;
 	}
 
