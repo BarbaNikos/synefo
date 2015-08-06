@@ -25,6 +25,7 @@ import backtype.storm.Config;
 import backtype.storm.StormSubmitter;
 import backtype.storm.generated.AlreadyAliveException;
 import backtype.storm.generated.InvalidTopologyException;
+import backtype.storm.metric.LoggingMetricsConsumer;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 
@@ -249,6 +250,7 @@ public class TpchQueryFiveTopology {
 		synEFOSocket.close();
 
 		conf.setDebug(false);
+		conf.registerMetricsConsumer(LoggingMetricsConsumer.class, 8);
 		conf.setNumWorkers(20);
 		conf.put(Config.TOPOLOGY_WORKER_CHILDOPTS, 
 				"-Xmx8192m -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:NewSize=128m -XX:CMSInitiatingOccupancyFraction=70 -XX:-CMSConcurrentMTEnabled -Djava.net.preferIPv4Stack=true");
