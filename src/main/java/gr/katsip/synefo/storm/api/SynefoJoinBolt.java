@@ -1,12 +1,9 @@
 package gr.katsip.synefo.storm.api;
 
-//import gr.katsip.synefo.metric.TaskStatistics;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.lib.SynefoMessage.Type;
 import gr.katsip.synefo.storm.operators.AbstractJoinOperator;
 import gr.katsip.synefo.utils.SynefoConstant;
-
-//import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -14,21 +11,14 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
-//import java.nio.ByteBuffer;
-//import java.nio.channels.AsynchronousFileChannel;
-//import java.nio.channels.CompletionHandler;
-//import java.nio.file.Paths;
-//import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import backtype.storm.Config;
 import backtype.storm.Constants;
 import backtype.storm.metric.api.AssignableMetric;
@@ -50,22 +40,6 @@ public class SynefoJoinBolt extends BaseRichBolt {
 	private static final long serialVersionUID = -2276600254438802773L;
 
 	Logger logger = LoggerFactory.getLogger(SynefoJoinBolt.class);
-
-//	private static final String stormHome = "/opt/apache-storm-0.9.4/logs/";
-
-//	private AsynchronousFileChannel statisticFileChannel = null;
-//
-//	private CompletionHandler<Integer, Object> statisticFileHandler = null;
-//
-//	private AsynchronousFileChannel scaleEventFileChannel = null;
-//
-//	private CompletionHandler<Integer, Object> scaleEventFileHandler = null;
-//
-//	private Long statisticFileOffset = 0L;
-//
-//	private Long scaleEventFileOffset = 0L;
-
-//	private static final int statReportPeriod = 10000;
 
 	private String taskName;
 	

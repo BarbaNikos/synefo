@@ -79,7 +79,8 @@ public class SlidingWindowJoin implements Serializable {
 	 * @param tuple the about-to-be-inserted tuple
 	 */
 	public void insertTuple(Long currentTimestamp, Values tuple) {
-		if(circularCache.size() > 0 && circularCache.getFirst().startingTimestamp <= currentTimestamp && (circularCache.getFirst().startingTimestamp + slide) > currentTimestamp && 
+		if(circularCache.size() > 0 && circularCache.getFirst().startingTimestamp <= currentTimestamp &&
+				(circularCache.getFirst().startingTimestamp + slide) > currentTimestamp &&
 				circularCache.getFirst().endingTimestamp >= currentTimestamp) {
 			/**
 			 * Insert tuple in the first window, if the window is still valid
