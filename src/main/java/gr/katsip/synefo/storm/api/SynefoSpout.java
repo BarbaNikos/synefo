@@ -93,14 +93,14 @@ public class SynefoSpout extends BaseRichSpout {
 
 	private int reportCounter;
 
-	public SynefoSpout(String task_name, String synEFO_ip, Integer synEFO_port, 
+	public SynefoSpout(String taskName, String synefoIpAddress, Integer synefoPort,
 			AbstractTupleProducer tupleProducer, String zooIP) {
-		taskName = task_name;
+		this.taskName = taskName;
 		workerPort = -1;
 		downstreamTasks = null;
 		activeDownstreamTasks = null;
-		synefoIP = synEFO_ip;
-		synefoPort = synEFO_port;
+		synefoIP = synefoIpAddress;
+		this.synefoPort = synefoPort;
 		stats = new TaskStatistics(statReportPeriod);
 		this.tupleProducer = tupleProducer;
 		this.zooIP = zooIP;
@@ -185,7 +185,7 @@ public class SynefoSpout extends BaseRichSpout {
 		pet.getScaleCommand();
 		logger.info("+EFO-SPOUT (" + 
 				taskName + ":" + taskId + "@" + taskIP + 
-				") registered to +EFO successfully (timestamp: " + 
+				") registered to +EFO (timestamp: " +
 				System.currentTimeMillis() + ").");
 	}
 
@@ -224,16 +224,16 @@ public class SynefoSpout extends BaseRichSpout {
 			/**
 			 * timestamp, cpu, memory, latency, throughput
 			 */
-			byte[] buffer = (currentTimestamp + "," + stats.getCpuLoad() + "," + 
-					stats.getMemory() + ",N/A," + 
-					stats.getWindowThroughput() + "\n").toString().getBytes();
-			if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
-				statisticFileChannel.write(
-						ByteBuffer.wrap(buffer), this.statisticFileOffset, "stat write", statisticFileHandler);
-				statisticFileOffset += buffer.length;
-			}
+//			byte[] buffer = (currentTimestamp + "," + stats.getCpuLoad() + "," +
+//					stats.getMemory() + ",N/A," +
+//					stats.getWindowThroughput() + "\n").toString().getBytes();
+//			if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
+//				statisticFileChannel.write(
+//						ByteBuffer.wrap(buffer), this.statisticFileOffset, "stat write", statisticFileHandler);
+//				statisticFileOffset += buffer.length;
+//			}
 			reportCounter = 0;
-			this.stats = new TaskStatistics(statReportPeriod);
+//			this.stats = new TaskStatistics(statReportPeriod);
 		}else {
 			reportCounter += 1;
 		}
@@ -334,37 +334,37 @@ public class SynefoSpout extends BaseRichSpout {
 		if(activeDownstreamTasks == null && downstreamTasks == null) {
 			registerToSynEFO();
 		}
-		if(this.statisticFileChannel == null) {
-			try {
-				File f = new File(stormHome + 
-						taskName + ":" + taskId + "@" + taskIP + "-stats.log");
-				if(f.exists() == false)
-					statisticFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
-							taskName + ":" + taskId + "@" + taskIP + "-stats.log"), 
-							StandardOpenOption.WRITE, StandardOpenOption.CREATE);
-				else {
-					statisticFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
-							taskName + ":" + taskId + "@" + taskIP + "-stats.log"), 
-							StandardOpenOption.WRITE);
-					this.statisticFileOffset = statisticFileChannel.size();
-					byte[] buffer = (System.currentTimeMillis() + "," + "STATS-EXIST\n").toString().getBytes();
-					if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
-						statisticFileChannel.write(
-								ByteBuffer.wrap(buffer), this.statisticFileOffset, "stat write", statisticFileHandler);
-						statisticFileOffset += buffer.length;
-					}
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			statisticFileHandler = new CompletionHandler<Integer, Object>() {
-				@Override
-				public void completed(Integer result, Object attachment) {}
-				@Override
-				public void failed(Throwable exc, Object attachment) {}
-			};
-			statisticFileOffset = 0L;
-		}
+//		if(this.statisticFileChannel == null) {
+//			try {
+//				File f = new File(stormHome +
+//						taskName + ":" + taskId + "@" + taskIP + "-stats.log");
+//				if(f.exists() == false)
+//					statisticFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome +
+//							taskName + ":" + taskId + "@" + taskIP + "-stats.log"),
+//							StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+//				else {
+//					statisticFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome +
+//							taskName + ":" + taskId + "@" + taskIP + "-stats.log"),
+//							StandardOpenOption.WRITE);
+//					this.statisticFileOffset = statisticFileChannel.size();
+//					byte[] buffer = (System.currentTimeMillis() + "," + "STATS-EXIST\n").toString().getBytes();
+//					if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
+//						statisticFileChannel.write(
+//								ByteBuffer.wrap(buffer), this.statisticFileOffset, "stat write", statisticFileHandler);
+//						statisticFileOffset += buffer.length;
+//					}
+//				}
+//			} catch (IOException e) {
+//				e.printStackTrace();
+//			}
+//			statisticFileHandler = new CompletionHandler<Integer, Object>() {
+//				@Override
+//				public void completed(Integer result, Object attachment) {}
+//				@Override
+//				public void failed(Throwable exc, Object attachment) {}
+//			};
+//			statisticFileOffset = 0L;
+//		}
 		if(this.scaleEventFileChannel == null) {
 			try {
 				File f = new File(stormHome + 
