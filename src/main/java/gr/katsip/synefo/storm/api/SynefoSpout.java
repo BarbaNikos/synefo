@@ -43,21 +43,7 @@ public class SynefoSpout extends BaseRichSpout {
 
 	Logger logger = LoggerFactory.getLogger(SynefoSpout.class);
 
-	private static final String stormHome = "/opt/apache-storm-0.9.4/logs/";
-
-	private AsynchronousFileChannel statisticFileChannel = null;
-
-	private CompletionHandler<Integer, Object> statisticFileHandler = null;
-
-	private AsynchronousFileChannel scaleEventFileChannel = null;
-
-	private CompletionHandler<Integer, Object> scaleEventFileHandler = null;
-
-	private Long statisticFileOffset = 0L;
-
-	private Long scaleEventFileOffset = 0L;
-
-	private static final int statReportPeriod = 10000;
+	private static final int statReportPeriod = 1000;
 
 	private String taskName;
 
@@ -221,19 +207,8 @@ public class SynefoSpout extends BaseRichSpout {
 		stats.updateWindowThroughput();
 		
 		if(reportCounter >= SynefoSpout.statReportPeriod) {
-			/**
-			 * timestamp, cpu, memory, latency, throughput
-			 */
-//			byte[] buffer = (currentTimestamp + "," + stats.getCpuLoad() + "," +
-//					stats.getMemory() + ",N/A," +
-//					stats.getWindowThroughput() + "\n").toString().getBytes();
-//			if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
-//				statisticFileChannel.write(
-//						ByteBuffer.wrap(buffer), this.statisticFileOffset, "stat write", statisticFileHandler);
-//				statisticFileOffset += buffer.length;
-//			}
 			reportCounter = 0;
-//			this.stats = new TaskStatistics(statReportPeriod);
+			this.stats = new TaskStatistics(statReportPeriod);
 		}else {
 			reportCounter += 1;
 		}
@@ -253,12 +228,6 @@ public class SynefoSpout extends BaseRichSpout {
 			StringBuilder strBuild = new StringBuilder();
 			strBuild.append(SynefoConstant.PUNCT_TUPLE_TAG + "/");
 			idx = 0;
-			byte[] buffer = ("timestamp: " + System.currentTimeMillis() + "," + action + "~" + task + ":" + task_id + "\n").toString().getBytes();
-			if(this.scaleEventFileChannel != null && this.scaleEventFileHandler != null) {
-				scaleEventFileChannel.write(
-						ByteBuffer.wrap(buffer), this.scaleEventFileOffset, "stat write", scaleEventFileHandler);
-				scaleEventFileOffset += buffer.length;
-			}
 			if(action.toLowerCase().contains("activate") || action.toLowerCase().contains("deactivate")) {
 				logger.info("+EFO-SPOUT (" + this.taskName + ":" + this.taskId + "@" + this.taskIP + 
 						") located scale-command: " + scaleCommand + ", about to update routing tables (timestamp: " + 
@@ -333,62 +302,6 @@ public class SynefoSpout extends BaseRichSpout {
 		pet = new ZooPet(zooIP, taskName, taskId, taskIP);
 		if(activeDownstreamTasks == null && downstreamTasks == null) {
 			registerToSynEFO();
-		}
-//		if(this.statisticFileChannel == null) {
-//			try {
-//				File f = new File(stormHome +
-//						taskName + ":" + taskId + "@" + taskIP + "-stats.log");
-//				if(f.exists() == false)
-//					statisticFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome +
-//							taskName + ":" + taskId + "@" + taskIP + "-stats.log"),
-//							StandardOpenOption.WRITE, StandardOpenOption.CREATE);
-//				else {
-//					statisticFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome +
-//							taskName + ":" + taskId + "@" + taskIP + "-stats.log"),
-//							StandardOpenOption.WRITE);
-//					this.statisticFileOffset = statisticFileChannel.size();
-//					byte[] buffer = (System.currentTimeMillis() + "," + "STATS-EXIST\n").toString().getBytes();
-//					if(this.statisticFileChannel != null && this.statisticFileHandler != null) {
-//						statisticFileChannel.write(
-//								ByteBuffer.wrap(buffer), this.statisticFileOffset, "stat write", statisticFileHandler);
-//						statisticFileOffset += buffer.length;
-//					}
-//				}
-//			} catch (IOException e) {
-//				e.printStackTrace();
-//			}
-//			statisticFileHandler = new CompletionHandler<Integer, Object>() {
-//				@Override
-//				public void completed(Integer result, Object attachment) {}
-//				@Override
-//				public void failed(Throwable exc, Object attachment) {}
-//			};
-//			statisticFileOffset = 0L;
-//		}
-		if(this.scaleEventFileChannel == null) {
-			try {
-				File f = new File(stormHome + 
-						taskName + ":" + taskId + "@" + taskIP + "-scale-events.log");
-				if(f.exists() == false)
-					scaleEventFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
-							taskName + ":" + taskId + "@" + taskIP + "-scale-events.log"), 
-							StandardOpenOption.WRITE, StandardOpenOption.CREATE);
-				else {
-					scaleEventFileChannel = AsynchronousFileChannel.open(Paths.get(stormHome + 
-							taskName + ":" + taskId + "@" + taskIP + "-scale-events.log"), 
-							StandardOpenOption.WRITE);
-					this.scaleEventFileOffset = scaleEventFileChannel.size();
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			scaleEventFileHandler = new CompletionHandler<Integer, Object>() {
-				@Override
-				public void completed(Integer result, Object attachment) {}
-				@Override
-				public void failed(Throwable exc, Object attachment) {}
-			};
-			scaleEventFileOffset = 0L;
 		}
 	}
 
