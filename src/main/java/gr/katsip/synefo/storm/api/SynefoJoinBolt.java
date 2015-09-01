@@ -326,18 +326,12 @@ public class SynefoJoinBolt extends BaseRichBolt {
 			/**
 			 * Need to provide also the tupleTimestamp
 			 */
-//			Long executeStartTimestamp = System.currentTimeMillis();
 			downStreamIndex = operator.execute(collector, intRelationTaskIndex, intActiveDownstreamTasks, 
 					downStreamIndex, fields, values, synefoTimestamp);
-//			Long executeEndTimestamp = System.currentTimeMillis();
-//			statistics.updateWindowOperationalLatency((executeEndTimestamp - executeStartTimestamp));
 			collector.ack(tuple);
 		}else {
-//			Long executeStartTimestamp = System.currentTimeMillis();
 			downStreamIndex = operator.execute(collector, intRelationTaskIndex, intActiveDownstreamTasks, 
 					downStreamIndex, fields, values, synefoTimestamp);
-//			Long executeEndTimestamp = System.currentTimeMillis();
-//			statistics.updateWindowOperationalLatency((executeEndTimestamp - executeStartTimestamp));
 			collector.ack(tuple);
 		}
 		statistics.updateMemory();
