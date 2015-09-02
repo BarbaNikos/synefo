@@ -2,7 +2,7 @@ package gr.katsip.synefo.test;
 
 import gr.katsip.synefo.server2.JoinOperator;
 import gr.katsip.synefo.server2.ScaleFunction;
-import gr.katsip.synefo.server2.SynefoCoordinatorThread;
+import gr.katsip.synefo.server2.SynefoMaster;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -64,21 +64,21 @@ public class Server2Test {
 		taskIdentifierIndex.put("drain_10", new Integer(10));
 		taskAddressIndex.put("drain_10:10", "1.1.1.1");
 		
-		ConcurrentHashMap<String, ArrayList<String>> expandedPhysicalTopology = SynefoCoordinatorThread.physicalTopologyTaskExpand(
+		ConcurrentHashMap<String, ArrayList<String>> expandedPhysicalTopology = SynefoMaster.physicalTopologyTaskExpand(
 				taskIdentifierIndex, physicalTopology);
 //		System.out.println(expandedPhysicalTopology.toString());
 		
-		ConcurrentHashMap<String, ArrayList<String>> updatedTopology = SynefoCoordinatorThread.updatePhysicalTopology(
+		ConcurrentHashMap<String, ArrayList<String>> updatedTopology = SynefoMaster.updatePhysicalTopology(
 				taskAddressIndex, taskIdentifierIndex, expandedPhysicalTopology);
 //		System.out.println(updatedTopology.toString());
 		
 		System.out.println("++++ NOW to THE JOIN TEST ++++");
-		activeTopology = SynefoCoordinatorThread.getInitialActiveTopologyWithJoinOperators(
-				updatedTopology, 
+		activeTopology = SynefoMaster.getInitialActiveTopologyWithJoinOperators(
+				updatedTopology,
 				ScaleFunction.getInverseTopology(updatedTopology), taskToJoinRelation, false);
 		System.out.println("Active topology with minimalFlag set to false: " + activeTopology.toString());
-		activeTopology = SynefoCoordinatorThread.getInitialActiveTopologyWithJoinOperators(
-				updatedTopology, 
+		activeTopology = SynefoMaster.getInitialActiveTopologyWithJoinOperators(
+				updatedTopology,
 				ScaleFunction.getInverseTopology(updatedTopology), taskToJoinRelation, true);
 		System.out.println("Active topology with minimalFlag set to true: " + activeTopology.toString());
 		ScaleFunction scaleFunction = new ScaleFunction(

@@ -83,14 +83,14 @@ public class Synefo {
 		Socket _stormComponent = null;
 		OutputStream _out = null;
 		InputStream _in = null;
-		(new Thread(new SynefoCoordinatorThread(zooHost, resourceThresholds, physicalTopology, 
+		(new Thread(new SynefoMaster(zooHost, resourceThresholds, physicalTopology,
 				activeTopology, taskIdentifierIndex, taskWorkerPortIndex, taskIPs, operationFlag, demoMode, queryId, ceDb, taskNumber, taskToJoinRelation, pendingAddressUpdates))).start();
 		while(killCommand == false) {
 			try {
 				_stormComponent = serverSocket.accept();
 				_out = _stormComponent.getOutputStream();
 				_in = _stormComponent.getInputStream();
-				(new Thread(new SynefoThread(physicalTopology, activeTopology, taskIdentifierIndex, taskWorkerPortIndex, _in, _out, taskIPs, 
+				(new Thread(new SynefoSlave(physicalTopology, activeTopology, taskIdentifierIndex, taskWorkerPortIndex, _in, _out, taskIPs,
 						operationFlag, demoMode, queryId, taskNumber, taskToJoinRelation, pendingAddressUpdates))).start();
 			} catch (IOException e) {
 				e.printStackTrace();

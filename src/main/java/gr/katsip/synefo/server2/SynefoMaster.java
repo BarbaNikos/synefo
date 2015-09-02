@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import gr.katsip.cestorm.db.CEStormDatabaseManager;
 import gr.katsip.synefo.storm.api.Pair;
 
-public class SynefoCoordinatorThread implements Runnable {
+public class SynefoMaster implements Runnable {
 
 	private ConcurrentHashMap<String, ArrayList<String>> physicalTopology;
 
@@ -47,20 +47,20 @@ public class SynefoCoordinatorThread implements Runnable {
 	
 	private ConcurrentLinkedQueue<String> pendingAddressUpdates;
 
-	public SynefoCoordinatorThread(String zooHost, 
-			HashMap<String, Pair<Number, Number>> resourceThresholds, 
-			ConcurrentHashMap<String, ArrayList<String>> physicalTopology, 
-			ConcurrentHashMap<String, ArrayList<String>> runningTopology, 
-			ConcurrentHashMap<String, Integer> taskNameToIdMap, 
-			ConcurrentHashMap<String, Integer> taskWorkerPortIndex, 
-			ConcurrentHashMap<String, String> taskIPs,
-			AtomicBoolean operationFlag, 
-			boolean demoMode, 
-			AtomicInteger queryId, 
-			CEStormDatabaseManager ceDb, 
-			AtomicInteger taskNumber, 
-			ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation, 
-			ConcurrentLinkedQueue<String> pendingAddressUpdates) {
+	public SynefoMaster(String zooHost,
+						HashMap<String, Pair<Number, Number>> resourceThresholds,
+						ConcurrentHashMap<String, ArrayList<String>> physicalTopology,
+						ConcurrentHashMap<String, ArrayList<String>> runningTopology,
+						ConcurrentHashMap<String, Integer> taskNameToIdMap,
+						ConcurrentHashMap<String, Integer> taskWorkerPortIndex,
+						ConcurrentHashMap<String, String> taskIPs,
+						AtomicBoolean operationFlag,
+						boolean demoMode,
+						AtomicInteger queryId,
+						CEStormDatabaseManager ceDb,
+						AtomicInteger taskNumber,
+						ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation,
+						ConcurrentLinkedQueue<String> pendingAddressUpdates) {
 		this.physicalTopology = physicalTopology;
 		this.activeTopology = runningTopology;
 		this.taskIdentifierIndex = taskNameToIdMap;
@@ -105,49 +105,45 @@ public class SynefoCoordinatorThread implements Runnable {
 		 */
 		tamer = new ZooMaster(zooHost, physicalTopology, activeTopology, taskToJoinRelation);
 		tamer.start();
-		tamer.setScaleOutThresholds((double) resourceThresholds.get("cpu").upperBound, 
-				(double) resourceThresholds.get("memory").upperBound, 
-				(int) resourceThresholds.get("latency").upperBound, 
+		tamer.setScaleOutThresholds((double) resourceThresholds.get("cpu").upperBound,
+				(double) resourceThresholds.get("memory").upperBound,
+				(int) resourceThresholds.get("latency").upperBound,
 				(int) resourceThresholds.get("throughput").upperBound);
-		tamer.setScaleInThresholds((double) resourceThresholds.get("cpu").lowerBound, 
-				(double) resourceThresholds.get("memory").lowerBound, 
-				(int) resourceThresholds.get("latency").lowerBound, 
+		tamer.setScaleInThresholds((double) resourceThresholds.get("cpu").lowerBound,
+				(double) resourceThresholds.get("memory").lowerBound,
+				(int) resourceThresholds.get("latency").lowerBound,
 				(int) resourceThresholds.get("throughput").lowerBound);
 
-		System.out.println("initial phys-top: " + physicalTopology.toString());
+//		System.out.println("initial phys-top: " + physicalTopology.toString());
 		ConcurrentHashMap<String, ArrayList<String>> expandedPhysicalTopology = physicalTopologyTaskExpand(taskIdentifierIndex, physicalTopology);
-		System.out.println("expanded-phys-top: " + expandedPhysicalTopology.toString());
+//		System.out.println("expanded-phys-top: " + expandedPhysicalTopology.toString());
 		physicalTopology.clear();
 		physicalTopology.putAll(expandedPhysicalTopology);
 		/**
 		 * At this point, physicalTopologyWithIds has the actual topology of operators and the task-ids.
 		 */
 		System.out.println("+efo coordinator thread: received task name allocation from Storm cluster. Updating internal structures...");
-		ConcurrentHashMap<String, ArrayList<String>> updatedPhysicalTopology = SynefoCoordinatorThread.updatePhysicalTopology(
+		ConcurrentHashMap<String, ArrayList<String>> updatedPhysicalTopology = SynefoMaster.updatePhysicalTopology(
 				taskAddressIndex, taskIdentifierIndex, physicalTopology);
 		physicalTopology.clear();
 		physicalTopology.putAll(updatedPhysicalTopology);
-		System.out.println("updated-phys-top: " + physicalTopology.toString());
+//		System.out.println("updated-phys-top: " + physicalTopology.toString());
 		activeTopology.clear();
 		/**
 		 * Set the following flag to true if you need the minimal 
 		 * active topology to start.
 		 */
-		activeTopology.putAll(SynefoCoordinatorThread.getInitialActiveTopologyWithJoinOperators(
-				physicalTopology, 
-				ScaleFunction.getInverseTopology(physicalTopology), 
+		activeTopology.putAll(SynefoMaster.getInitialActiveTopologyWithJoinOperators(
+				physicalTopology,
+				ScaleFunction.getInverseTopology(physicalTopology),
 				taskToJoinRelation, false));
 		
 		tamer.setPhysicalTopology();
 		tamer.setActiveTopology();
-		
 		operationFlag.set(true);
 		taskIdentifierIndex.clear();
 		tamer.setScaleOutEventWatch();
 		tamer.setScaleInEventWatch();
-
-		userInterfaceThread = new Thread(new SynEFOUserInterface(tamer, physicalTopology, demoMode, queryId, ceDb));
-		userInterfaceThread.start();
 		/**
 		 * Fault-tolerance mechanism for when an executor dies 
 		 * and respawns in a different machine

@@ -1,7 +1,6 @@
 package gr.katsip.synefo.junit.test;
 
-import static org.junit.Assert.*;
-import gr.katsip.synefo.server2.SynefoCoordinatorThread;
+import gr.katsip.synefo.server2.SynefoMaster;
 
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
@@ -93,14 +92,14 @@ public class ScaleFunctionServer2PhysicalTopTest {
 		taskIdentifierIndex.put("drain_14", 14);
 		taskAddressIndex.put("drain_14:14", "1.1.1.1");
 		
-		ConcurrentHashMap<String, ArrayList<String>> expandedPhysicalTopology = SynefoCoordinatorThread.physicalTopologyTaskExpand(
+		ConcurrentHashMap<String, ArrayList<String>> expandedPhysicalTopology = SynefoMaster.physicalTopologyTaskExpand(
 				taskIdentifierIndex, topology);
 		
 		System.out.println("expanded-phys-top: " + expandedPhysicalTopology.toString());
 		
 		topology.clear();
 		topology.putAll(expandedPhysicalTopology);
-		ConcurrentHashMap<String, ArrayList<String>> updatedPhysicalTopology = SynefoCoordinatorThread.updatePhysicalTopology(
+		ConcurrentHashMap<String, ArrayList<String>> updatedPhysicalTopology = SynefoMaster.updatePhysicalTopology(
 				taskAddressIndex, taskIdentifierIndex, topology);
 		System.out.println("updated-phys-top: " + updatedPhysicalTopology);
 		

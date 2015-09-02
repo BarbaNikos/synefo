@@ -16,7 +16,7 @@ import gr.katsip.synefo.server2.JoinOperator.Step;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 
 
-public class SynefoThread implements Runnable {
+public class SynefoSlave implements Runnable {
 
 	private InputStream in;
 
@@ -56,18 +56,18 @@ public class SynefoThread implements Runnable {
 
 	private ConcurrentLinkedQueue<String> pendingAddressUpdates;
 
-	public SynefoThread(ConcurrentHashMap<String, ArrayList<String>> physicalTopology, 
-			ConcurrentHashMap<String, ArrayList<String>> activeTopology, 
-			ConcurrentHashMap<String, Integer> taskIdentifierIndex, 
-			ConcurrentHashMap<String, Integer> taskWorkerPortIndex,
-			InputStream in, OutputStream out, 
-			ConcurrentHashMap<String, String> taskAddressIndex,  
-			AtomicBoolean operationFlag, 
-			boolean demoMode, 
-			AtomicInteger queryId, 
-			AtomicInteger taskNumber, 
-			ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation, 
-			ConcurrentLinkedQueue<String> pendingAddressUpdates) {
+	public SynefoSlave(ConcurrentHashMap<String, ArrayList<String>> physicalTopology,
+					   ConcurrentHashMap<String, ArrayList<String>> activeTopology,
+					   ConcurrentHashMap<String, Integer> taskIdentifierIndex,
+					   ConcurrentHashMap<String, Integer> taskWorkerPortIndex,
+					   InputStream in, OutputStream out,
+					   ConcurrentHashMap<String, String> taskAddressIndex,
+					   AtomicBoolean operationFlag,
+					   boolean demoMode,
+					   AtomicInteger queryId,
+					   AtomicInteger taskNumber,
+					   ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation,
+					   ConcurrentLinkedQueue<String> pendingAddressUpdates) {
 		this.in = in;
 		this.out = out;
 		this.taskIdentifierIndex = taskIdentifierIndex;
@@ -130,8 +130,8 @@ public class SynefoThread implements Runnable {
 		 * This node has previously died so it is going to come back-up
 		 */
 		if(operationFlag.get()) {
-			System.out.println("+EFO-SPOUT: " + taskName + "(" + identifier + "@" + taskIP + 
-					") has RE-connected.");
+			System.out.println("SynefoSlave-" + Thread.currentThread().getId() + " serving SPOUT with credentials: " +
+                    taskName + "(" + identifier + "@" + taskIP + ") has RE-connected.");
 			/**
 			 * Update internal structures with new ip (if it has changed)
 			 * physical-topology (can be updated by synefo-thread)
@@ -157,8 +157,8 @@ public class SynefoThread implements Runnable {
 			taskAddressIndex.putIfAbsent(taskName + ":" + identifier, taskIP);
 			taskWorkerPortIndex.putIfAbsent(taskName + ":" + identifier, workerPort);
 			taskIdentifierIndex.putIfAbsent(taskName, identifier);
-			System.out.println("+efo SPOUT: " + taskName + "(" + identifier + "@" + taskIP + 
-					") connected.");
+			System.out.println("SynefoSlave-" + Thread.currentThread().getId() + " serving SPOUT with credentials: " +
+                    taskName + "(" + identifier + "@" + taskIP + ") connected.");
 			/**
 			 * Wait until the Coordinator thread 
 			 * updates the physicalTopology with 
@@ -177,12 +177,12 @@ public class SynefoThread implements Runnable {
 		if(physicalTopology.containsKey(taskName + ":" + identifier + "@" + taskIP)) {
 			_downStream = new ArrayList<String>(physicalTopology.get(taskName + ":" + identifier + "@" + taskIP));
 			if(activeTopology.containsKey(taskName + ":" + identifier + "@" + taskIP)) {
-				System.out.println("+efo SPOUT: " + taskName + "(" + identifier + "@" + taskIP + 
-						") retrieving active topology");
+				System.out.println("SynefoSlave-" + Thread.currentThread().getId() + " serving SPOUT with credentials: " +
+                        taskName + "(" + identifier + "@" + taskIP + ") retrieving active topology");
 				_activeDownStream = new ArrayList<String>(activeTopology.get(taskName + ":" + identifier + "@" + taskIP));
 			}
-			System.out.println("+efo SPOUT: " + taskName + "@" + taskIP + 
-					"(" + identifier + ") downstream task list: " + _activeDownStream.toString());
+			System.out.println("SynefoSlave-" + Thread.currentThread().getId() + " serving SPOUT with credentials: " +
+                    taskName + "@" + taskIP + "(" + identifier + ") downstream task list: " + _activeDownStream.toString());
 		}else {
 			_downStream = new ArrayList<String>();
 			_activeDownStream = new ArrayList<String>();
@@ -198,8 +198,15 @@ public class SynefoThread implements Runnable {
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
-		System.out.println("+efo SPOUT: " + taskName + "(" + identifier + "@" + taskIP + 
-					") retrieved information successfully.");
+        /**
+         * Sample wait to see if it removes the problem
+         * of EOFException
+         */
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 		try {
 			output.flush();
 			output.close();
@@ -238,7 +245,7 @@ public class SynefoThread implements Runnable {
 				this.pendingAddressUpdates.offer(taskName + ":" + identifier + "@" + taskIP);
 				while(taskAddressIndex.get(taskName + ":" + identifier).equals(taskIP) == false)
 					try {
-						Thread.sleep(300);
+						Thread.sleep(100);
 					} catch (InterruptedException e2) {
 						e2.printStackTrace();
 					}
@@ -249,14 +256,15 @@ public class SynefoThread implements Runnable {
 			if(taskWorkerPortIndex.get(taskName + ":" + identifier).equals(workerPort) == false) {
 				
 			}
-			System.out.println("+efo BOLT: " + taskName + "(" + identifier + "@" + taskIP + 
+			System.out.println("SynefoSlave-" + Thread.currentThread().getId() + " serving JOIN-BOLT with credentials: " +
+                    taskName + "(" + identifier + "@" + taskIP +
 					") has RE-connected.");
 		}else {
 			taskAddressIndex.putIfAbsent(taskName + ":" + identifier, taskIP);
 			taskWorkerPortIndex.putIfAbsent(taskName + ":" + identifier, workerPort);
 			taskIdentifierIndex.putIfAbsent(taskName, identifier);
-			System.out.println("+efo BOLT: " + taskName + "(" + identifier + "@" + taskIP + 
-					") connected.");
+			System.out.println("SynefoSlave-" + Thread.currentThread().getId() + " serving JOIN-BOLT with credentials: " +
+					taskName + "(" + identifier + "@" + taskIP);
 			/**
 			 * Wait until the Coordinator thread 
 			 * updates the physicalTopology with 
@@ -292,23 +300,23 @@ public class SynefoThread implements Runnable {
 		if(physicalTopology.containsKey(taskName + ":" + identifier + "@" + taskIP)) {
 			_downStream = new ArrayList<String>(physicalTopology.get(taskName + ":" + identifier + "@" + taskIP));
 			if(activeTopology.containsKey(taskName + ":" + identifier + "@" + taskIP)) {
-				System.out.println("+efo BOLT: " + taskName + "(" + identifier + "@" + taskIP + 
-						") retrieved active topology");
+				System.out.println("SynefoSlave-" + Thread.currentThread().getId() + " serving JOIN-BOLT with credentials: " +
+                        taskName + "(" + identifier + "@" + taskIP + ") retrieved active topology");
 				_activeDownStream = new ArrayList<String>(activeTopology.get(taskName + ":" + identifier + "@" + taskIP));
-			}else { 
-				System.out.println("+efo BOLT: " + taskName + "(" + identifier + "@" + taskIP + 
-						") no active-topology record has been found for bolt.");
+			}else {
+				System.out.println("SynefoSlave-" + Thread.currentThread().getId() + " serving JOIN-BOLT with credentials: " +
+                        taskName + "(" + identifier + "@" + taskIP + ") no active-topology record has been found for bolt.");
 				_activeDownStream = new ArrayList<String>();
 				for(String task : _downStream) {
 					if(activeTopology.containsKey(task))
 						_activeDownStream.add(task);
 				}
 			}
-			System.out.println("+efo BOLT: " + taskName + "@" + taskIP + 
-					"(" + identifier + ") downstream task list: " + _activeDownStream.toString());
+			System.out.println("SynefoSlave-" + Thread.currentThread().getId() + " serving JOIN-BOLT with credentials: " +
+                    taskName + "@" + taskIP + "(" + identifier + ") downstream task list: " + _activeDownStream.toString());
 		}else {
-			System.out.println("+efo BOLT: " + taskName + "(" + identifier + "@" + taskIP + 
-					") no physical-topology record has been found bolt.");
+			System.out.println("SynefoSlave-" + Thread.currentThread().getId() + " serving JOIN-BOLT with credentials: " +
+                    taskName + "(" + identifier + "@" + taskIP + ") no physical-topology record has been found.");
 			_downStream = new ArrayList<String>();
 			_activeDownStream = new ArrayList<String>();
 		}
@@ -335,9 +343,16 @@ public class SynefoThread implements Runnable {
 				e.printStackTrace();
 			}
 		}
-		System.out.println("+efo BOLT: " + taskName + "@" + taskIP + 
-				"(" + identifier + ") retrieved information successfully.");
-		try {
+        /**
+         * Sample wait to see if it removes the problem
+         * of EOFException
+         */
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        try {
 			output.flush();
 			output.close();
 			input.close();
@@ -353,21 +368,21 @@ public class SynefoThread implements Runnable {
 		 * given topology. It is set atomically by the topology-process thread.
 		 */
 		HashMap<String, ArrayList<String>> topology = null;
-		System.out.println("+efo worker-TOPOLOGY: connected.");
+		System.out.println("SynefoSlave-" + Thread.currentThread().getId() + " serving TOPOLOGY: connected.");
 		try {
 			topology = (HashMap<String, ArrayList<String>>) input.readObject();
 		} catch (ClassNotFoundException | IOException e1) {
 			e1.printStackTrace();
 		}
 		if(topology == null) {
-			System.err.println("+efo worker-TOPOLOGY: received empty topology object.");
+			System.err.println("SynefoSlave-" + Thread.currentThread().getId() + " serving TOPOLOGY: received empty topology object.");
 			return;
 		}
 		physicalTopology.clear();
 		physicalTopology.putAll(topology);
 		Integer providedTaskNumber = Integer.parseInt(values.get("TASK_NUM"));
 		this.taskNumber.compareAndSet(-1, providedTaskNumber);
-		System.out.println("+efo worker-TOPOLOGY: received topology information.");
+		System.out.println("SynefoSlave-" + Thread.currentThread().getId() + " serving TOPOLOGY: received topology (size: " + providedTaskNumber + ")");
 		String _ack = "+EFO_ACK";
 		try {
 			output.writeObject(_ack);

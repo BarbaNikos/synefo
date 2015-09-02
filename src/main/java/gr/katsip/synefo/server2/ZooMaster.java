@@ -142,7 +142,6 @@ public class ZooMaster {
 	/**
 	 * default constructor of the ZooMaster component.
 	 * @param zoo_ip the ZooKeeper ensemble IP
-	 * @param zoo_port the ZooKeeper ensemble port
 	 * @param physicalTopology an object reference to the physical-topology submitted to synefo
 	 * @param activeTopology an object reference to the initially active components in the topology submitted to synefo
 	 */
@@ -166,7 +165,7 @@ public class ZooMaster {
 	 */
 	public void start() {
 		try {
-			zk = new ZooKeeper(zoo_ip, 100000	, synefoWatcher);
+			zk = new ZooKeeper(zoo_ip, 100000, synefoWatcher);
 			while(zk.getState() != ZooKeeper.States.CONNECTED) {
 				Thread.sleep(100);
 			}
@@ -393,7 +392,7 @@ public class ZooMaster {
 
 	public static HashMap<String, ArrayList<String>> deserializeTopology(String topology) {
 		HashMap<String, ArrayList<String>> top = new HashMap<String, ArrayList<String>>();
-		String[] tokens = topology.split("{|}");
+		String[] tokens = topology.split("[{|}]");
 		for(String task : tokens) {
 			if(task != null && task != "") {
 				String[] tasks = task.split(":");

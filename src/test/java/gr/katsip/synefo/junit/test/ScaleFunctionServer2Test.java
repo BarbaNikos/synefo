@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import gr.katsip.synefo.server2.JoinOperator;
 import gr.katsip.synefo.server2.ScaleFunction;
-import gr.katsip.synefo.server2.SynefoCoordinatorThread;
+import gr.katsip.synefo.server2.SynefoMaster;
 
 import org.junit.Test;
 
@@ -67,17 +67,17 @@ public class ScaleFunctionServer2Test {
 		physicalTopology.put("drain", new ArrayList<String>());
 		taskIdentifierIndex.put("drain_10", new Integer(10));
 		taskAddressIndex.put("drain_10:10", "1.1.1.1");
-		ConcurrentHashMap<String, ArrayList<String>> expandedPhysicalTopology = SynefoCoordinatorThread.physicalTopologyTaskExpand(
+		ConcurrentHashMap<String, ArrayList<String>> expandedPhysicalTopology = SynefoMaster.physicalTopologyTaskExpand(
 				taskIdentifierIndex, physicalTopology);
-		ConcurrentHashMap<String, ArrayList<String>> updatedTopology = SynefoCoordinatorThread.updatePhysicalTopology(
+		ConcurrentHashMap<String, ArrayList<String>> updatedTopology = SynefoMaster.updatePhysicalTopology(
 				taskAddressIndex, taskIdentifierIndex, expandedPhysicalTopology);
 		System.out.println("physical topology: " + updatedTopology.toString());
-		ConcurrentHashMap<String, ArrayList<String>> fullActiveTopology = SynefoCoordinatorThread.getInitialActiveTopologyWithJoinOperators(
-				updatedTopology, 
+		ConcurrentHashMap<String, ArrayList<String>> fullActiveTopology = SynefoMaster.getInitialActiveTopologyWithJoinOperators(
+				updatedTopology,
 				ScaleFunction.getInverseTopology(updatedTopology), taskToJoinRelation, false);
 		System.out.println("Active topology with minimalFlag set to false: " + fullActiveTopology.toString());
-		activeTopology = SynefoCoordinatorThread.getInitialActiveTopologyWithJoinOperators(
-				updatedTopology, 
+		activeTopology = SynefoMaster.getInitialActiveTopologyWithJoinOperators(
+				updatedTopology,
 				ScaleFunction.getInverseTopology(updatedTopology), taskToJoinRelation, true);
 		System.out.println("Active topology with minimalFlag set to true: " + activeTopology.toString());
 		scaleFunction = new ScaleFunction(updatedTopology, activeTopology, taskToJoinRelation);
