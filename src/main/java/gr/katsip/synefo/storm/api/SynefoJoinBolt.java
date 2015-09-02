@@ -5,6 +5,8 @@ import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.lib.SynefoMessage.Type;
 import gr.katsip.synefo.storm.operators.AbstractJoinOperator;
 import gr.katsip.synefo.utils.SynefoConstant;
+
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -200,15 +202,24 @@ public class SynefoJoinBolt extends BaseRichBolt {
 			output.close();
 			input.close();
 			socket.close();
-		} catch (IOException | ClassNotFoundException e) {
+		} catch (EOFException e) {
+            logger.info("+EFO-JOIN-BOLT (" +
+                    taskName + ":" + taskID +
+                    ") just threw an exception: " + e.getMessage());
+        } catch (IOException
+                | ClassNotFoundException e) {
 			logger.info("+EFO-JOIN-BOLT (" + 
 					taskName + ":" + taskID + 
 					") just threw an exception: " + e.getMessage());
 			e.printStackTrace();
-		}
-		/**
-		 * Handshake with ZooKeeper
-		 */
+		} catch (NullPointerException e) {
+            logger.info("+EFO-JOIN-BOLT (" +
+                    taskName + ":" + taskID +
+                    ") just threw an exception: " + e.getMessage());
+        }
+        /**
+         * Handshake with ZooKeeper
+         */
 		zooPet.start();
 		zooPet.getScaleCommand();
 		StringBuilder strBuild = new StringBuilder();

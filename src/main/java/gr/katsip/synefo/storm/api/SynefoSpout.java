@@ -1,9 +1,6 @@
 package gr.katsip.synefo.storm.api;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -159,14 +156,22 @@ public class SynefoSpout extends BaseRichSpout {
 			socket.close();
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
-		} catch (IOException e) {
+		} catch (EOFException e) {
+            logger.info("+EFO-SPOUT (" +
+                    taskName + ":" + taskId +
+                    ") just threw an exception: " + e.getMessage());
+        } catch (IOException e) {
 			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
+		} catch (NullPointerException e) {
+            logger.info("+EFO-SPOUT (" +
+                    taskName + ":" + taskId +
+                    ") just threw an exception: " + e.getMessage());
 		}
-		/**
-		 * Handshake with ZooKeeper
-		 */
+        /**
+         * Handshake with ZooKeeper
+         */
 		pet.start();
 		pet.getScaleCommand();
 		logger.info("+EFO-SPOUT (" + 
