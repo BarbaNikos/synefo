@@ -54,8 +54,9 @@ public class TpchQueryFiveTopology {
 			windowSizeInMinutes = 60000 * Integer.parseInt(args[4]);
 			workerNum = Integer.parseInt(args[5]);
 		}
-        int executorNumber = ( (scaleFactor / 2) > 0 ? (scaleFactor / 2) : 1);
-		Config conf = new Config();
+//        int executorNumber = ( (scaleFactor / 2) > 0 ? (scaleFactor / 2) : 1);
+		int executorNumber = scaleFactor;
+        Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
 		/**
 		 * Stage 0: 6 input streams (customer, lineitem, nation, orders, region, supplier)
