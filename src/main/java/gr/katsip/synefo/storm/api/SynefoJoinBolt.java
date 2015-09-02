@@ -237,9 +237,9 @@ public class SynefoJoinBolt extends BaseRichBolt {
 
 	private void initMetrics(TopologyContext context) {
 		latencyMetric = new AssignableMetric(null);
-		context.registerMetric("latency", latencyMetric, 6);
+		context.registerMetric("latency", latencyMetric, 5);
         throughputMetric = new AssignableMetric(null);
-        context.registerMetric("throughput", throughputMetric, 6);
+        context.registerMetric("throughput", throughputMetric, 5);
         statistics = new TaskStatistics(statReportPeriod);
 	}
 	
@@ -292,8 +292,8 @@ public class SynefoJoinBolt extends BaseRichBolt {
 			}else {
 				Long timeDifference = currentTimestamp - latestSynefoTimestamp;
 				latestSynefoTimestamp = currentTimestamp;
-				if(timeDifference >= 6000) {
-					this.statistics.updateWindowLatency((timeDifference - 6000));
+				if(timeDifference >= 5000) {
+					statistics.updateWindowLatency((timeDifference - 5000));
 					latencyMetric.setValue(statistics.getWindowLatency());
 				}
 			}
