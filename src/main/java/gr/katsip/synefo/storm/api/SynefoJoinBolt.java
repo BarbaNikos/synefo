@@ -226,9 +226,9 @@ public class SynefoJoinBolt extends BaseRichBolt {
 
 	private void initMetrics(TopologyContext context) {
 		latencyMetric = new AssignableMetric(null);
-		context.registerMetric("latency", latencyMetric, 5);
+		context.registerMetric("latency", latencyMetric, 6);
         throughputMetric = new AssignableMetric(null);
-        context.registerMetric("throughput", throughputMetric, 5);
+        context.registerMetric("throughput", throughputMetric, 6);
         statistics = new TaskStatistics(statReportPeriod);
 	}
 	
@@ -254,7 +254,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 	@Override
 	public Map<String, Object> getComponentConfiguration() {
 		Config conf = new Config();
-		conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 5);
+		conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 2);
 		return conf;
 	}
 
@@ -281,8 +281,9 @@ public class SynefoJoinBolt extends BaseRichBolt {
 			}else {
 				Long timeDifference = currentTimestamp - latestSynefoTimestamp;
 				latestSynefoTimestamp = currentTimestamp;
-				if(timeDifference >= 5000) {
-					latencyMetric.setValue((timeDifference - 5000));
+				if(timeDifference >= 6000) {
+					this.statistics.updateWindowLatency((timeDifference - 6000));
+					latencyMetric.setValue(statistics.getWindowLatency());
 				}
 			}
 			collector.ack(tuple);

@@ -42,8 +42,9 @@ public class TpchQueryFiveTopology {
 		ArrayList<String> taskList;
 		Integer taskNumber = 0;
 		Integer windowSizeInMinutes = -1;
-		if(args.length < 5) {
-			System.err.println("Arguments: <synefo-IP> <stream-IP1:port1,stream-IP2:port2,...,streamIP4:port4> <zoo-ip1:port1,zoo-ip2:port2,...,zoo-ipN:portN> <S: scale factor> <W: window size in minutes>");
+		Integer workerNum = -1;
+		if(args.length < 6) {
+			System.err.println("Arguments: <synefo-IP> <stream-IP1:port1,stream-IP2:port2,...,streamIP4:port4> <zoo-ip1:port1,zoo-ip2:port2,...,zoo-ipN:portN> <S: scale factor> <W: window size in minutes> <N: number of workers>");
 			System.exit(1);
 		}else {
 			synefoIP = args[0];
@@ -51,6 +52,7 @@ public class TpchQueryFiveTopology {
 			zooIP = args[2];
 			scaleFactor = Integer.parseInt(args[3]);
 			windowSizeInMinutes = 60000 * Integer.parseInt(args[4]);
+			workerNum = Integer.parseInt(args[5]);
 		}
 		Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
@@ -251,7 +253,7 @@ public class TpchQueryFiveTopology {
 
 		conf.setDebug(false);
 		conf.registerMetricsConsumer(LoggingMetricsConsumer.class, 8);
-		conf.setNumWorkers(20);
+		conf.setNumWorkers(workerNum);
 		conf.put(Config.TOPOLOGY_WORKER_CHILDOPTS, 
 				"-Xmx8192m -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:NewSize=128m -XX:CMSInitiatingOccupancyFraction=70 -XX:-CMSConcurrentMTEnabled -Djava.net.preferIPv4Stack=true");
 		conf.put(Config.TOPOLOGY_RECEIVER_BUFFER_SIZE, 8);
