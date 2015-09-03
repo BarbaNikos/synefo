@@ -54,7 +54,6 @@ public class TpchQueryFiveTopology {
 			windowSizeInMinutes = 60000 * Integer.parseInt(args[4]);
 			workerNum = Integer.parseInt(args[5]);
 		}
-//        int executorNumber = ( (scaleFactor / 2) > 0 ? (scaleFactor / 2) : 1);
 		int executorNumber = scaleFactor;
         Config conf = new Config();
 		TopologyBuilder builder = new TopologyBuilder();
@@ -209,23 +208,8 @@ public class TpchQueryFiveTopology {
 				.setNumTasks(scaleFactor)
 				.directGrouping("joindispatch3");
 		taskNumber += scaleFactor;
-		taskList = new ArrayList<String>();
-		taskList.add("drain");
-		topology.put("joinjoinoutputone", new ArrayList<String>(taskList));
-		topology.put("joinjoinoutputtwo", new ArrayList<String>(taskList));
-		
-		/**
-		 * Stage 3: drain
-		 */
-		ProjectOperator projectOperator = new ProjectOperator(new Fields(dataSchema));
-		projectOperator.setOutputSchema(new Fields(dataSchema));
-		builder.setBolt("drain", 
-				new SynefoBolt("drain", synefoIP, synefoPort, projectOperator, zooIP, false), 1)
-				.setNumTasks(1)
-				.directGrouping("joinjoinoutputone")
-				.directGrouping("joinjoinoutputtwo");
-		taskNumber += 1;
-		topology.put("drain", new ArrayList<String>());
+		topology.put("joinjoinoutputone", new ArrayList<String>());
+		topology.put("joinjoinoutputtwo", new ArrayList<String>());
 		/**
 		 * Notify SynEFO server about the 
 		 * Topology
@@ -262,11 +246,6 @@ public class TpchQueryFiveTopology {
 		conf.put(Config.TOPOLOGY_TRANSFER_BUFFER_SIZE, 32);
 		conf.put(Config.TOPOLOGY_EXECUTOR_RECEIVE_BUFFER_SIZE, 16384);
 		conf.put(Config.TOPOLOGY_EXECUTOR_SEND_BUFFER_SIZE, 16384);
-
-		//		LocalCluster cluster = new LocalCluster();
-		//		cluster.submitTopology("tpch-q5-top", conf, builder.createTopology());
-		//		Thread.sleep(100000);
-		//		cluster.shutdown();
 		StormSubmitter.submitTopology("tpch-q5-top", conf, builder.createTopology());
 	}
 }

@@ -295,8 +295,9 @@ public class SynefoJoinBolt extends BaseRichBolt {
 				Long timeDifference = currentTimestamp - latestSynefoTimestamp;
 				latestSynefoTimestamp = currentTimestamp;
 				if(timeDifference >= (SynefoJoinBolt.TICK_TUPLE_FREQ_SEC * 1000)) {
-					statistics.updateWindowLatency( ( timeDifference - (SynefoJoinBolt.TICK_TUPLE_FREQ_SEC * 1000) ) );
-					latencyMetric.setValue(statistics.getWindowLatency());
+					statistics.updateWindowLatency((timeDifference - (SynefoJoinBolt.TICK_TUPLE_FREQ_SEC * 1000)));
+//					latencyMetric.setValue(statistics.getWindowLatency());
+                    latencyMetric.setValue(( timeDifference - (SynefoJoinBolt.TICK_TUPLE_FREQ_SEC * 1000) ));
 				}
 			}
 			collector.ack(tuple);
