@@ -46,6 +46,8 @@ public class SynefoBolt extends BaseRichBolt {
 	 */
 	private static final long serialVersionUID = 4011052074675303959L;
 
+	private static final int TICK_TUPLE_FREQ_SEC = 2;
+
 	Logger logger = LoggerFactory.getLogger(SynefoBolt.class);
 
 	private static final int statReportPeriod = 1000;
@@ -226,7 +228,7 @@ public class SynefoBolt extends BaseRichBolt {
 	@Override
 	public Map<String, Object> getComponentConfiguration() {
 		Config conf = new Config();
-		conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 5);
+		conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, SynefoBolt.TICK_TUPLE_FREQ_SEC);
 		return conf;
 	}
 
@@ -253,8 +255,8 @@ public class SynefoBolt extends BaseRichBolt {
 			}else {
 				Long timeDifference = currentTimestamp - latestSynefoTimestamp;
 				latestSynefoTimestamp = currentTimestamp;
-				if(timeDifference >= 5000) {
-					statistics.updateWindowLatency((timeDifference - 5000));
+				if(timeDifference >= (SynefoBolt.TICK_TUPLE_FREQ_SEC * 1000)) {
+					statistics.updateWindowLatency( ( timeDifference - (SynefoBolt.TICK_TUPLE_FREQ_SEC * 1000) ) );
 				}
 			}
 			collector.ack(tuple);
