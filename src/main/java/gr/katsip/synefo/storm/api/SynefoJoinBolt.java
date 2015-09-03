@@ -46,7 +46,9 @@ public class SynefoJoinBolt extends BaseRichBolt {
 
     private static final int METRIC_REPORT_FREQ_SEC = 8;
 
-	Logger logger = LoggerFactory.getLogger(SynefoJoinBolt.class);
+    private static final int WARM_UP_THRESHOLD = 10000;
+
+    Logger logger = LoggerFactory.getLogger(SynefoJoinBolt.class);
 
     private static final int statReportPeriod = 1000;
 
@@ -86,6 +88,8 @@ public class SynefoJoinBolt extends BaseRichBolt {
 
 	private boolean warmFlag;
 
+    private int tupleCounter;
+
 	private Integer downStreamIndex;
 	
 	private HashMap<String, ArrayList<String>> relationTaskIndex;
@@ -95,6 +99,8 @@ public class SynefoJoinBolt extends BaseRichBolt {
 	private long latestSynefoTimestamp;
 	
 	private transient AssignableMetric latencyMetric;
+
+    private transient AssignableMetric latencyDetailsMetric;
 
 	private transient AssignableMetric throughputMetric;
 
@@ -242,6 +248,8 @@ public class SynefoJoinBolt extends BaseRichBolt {
 	private void initMetrics(TopologyContext context) {
 		latencyMetric = new AssignableMetric(null);
 		context.registerMetric("latency", latencyMetric, SynefoJoinBolt.METRIC_REPORT_FREQ_SEC);
+        latencyDetailsMetric = new AssignableMetric(null);
+        context.registerMetric("latency-details", latencyDetailsMetric, SynefoJoinBolt.METRIC_REPORT_FREQ_SEC);
         throughputMetric = new AssignableMetric(null);
         context.registerMetric("throughput", throughputMetric, SynefoJoinBolt.METRIC_REPORT_FREQ_SEC);
         statistics = new TaskStatistics(statReportPeriod);
@@ -264,6 +272,8 @@ public class SynefoJoinBolt extends BaseRichBolt {
 		if(downstreamTasks == null && activeDownstreamTasks == null)
 			registerToSynEFO();
 		initMetrics(context);
+        warmFlag = false;
+        tupleCounter = 0;
 	}
 	
 	@Override
@@ -287,7 +297,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 		/**
 		 * Check if it is a tick tuple
 		 */
-		if(isTickTuple(tuple)) {
+		if(isTickTuple(tuple) && warmFlag) {
 			/**
 			 * Check latency
 			 */
@@ -295,11 +305,13 @@ public class SynefoJoinBolt extends BaseRichBolt {
 				latestSynefoTimestamp = currentTimestamp;
 			}else {
 				Long timeDifference = currentTimestamp - latestSynefoTimestamp;
+                String latencySpecifics = latestSynefoTimestamp + "-" + currentTimestamp + "-" + timeDifference;
 				latestSynefoTimestamp = currentTimestamp;
 				if(timeDifference >= (SynefoJoinBolt.TICK_TUPLE_FREQ_SEC * 1000)) {
 					statistics.updateWindowLatency((timeDifference - (SynefoJoinBolt.TICK_TUPLE_FREQ_SEC * 1000)));
 //					latencyMetric.setValue(statistics.getWindowLatency());
                     latencyMetric.setValue(( timeDifference - (SynefoJoinBolt.TICK_TUPLE_FREQ_SEC * 1000) ));
+                    latencyDetailsMetric.setValue(latencySpecifics);
 				}
 			}
 			collector.ack(tuple);
@@ -356,6 +368,9 @@ public class SynefoJoinBolt extends BaseRichBolt {
 		statistics.updateWindowThroughput();
         throughputMetric.setValue(statistics.getWindowThroughput());
 
+        tupleCounter += 1;
+        if(tupleCounter >= WARM_UP_THRESHOLD && !warmFlag)
+            warmFlag = true;
 //		if(autoScale && warmFlag == true)
 //			zooPet.setLatency(statistics.getWindowLatency());
 		String scaleCommand = "";
@@ -375,7 +390,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 			strBuild.append(SynefoConstant.PUNCT_TUPLE_TAG + "/");
 			downStreamIndex = new Integer(0);
 			if(action.toLowerCase().contains("activate") || action.toLowerCase().contains("deactivate")) {
-				logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + ") located scale-command: " + 
+				logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + ") located scale-command: " +
 						scaleCommand + ", about to update routing tables (timestamp: " + System.currentTimeMillis() + ").");
 				if(action.toLowerCase().equals("activate")) {
 					if(activeDownstreamTasks.contains(taskWithIp) == false && intActiveDownstreamTasks.contains(task_id) == false) {
@@ -390,11 +405,11 @@ public class SynefoJoinBolt extends BaseRichBolt {
 					if(intActiveDownstreamTasks.indexOf(task_id) >= 0)
 						intActiveDownstreamTasks.remove(intActiveDownstreamTasks.indexOf(task_id));
 				}
-				logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + ") located scale-command: " + 
+				logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + ") located scale-command: " +
 						scaleCommand + ", updated routing tables: " + intActiveDownstreamTasks + 
 						"(timestamp: " + System.currentTimeMillis() + ").");
 			}else {
-				logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + ") located scale-command: " + 
+				logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + ") located scale-command: " +
 						scaleCommand + ", about to produce punctuation tuple (timestamp: " + System.currentTimeMillis() + ").");
 				if(action.toLowerCase().contains("add")) {
 					if(activeDownstreamTasks.contains(taskWithIp) == false && intActiveDownstreamTasks.contains(task_id) == false) {
@@ -453,7 +468,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 		String componentId = null;
 		Integer compNum = -1;
 		String ip = null;
-		logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+		logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP +
 				") received punctuation tuple: " + tuple.toString() + 
 				"(timestamp: " + currentTimestamp + ").");
 		/**
@@ -468,10 +483,10 @@ public class SynefoJoinBolt extends BaseRichBolt {
 		ip = tokens[9];
 		if(warmFlag == true)
 			warmFlag = false;
-		logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+		logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP +
 				") action: " + scaleAction + ".");
 		if(scaleAction != null && scaleAction.equals(SynefoConstant.ADD_ACTION)) {
-			logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+			logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP +
 					") received an ADD action (timestamp: " + currentTimestamp + ").");
 			String selfComp = this.taskName + ":" + this.taskID;
 			/**
@@ -486,7 +501,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 				try {
 					ServerSocket _socket = new ServerSocket(6000 + taskID);
 					int numOfStatesReceived = 0;
-					logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+					logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP +
 							") accepting connections to receive state... (IP:" + 
 							_socket.getInetAddress().getHostAddress() + ", port: " + _socket.getLocalPort());
 					boolean activeListFlag = false;
@@ -512,7 +527,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 									Integer task = Integer.parseInt(downTask[1]);
 									intActiveDownstreamTasks.add(task);
 								}
-								logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+								logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP +
 										") received active downstream task list:" + activeDownstreamTasks + "(intActiveDownstreamTasks: " + 
 										intActiveDownstreamTasks.toString() + ")");
 								activeListFlag = true;
@@ -531,14 +546,14 @@ public class SynefoJoinBolt extends BaseRichBolt {
 				} catch (IOException | ClassNotFoundException e) {
 					e.printStackTrace();
 				}
-				logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+				logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP +
 						") Finished accepting connections to receive state (timestamp: " + currentTimestamp + ").");
-				logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + ") routing table:" + 
+				logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + ") routing table:" +
 						this.activeDownstreamTasks + " (timestamp: " + currentTimestamp + ").");
 			}else {
 				Socket client = new Socket();
 				Integer comp_task_id = Integer.parseInt(componentId);
-				logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+				logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP +
 						") about to send state to about-to-be-added operator (IP: " + 
 						ip + ", port: " + (6000 + comp_task_id) + ").");
 				boolean attempt_flag = true;
@@ -558,7 +573,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 						}
 					}
 				}
-				logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+				logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP +
 						") Connection established...");
 				try {
 					ObjectOutputStream _stateOutput = new ObjectOutputStream(client.getOutputStream());
@@ -579,11 +594,11 @@ public class SynefoJoinBolt extends BaseRichBolt {
 				} catch (IOException | ClassNotFoundException e) {
 					e.printStackTrace();
 				}
-				logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+				logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP +
 						") sent state to newly added node successfully (timestamp: " + currentTimestamp + ").");
 			}
 		}else if(scaleAction != null && scaleAction.equals(SynefoConstant.REMOVE_ACTION)) {
-			logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+			logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP +
 					") received a REMOVE action (timestamp: " + currentTimestamp + ").");
 			String selfComp = this.taskName + ":" + this.taskID;
 			if(selfComp.equals(componentName + ":" + componentId)) {
@@ -594,7 +609,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
                 statistics = new TaskStatistics(statReportPeriod);
 				try {
 					ServerSocket _socket = new ServerSocket(6000 + taskID);
-					logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+					logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP +
 							") accepting connections to send state... (IP:" + 
 							_socket.getInetAddress() + ", port: " + _socket.getLocalPort());
 					int numOfStatesReceived = 0;
@@ -619,15 +634,15 @@ public class SynefoJoinBolt extends BaseRichBolt {
 				} catch (IOException | ClassNotFoundException e) {
 					e.printStackTrace();
 				}
-				logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+				logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP +
 						") Finished accepting connections to send state (timestamp: " + 
 						currentTimestamp + ").");
-				logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+				logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP +
 						") routing table:" + this.activeDownstreamTasks + " (timestamp: " + currentTimestamp + ").");
 			}else {
 				Socket client = new Socket();
 				Integer comp_task_id = Integer.parseInt(componentId);
-				logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+				logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP +
 						") about to receive state from about-to-be-removed operator (IP: " + ip + 
 						", port: " + (6000 + comp_task_id) + ").");
 				boolean attempt_flag = true;
@@ -665,7 +680,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 				} catch (IOException | ClassNotFoundException e) {
 					e.printStackTrace();
 				}
-				logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP + 
+				logger.info("+EFO-JOIN-BOLT (" + this.taskName + ":" + this.taskID + "@" + this.taskIP +
 						") received state from about-to-be-removed node successfully (timestamp: " + currentTimestamp + ").");
 			}
 		}
