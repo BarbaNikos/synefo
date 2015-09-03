@@ -42,7 +42,9 @@ public class SynefoJoinBolt extends BaseRichBolt {
 	 */
 	private static final long serialVersionUID = -2276600254438802773L;
 
-	private static final int TICK_TUPLE_FREQ_SEC = 2;
+	private static final int TICK_TUPLE_FREQ_SEC = 5;
+
+    private static final int METRIC_REPORT_FREQ_SEC = 8;
 
 	Logger logger = LoggerFactory.getLogger(SynefoJoinBolt.class);
 
@@ -239,9 +241,9 @@ public class SynefoJoinBolt extends BaseRichBolt {
 
 	private void initMetrics(TopologyContext context) {
 		latencyMetric = new AssignableMetric(null);
-		context.registerMetric("latency", latencyMetric, 5);
+		context.registerMetric("latency", latencyMetric, SynefoJoinBolt.METRIC_REPORT_FREQ_SEC);
         throughputMetric = new AssignableMetric(null);
-        context.registerMetric("throughput", throughputMetric, 5);
+        context.registerMetric("throughput", throughputMetric, SynefoJoinBolt.METRIC_REPORT_FREQ_SEC);
         statistics = new TaskStatistics(statReportPeriod);
 	}
 	
