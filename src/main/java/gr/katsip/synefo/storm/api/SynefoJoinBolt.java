@@ -42,9 +42,9 @@ public class SynefoJoinBolt extends BaseRichBolt {
 	 */
 	private static final long serialVersionUID = -2276600254438802773L;
 
-	private static final int TICK_TUPLE_FREQ_SEC = 5;
+	private static final int TICK_TUPLE_FREQ_SEC = 10;
 
-    private static final int METRIC_REPORT_FREQ_SEC = 8;
+    private static final int METRIC_REPORT_FREQ_SEC = 15;
 
     private static final int WARM_UP_THRESHOLD = 10000;
 
