@@ -137,7 +137,8 @@ public class WordCountTopology {
 				Values v = new Values();
 				v.add(tuple.getString(0));
 				v.add(tuple.getString(1));
-				_collector.emit(v);
+//				_collector.emit(v);
+				_collector.emit(tuple, v);
 				_collector.ack(tuple);
 			}
 		}

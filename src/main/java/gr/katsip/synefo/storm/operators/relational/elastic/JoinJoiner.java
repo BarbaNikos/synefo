@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+import backtype.storm.tuple.Tuple;
 import org.apache.commons.lang.ArrayUtils;
 
 import backtype.storm.task.OutputCollector;
@@ -95,7 +96,7 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 	}
 
 	@Override
-	public int execute(OutputCollector collector,
+	public int execute(Tuple anchor, OutputCollector collector,
 			HashMap<String, ArrayList<Integer>> taskRelationIndex,
 			ArrayList<Integer> activeTasks, Integer taskIndex, Fields fields,
 			Values values, Long tupleTimestamp) {
@@ -126,6 +127,7 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 				tuple.add(joinOutputSchema);
 				tuple.add(result);
 				collector.emitDirect(activeTasks.get(taskIndex), tuple);
+				collector.emitDirect(activeTasks.get(taskIndex), anchor, tuple);
 				taskIndex += 1;
 				if(taskIndex >= activeTasks.size())
 					taskIndex = 0;

@@ -8,6 +8,7 @@ import java.util.List;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.tuple.Fields;
+import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import gr.katsip.synefo.storm.operators.AbstractJoinOperator;
 
@@ -55,7 +56,7 @@ public class JoinDispatcher implements AbstractJoinOperator, Serializable {
 	}
 
 	@Override
-	public int execute(OutputCollector collector,
+	public int execute(Tuple anchor, OutputCollector collector,
 			HashMap<String, ArrayList<Integer>> taskRelationIndex,
 			ArrayList<Integer> activeTasks, Integer taskIndex, Fields fields,
 			Values values, Long tupleTimestamp) {
@@ -78,7 +79,8 @@ public class JoinDispatcher implements AbstractJoinOperator, Serializable {
 					tuple.add(tupleTimestamp.toString());
 					tuple.add(attributeNames);
 					tuple.add(attributeValues);
-					collector.emitDirect(nextTask, tuple);
+//					collector.emitDirect(nextTask, tuple);
+					collector.emitDirect(nextTask, anchor, tuple);
 					if(taskIndex >= activeTasks.size())
 						taskIndex = 0;
 					else
@@ -100,7 +102,8 @@ public class JoinDispatcher implements AbstractJoinOperator, Serializable {
 			tuple.add(attributeValues);
 			for(Integer rightRelationTask : taskRelationIndex.get(rightRelation)) {
 				if(activeTasks.contains(rightRelationTask)) {
-					collector.emitDirect(rightRelationTask, tuple);
+//					collector.emitDirect(rightRelationTask, tuple);
+					collector.emitDirect(rightRelationTask, anchor, tuple);
 				}
 			}
 		}else if(Arrays.equals(attributeNames.toList().toArray(), rightRelationSchema.toList().toArray())) {
@@ -117,7 +120,7 @@ public class JoinDispatcher implements AbstractJoinOperator, Serializable {
 					tuple.add(tupleTimestamp.toString());
 					tuple.add(attributeNames);
 					tuple.add(attributeValues);
-					collector.emitDirect(nextTask, tuple);
+					collector.emitDirect(nextTask, anchor, tuple);
 					taskIndex += 1;
 					if(taskIndex >= activeTasks.size())
 						taskIndex = 0;
@@ -138,7 +141,7 @@ public class JoinDispatcher implements AbstractJoinOperator, Serializable {
 			tuple.add(attributeValues);
 			for(Integer leftRelationTask : taskRelationIndex.get(leftRelation)) {
 				if(activeTasks.contains(leftRelationTask)) {
-					collector.emitDirect(leftRelationTask, tuple);
+					collector.emitDirect(leftRelationTask, anchor, tuple);
 				}
 			}
 		}

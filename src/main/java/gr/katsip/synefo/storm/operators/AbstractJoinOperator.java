@@ -6,6 +6,7 @@ import java.util.List;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.tuple.Fields;
+import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 
 public interface AbstractJoinOperator {
@@ -16,7 +17,7 @@ public interface AbstractJoinOperator {
 
 	public void setOutputSchema(Fields output_schema);
 
-	public int execute(OutputCollector collector, HashMap<String, ArrayList<Integer>> taskRelationIndex, 
+	public int execute(Tuple anchor, OutputCollector collector, HashMap<String, ArrayList<Integer>> taskRelationIndex,
 			ArrayList<Integer> activeTasks, Integer taskIndex, Fields fields, Values values, Long tupleTimestamp);
 
 	public List<Values> getStateValues();

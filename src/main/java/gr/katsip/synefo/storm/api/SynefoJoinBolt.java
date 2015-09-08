@@ -104,6 +104,8 @@ public class SynefoJoinBolt extends BaseRichBolt {
 
 	private transient AssignableMetric throughputMetric;
 
+	private transient AssignableMetric executeLatencyMetric;
+
 	public SynefoJoinBolt(String task_name, String synEFO_ip, Integer synEFO_port, 
 			AbstractJoinOperator operator, String zooIP, boolean autoScale) {
 		taskName = task_name;
@@ -251,6 +253,8 @@ public class SynefoJoinBolt extends BaseRichBolt {
         latencyDetailsMetric = new AssignableMetric(null);
         context.registerMetric("latency-details", latencyDetailsMetric, SynefoJoinBolt.METRIC_REPORT_FREQ_SEC);
         throughputMetric = new AssignableMetric(null);
+		executeLatencyMetric = new AssignableMetric(null);
+		context.registerMetric("execute-latency", executeLatencyMetric, SynefoJoinBolt.METRIC_REPORT_FREQ_SEC);
         context.registerMetric("throughput", throughputMetric, SynefoJoinBolt.METRIC_REPORT_FREQ_SEC);
         statistics = new TaskStatistics(statReportPeriod);
 	}
@@ -355,11 +359,11 @@ public class SynefoJoinBolt extends BaseRichBolt {
 			/**
 			 * Need to provide also the tupleTimestamp
 			 */
-			downStreamIndex = operator.execute(collector, intRelationTaskIndex, intActiveDownstreamTasks, 
+			downStreamIndex = operator.execute(tuple, collector, intRelationTaskIndex, intActiveDownstreamTasks,
 					downStreamIndex, fields, values, synefoTimestamp);
 			collector.ack(tuple);
 		}else {
-			downStreamIndex = operator.execute(collector, intRelationTaskIndex, intActiveDownstreamTasks, 
+			downStreamIndex = operator.execute(tuple, collector, intRelationTaskIndex, intActiveDownstreamTasks,
 					downStreamIndex, fields, values, synefoTimestamp);
 			collector.ack(tuple);
 		}
@@ -367,6 +371,8 @@ public class SynefoJoinBolt extends BaseRichBolt {
 		statistics.updateCpuLoad();
 		statistics.updateWindowThroughput();
         throughputMetric.setValue(statistics.getWindowThroughput());
+		Long executeEndTimestamp = System.currentTimeMillis();
+		executeLatencyMetric.setValue((executeEndTimestamp - currentTimestamp));
 
         tupleCounter += 1;
         if(tupleCounter >= WARM_UP_THRESHOLD && !warmFlag)
