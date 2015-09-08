@@ -43,8 +43,9 @@ public class TpchQueryFiveTopology {
 		Integer taskNumber = 0;
 		Integer windowSizeInMinutes = -1;
 		Integer workerNum = -1;
-		if(args.length < 6) {
-			System.err.println("Arguments: <synefo-IP> <stream-IP1:port1,stream-IP2:port2,...,streamIP4:port4> <zoo-ip1:port1,zoo-ip2:port2,...,zoo-ipN:portN> <S: scale factor> <W: window size in minutes> <N: number of workers>");
+		Integer maxSpoutPending = 250;
+		if(args.length < 7) {
+			System.err.println("Arguments: <synefo-IP> <stream-IP1:port1,stream-IP2:port2,...,streamIP4:port4> <zoo-ip1:port1,zoo-ip2:port2,...,zoo-ipN:portN> <S: scale factor> <W: window size in minutes> <N: number of workers> <MP: max spout pending>");
 			System.exit(1);
 		}else {
 			synefoIP = args[0];
@@ -53,6 +54,7 @@ public class TpchQueryFiveTopology {
 			scaleFactor = Integer.parseInt(args[3]);
 			windowSizeInMinutes = 60000 * Integer.parseInt(args[4]);
 			workerNum = Integer.parseInt(args[5]);
+			maxSpoutPending = Integer.parseInt(args[6]);
 		}
 		int executorNumber = scaleFactor;
         Config conf = new Config();
@@ -69,17 +71,17 @@ public class TpchQueryFiveTopology {
 		lineitemProducer.setSchema(new Fields(dataSchema));
 		TpchTupleProducer supplierProducer = new TpchTupleProducer(streamIPs[3], Supplier.schema, Supplier.query5Schema);
 		supplierProducer.setSchema(new Fields(dataSchema));
-		builder.setSpout("customer", 
-				new SynefoSpout("customer", synefoIP, synefoPort, customerProducer, zooIP), 1).setMaxSpoutPending(250);
+		builder.setSpout("customer",
+                new SynefoSpout("customer", synefoIP, synefoPort, customerProducer, zooIP), 1);
 		taskNumber += 1;
-		builder.setSpout("order", 
-				new SynefoSpout("order", synefoIP, synefoPort, orderProducer, zooIP), 1).setMaxSpoutPending(250);
+		builder.setSpout("order",
+                new SynefoSpout("order", synefoIP, synefoPort, orderProducer, zooIP), 1);
 		taskNumber += 1;
 		builder.setSpout("lineitem",
-				new SynefoSpout("lineitem", synefoIP, synefoPort, lineitemProducer, zooIP), 1).setMaxSpoutPending(250);
+                new SynefoSpout("lineitem", synefoIP, synefoPort, lineitemProducer, zooIP), 1);
 		taskNumber += 1;
 		builder.setSpout("supplier",
-				new SynefoSpout("supplier", synefoIP, synefoPort, supplierProducer, zooIP), 1).setMaxSpoutPending(250);
+                new SynefoSpout("supplier", synefoIP, synefoPort, supplierProducer, zooIP), 1);
 		taskNumber += 1;
 		taskList = new ArrayList<String>();
 		taskList.add("joindispatch");
@@ -240,9 +242,10 @@ public class TpchQueryFiveTopology {
 		conf.setDebug(false);
 		conf.registerMetricsConsumer(LoggingMetricsConsumer.class, scaleFactor);
 		conf.setNumWorkers(workerNum);
-		conf.put(Config.TOPOLOGY_WORKER_CHILDOPTS, 
-				"-Xmx8192m -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:NewSize=128m -XX:CMSInitiatingOccupancyFraction=70 -XX:-CMSConcurrentMTEnabled -Djava.net.preferIPv4Stack=true");
+		conf.put(Config.TOPOLOGY_WORKER_CHILDOPTS,
+                "-Xmx8192m -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:NewSize=128m -XX:CMSInitiatingOccupancyFraction=70 -XX:-CMSConcurrentMTEnabled -Djava.net.preferIPv4Stack=true");
 		conf.put(Config.TOPOLOGY_RECEIVER_BUFFER_SIZE, 8);
+        conf.put(Config.TOPOLOGY_MAX_SPOUT_PENDING, maxSpoutPending);
 		conf.put(Config.TOPOLOGY_TRANSFER_BUFFER_SIZE, 32);
 		conf.put(Config.TOPOLOGY_EXECUTOR_RECEIVE_BUFFER_SIZE, 16384);
 		conf.put(Config.TOPOLOGY_EXECUTOR_SEND_BUFFER_SIZE, 16384);
