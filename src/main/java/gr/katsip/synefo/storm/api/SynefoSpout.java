@@ -199,7 +199,8 @@ public class SynefoSpout extends BaseRichSpout {
 				for(int i = 0; i < returnedValues.size(); i++) {
 					values.add(returnedValues.get(i));
 				}
-				collector.emitDirect(intActiveDownstreamTasks.get(idx), values);
+//				collector.emitDirect(intActiveDownstreamTasks.get(idx), values);
+				collector.emitDirect(intActiveDownstreamTasks.get(idx), values, values);
 				if(idx >= (intActiveDownstreamTasks.size() - 1)) {
 					idx = 0;
 				}else {

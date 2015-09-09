@@ -320,6 +320,9 @@ public class SynefoJoinBolt extends BaseRichBolt {
 			}
 			collector.ack(tuple);
 			return;
+		}else if(isTickTuple(tuple) && !warmFlag) {
+			collector.ack(tuple);
+			return;
 		}
 		/**
 		 * If punctuation tuple is received:
