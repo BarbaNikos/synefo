@@ -132,15 +132,13 @@ public class WordCountTopology {
 						latencyMetric.setValue(timeDifference);
 					}
 				}
-
-				_collector.ack(tuple);
 			}else {
 				Values v = new Values();
 				v.add(tuple.getString(0));
 				v.add(tuple.getString(1));
 				_collector.emit(tuple, v);
-//				_collector.ack(tuple);
 			}
+			_collector.ack(tuple);
 		}
 
 		@Override
@@ -202,8 +200,8 @@ public class WordCountTopology {
 						latencyMetric.setValue(timeDifference);
 					}
 				}
-				_collector.ack(tuple);
 			}
+			_collector.ack(tuple);
 		}
 
 		@Override
