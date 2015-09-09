@@ -132,6 +132,7 @@ public class WordCountTopology {
 						latencyMetric.setValue(timeDifference);
 					}
 				}
+
 				_collector.ack(tuple);
 			}else {
 				Values v = new Values();
@@ -244,10 +245,10 @@ public class WordCountTopology {
 		TopologyBuilder builder = new TopologyBuilder();
 		builder.setSpout("word", new TestWordSpout(true), 4);
 		builder.setBolt("step1", new IntermediateBolt(), 4).setNumTasks(4).shuffleGrouping("word");
-		builder.setBolt("step2", new IntermediateBolt(), 4).setNumTasks(4).shuffleGrouping("step1");
-		builder.setBolt("step3", new IntermediateBolt(), 4).setNumTasks(4).shuffleGrouping("step2");
-		builder.setBolt("step4", new IntermediateBolt(), 4).setNumTasks(4).shuffleGrouping("step3");
-		builder.setBolt("sink", new SinkBolt(), 4).setNumTasks(4).shuffleGrouping("step4");
+//		builder.setBolt("step2", new IntermediateBolt(), 4).setNumTasks(4).shuffleGrouping("step1");
+//		builder.setBolt("step3", new IntermediateBolt(), 4).setNumTasks(4).shuffleGrouping("step2");
+//		builder.setBolt("step4", new IntermediateBolt(), 4).setNumTasks(4).shuffleGrouping("step3");
+		builder.setBolt("sink", new SinkBolt(), 4).setNumTasks(4).shuffleGrouping("step1");
 
 		Config conf = new Config();
 		conf.setDebug(false);
