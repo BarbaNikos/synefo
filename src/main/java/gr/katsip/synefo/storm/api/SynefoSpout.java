@@ -215,7 +215,7 @@ public class SynefoSpout extends BaseRichSpout {
 		Values values = (Values) msgId;
 		if(tupleStatistics.containsKey(values)) {
 			Long emitTimestamp = tupleStatistics.remove(values);
-			completeLatency.setValue((emitTimestamp - currentTimestamp));
+			completeLatency.setValue((currentTimestamp - emitTimestamp));
 		}
 	}
 
