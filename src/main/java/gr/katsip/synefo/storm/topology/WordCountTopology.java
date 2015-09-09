@@ -61,7 +61,8 @@ public class WordCountTopology {
 			Values tuple = new Values();
 			tuple.add((new Long(System.currentTimeMillis())).toString());
 			tuple.add(word);
-			_collector.emit(tuple);
+//			_collector.emit(tuple);
+			_collector.emit(tuple, tuple);
 		}
 
 		public void ack(Object msgId) {
@@ -139,7 +140,7 @@ public class WordCountTopology {
 				v.add(tuple.getString(1));
 //				_collector.emit(v);
 				_collector.emit(tuple, v);
-//				_collector.ack(tuple);
+				_collector.ack(tuple);
 			}
 		}
 
