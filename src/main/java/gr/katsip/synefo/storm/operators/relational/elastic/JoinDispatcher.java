@@ -79,7 +79,6 @@ public class JoinDispatcher implements AbstractJoinOperator, Serializable {
 					tuple.add(tupleTimestamp.toString());
 					tuple.add(attributeNames);
 					tuple.add(attributeValues);
-//					collector.emitDirect(nextTask, tuple);
 					collector.emitDirect(nextTask, anchor, tuple);
 					if(taskIndex >= activeTasks.size())
 						taskIndex = 0;
@@ -102,7 +101,6 @@ public class JoinDispatcher implements AbstractJoinOperator, Serializable {
 			tuple.add(attributeValues);
 			for(Integer rightRelationTask : taskRelationIndex.get(rightRelation)) {
 				if(activeTasks.contains(rightRelationTask)) {
-//					collector.emitDirect(rightRelationTask, tuple);
 					collector.emitDirect(rightRelationTask, anchor, tuple);
 				}
 			}

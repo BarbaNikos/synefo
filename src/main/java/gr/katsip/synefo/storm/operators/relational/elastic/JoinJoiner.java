@@ -126,7 +126,6 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 				tuple.add(tupleTimestamp.toString());
 				tuple.add(joinOutputSchema);
 				tuple.add(result);
-//				collector.emitDirect(activeTasks.get(taskIndex), tuple);
 				collector.emitDirect(activeTasks.get(taskIndex), anchor, tuple);
 				taskIndex += 1;
 				if(taskIndex >= activeTasks.size())

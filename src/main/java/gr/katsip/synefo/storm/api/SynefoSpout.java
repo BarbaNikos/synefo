@@ -10,8 +10,13 @@ import java.nio.channels.CompletionHandler;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import backtype.storm.metric.api.AssignableMetric;
+import backtype.storm.tuple.Tuple;
+import com.intellij.dvcs.branch.DvcsSyncSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import gr.katsip.synefo.metric.TaskStatistics;
@@ -39,6 +44,8 @@ public class SynefoSpout extends BaseRichSpout {
 	private static final long serialVersionUID = -7244170192535254357L;
 
 	Logger logger = LoggerFactory.getLogger(SynefoSpout.class);
+
+	private static final int METRIC_FREQ_SEC = 5;
 
 	private static final int statReportPeriod = 1000;
 
@@ -75,6 +82,10 @@ public class SynefoSpout extends BaseRichSpout {
 	private String zooIP;
 
 	private int reportCounter;
+
+	private AssignableMetric completeLatency;
+
+	private HashMap<Values, Long> tupleStatistics;
 
 	public SynefoSpout(String taskName, String synefoIpAddress, Integer synefoPort,
 			AbstractTupleProducer tupleProducer, String zooIP) {
@@ -174,10 +185,46 @@ public class SynefoSpout extends BaseRichSpout {
          */
 		pet.start();
 		pet.getScaleCommand();
-		logger.info("+EFO-SPOUT (" + 
-				taskName + ":" + taskId + "@" + taskIP + 
+		logger.info("+EFO-SPOUT (" +
+				taskName + ":" + taskId + "@" + taskIP +
 				") registered to +EFO (timestamp: " +
 				System.currentTimeMillis() + ").");
+	}
+
+	public void open(@SuppressWarnings("rawtypes") Map conf, TopologyContext context,
+					 SpoutOutputCollector collector) {
+		this.collector = collector;
+		taskId = context.getThisTaskId();
+		workerPort = context.getThisWorkerPort();
+		/**
+		 * Update taskName with task-id so that multi-core is supported
+		 */
+		taskName = taskName + "_" + taskId;
+		try {
+			taskIP = InetAddress.getLocalHost().getHostAddress();
+		} catch (UnknownHostException e1) {
+			e1.printStackTrace();
+		}
+		pet = new ZooPet(zooIP, taskName, taskId, taskIP);
+		if(activeDownstreamTasks == null && downstreamTasks == null) {
+			registerToSynEFO();
+		}
+		initMetrics(context);
+	}
+
+	private void initMetrics(TopologyContext context) {
+		completeLatency = new AssignableMetric(null);
+		context.registerMetric("comp-latency", completeLatency, SynefoSpout.METRIC_FREQ_SEC);
+		tupleStatistics = new HashMap<Values, Long>();
+	}
+
+	public void ack(Object msgId) {
+		Long currentTimestamp = System.currentTimeMillis();
+		Values values = (Values) msgId;
+		if(tupleStatistics.containsKey(values)) {
+			Long emitTimestamp = tupleStatistics.remove(values);
+			completeLatency.setValue((emitTimestamp - currentTimestamp));
+		}
 	}
 
 	public void nextTuple() {
@@ -199,8 +246,8 @@ public class SynefoSpout extends BaseRichSpout {
 				for(int i = 0; i < returnedValues.size(); i++) {
 					values.add(returnedValues.get(i));
 				}
-//				collector.emitDirect(intActiveDownstreamTasks.get(idx), values);
 				collector.emitDirect(intActiveDownstreamTasks.get(idx), values, values);
+				tupleStatistics.put(values, System.currentTimeMillis());
 				if(idx >= (intActiveDownstreamTasks.size() - 1)) {
 					idx = 0;
 				}else {
@@ -288,26 +335,6 @@ public class SynefoSpout extends BaseRichSpout {
 						") active downstream tasks list after adding/removing node: " + activeDownstreamTasks.toString());
 			}
 			reportCounter = 0;
-		}
-	}
-
-	public void open(@SuppressWarnings("rawtypes") Map conf, TopologyContext context,
-			SpoutOutputCollector collector) {
-		this.collector = collector;
-		taskId = context.getThisTaskId();
-		workerPort = context.getThisWorkerPort();
-		/**
-		 * Update taskName with task-id so that multi-core is supported
-		 */
-		taskName = taskName + "_" + taskId;
-		try {
-			taskIP = InetAddress.getLocalHost().getHostAddress();
-		} catch (UnknownHostException e1) {
-			e1.printStackTrace();
-		}
-		pet = new ZooPet(zooIP, taskName, taskId, taskIP);
-		if(activeDownstreamTasks == null && downstreamTasks == null) {
-			registerToSynEFO();
 		}
 	}
 
