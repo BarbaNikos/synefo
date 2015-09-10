@@ -100,11 +100,13 @@ public class SynefoJoinBolt extends BaseRichBolt {
 	
 	private transient AssignableMetric latencyMetric;
 
-    private transient AssignableMetric latencyDetailsMetric;
+//    private transient AssignableMetric latencyDetailsMetric;
 
 	private transient AssignableMetric throughputMetric;
 
 	private transient AssignableMetric executeLatencyMetric;
+
+	private transient AssignableMetric stateSizeMetric;
 
 	public SynefoJoinBolt(String task_name, String synEFO_ip, Integer synEFO_port, 
 			AbstractJoinOperator operator, String zooIP, boolean autoScale) {
@@ -250,12 +252,14 @@ public class SynefoJoinBolt extends BaseRichBolt {
 	private void initMetrics(TopologyContext context) {
 		latencyMetric = new AssignableMetric(null);
 		context.registerMetric("latency", latencyMetric, SynefoJoinBolt.METRIC_REPORT_FREQ_SEC);
-        latencyDetailsMetric = new AssignableMetric(null);
-        context.registerMetric("latency-details", latencyDetailsMetric, SynefoJoinBolt.METRIC_REPORT_FREQ_SEC);
+//        latencyDetailsMetric = new AssignableMetric(null);
+//        context.registerMetric("latency-details", latencyDetailsMetric, SynefoJoinBolt.METRIC_REPORT_FREQ_SEC);
         throughputMetric = new AssignableMetric(null);
 		executeLatencyMetric = new AssignableMetric(null);
+		stateSizeMetric = new AssignableMetric(null);
 		context.registerMetric("execute-latency", executeLatencyMetric, SynefoJoinBolt.METRIC_REPORT_FREQ_SEC);
         context.registerMetric("throughput", throughputMetric, SynefoJoinBolt.METRIC_REPORT_FREQ_SEC);
+		context.registerMetric("state-size", stateSizeMetric, SynefoJoinBolt.METRIC_REPORT_FREQ_SEC);
         statistics = new TaskStatistics(statReportPeriod);
 	}
 	
@@ -309,13 +313,12 @@ public class SynefoJoinBolt extends BaseRichBolt {
 				latestSynefoTimestamp = currentTimestamp;
 			}else {
 				Long timeDifference = currentTimestamp - latestSynefoTimestamp;
-                String latencySpecifics = latestSynefoTimestamp + "-" + currentTimestamp + "-" + timeDifference;
+//                String latencySpecifics = latestSynefoTimestamp + "-" + currentTimestamp + "-" + timeDifference;
 				latestSynefoTimestamp = currentTimestamp;
 				if(timeDifference >= (SynefoJoinBolt.TICK_TUPLE_FREQ_SEC * 1000)) {
 					statistics.updateWindowLatency((timeDifference - (SynefoJoinBolt.TICK_TUPLE_FREQ_SEC * 1000)));
-//					latencyMetric.setValue(statistics.getWindowLatency());
                     latencyMetric.setValue(( timeDifference - (SynefoJoinBolt.TICK_TUPLE_FREQ_SEC * 1000) ));
-                    latencyDetailsMetric.setValue(latencySpecifics);
+//                    latencyDetailsMetric.setValue(latencySpecifics);
 				}
 			}
 			collector.ack(tuple);
@@ -370,12 +373,13 @@ public class SynefoJoinBolt extends BaseRichBolt {
 					downStreamIndex, fields, values, synefoTimestamp);
 			collector.ack(tuple);
 		}
+		Long executeEndTimestamp = System.currentTimeMillis();
+		executeLatencyMetric.setValue((executeEndTimestamp - currentTimestamp));
 		statistics.updateMemory();
 		statistics.updateCpuLoad();
 		statistics.updateWindowThroughput();
-        throughputMetric.setValue(statistics.getWindowThroughput());
-		Long executeEndTimestamp = System.currentTimeMillis();
-		executeLatencyMetric.setValue((executeEndTimestamp - currentTimestamp));
+		throughputMetric.setValue(statistics.getWindowThroughput());
+		stateSizeMetric.setValue(operator.getStateSize());
 
         tupleCounter += 1;
         if(tupleCounter >= WARM_UP_THRESHOLD && !warmFlag)

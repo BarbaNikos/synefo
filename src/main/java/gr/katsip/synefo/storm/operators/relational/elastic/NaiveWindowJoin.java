@@ -2,14 +2,14 @@ package gr.katsip.synefo.storm.operators.relational.elastic;
 
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
-import java.util.HashMap;
-import java.util.List;
-import java.util.TreeMap;
+
+import java.io.Serializable;
+import java.util.*;
 
 /**
  * Created by katsip on 9/10/2015.
  */
-public class NaiveWindowJoin {
+public class NaiveWindowJoin implements Serializable {
 
     private Integer windowSize;
 
@@ -31,6 +31,10 @@ public class NaiveWindowJoin {
 
     private String otherRelation;
 
+    private Long windowStartTimestamp;
+
+    private Long windowEndTimestamp;
+
     public NaiveWindowJoin(int windowSize, int slide, Fields tupleSchema, String joinAttribute,
                            String storedRelation, String otherRelation) {
         this.windowSize = windowSize;
@@ -43,18 +47,84 @@ public class NaiveWindowJoin {
         this.tupleCounter = 0;
         tuples = new TreeMap<>();
         hashIndex = new HashMap<>();
+        windowStartTimestamp = -1L;
+        windowEndTimestamp = -1L;
     }
 
     public void insert(Long currentTimestamp, Values tuple) {
-
+        /**
+         * Need to slide
+         */
+        if(windowStartTimestamp != -1L && currentTimestamp >= (windowStartTimestamp + (slide * 1000L))) {
+            slide();
+        }
+        if(windowEndTimestamp == -1L && windowStartTimestamp == -1L) {
+            windowStartTimestamp = currentTimestamp;
+            windowEndTimestamp = currentTimestamp + (windowSize * 1000L);
+        }
+        tuples.put(currentTimestamp, tuple);
+        List<Long> bucket = null;
+        if(hashIndex.containsKey(tuple.get(tupleSchema.fieldIndex(joinAttribute)))) {
+            bucket = hashIndex.get(tuple.get(tupleSchema.fieldIndex(joinAttribute)));
+        }else {
+            bucket = new ArrayList<>();
+        }
+        bucket.add(currentTimestamp);
+        hashIndex.put((String) tuple.get(tupleSchema.fieldIndex(joinAttribute)), bucket);
+        tupleCounter += 1;
+        stateSizeInBytes += tuple.toArray().toString().length();
     }
 
-    public void join(Long currentTimestamp, Values tuple, Fields otherSchema, String otherRelationJoinAttribute) {
-
+    public List<Values> join(Long currentTimestamp, Values tuple, Fields otherSchema, String otherRelationJoinAttribute) {
+        if(windowStartTimestamp != -1L && currentTimestamp >= (windowStartTimestamp + (slide * 1000L))) {
+            slide();
+        }
+        if(windowEndTimestamp == -1L && windowStartTimestamp == -1L) {
+            windowStartTimestamp = currentTimestamp;
+            windowEndTimestamp = currentTimestamp + (windowSize * 1000L);
+        }
+        List<Long> bucket = null;
+        if(hashIndex.containsKey(tuple.get(otherSchema.fieldIndex(otherRelationJoinAttribute)))) {
+            bucket = hashIndex.get(tuple.get(otherSchema.fieldIndex(otherRelationJoinAttribute)));
+        }
+        if(bucket != null && bucket.size() > 0) {
+            List<Values> result = new ArrayList<>();
+            for(Long timestamp : bucket) {
+                Values storedTuple = tuples.get(timestamp);
+                Values joinedTuple = null;
+                if(storedRelation.compareTo(otherRelation) <= 0) {
+                    joinedTuple = new Values(storedTuple.toArray());
+                    joinedTuple.addAll(tuple);
+                }else {
+                    joinedTuple = new Values(tuple.toArray());
+                    joinedTuple.addAll(storedTuple);
+                }
+                if(result.indexOf(joinedTuple) == -1)
+                    result.add(joinedTuple);
+            }
+            return result;
+        }
+        return new ArrayList<Values>();
     }
 
     private void slide() {
-
+        windowStartTimestamp += slide;
+        Iterator timestampIterator = tuples.keySet().iterator();
+        while(timestampIterator.hasNext()) {
+            Map.Entry<Long, Values> pair = (Map.Entry) timestampIterator.next();
+            Long tupleTimestamp = pair.getKey();
+            if(tupleTimestamp < windowStartTimestamp) {
+                String value = (String) pair.getValue().get(this.tupleSchema.fieldIndex(joinAttribute));
+                List<Long> bucket = hashIndex.get(value);
+                bucket.remove(bucket.indexOf(tupleTimestamp));
+                tupleCounter -= 1;
+                stateSizeInBytes -= pair.getValue().toArray().toString().length();
+                hashIndex.put(value, bucket);
+            }else {
+                break;
+            }
+        }
+        windowEndTimestamp += slide;
     }
 
     private void cleanup() {
@@ -62,6 +132,10 @@ public class NaiveWindowJoin {
         hashIndex.clear();
         stateSizeInBytes = 0L;
         tupleCounter = 0;
+    }
+
+    public long getStateSize() {
+        return stateSizeInBytes;
     }
 
 }
