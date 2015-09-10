@@ -111,14 +111,14 @@ public class NaiveWindowJoin implements Serializable {
         windowStartTimestamp += slide;
         Iterator timestampIterator = tuples.keySet().iterator();
         while(timestampIterator.hasNext()) {
-            Map.Entry<Long, Values> pair = (Map.Entry) timestampIterator.next();
-            Long tupleTimestamp = pair.getKey();
+            Long tupleTimestamp = (Long) timestampIterator.next();
+            Values tuple = tuples.get(tupleTimestamp);
             if(tupleTimestamp < windowStartTimestamp) {
-                String value = (String) pair.getValue().get(this.tupleSchema.fieldIndex(joinAttribute));
+                String value = (String) tuple.get(this.tupleSchema.fieldIndex(joinAttribute));
                 List<Long> bucket = hashIndex.get(value);
                 bucket.remove(bucket.indexOf(tupleTimestamp));
                 tupleCounter -= 1;
-                stateSizeInBytes -= pair.getValue().toArray().toString().length();
+                stateSizeInBytes -= tuple.toArray().toString().length();
                 hashIndex.put(value, bucket);
             }else {
                 break;
