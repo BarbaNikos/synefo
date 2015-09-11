@@ -144,58 +144,56 @@ public class NewJoinDispatcher {
         this.outputSchema = new Fields(outputSchema.toList());
     }
 
-    public int execute(Tuple anchor, OutputCollector collector, Fields fields, Values values, Long tupleTimestamp) {
-        Fields attributeNames = new Fields(((Fields) values.get(0)).toList());
-        Values attributeValues = (Values) values.get(1);
-        if (Arrays.equals(attributeNames.toList().toArray(), outerRelationSchema.toList().toArray())) {
-            String primaryKey = (String) attributeValues.get(outerRelationSchema.fieldIndex(outerRelationKey));
-            String foreignKey = (String) attributeValues.get(outerRelationSchema.fieldIndex(outerRelationForeignKey));
-            /**
-             * STORE:
-             * 2 cases: (a) primary-key has been encountered before (b) primary-key has not been encountered before
-             * case (a): Send it to the next available operator
-             * case (b): Pick one of the active nodes randomly and send the key there.
-             *              In case of (b), all the other nodes
-             *              that share common keys with the selected node, will receive same keys also
-             */
-            if (outerRelationIndex.containsKey(primaryKey)) {
-                List<Integer> dispatchInfo = outerRelationIndex.get(primaryKey);
-                Values tuple = new Values();
-                tuple.add(tupleTimestamp.toString());
-                tuple.add(attributeNames);
-                tuple.add(attributeValues);
-                collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), anchor, tuple);
-                if (dispatchInfo.get(0) >= (dispatchInfo.size() - 1)) {
-                    dispatchInfo.set(0, 1);
-                }else {
-                    int tmp = dispatchInfo.get(0);
-                    dispatchInfo.set(0, ++tmp);
-                }
+    public int dispatch(String primaryKey, String foreignKey, HashMap<String, List<Integer>> primaryRelationIndex,
+                        String primaryRelationName, HashMap<String, List<Integer>> secondaryRelationIndex, Long tupleTimestamp,
+                        Fields attributeNames, Values attributeValues, OutputCollector collector, Tuple anchor) {
+        /**
+         * STORE:
+         * 2 cases: (a) primary-key has been encountered before (b) primary-key has not been encountered before
+         * case (a): Send it to the next available operator
+         * case (b): Pick one of the active nodes randomly and send the key there.
+         *              In case of (b), all the other nodes
+         *              that share common keys with the selected node, will receive same keys also
+         */
+        if (primaryRelationIndex.containsKey(primaryKey)) {
+            List<Integer> dispatchInfo = primaryRelationIndex.get(primaryKey);
+            Values tuple = new Values();
+            tuple.add(tupleTimestamp.toString());
+            tuple.add(attributeNames);
+            tuple.add(attributeValues);
+            collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), anchor, tuple);
+            if (dispatchInfo.get(0) >= (dispatchInfo.size() - 1)) {
+                dispatchInfo.set(0, 1);
             }else {
-                Random rnd = new Random();
-                Integer randomTask = taskToRelationIndex.get(outerRelationName)
-                        .get(rnd.nextInt(taskToRelationIndex.get(outerRelationName).size()));
-                ArrayList<Integer> sharedKeyTasks = new ArrayList<>();
-                Iterator<Map.Entry<String, List<Integer>>> iterator = outerRelationIndex.entrySet().iterator();
-                while(iterator.hasNext()) {
-                    Map.Entry<String, List<Integer>> pair = iterator.next();
-                    if (pair.getValue().lastIndexOf(randomTask) != -1 && pair.getValue().lastIndexOf(randomTask) != 0) {
-                        List<Integer> tmp = new ArrayList<>(pair.getValue().subList(1, pair.getValue().size()));
-                        tmp.remove(randomTask);
-                        tmp.retainAll(sharedKeyTasks);
-                        sharedKeyTasks.addAll(tmp);
-                    }
-                }
-                sharedKeyTasks.add(randomTask);
-                sharedKeyTasks.add(0, 1);
-                outerRelationIndex.put(primaryKey, sharedKeyTasks);
+                int tmp = dispatchInfo.get(0);
+                dispatchInfo.set(0, ++tmp);
             }
-            /**
-             * JOIN: Just retrieve the active tasks that contain tuples with the foreign-key and
-             * send the incoming tuple to all of them
-             */
-            List<Integer> dispatchInfo = new ArrayList<>(innerRelationIndex.get(foreignKey)
-                    .subList(1, innerRelationIndex.get(foreignKey).size()));
+            primaryRelationIndex.put(primaryKey, dispatchInfo);
+        }else {
+            Random rnd = new Random();
+            Integer randomTask = taskToRelationIndex.get(primaryRelationName)
+                    .get(rnd.nextInt(taskToRelationIndex.get(primaryRelationName).size()));
+            ArrayList<Integer> sharedKeyTasks = new ArrayList<>();
+            Iterator<Map.Entry<String, List<Integer>>> iterator = primaryRelationIndex.entrySet().iterator();
+            while(iterator.hasNext()) {
+                Map.Entry<String, List<Integer>> pair = iterator.next();
+                if (pair.getValue().lastIndexOf(randomTask) != -1 && pair.getValue().lastIndexOf(randomTask) != 0) {
+                    List<Integer> tmp = new ArrayList<>(pair.getValue().subList(1, pair.getValue().size()));
+                    tmp.remove(randomTask);
+                    tmp.removeAll(sharedKeyTasks);
+                    sharedKeyTasks.addAll(tmp);
+                }
+            }
+            sharedKeyTasks.add(randomTask);
+            sharedKeyTasks.add(0, 1);
+            primaryRelationIndex.put(primaryKey, sharedKeyTasks);
+        }/**
+         * JOIN: Just retrieve the active tasks that contain tuples with the foreign-key and
+         * send the incoming tuple to all of them
+         */
+        if(secondaryRelationIndex.containsKey(foreignKey)) {
+            List<Integer> dispatchInfo = new ArrayList<>(secondaryRelationIndex.get(foreignKey)
+                    .subList(1, secondaryRelationIndex.get(foreignKey).size()));
             Values tuple = new Values();
             tuple.add(tupleTimestamp.toString());
             tuple.add(attributeNames);
@@ -203,16 +201,28 @@ public class NewJoinDispatcher {
             for(Integer task : dispatchInfo) {
                 collector.emitDirect(task, anchor, tuple);
             }
+        }
+        return 0;
+    }
+
+    public int execute(Tuple anchor, OutputCollector collector, Fields fields, Values values, Long tupleTimestamp) {
+        Fields attributeNames = new Fields(((Fields) values.get(0)).toList());
+        Values attributeValues = (Values) values.get(1);
+        if (Arrays.equals(attributeNames.toList().toArray(), outerRelationSchema.toList().toArray())) {
+            String primaryKey = (String) attributeValues.get(outerRelationSchema.fieldIndex(outerRelationKey));
+            String foreignKey = (String) attributeValues.get(outerRelationSchema.fieldIndex(outerRelationForeignKey));
+
+            dispatch(primaryKey, foreignKey, outerRelationIndex, outerRelationName, innerRelationIndex, tupleTimestamp,
+                    attributeNames, attributeValues, collector, anchor);
+
         }else if (Arrays.equals(attributeNames.toList().toArray(), innerRelationSchema.toList().toArray())) {
             String primaryKey = (String) attributeValues.get(innerRelationSchema.fieldIndex(innerRelationKey));
             String foreignKey = (String) attributeValues.get(innerRelationSchema.fieldIndex(innerRelationForeignKey));
-            /**
-             * STORE:
-             */
 
-            /**
-             * JOIN:
-             */
+            dispatch(primaryKey, foreignKey, innerRelationIndex, innerRelationName, outerRelationIndex, tupleTimestamp,
+                    attributeNames, attributeValues, collector, anchor);
+
         }
+        return 0;
     }
 }
