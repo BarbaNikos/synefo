@@ -12,9 +12,7 @@ import java.util.*;
  */
 public class NewJoinDispatcher {
 
-    private Fields outputSchema;
-
-    private List<Values> stateValues;
+    private List<Values> state;
 
     private String outerRelationName;
 
@@ -40,12 +38,12 @@ public class NewJoinDispatcher {
 
     private HashMap<String, List<Integer>> taskToRelationIndex;
 
-    private List<Integer> activeTasks = null;
+    private Fields outputSchema;
 
     public NewJoinDispatcher(String outerRelationName, Fields outerRelationSchema,
                              String outerRelationKey, String outerRelationForeignKey,
                              String innerRelationName, Fields innerRelationSchema,
-                             String innerRelationKey, String innerRelationForeignKey) {
+                             String innerRelationKey, String innerRelationForeignKey, Fields outputSchema) {
         this.outerRelationName = outerRelationName;
         this.outerRelationSchema = new Fields(outerRelationSchema.toList());
         this.outerRelationKey = outerRelationKey;
@@ -57,21 +55,25 @@ public class NewJoinDispatcher {
         outerRelationIndex = new HashMap<>();
         innerRelationIndex = new HashMap<>();
         taskToRelationIndex = null;
-        activeTasks = null;
+        this.outputSchema = new Fields(outputSchema.toList());
     }
 
     /**
-     * add task to relation indices inside the Dispatcher's structures.
+     * add task to relation indices inside the Dispatcher's structures. This method needs to be called when a task is
+     * added.
      * @param relationName the relation to which the operator is added
      * @param originalTask the originally active task
      * @param newTask the newly added operator
      */
     public void expandTask(String relationName, Integer originalTask, Integer newTask) {
         Iterator<Map.Entry<String, List<Integer>>> iterator = null;
+        HashMap<String, List<Integer>> indexCopy = null;
         if (relationName.equals(outerRelationName)) {
            iterator = outerRelationIndex.entrySet().iterator();
+            indexCopy = new HashMap<>(outerRelationIndex);
         }else {
             iterator = innerRelationIndex.entrySet().iterator();
+            indexCopy = new HashMap<>(innerRelationIndex);
         }
         String key = "";
         List<Integer> taskList = null;
@@ -82,13 +84,15 @@ public class NewJoinDispatcher {
                 key = pair.getKey();
                 taskList.add(newTask);
                 taskList.set(0, 1);
-                break;
+                indexCopy.put(key, new ArrayList<Integer>(taskList));
             }
         }
         if (relationName.equals(outerRelationName)) {
-            outerRelationIndex.put(key, taskList);
+            outerRelationIndex.clear();
+            outerRelationIndex.putAll(indexCopy);
         }else {
-            innerRelationIndex.put(key, taskList);
+            innerRelationIndex.clear();
+            innerRelationIndex.putAll(indexCopy);
         }
         List<Integer> tasks = taskToRelationIndex.get(relationName);
         tasks.add(newTask);
@@ -96,17 +100,21 @@ public class NewJoinDispatcher {
     }
 
     /**
-     * remove task from relation indices inside the Dispatcher's structures.
+     * remove task from relation indices inside the Dispatcher's structures. This method needs to be called when a task
+     * is removed.
      * @param relationName the relation from which the operator belongs to
      * @param remainingTask the remaining active operator
      * @param removedTask the removed operator
      */
     public void mergeTask(String relationName, Integer remainingTask, Integer removedTask) {
         Iterator<Map.Entry<String, List<Integer>>> iterator = null;
+        HashMap<String, List<Integer>> indexCopy = null;
         if (relationName.equals(outerRelationName)) {
             iterator = outerRelationIndex.entrySet().iterator();
+            indexCopy = new HashMap<>(outerRelationIndex);
         }else {
             iterator = innerRelationIndex.entrySet().iterator();
+            indexCopy = new HashMap<>(innerRelationIndex);
         }
         String key = "";
         List<Integer> taskList = null;
@@ -117,13 +125,15 @@ public class NewJoinDispatcher {
                 key = pair.getKey();
                 taskList.remove(taskList.lastIndexOf(removedTask));
                 taskList.set(0, 1);
-                break;
+                indexCopy.put(key, taskList);
             }
         }
         if (relationName.equals(outerRelationName)) {
-            outerRelationIndex.put(key, taskList);
+            outerRelationIndex.clear();
+            outerRelationIndex.putAll(indexCopy);
         }else {
-            innerRelationIndex.put(key, taskList);
+            innerRelationIndex.clear();
+            innerRelationIndex.putAll(indexCopy);
         }
         List<Integer> tasks = taskToRelationIndex.get(relationName);
         tasks.remove(tasks.lastIndexOf(removedTask));
@@ -144,8 +154,8 @@ public class NewJoinDispatcher {
         this.outputSchema = new Fields(outputSchema.toList());
     }
 
-    public int dispatch(String primaryKey, String foreignKey, HashMap<String, List<Integer>> primaryRelationIndex,
-                        String primaryRelationName, HashMap<String, List<Integer>> secondaryRelationIndex, Long tupleTimestamp,
+    private int dispatch(String primaryKey, String foreignKey, HashMap<String, List<Integer>> primaryRelationIndex,
+                        String primaryRelationName, HashMap<String, List<Integer>> secondaryRelationIndex,
                         Fields attributeNames, Values attributeValues, OutputCollector collector, Tuple anchor) {
         /**
          * STORE:
@@ -158,10 +168,15 @@ public class NewJoinDispatcher {
         if (primaryRelationIndex.containsKey(primaryKey)) {
             List<Integer> dispatchInfo = primaryRelationIndex.get(primaryKey);
             Values tuple = new Values();
-            tuple.add(tupleTimestamp.toString());
+            tuple.add("0");
             tuple.add(attributeNames);
             tuple.add(attributeValues);
-            collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), anchor, tuple);
+            if (collector != null) {
+                if (anchor != null)
+                    collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), anchor, tuple);
+                else
+                    collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), tuple);
+            }
             if (dispatchInfo.get(0) >= (dispatchInfo.size() - 1)) {
                 dispatchInfo.set(0, 1);
             }else {
@@ -170,24 +185,35 @@ public class NewJoinDispatcher {
             }
             primaryRelationIndex.put(primaryKey, dispatchInfo);
         }else {
-            Random rnd = new Random();
-            Integer randomTask = taskToRelationIndex.get(primaryRelationName)
-                    .get(rnd.nextInt(taskToRelationIndex.get(primaryRelationName).size()));
-            ArrayList<Integer> sharedKeyTasks = new ArrayList<>();
-            Iterator<Map.Entry<String, List<Integer>>> iterator = primaryRelationIndex.entrySet().iterator();
-            while(iterator.hasNext()) {
-                Map.Entry<String, List<Integer>> pair = iterator.next();
-                if (pair.getValue().lastIndexOf(randomTask) != -1 && pair.getValue().lastIndexOf(randomTask) != 0) {
-                    List<Integer> tmp = new ArrayList<>(pair.getValue().subList(1, pair.getValue().size()));
-                    tmp.remove(randomTask);
-                    tmp.removeAll(sharedKeyTasks);
-                    sharedKeyTasks.addAll(tmp);
+            if (taskToRelationIndex.get(primaryRelationName).size() > 0) {
+                Integer victimTask = taskToRelationIndex.get(primaryRelationName).get(0);
+                ArrayList<Integer> sharedKeyTasks = new ArrayList<>();
+                Iterator<Map.Entry<String, List<Integer>>> iterator = primaryRelationIndex.entrySet().iterator();
+                while(iterator.hasNext()) {
+                    Map.Entry<String, List<Integer>> pair = iterator.next();
+                    if (pair.getValue().lastIndexOf(victimTask) != -1 && pair.getValue().lastIndexOf(victimTask) != 0) {
+                        List<Integer> tmp = new ArrayList<>(pair.getValue().subList(1, pair.getValue().size()));
+                        tmp.remove(victimTask);
+                        tmp.removeAll(sharedKeyTasks);
+                        sharedKeyTasks.addAll(tmp);
+                    }
                 }
+                sharedKeyTasks.add(victimTask);
+                sharedKeyTasks.add(0, 1);
+                Values tuple = new Values();
+                tuple.add("0");
+                tuple.add(attributeNames);
+                tuple.add(attributeValues);
+                if (collector != null) {
+                    if (anchor != null)
+                        collector.emitDirect(victimTask, anchor, tuple);
+                    else
+                        collector.emitDirect(victimTask, tuple);
+                }
+                primaryRelationIndex.put(primaryKey, sharedKeyTasks);
             }
-            sharedKeyTasks.add(randomTask);
-            sharedKeyTasks.add(0, 1);
-            primaryRelationIndex.put(primaryKey, sharedKeyTasks);
-        }/**
+        }
+        /**
          * JOIN: Just retrieve the active tasks that contain tuples with the foreign-key and
          * send the incoming tuple to all of them
          */
@@ -195,34 +221,47 @@ public class NewJoinDispatcher {
             List<Integer> dispatchInfo = new ArrayList<>(secondaryRelationIndex.get(foreignKey)
                     .subList(1, secondaryRelationIndex.get(foreignKey).size()));
             Values tuple = new Values();
-            tuple.add(tupleTimestamp.toString());
+            tuple.add("0");
             tuple.add(attributeNames);
             tuple.add(attributeValues);
             for(Integer task : dispatchInfo) {
-                collector.emitDirect(task, anchor, tuple);
+                if (collector != null) {
+                    if (anchor != null)
+                        collector.emitDirect(task, anchor, tuple);
+                    else
+                        collector.emitDirect(task, tuple);
+                }
             }
         }
         return 0;
     }
 
-    public int execute(Tuple anchor, OutputCollector collector, Fields fields, Values values, Long tupleTimestamp) {
+    public int execute(Tuple anchor, OutputCollector collector, Fields fields, Values values) {
         Fields attributeNames = new Fields(((Fields) values.get(0)).toList());
         Values attributeValues = (Values) values.get(1);
         if (Arrays.equals(attributeNames.toList().toArray(), outerRelationSchema.toList().toArray())) {
             String primaryKey = (String) attributeValues.get(outerRelationSchema.fieldIndex(outerRelationKey));
             String foreignKey = (String) attributeValues.get(outerRelationSchema.fieldIndex(outerRelationForeignKey));
 
-            dispatch(primaryKey, foreignKey, outerRelationIndex, outerRelationName, innerRelationIndex, tupleTimestamp,
+            dispatch(primaryKey, foreignKey, outerRelationIndex, outerRelationName, innerRelationIndex,
                     attributeNames, attributeValues, collector, anchor);
 
         }else if (Arrays.equals(attributeNames.toList().toArray(), innerRelationSchema.toList().toArray())) {
             String primaryKey = (String) attributeValues.get(innerRelationSchema.fieldIndex(innerRelationKey));
             String foreignKey = (String) attributeValues.get(innerRelationSchema.fieldIndex(innerRelationForeignKey));
 
-            dispatch(primaryKey, foreignKey, innerRelationIndex, innerRelationName, outerRelationIndex, tupleTimestamp,
+            dispatch(primaryKey, foreignKey, innerRelationIndex, innerRelationName, outerRelationIndex,
                     attributeNames, attributeValues, collector, anchor);
 
         }
         return 0;
+    }
+
+    public void initializeState(List<Values> state) {
+        this.state = state;
+    }
+
+    public Fields getOutputSchema() {
+        return outputSchema;
     }
 }
