@@ -8,6 +8,7 @@ import backtype.storm.metric.LoggingMetricsConsumer;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 import gr.katsip.synefo.storm.api.DispatchBolt;
+import gr.katsip.synefo.storm.api.ElasticFileSpout;
 import gr.katsip.synefo.storm.api.SynefoJoinBolt;
 import gr.katsip.synefo.storm.api.SynefoSpout;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
@@ -33,7 +34,7 @@ public class DispatchTopology {
             ClassNotFoundException, AlreadyAliveException, InvalidTopologyException {
         String synefoAddress = "";
         Integer synefoPort = 5555;
-        String[] streamIPs = null;
+        String[] data = null;
         String zooIP = "";
         Integer scaleFactor = -1;
         HashMap<String, ArrayList<String>> topology = new HashMap<String, ArrayList<String>>();
@@ -43,11 +44,11 @@ public class DispatchTopology {
         Integer workerNum = -1;
         Integer maxSpoutPending = 250;
         if(args.length < 7) {
-            System.err.println("Arguments: <synefo-IP> <stream-IP1:port1,stream-IP2:port2> <zoo-ip1:port1,zoo-ip2:port2,...,zoo-ipN:portN> <S: scale factor> <W: window size in minutes> <N: number of workers> <MP: max spout pending>");
+            System.err.println("Arguments: <synefo-IP> <file-1,file-2> <zoo-ip1:port1,zoo-ip2:port2,...,zoo-ipN:portN> <S: scale factor> <W: window size in minutes> <N: number of workers> <MP: max spout pending>");
             System.exit(1);
         }else {
             synefoAddress = args[0];
-            streamIPs = args[1].split(",");
+            data = args[1].split(",");
             zooIP = args[2];
             scaleFactor = Integer.parseInt(args[3]);
             windowSizeInMinutes = 60000 * Integer.parseInt(args[4]);
@@ -61,15 +62,15 @@ public class DispatchTopology {
          * Stage 0: 2 input streams (lineitem, orders)
          */
         String[] dataSchema = { "attributes", "values" };
-        TpchTupleProducer orderProducer = new TpchTupleProducer(streamIPs[0], Order.schema, Order.query5Schema);
-        orderProducer.setSchema(new Fields(dataSchema));
-        TpchTupleProducer lineitemProducer = new TpchTupleProducer(streamIPs[1], LineItem.schema, LineItem.query5Schema);
-        lineitemProducer.setSchema(new Fields(dataSchema));
+        LocalFileProducer order = new LocalFileProducer(data[0], Order.schema, Order.query5Schema);
+        order.setSchema(new Fields(dataSchema));
+        LocalFileProducer lineitem = new LocalFileProducer(data[1], LineItem.schema, LineItem.query5Schema);
+        lineitem.setSchema(new Fields(dataSchema));
         builder.setSpout("order",
-                new SynefoSpout("order", synefoAddress, synefoPort, orderProducer, zooIP), 1);
+                new ElasticFileSpout("order", synefoAddress, synefoPort, order, zooIP), 1);
         taskNumber += 1;
         builder.setSpout("lineitem",
-                new SynefoSpout("lineitem", synefoAddress, synefoPort, lineitemProducer, zooIP), 1);
+                new ElasticFileSpout("lineitem", synefoAddress, synefoPort, lineitem, zooIP), 1);
         taskNumber += 1;
         taskList = new ArrayList<String>();
         taskList.add("dispatch");
