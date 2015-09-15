@@ -6,7 +6,6 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.TupleImpl;
 import backtype.storm.tuple.Values;
-import com.intellij.dvcs.branch.DvcsSyncSettings;
 import org.junit.Test;
 
 import java.util.ArrayList;
