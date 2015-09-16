@@ -104,6 +104,7 @@ public class DispatchTopology {
                 .setNumTasks(scaleFactor)
                 .directGrouping("dispatch");
         taskNumber += scaleFactor;
+        topology.put("joinorder", new ArrayList<String>());
 
         joiner = new JoinJoiner("lineitem", new Fields(LineItem.query5Schema),
                 "order", new Fields(Order.query5Schema), "L_ORDERKEY", "O_ORDERKEY", windowSizeInMinutes, 1000);
@@ -113,6 +114,7 @@ public class DispatchTopology {
                 .setNumTasks(scaleFactor)
                 .directGrouping("dispatch");
         taskNumber += scaleFactor;
+        topology.put("joinline", new ArrayList<String>());
         /**
          * Notify SynEFO server about the
          * Topology

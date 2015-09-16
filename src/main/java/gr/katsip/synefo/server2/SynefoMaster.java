@@ -207,17 +207,19 @@ public class SynefoMaster implements Runnable {
 			String taskName = pair.getKey();
 			String taskNameWithoutId = taskName.split("_")[0];
 			ArrayList<String> downstreamTaskList = physicalTopology.get(taskNameWithoutId);
-			ArrayList<String> downstreamTaskWithIdList = new ArrayList<String>();
-			for(String downstreamTask : downstreamTaskList) {
-				Iterator<Entry<String, Integer>> downstreamTaskIterator = taskNameToIdMap.entrySet().iterator();
-				while(downstreamTaskIterator.hasNext()) {
-					Entry<String, Integer> downstreamPair = downstreamTaskIterator.next();
-					if(downstreamPair.getKey().split("_")[0].equals(downstreamTask)) {
-						downstreamTaskWithIdList.add(downstreamPair.getKey());
+			if (downstreamTaskList != null && downstreamTaskList.size() > 0) {
+				ArrayList<String> downstreamTaskWithIdList = new ArrayList<String>();
+				for(String downstreamTask : downstreamTaskList) {
+					Iterator<Entry<String, Integer>> downstreamTaskIterator = taskNameToIdMap.entrySet().iterator();
+					while(downstreamTaskIterator.hasNext()) {
+						Entry<String, Integer> downstreamPair = downstreamTaskIterator.next();
+						if(downstreamPair.getKey().split("_")[0].equals(downstreamTask)) {
+							downstreamTaskWithIdList.add(downstreamPair.getKey());
+						}
 					}
 				}
+				physicalTopologyWithIds.put(taskName, downstreamTaskWithIdList);
 			}
-			physicalTopologyWithIds.put(taskName, downstreamTaskWithIdList);
 		}
 		return physicalTopologyWithIds;
 	}
