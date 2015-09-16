@@ -49,11 +49,13 @@ public class CustomScheduler implements IScheduler {
                     Collection<SupervisorDetails> supervisors = cluster.getSupervisors().values();
                     SupervisorDetails orderSupervisor = null, lineitemSupervisor = null;
                     for (SupervisorDetails supervisor : supervisors) {
-                        Map meta = (Map) supervisor.getSchedulerMeta();
-                        if (meta.get("name").equals("order")) {
-                            orderSupervisor = supervisor;
-                        }else if (meta.get("name").equals("lineitem")) {
-                            lineitemSupervisor = supervisor;
+                        if (supervisor.getSchedulerMeta() != null) {
+                            Map meta = (Map) supervisor.getSchedulerMeta();
+                            if (meta.get("name").equals("order")) {
+                                orderSupervisor = supervisor;
+                            }else if (meta.get("name").equals("lineitem")) {
+                                lineitemSupervisor = supervisor;
+                            }
                         }
                     }
                     if (orderSupervisor != null) {
