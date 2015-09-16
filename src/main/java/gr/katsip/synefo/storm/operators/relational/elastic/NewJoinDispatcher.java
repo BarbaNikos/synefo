@@ -4,6 +4,8 @@ import backtype.storm.task.OutputCollector;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.*;
@@ -12,6 +14,8 @@ import java.util.*;
  * Created by katsip on 9/11/2015.
  */
 public class NewJoinDispatcher implements Serializable {
+
+    Logger logger = LoggerFactory.getLogger(NewJoinDispatcher.class);
 
     private List<Values> state;
 
@@ -158,6 +162,9 @@ public class NewJoinDispatcher implements Serializable {
     private int dispatch(String primaryKey, String foreignKey, HashMap<String, List<Integer>> primaryRelationIndex,
                         String primaryRelationName, HashMap<String, List<Integer>> secondaryRelationIndex,
                         Fields attributeNames, Values attributeValues, OutputCollector collector, Tuple anchor) {
+        logger.info("dispatch() called primary-key: " + primaryKey + ", foreign-key: " + foreignKey +
+        " primary-relation: " + primaryRelationName + ", attributes: " + attributeNames.toList().toString() +
+        " values: " + attributeValues.toString());
         /**
          * STORE:
          * 2 cases: (a) primary-key has been encountered before (b) primary-key has not been encountered before
@@ -177,6 +184,7 @@ public class NewJoinDispatcher implements Serializable {
                     collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), anchor, tuple);
                 else
                     collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), tuple);
+                logger.info("dispatch() primary key is maintained by task " + dispatchInfo.get(dispatchInfo.get(0)) + ".");
             }
             if (dispatchInfo.get(0) >= (dispatchInfo.size() - 1)) {
                 dispatchInfo.set(0, 1);
@@ -184,10 +192,14 @@ public class NewJoinDispatcher implements Serializable {
                 int tmp = dispatchInfo.get(0);
                 dispatchInfo.set(0, ++tmp);
             }
+            logger.info("dispatch() incremented index to task " + dispatchInfo.get(dispatchInfo.get(0)) + ".");
             primaryRelationIndex.put(primaryKey, dispatchInfo);
         }else {
             if (taskToRelationIndex.get(primaryRelationName).size() > 0) {
+                logger.info("dispatch() primary key is not maintained, pick random task from " +
+                        taskToRelationIndex.get(primaryRelationName).size() + " tasks.");
                 Integer victimTask = taskToRelationIndex.get(primaryRelationName).get(0);
+                logger.info("dispatch() picked task " + victimTask + " to send tuple to.");
                 ArrayList<Integer> sharedKeyTasks = new ArrayList<>();
                 Iterator<Map.Entry<String, List<Integer>>> iterator = primaryRelationIndex.entrySet().iterator();
                 while(iterator.hasNext()) {
@@ -212,6 +224,7 @@ public class NewJoinDispatcher implements Serializable {
                         collector.emitDirect(victimTask, tuple);
                 }
                 primaryRelationIndex.put(primaryKey, sharedKeyTasks);
+                logger.info("dispatch() shared keys with task " + victimTask + " are tasks: " + sharedKeyTasks.toString());
             }
         }
         /**
@@ -243,14 +256,11 @@ public class NewJoinDispatcher implements Serializable {
         if (Arrays.equals(attributeNames.toList().toArray(), outerRelationSchema.toList().toArray())) {
             String primaryKey = (String) attributeValues.get(outerRelationSchema.fieldIndex(outerRelationKey));
             String foreignKey = (String) attributeValues.get(outerRelationSchema.fieldIndex(outerRelationForeignKey));
-
             dispatch(primaryKey, foreignKey, outerRelationIndex, outerRelationName, innerRelationIndex,
                     attributeNames, attributeValues, collector, anchor);
-
         }else if (Arrays.equals(attributeNames.toList().toArray(), innerRelationSchema.toList().toArray())) {
             String primaryKey = (String) attributeValues.get(innerRelationSchema.fieldIndex(innerRelationKey));
             String foreignKey = (String) attributeValues.get(innerRelationSchema.fieldIndex(innerRelationForeignKey));
-
             dispatch(primaryKey, foreignKey, innerRelationIndex, innerRelationName, outerRelationIndex,
                     attributeNames, attributeValues, collector, anchor);
 
