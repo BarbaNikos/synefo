@@ -45,7 +45,8 @@ public class CustomScheduler implements IScheduler {
                 if (!componentToExecutors.containsKey("order") || !componentToExecutors.containsKey("lineitem")) {
                     logger.info(this.getClass().getName() + " special components do not need scheduling.");
                 }else {
-                    List<ExecutorDetails> executors = componentToExecutors.get("order");
+                    List<ExecutorDetails> orderExecutors = componentToExecutors.get("order");
+                    List<ExecutorDetails> lineitemExecutors = componentToExecutors.get("lineitem");
                     Collection<SupervisorDetails> supervisors = cluster.getSupervisors().values();
                     SupervisorDetails orderSupervisor = null, lineitemSupervisor = null;
                     for (SupervisorDetails supervisor : supervisors) {
@@ -53,32 +54,31 @@ public class CustomScheduler implements IScheduler {
                             Map meta = (Map) supervisor.getSchedulerMeta();
                             if (meta.get("name").equals("order")) {
                                 orderSupervisor = supervisor;
-                            }else if (meta.get("name").equals("lineitem")) {
+                            }
+                            if (meta.get("name").equals("lineitem")) {
                                 lineitemSupervisor = supervisor;
                             }
                         }
                     }
                     if (orderSupervisor != null) {
                         List<WorkerSlot> availableSlots = cluster.getAvailableSlots(orderSupervisor);
-
-                        if (availableSlots.isEmpty() && !executors.isEmpty()) {
+                        if (availableSlots.isEmpty() && !orderExecutors.isEmpty()) {
                             for (Integer port : cluster.getUsedPorts(orderSupervisor)) {
                                 cluster.freeSlot(new WorkerSlot(orderSupervisor.getId(), port));
                             }
                         }
                         availableSlots = cluster.getAvailableSlots(orderSupervisor);
-                        cluster.assign(availableSlots.get(0), topology.getId(), executors);
+                        cluster.assign(availableSlots.get(0), topology.getId(), orderExecutors);
                     }
                     if (lineitemSupervisor != null) {
                         List<WorkerSlot> availableSlots = cluster.getAvailableSlots(lineitemSupervisor);
-
-                        if (availableSlots.isEmpty() && !executors.isEmpty()) {
+                        if (availableSlots.isEmpty() && !lineitemExecutors.isEmpty()) {
                             for (Integer port : cluster.getUsedPorts(lineitemSupervisor)) {
                                 cluster.freeSlot(new WorkerSlot(lineitemSupervisor.getId(), port));
                             }
                         }
                         availableSlots = cluster.getAvailableSlots(lineitemSupervisor);
-                        cluster.assign(availableSlots.get(0), topology.getId(), executors);
+                        cluster.assign(availableSlots.get(0), topology.getId(), lineitemExecutors);
                     }
                 }
             }
