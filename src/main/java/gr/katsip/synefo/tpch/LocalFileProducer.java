@@ -60,9 +60,6 @@ public class LocalFileProducer implements AbstractTupleProducer, Serializable {
             if(projectedSchema.toList().contains(schema.get(i))) {
                 values.add(attributes[i]);
             }
-            /**
-             * The above sends out only the required attributes
-             */
         }
         Values tuple = new Values();
         tuple.add(projectedSchema);

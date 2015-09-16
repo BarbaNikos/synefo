@@ -5,12 +5,13 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 
+import java.io.Serializable;
 import java.util.*;
 
 /**
  * Created by katsip on 9/11/2015.
  */
-public class NewJoinDispatcher {
+public class NewJoinDispatcher implements Serializable {
 
     private List<Values> state;
 
