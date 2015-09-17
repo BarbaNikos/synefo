@@ -52,7 +52,7 @@ public class LocalFileProducer implements Serializable {
 
     private static final String EOF = new String("end of file");
 
-    private static final int SIZE = 1000000;
+    private static final int SIZE = 100000;
 
     public LocalFileProducer(String pathToFile, String[] schema, String[] projectedSchema, double[] outputRate, int[] checkpoints) {
         this.schema = new Fields(schema);
@@ -61,7 +61,7 @@ public class LocalFileProducer implements Serializable {
         reader = null;
         this.checkpoints = checkpoints;
         this.outputRate = outputRate;
-        buffer = new ArrayBlockingQueue<String>(SIZE);
+        buffer = new ArrayBlockingQueue<String>(SIZE, true);
     }
 
     public void init() throws FileNotFoundException {
