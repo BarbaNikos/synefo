@@ -28,15 +28,13 @@ public class LocalFileProducer implements Serializable {
 
     private long startTimestamp = -1L;
 
-    private long currentTimestamp = -1L;
-
     private long nextTimestamp = -1L;
 
     private int index;
 
     private int[] checkpoints;
 
-    private int[] outputRate;
+    private double[] outputRate;
 
     private long delay;
 
@@ -46,12 +44,11 @@ public class LocalFileProducer implements Serializable {
 
     private long throughputPreviousTimestamp;
 
-    public LocalFileProducer(String pathToFile, String[] schema, String[] projectedSchema, int[] outputRate, int[] checkpoints) {
+    public LocalFileProducer(String pathToFile, String[] schema, String[] projectedSchema, double[] outputRate, int[] checkpoints) {
         this.schema = new Fields(schema);
         this.projectedSchema = new Fields(projectedSchema);
         this.pathToFile = pathToFile;
         reader = null;
-        index = 0;
         this.checkpoints = checkpoints;
         this.outputRate = outputRate;
     }
@@ -66,26 +63,25 @@ public class LocalFileProducer implements Serializable {
             logger.error("LocalFileProducer.init() file not found.");
             reader = null;
         }
-        if (startTimestamp == -1L)
-            startTimestamp = System.currentTimeMillis();
-        delay = (long) ( 1000 / outputRate[index]);
-        nextTimestamp = startTimestamp;
+        nextTimestamp = System.nanoTime();
+        startTimestamp = nextTimestamp;
+        index = -1;
+        progressCheckpoint();
         inputRate = 0;
         throughputPreviousTimestamp = System.currentTimeMillis();
     }
 
     private void progressCheckpoint() {
-        if (index < (outputRate.length - 1)) {
-            index++;
-            delay = (long) ( 1000 / outputRate[index]);
-        }
+        index++;
+        startTimestamp += (checkpoints[index] * 1000 * 1000 * 1000);
+        delay = (long)((1000 * 1000 * 1000) / outputRate[index]);
     }
 
-    public int nextTuple(SpoutOutputCollector spoutOutputCollector, Integer taskIdentifier, HashMap<Values, Long> tupleStatistics) {
-        currentTimestamp = System.currentTimeMillis();
-        nextTimestamp += delay;
-        while (System.currentTimeMillis() < nextTimestamp) {
+    public int nextTuple(SpoutOutputCollector spoutOutputCollector, Integer taskIdentifier,
+                         HashMap<Values, Long> tupleStatistics) {
 
+        while (System.nanoTime() <= nextTimestamp) {
+            //busy wait
         }
         Values values = new Values();
         String line = null;
@@ -108,19 +104,21 @@ public class LocalFileProducer implements Serializable {
         tuple.add(values);
         tupleStatistics.put(tuple, System.currentTimeMillis());
         spoutOutputCollector.emitDirect(taskIdentifier, tuple, tuple);
-        throughputCurrentTimestamp = System.currentTimeMillis();
-        if (startTimestamp + (checkpoints[index] * 1000) >= currentTimestamp) {
+
+        if (startTimestamp < System.nanoTime() && index < (outputRate.length - 1))
             progressCheckpoint();
-        }
+
+        throughputCurrentTimestamp = System.currentTimeMillis();
+        int throughput = -1;
         if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
-            int throughput = inputRate;
+            throughput = inputRate;
             throughputPreviousTimestamp = throughputCurrentTimestamp;
             inputRate = 0;
-            return throughput;
         }else {
             inputRate++;
-            return -1;
         }
+        nextTimestamp += delay;
+        return throughput;
     }
 
     public void setSchema(Fields fields) {
