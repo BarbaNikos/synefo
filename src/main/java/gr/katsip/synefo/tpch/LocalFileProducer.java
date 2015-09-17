@@ -80,9 +80,9 @@ public class LocalFileProducer implements Serializable {
     public int nextTuple(SpoutOutputCollector spoutOutputCollector, Integer taskIdentifier,
                          HashMap<Values, Long> tupleStatistics) {
 
-        while (System.nanoTime() <= nextTimestamp) {
-            //busy wait
-        }
+//        while (System.nanoTime() <= nextTimestamp) {
+//            //busy wait
+//        }
         Values values = new Values();
         String line = null;
         try {
