@@ -11,10 +11,8 @@ import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.tpch.LocalFileProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+
+import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -65,6 +63,8 @@ public class ElasticFileSpout extends BaseRichSpout {
     private int taskIdentifier;
 
     private AssignableMetric completeLatency;
+
+    private AssignableMetric inputRate;
 
     private HashMap<Values, Long> tupleStatistics;
 
@@ -167,6 +167,8 @@ public class ElasticFileSpout extends BaseRichSpout {
         completeLatency = new AssignableMetric(null);
         context.registerMetric("comp-latency", completeLatency, METRIC_FREQ_SEC);
         tupleStatistics = new HashMap<Values, Long>();
+        inputRate = new AssignableMetric(null);
+        context.registerMetric("input-rate", inputRate, METRIC_FREQ_SEC);
     }
 
     public void ack(Object msgId) {
@@ -196,30 +198,25 @@ public class ElasticFileSpout extends BaseRichSpout {
         if (activeDownstreamTaskNames == null && downstreamTaskNames == null)
             register();
         initMetrics(topologyContext);
+        try {
+            producer.init();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void nextTuple() {
         if (activeDownstreamTaskIdentifiers != null && activeDownstreamTaskNames.size() > 0) {
-            Values values = new Values();
-            /**
-             * Add SYNEFO_HEADER (SYNEFO_TIMESTAMP) value in the beginning
-             */
-            values.add("0");
-            Values returnedValues = null;
-            returnedValues = producer.nextTuple();
-            if (returnedValues != null) {
-                for (int i = 0; i < returnedValues.size(); i++) {
-                    values.add(returnedValues.get(i));
-                }
-                spoutOutputCollector.emitDirect(activeDownstreamTaskIdentifiers.get(index), values, values);
-                tupleStatistics.put(values, System.currentTimeMillis());
-                if (index >= (activeDownstreamTaskIdentifiers.size() - 1)) {
-                    index = 0;
-                }else {
-                    index += 1;
-                }
+            int value = producer.nextTuple(spoutOutputCollector,
+                    activeDownstreamTaskIdentifiers.get(index), tupleStatistics);
+            if (value >= 0) {
+                inputRate.setValue(value);
             }
+            if (index >= (activeDownstreamTaskIdentifiers.size() - 1))
+                index = 0;
+            else
+                index += 1;
         }
     }
 }

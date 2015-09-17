@@ -1,17 +1,19 @@
 package gr.katsip.synefo.tpch;
 
+import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
-import gr.katsip.synefo.storm.producers.AbstractTupleProducer;
+import gr.katsip.synefo.metric.TaskStatistics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.util.HashMap;
 
 /**
  * Created by katsip on 9/15/2015.
  */
-public class LocalFileProducer implements AbstractTupleProducer, Serializable {
+public class LocalFileProducer implements Serializable {
 
     Logger logger = LoggerFactory.getLogger(LocalFileProducer.class);
 
@@ -25,11 +27,34 @@ public class LocalFileProducer implements AbstractTupleProducer, Serializable {
 
     private BufferedReader reader;
 
-    public LocalFileProducer(String pathToFile, String[] schema, String[] projectedSchema) {
+    private long startTimestamp = -1L;
+
+    private long currentTimestamp = -1L;
+
+    private long nextTimestamp = -1L;
+
+    private int index;
+
+    private int[] checkpoints;
+
+    private int[] outputRate;
+
+    private long delay;
+
+    private int inputRate;
+
+    private long throughputCurrentTimestamp;
+
+    private long throughputPreviousTimestamp;
+
+    public LocalFileProducer(String pathToFile, String[] schema, String[] projectedSchema, int[] outputRate, int[] checkpoints) {
         this.schema = new Fields(schema);
         this.projectedSchema = new Fields(projectedSchema);
         this.pathToFile = pathToFile;
         reader = null;
+        index = 0;
+        this.checkpoints = checkpoints;
+        this.outputRate = outputRate;
     }
 
     public void init() throws FileNotFoundException {
@@ -42,49 +67,66 @@ public class LocalFileProducer implements AbstractTupleProducer, Serializable {
             logger.error("LocalFileProducer.init() file not found.");
             reader = null;
         }
+        if (startTimestamp == -1L)
+            startTimestamp = System.nanoTime();
+        delay = (long) ( 1000 * 1000 * 1000 / outputRate[index]);
+        inputRate = 0;
+        throughputPreviousTimestamp = System.currentTimeMillis();
     }
 
-    @Override
-    public Values nextTuple() {
-        if (reader == null) {
-            try {
-                init();
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
+    private void progressCheckpoint() {
+        if (index < (outputRate.length - 1)) {
+            index++;
+            delay = (long) ( 1000 * 1000 * 1000 / outputRate[index]);
+        }
+    }
+
+    public int nextTuple(SpoutOutputCollector spoutOutputCollector, Integer taskIdentifier, HashMap<Values, Long> tupleStatistics) {
+        currentTimestamp = System.nanoTime();
+        nextTimestamp = currentTimestamp + delay;
+        while (System.nanoTime() < nextTimestamp) {
+
+        }
+        Values values = new Values();
+        String line = null;
+        try {
+            line = reader.readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        String[] attributes = line.split("\\|");
+        if(attributes.length < schema.size())
+            return -1;
+        for(int i = 0; i < schema.size(); i++) {
+            if(projectedSchema.toList().contains(schema.get(i))) {
+                values.add(attributes[i]);
             }
         }
-        if (reader != null) {
-            Values values = new Values();
-            String line = null;
-            try {
-                line = reader.readLine();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            String[] attributes = line.split("\\|");
-            if(attributes.length < schema.size())
-                return null;
-            for(int i = 0; i < schema.size(); i++) {
-                if(projectedSchema.toList().contains(schema.get(i))) {
-                    values.add(attributes[i]);
-                }
-            }
-            Values tuple = new Values();
-            tuple.add(projectedSchema);
-            tuple.add(values);
-            return tuple;
+        Values tuple = new Values();
+        tuple.add("0");
+        tuple.add(projectedSchema);
+        tuple.add(values);
+        tupleStatistics.put(values, System.currentTimeMillis());
+        spoutOutputCollector.emitDirect(taskIdentifier, values, values);
+        throughputCurrentTimestamp = System.currentTimeMillis();
+        if (startTimestamp + (checkpoints[index] * 1000 * 1000) >= currentTimestamp) {
+            progressCheckpoint();
+        }
+        if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
+            int throughput = inputRate;
+            throughputPreviousTimestamp = throughputCurrentTimestamp;
+            inputRate = 0;
+            return throughput;
         }else {
-            logger.error("LocalFileProducer.nextTuple() input stream is not ready.");
-            throw new RuntimeException("LocalFileProducer.nextTuple() input file is not available.");
+            inputRate++;
+            return -1;
         }
     }
 
-    @Override
     public void setSchema(Fields fields) {
         this.fields = new Fields(fields.toList());
     }
 
-    @Override
     public Fields getSchema() {
         return fields;
     }
