@@ -106,8 +106,8 @@ public class LocalFileProducer implements Serializable {
         tuple.add("0");
         tuple.add(projectedSchema);
         tuple.add(values);
-        tupleStatistics.put(values, System.currentTimeMillis());
-        spoutOutputCollector.emitDirect(taskIdentifier, values, values);
+        tupleStatistics.put(tuple, System.currentTimeMillis());
+        spoutOutputCollector.emitDirect(taskIdentifier, tuple, tuple);
         throughputCurrentTimestamp = System.currentTimeMillis();
         if (startTimestamp + (checkpoints[index] * 1000 * 1000) >= currentTimestamp) {
             progressCheckpoint();
