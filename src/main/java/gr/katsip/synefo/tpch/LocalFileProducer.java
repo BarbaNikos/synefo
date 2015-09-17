@@ -52,7 +52,7 @@ public class LocalFileProducer implements Serializable {
 
     private static final String EOF = new String("end of file");
 
-    private static final int SIZE = 100000;
+    private static final int SIZE = 1000000;
 
     public LocalFileProducer(String pathToFile, String[] schema, String[] projectedSchema, double[] outputRate, int[] checkpoints) {
         this.schema = new Fields(schema);
@@ -103,7 +103,11 @@ public class LocalFileProducer implements Serializable {
                          HashMap<Values, Long> tupleStatistics) {
 
         while (System.nanoTime() <= nextTimestamp) {
-            //busy wait
+            try {
+                Thread.sleep(1);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
         Values values = new Values();
         String line = null;
