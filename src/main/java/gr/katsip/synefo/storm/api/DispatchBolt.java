@@ -159,6 +159,8 @@ public class DispatchBolt extends BaseRichBolt {
             HashMap<String, List<Integer>> activeRelationToTaskIndex = new HashMap<>();
             HashMap<String, ArrayList<String>> verbalRelationTaskIndex =
                     (HashMap<String, ArrayList<String>>) input.readObject();
+            logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": retrieved task-to-relation index: " +
+                    verbalRelationTaskIndex.toString());
             relationTaskIndex = new HashMap<String, List<Integer>>();
             Iterator<Map.Entry<String, ArrayList<String>>> itr = verbalRelationTaskIndex.entrySet()
                     .iterator();
@@ -176,6 +178,8 @@ public class DispatchBolt extends BaseRichBolt {
                 activeRelationToTaskIndex.put(relation, tasks);
                 relationTaskIndex.put(relation, identifiers);
             }
+            logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": task-to-relation index after processing: " +
+                    relationTaskIndex);
             output.writeObject(new String("OK"));
             dispatcher.setTaskToRelationIndex(activeRelationToTaskIndex);
             output.flush();
