@@ -175,7 +175,7 @@ public class DispatchBolt extends BaseRichBolt {
                     if (activeDownstreamTaskIdentifiers.lastIndexOf(task) >= 0)
                         tasks.add(identifier);
                 }
-                activeRelationToTaskIndex.put(relation, tasks);
+                activeRelationToTaskIndex.put(relation, identifiers);
                 relationTaskIndex.put(relation, identifiers);
             }
             logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": task-to-relation index after processing: " +
