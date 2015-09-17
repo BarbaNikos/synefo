@@ -74,7 +74,7 @@ public class LocalFileProducer implements Serializable {
             /**
              * Wait until buffer is full before starting execution
              */
-            while (buffer.size() < SIZE) {
+            while (buffer.remainingCapacity() > 0) {
                 try {
                     Thread.sleep(10);
                 } catch (InterruptedException e) {
