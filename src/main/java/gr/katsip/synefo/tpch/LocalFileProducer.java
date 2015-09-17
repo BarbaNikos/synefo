@@ -3,7 +3,6 @@ package gr.katsip.synefo.tpch;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
-import gr.katsip.synefo.metric.TaskStatistics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,8 +67,8 @@ public class LocalFileProducer implements Serializable {
             reader = null;
         }
         if (startTimestamp == -1L)
-            startTimestamp = System.nanoTime();
-        delay = (long) ( 1000 * 1000 * 1000 / outputRate[index]);
+            startTimestamp = System.currentTimeMillis();
+        delay = (long) ( 1000 / outputRate[index]);
         nextTimestamp = startTimestamp;
         inputRate = 0;
         throughputPreviousTimestamp = System.currentTimeMillis();
@@ -78,14 +77,14 @@ public class LocalFileProducer implements Serializable {
     private void progressCheckpoint() {
         if (index < (outputRate.length - 1)) {
             index++;
-            delay = (long) ( 1000 * 1000 * 1000 / outputRate[index]);
+            delay = (long) ( 1000 / outputRate[index]);
         }
     }
 
     public int nextTuple(SpoutOutputCollector spoutOutputCollector, Integer taskIdentifier, HashMap<Values, Long> tupleStatistics) {
-        currentTimestamp = System.nanoTime();
+        currentTimestamp = System.currentTimeMillis();
         nextTimestamp += delay;
-        while (System.nanoTime() < nextTimestamp) {
+        while (System.currentTimeMillis() < nextTimestamp) {
 
         }
         Values values = new Values();
@@ -110,7 +109,7 @@ public class LocalFileProducer implements Serializable {
         tupleStatistics.put(tuple, System.currentTimeMillis());
         spoutOutputCollector.emitDirect(taskIdentifier, tuple, tuple);
         throughputCurrentTimestamp = System.currentTimeMillis();
-        if (startTimestamp + (checkpoints[index] * 1000 * 1000) >= currentTimestamp) {
+        if (startTimestamp + (checkpoints[index] * 1000) >= currentTimestamp) {
             progressCheckpoint();
         }
         if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
