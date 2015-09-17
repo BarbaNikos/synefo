@@ -70,6 +70,7 @@ public class LocalFileProducer implements Serializable {
         if (startTimestamp == -1L)
             startTimestamp = System.nanoTime();
         delay = (long) ( 1000 * 1000 * 1000 / outputRate[index]);
+        nextTimestamp = startTimestamp;
         inputRate = 0;
         throughputPreviousTimestamp = System.currentTimeMillis();
     }
@@ -83,7 +84,7 @@ public class LocalFileProducer implements Serializable {
 
     public int nextTuple(SpoutOutputCollector spoutOutputCollector, Integer taskIdentifier, HashMap<Values, Long> tupleStatistics) {
         currentTimestamp = System.nanoTime();
-        nextTimestamp = currentTimestamp + delay;
+        nextTimestamp += delay;
         while (System.nanoTime() < nextTimestamp) {
 
         }
