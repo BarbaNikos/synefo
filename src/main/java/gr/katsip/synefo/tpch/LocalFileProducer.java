@@ -71,6 +71,16 @@ public class LocalFileProducer implements Serializable {
             logger.info("LocalFileProducer.init() file found.");
             fileScanner = new Thread(new SourceFileProducer(buffer, EOF, pathToFile));
             fileScanner.start();
+            /**
+             * Wait until buffer is full before starting execution
+             */
+            while (buffer.size() < SIZE) {
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         }else {
             logger.error("LocalFileProducer.init() file not found.");
             reader = null;
