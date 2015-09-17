@@ -3,11 +3,13 @@ package gr.katsip.synefo.tpch;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
+import gr.katsip.synefo.storm.api.SourceFileProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.HashMap;
+import java.util.concurrent.ArrayBlockingQueue;
 
 /**
  * Created by katsip on 9/15/2015.
@@ -44,6 +46,14 @@ public class LocalFileProducer implements Serializable {
 
     private long throughputPreviousTimestamp;
 
+    private transient Thread fileScanner;
+
+    private ArrayBlockingQueue<String> buffer;
+
+    private static final String EOF = new String("end of file");
+
+    private static final int SIZE = 100000;
+
     public LocalFileProducer(String pathToFile, String[] schema, String[] projectedSchema, double[] outputRate, int[] checkpoints) {
         this.schema = new Fields(schema);
         this.projectedSchema = new Fields(projectedSchema);
@@ -51,6 +61,7 @@ public class LocalFileProducer implements Serializable {
         reader = null;
         this.checkpoints = checkpoints;
         this.outputRate = outputRate;
+        buffer = new ArrayBlockingQueue<String>(SIZE);
     }
 
     public void init() throws FileNotFoundException {
@@ -58,7 +69,8 @@ public class LocalFileProducer implements Serializable {
         File input = new File(pathToFile);
         if (input.exists() && input.isFile()) {
             logger.info("LocalFileProducer.init() file found.");
-            reader = new BufferedReader(new FileReader(input));
+            fileScanner = new Thread(new SourceFileProducer(buffer, EOF, pathToFile));
+            fileScanner.start();
         }else {
             logger.error("LocalFileProducer.init() file not found.");
             reader = null;
@@ -80,15 +92,31 @@ public class LocalFileProducer implements Serializable {
     public int nextTuple(SpoutOutputCollector spoutOutputCollector, Integer taskIdentifier,
                          HashMap<Values, Long> tupleStatistics) {
 
-//        while (System.nanoTime() <= nextTimestamp) {
-//            //busy wait
-//        }
+        while (System.nanoTime() <= nextTimestamp) {
+            //busy wait
+        }
         Values values = new Values();
         String line = null;
+//        try {
+//            line = reader.readLine();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
         try {
-            line = reader.readLine();
-        } catch (IOException e) {
+            line = buffer.take();
+        } catch (InterruptedException e) {
             e.printStackTrace();
+        }
+        if (line == EOF) {
+            /**
+             * file is fully scanned
+             */
+            try {
+                fileScanner.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            return -10;
         }
         String[] attributes = line.split("\\|");
         if(attributes.length < schema.size())
