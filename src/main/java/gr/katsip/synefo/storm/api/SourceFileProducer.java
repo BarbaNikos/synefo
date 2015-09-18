@@ -48,6 +48,7 @@ public class SourceFileProducer implements Runnable {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+                logger.info("thread-" + Thread.currentThread().getId() + " added a tuple.");
             }
             try {
                 buffer.put(endMarker);

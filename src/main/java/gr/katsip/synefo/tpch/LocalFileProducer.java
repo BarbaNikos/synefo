@@ -26,8 +26,6 @@ public class LocalFileProducer implements Serializable {
 
     private String pathToFile;
 
-    private BufferedReader reader;
-
     private long startTimestamp = -1L;
 
     private long nextTimestamp = -1L;
@@ -58,7 +56,6 @@ public class LocalFileProducer implements Serializable {
         this.schema = new Fields(schema);
         this.projectedSchema = new Fields(projectedSchema);
         this.pathToFile = pathToFile;
-        reader = null;
         this.checkpoints = checkpoints;
         this.outputRate = outputRate;
         buffer = new ArrayBlockingQueue<String>(SIZE, true);
@@ -83,7 +80,6 @@ public class LocalFileProducer implements Serializable {
             }
         }else {
             logger.error("LocalFileProducer.init() file not found.");
-            reader = null;
         }
         nextTimestamp = System.nanoTime();
         startTimestamp = nextTimestamp;
@@ -111,11 +107,6 @@ public class LocalFileProducer implements Serializable {
         }
         Values values = new Values();
         String line = null;
-//        try {
-//            line = reader.readLine();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
         try {
             line = buffer.take();
         } catch (InterruptedException e) {
