@@ -39,13 +39,9 @@ public class Synefo {
 	
 	private AtomicBoolean operationFlag;
 	
-	private boolean demoMode = false;
-	
 	private AtomicInteger queryId;
 	
 	private AtomicInteger taskNumber;
-	
-	private CEStormDatabaseManager ceDb = null;
 	
 	private ConcurrentLinkedQueue<String> pendingAddressUpdates;
 
@@ -68,15 +64,6 @@ public class Synefo {
 		this.zooHost = zooHost;
 		operationFlag = new AtomicBoolean(false);
 		taskNumber = new AtomicInteger(-1);
-		if(ceDb != null) {
-			this.demoMode = true;
-			queryId = new AtomicInteger(-1);
-			this.ceDb = ceDb;
-		}else {
-			this.demoMode = false;
-			queryId = new AtomicInteger(-1);
-			this.ceDb = null;
-		}
 	}
 
 	public void runServer() {
@@ -84,14 +71,15 @@ public class Synefo {
 		OutputStream _out = null;
 		InputStream _in = null;
 		(new Thread(new SynefoMaster(zooHost, resourceThresholds, physicalTopology,
-				activeTopology, taskIdentifierIndex, taskWorkerPortIndex, taskIPs, operationFlag, demoMode, queryId, ceDb, taskNumber, taskToJoinRelation, pendingAddressUpdates))).start();
+				activeTopology, taskIdentifierIndex, taskWorkerPortIndex, taskIPs, operationFlag,
+				taskNumber, taskToJoinRelation, pendingAddressUpdates))).start();
 		while(killCommand == false) {
 			try {
 				_stormComponent = serverSocket.accept();
 				_out = _stormComponent.getOutputStream();
 				_in = _stormComponent.getInputStream();
 				(new Thread(new SynefoSlave(physicalTopology, activeTopology, taskIdentifierIndex, taskWorkerPortIndex, _in, _out, taskIPs,
-						operationFlag, demoMode, queryId, taskNumber, taskToJoinRelation, pendingAddressUpdates))).start();
+						operationFlag, taskNumber, taskToJoinRelation, pendingAddressUpdates))).start();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

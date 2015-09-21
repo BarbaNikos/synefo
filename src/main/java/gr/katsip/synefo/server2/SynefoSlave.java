@@ -46,10 +46,6 @@ public class SynefoSlave implements Runnable {
 
 	private AtomicBoolean operationFlag;
 
-	private boolean demoMode;
-
-	private AtomicInteger queryId;
-
 	private AtomicInteger taskNumber = null;
 
 	private ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation = null;
@@ -63,8 +59,6 @@ public class SynefoSlave implements Runnable {
 					   InputStream in, OutputStream out,
 					   ConcurrentHashMap<String, String> taskAddressIndex,
 					   AtomicBoolean operationFlag,
-					   boolean demoMode,
-					   AtomicInteger queryId,
 					   AtomicInteger taskNumber,
 					   ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation,
 					   ConcurrentLinkedQueue<String> pendingAddressUpdates) {
@@ -82,8 +76,6 @@ public class SynefoSlave implements Runnable {
 		this.physicalTopology = physicalTopology;
 		this.activeTopology = activeTopology;
 		this.operationFlag = operationFlag;
-		this.demoMode = demoMode;
-		this.queryId = queryId;
 		this.taskNumber = taskNumber;
 		this.taskToJoinRelation = taskToJoinRelation;
 		this.pendingAddressUpdates = pendingAddressUpdates;
@@ -110,8 +102,6 @@ public class SynefoSlave implements Runnable {
 				boltProcess("JOIN_BOLT", msg._values);
 				break;
 			case "TOPOLOGY":
-				if(demoMode)
-					queryId.set(Integer.parseInt(msg._values.get("QUERY_ID")));
 				topologyProcess(msg._values);
 				break;
 			default:

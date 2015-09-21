@@ -9,8 +9,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import gr.katsip.cestorm.db.CEStormDatabaseManager;
 import gr.katsip.synefo.storm.api.Pair;
 
 public class SynefoMaster implements Runnable {
@@ -31,15 +29,7 @@ public class SynefoMaster implements Runnable {
 
 	private String zooHost;
 
-	private Thread userInterfaceThread;
-
 	private AtomicBoolean operationFlag;
-
-	private boolean demoMode;
-
-	private AtomicInteger queryId;
-
-	private CEStormDatabaseManager ceDb = null;
 
 	private AtomicInteger taskNumber = null;
 
@@ -55,9 +45,6 @@ public class SynefoMaster implements Runnable {
 						ConcurrentHashMap<String, Integer> taskWorkerPortIndex,
 						ConcurrentHashMap<String, String> taskIPs,
 						AtomicBoolean operationFlag,
-						boolean demoMode,
-						AtomicInteger queryId,
-						CEStormDatabaseManager ceDb,
 						AtomicInteger taskNumber,
 						ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation,
 						ConcurrentLinkedQueue<String> pendingAddressUpdates) {
@@ -69,9 +56,6 @@ public class SynefoMaster implements Runnable {
 		this.resourceThresholds = resourceThresholds;
 		this.zooHost = zooHost;
 		this.operationFlag = operationFlag;
-		this.demoMode = demoMode;
-		this.queryId = queryId;
-		this.ceDb = ceDb;
 		this.taskNumber = taskNumber;
 		this.taskToJoinRelation = taskToJoinRelation;
 		this.pendingAddressUpdates = pendingAddressUpdates;

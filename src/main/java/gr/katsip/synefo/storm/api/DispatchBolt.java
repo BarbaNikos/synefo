@@ -13,12 +13,9 @@ import gr.katsip.synefo.storm.operators.relational.elastic.NewJoinDispatcher;
 import gr.katsip.synefo.utils.SynefoConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.InetAddress;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.*;
@@ -306,5 +303,145 @@ public class DispatchBolt extends BaseRichBolt {
         producerSchema.add("SYNEFO_HEADER");
         producerSchema.addAll(dispatcher.getOutputSchema().toList());
         outputFieldsDeclarer.declare(new Fields(producerSchema));
+    }
+
+    public void manageScaleCommand(Tuple tuple) {
+        String[] tokens = ((String) tuple.getValues().get(0)).split("[/:]");
+        String scaleAction = tokens[2];
+        String taskName = tokens[4];
+        String taskIdentifier = tokens[5];
+        Integer taskNumber = Integer.parseInt(tokens[7]);
+        String taskAddress = tokens[9];
+        if (SYSTEM_WARM_FLAG)
+            SYSTEM_WARM_FLAG = false;
+        logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": received scale-command: " +
+                scaleAction + "(" + System.currentTimeMillis() + ")");
+        if (scaleAction != null && scaleAction.equals(SynefoConstant.ADD_ACTION)) {
+            if ((this.taskName + ":" + this.taskIdentifier).equals(taskName + ":" + taskIdentifier)) {
+                logger.info("");
+                try {
+                    ServerSocket socket = new ServerSocket(6000 + this.taskIdentifier);
+                    int numberOfConnections = 0;
+                    while (numberOfConnections < (taskNumber)) {
+                        Socket client = socket.accept();
+                        ObjectOutputStream output = new ObjectOutputStream(client.getOutputStream());
+                        ObjectInputStream input = new ObjectInputStream(client.getInputStream());
+                        Object response = input.readObject();
+                        if (state instanceof List) {
+                            List<Values> receivedState = (List<Values>) response;
+                            dispatcher.mergeState(receivedState);
+                        }
+                        output.flush();
+                        input.close();
+                        output.close();
+                        client.close();
+                        numberOfConnections++;
+                    }
+                    socket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+                logger.info("");
+            }else {
+                Socket client = null;
+                boolean ATTEMPT = true;
+                while (ATTEMPT) {
+                    try {
+                        client = new Socket(taskAddress, 6000 + Integer.parseInt(taskIdentifier));
+                        ATTEMPT = false;
+                    } catch (IOException e) {
+                        logger.error("");
+                        try {
+                            Thread.sleep(10);
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
+                        }
+                    }
+                }
+                logger.info("");
+                try {
+                    ObjectOutputStream output = new ObjectOutputStream(client.getOutputStream());
+                    ObjectInputStream input = new ObjectInputStream(client.getInputStream());
+                    output.writeObject(dispatcher.getState());
+                    Object response = input.readObject();
+                    if (response instanceof String) {
+                        input.close();
+                        output.close();
+                        client.close();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+                logger.info("");
+            }
+            List<Integer> activeDownstreamTasks =
+                    zookeeperClient.getActiveTopology(this.taskName, this.taskIdentifier, this.taskAddress);
+            this.activeDownstreamTaskIdentifiers = new ArrayList<Integer>(activeDownstreamTasks);
+        }else if (scaleAction != null && scaleAction.equals(SynefoConstant.REMOVE_ACTION)) {
+            if ((this.taskName + ":" + this.taskIdentifier).equals(taskName + ":" + taskIdentifier)) {
+                try {
+                    ServerSocket socket = new ServerSocket(6000 + this.taskIdentifier);
+                    int numberOfConnections = 0;
+                    while (numberOfConnections < (taskNumber)) {
+                        Socket client = socket.accept();
+                        ObjectOutputStream output = new ObjectOutputStream(client.getOutputStream());
+                        ObjectInputStream input = new ObjectInputStream(client.getInputStream());
+                        output.write(dispatcher.getState());
+                        Object response = input.readObject();
+                        input.close();
+                        output.close();
+                        client.close();
+                        numberOfConnections++;
+                    }
+                    socket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+                logger.info("");
+            }else {
+                Socket client = null;
+                boolean ATTEMPT = true;
+                while (ATTEMPT) {
+                    try {
+                        client = new Socket(taskAddress, 6000 + Integer.parseInt(taskIdentifier));
+                        ATTEMPT = false;
+                    } catch (IOException e) {
+                        logger.error("");
+                        try {
+                            Thread.sleep(10);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+                try {
+                    ObjectOutputStream output = new ObjectOutputStream(client.getOutputStream());
+                    ObjectInputStream input = new ObjectInputStream(client.getInputStream());
+                    Object response = input.readObject();
+                    if (response instanceof List) {
+                        List<Values> state = (List<Values>) response;
+                        dispatcher.mergeState(state);
+                    }
+                    output.writeObject("OK");
+                    input.close();
+                    output.close();
+                    client.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+                logger.info("");
+            }
+            List<Integer> activeDownstreamTasks =
+                    zookeeperClient.getActiveTopology(this.taskName, this.taskIdentifier, this.taskAddress);
+            this.activeDownstreamTaskIdentifiers = new ArrayList<Integer>(activeDownstreamTasks);
+        }
     }
 }

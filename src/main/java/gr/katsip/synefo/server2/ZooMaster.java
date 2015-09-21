@@ -1,6 +1,7 @@
 package gr.katsip.synefo.server2;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -203,17 +204,19 @@ public class ZooMaster {
 				}
 				zk.delete("/synefo", -1);
 			}
-			zk.create("/synefo", "/synefo".getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-			zk.create("/synefo/scale-out-event", "/synefo/scale-out-event".getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-			zk.create("/synefo/scale-in-event", "/synefo/scale-in-event".getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-			zk.create("/synefo/bolt-tasks", "/synefo/bolt-tasks".getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-			zk.create("/synefo/active-top", "/synefo/active-top".getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-			zk.create("/synefo/physical-top", "/synefo/physical-top".getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+			zk.create("/synefo", "/synefo".getBytes("UTF-8"), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+			zk.create("/synefo/scale-out-event", "/synefo/scale-out-event".getBytes("UTF-8"), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+			zk.create("/synefo/scale-in-event", "/synefo/scale-in-event".getBytes("UTF-8"), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+			zk.create("/synefo/bolt-tasks", "/synefo/bolt-tasks".getBytes("UTF-8"), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+			zk.create("/synefo/active-top", "/synefo/active-top".getBytes("UTF-8"), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+			zk.create("/synefo/physical-top", "/synefo/physical-top".getBytes("UTF-8"), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 			state = SynefoState.BOOTSTRAPPED;
 		}catch(KeeperException e) {
 			e.printStackTrace();
 		}catch(InterruptedException e1) {
 			e1.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -224,10 +227,12 @@ public class ZooMaster {
 	 */
 	public void setPhysicalTopology() {
 		try {
-			zk.setData("/synefo/physical-top", serializeTopology(scaleFunction.physicalTopology).getBytes(), -1);
+			zk.setData("/synefo/physical-top", serializeTopology(scaleFunction.physicalTopology).getBytes("UTF-8"), -1);
 		} catch (KeeperException e) {
 			e.printStackTrace();
 		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
 			e.printStackTrace();
 		}
 	}
@@ -239,10 +244,12 @@ public class ZooMaster {
 	 */
 	public void setActiveTopology() {
 		try {
-			zk.setData("/synefo/active-top", serializeTopology(scaleFunction.getActiveTopology()).getBytes(), -1);
+			zk.setData("/synefo/active-top", serializeTopology(scaleFunction.getActiveTopology()).getBytes("UTF-8"), -1);
 		} catch (KeeperException e) {
 			e.printStackTrace();
 		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
 			e.printStackTrace();
 		}
 	}
@@ -258,10 +265,12 @@ public class ZooMaster {
 	public void setScaleOutThresholds(double cpu, double memory, int latency, int throughput) {
 		String thresholds = cpu + "," + memory + "," + latency + "," + throughput;
 		try {
-			zk.setData("/synefo/scale-out-event", thresholds.getBytes(), -1);
+			zk.setData("/synefo/scale-out-event", thresholds.getBytes("UTF-8"), -1);
 		} catch (KeeperException e) {
 			e.printStackTrace();
 		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
 			e.printStackTrace();
 		}
 	}
@@ -277,10 +286,12 @@ public class ZooMaster {
 	public void setScaleInThresholds(double cpu, double memory, int latency, int throughput) {
 		String thresholds = cpu + "," + memory + "," + latency + "," + throughput;
 		try {
-			zk.setData("/synefo/scale-in-event", thresholds.getBytes(), -1);
+			zk.setData("/synefo/scale-in-event", thresholds.getBytes("UTF-8"), -1);
 		} catch (KeeperException e) {
 			e.printStackTrace();
 		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
 			e.printStackTrace();
 		}
 	}
@@ -339,18 +350,22 @@ public class ZooMaster {
 	 */
 	public void setScaleCommand(String upstreamTask, String command, List<String> peerParents, String activateCommand) {
 		try {
-			Stat stat = zk.setData("/synefo/bolt-tasks/" + upstreamTask, (command).getBytes(), -1);
+			Stat stat = zk.setData("/synefo/bolt-tasks/" + upstreamTask, (command).getBytes("UTF-8"), -1);
 			System.out.println("setScaleCommand(): Setting command: \"" + command + "\", on path: " + 
 					"\"/synefo/bolt-tasks/" + upstreamTask + "\" returned version stat: " + stat.getVersion() + ".");
 		} catch (KeeperException | InterruptedException e) {
 			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
 		}
 		for(String parent : peerParents) {
 			try {
-				Stat stat = zk.setData("/synefo/bolt-tasks/" + parent, (activateCommand).getBytes(), -1);
+				Stat stat = zk.setData("/synefo/bolt-tasks/" + parent, (activateCommand).getBytes("UTF-8"), -1);
 				System.out.println("setScaleCommand(): Setting command: \"" + activateCommand + "\", on path: " + 
 						"\"/synefo/bolt-tasks/" + parent + "\" returned version stat: " + stat.getVersion() + ".");
 			} catch (KeeperException | InterruptedException e) {
+				e.printStackTrace();
+			} catch (UnsupportedEncodingException e) {
 				e.printStackTrace();
 			}
 		}
@@ -390,8 +405,8 @@ public class ZooMaster {
 		return strBuild.toString();
 	}
 
-	public static HashMap<String, ArrayList<String>> deserializeTopology(String topology) {
-		HashMap<String, ArrayList<String>> top = new HashMap<String, ArrayList<String>>();
+	public static ConcurrentHashMap<String, ArrayList<String>> deserializeTopology(String topology) {
+		ConcurrentHashMap<String, ArrayList<String>> top = new ConcurrentHashMap<String, ArrayList<String>>();
 		String[] tokens = topology.split("[{|}]");
 		for(String task : tokens) {
 			if(task != null && task != "") {

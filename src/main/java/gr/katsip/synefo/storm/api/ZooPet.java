@@ -1,7 +1,13 @@
 package gr.katsip.synefo.storm.api;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+
+import gr.katsip.synefo.server2.ZooMaster;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -60,8 +66,7 @@ public class ZooPet {
 
 		/**
 		 * The default constructor of the ZooPet class
-		 * @param zoo_ip the IP address of the ZooKeeper server
-		 * @param zoo_port the port of the ZooKeeper server
+		 * @param zoo_ip the IP address of the ZooKeeper server in the form "ip-1:port-1,ip-2:port-2,...,ip-N:port-N"
 		 * @param task_name the corresponding task's name
 		 * @param task_id the corresponding task's id
 		 * @param task_ip the corresponding task's IP
@@ -87,18 +92,45 @@ public class ZooPet {
 		 */
 		Watcher boltWatcher = new Watcher() {
 			public void process(WatchedEvent e) {
-				if(e.getType() == Event.EventType.NodeDataChanged) {
-					if(e.getPath().equals("/synefo/bolt-tasks/" + taskName + ":" + taskID + "@" + taskIP)) {
+				if (e.getType() == Event.EventType.NodeDataChanged) {
+					if (e.getPath().equals("/synefo/bolt-tasks/" + taskName + ":" + taskID + "@" + taskIP)) {
 						/**
 						 * Get scale command, and clean up the directory
 						 */
-						logger.info("boltWatcher.process(): Children of node " + e.getPath() + 
+						logger.info("children of node " + e.getPath() +
 								" have changed. Time to check the scale-command.");
 						getScaleCommand();
+					}else if (e.getPath().equals("/synefo/active-top")) {
+						logger.info(" active topology has changed.");
 					}
 				}
 			}
 		};
+
+	public List<Integer> getActiveTopology(String taskName, Integer taskIdentifier, String taskAddress) {
+		Stat stat = new Stat();
+		ConcurrentHashMap<String, ArrayList<String>> activeTopology = null;
+		try {
+			activeTopology = ZooMaster.deserializeTopology(new String(zk.getData("/synefo/active-top", boltWatcher, stat), "UTF-8"));
+		} catch (KeeperException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+		if (activeTopology.contains(taskName + ":" + taskIdentifier + "@" + taskAddress)) {
+			ArrayList<String> activeDownstreamTaskNames = activeTopology.get(taskName + ":" + taskIdentifier + "@" + taskAddress);
+			List<Integer> activeDownstreamTaskIdentifiers = new ArrayList<Integer>();
+			for (String activeTask : activeDownstreamTaskNames) {
+				Integer task = Integer.parseInt(activeTask.split("[:@]")[1]);
+				activeDownstreamTaskIdentifiers.add(task);
+			}
+			return activeDownstreamTaskIdentifiers;
+		}else {
+			return null;
+		}
+	}
 
 		/**
 		 * This function retrieves the newly-added child's data (the scale-out/in command) 
@@ -110,13 +142,15 @@ public class ZooPet {
 				String pendingCommand = new String(zk.getData("/synefo/bolt-tasks/" + taskName + ":" + 
 						taskID + "@" + taskIP, 
 						boltWatcher, 
-						stat));
+						stat), "UTF-8");
 				logger.info("getScaleCommand(): Received scale command \"" + pendingCommand + 
 						"\" (" + taskName + ":" + taskID + "@" + taskIP + ")");
 				pendingCommands.offer(pendingCommand);
 			} catch (KeeperException e) {
 				e.printStackTrace();
 			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} catch (UnsupportedEncodingException e) {
 				e.printStackTrace();
 			}
 		}
@@ -152,19 +186,19 @@ public class ZooPet {
 				if(zk.exists("/synefo/bolt-tasks", false) != null) {
 					if(zk.exists("/synefo/bolt-tasks/" + taskName + ":" + taskID + "@" + taskIP, false) == null) {
 						zk.create("/synefo/bolt-tasks/" + taskName + ":" + taskID + "@" + taskIP, 
-								("/synefo/bolt-tasks/" + taskName + ":" + taskID + "@" + taskIP).getBytes(), 
+								("/synefo/bolt-tasks/" + taskName + ":" + taskID + "@" + taskIP).getBytes("UTF-8"),
 								Ids.OPEN_ACL_UNSAFE, 
 								CreateMode.PERSISTENT);
 					}
 					Stat stat = new Stat();
-					String thresholds = new String(zk.getData("/synefo/scale-out-event", false, stat));
+					String thresholds = new String(zk.getData("/synefo/scale-out-event", false, stat), "UTF-8");
 					String[] thresholdTokens = thresholds.split(",");
 					cpu.upperBound = Double.parseDouble(thresholdTokens[0]);
 					mem.upperBound = Double.parseDouble(thresholdTokens[1]);
 					latency.upperBound = Long.parseLong(thresholdTokens[2]);
 					throughput.upperBound = Integer.parseInt(thresholdTokens[3]);
 
-					thresholds = new String(zk.getData("/synefo/scale-in-event", false, stat));
+					thresholds = new String(zk.getData("/synefo/scale-in-event", false, stat), "UTF-8");
 					thresholdTokens = thresholds.split(",");
 					cpu.lowerBound = Double.parseDouble(thresholdTokens[0]);
 					mem.lowerBound = Double.parseDouble(thresholdTokens[1]);
@@ -233,7 +267,7 @@ public class ZooPet {
 		
 		/**
 		 * Create scale task based on throughput
-		 * @param latency
+		 * @param throughput
 		 */
 		public void setThroughput(Double throughput) {
 			if(state == BoltState.ACTIVE) {
@@ -280,12 +314,16 @@ public class ZooPet {
 		 * Function to create a scale-out task.
 		 */
 		private void createScaleOutTask() {
-			zk.create("/synefo/scale-out-event/" + taskName + ":" + taskID + "@" + taskIP + "-", 
-					(taskName + ":" + taskID + "@" + taskIP).getBytes(), 
-					Ids.OPEN_ACL_UNSAFE, 
-					CreateMode.PERSISTENT_SEQUENTIAL, 
-					createScaleOutEventCallback, 
-					null);
+			try {
+				zk.create("/synefo/scale-out-event/" + taskName + ":" + taskID + "@" + taskIP + "-",
+                        (taskName + ":" + taskID + "@" + taskIP).getBytes("UTF-8"),
+                        Ids.OPEN_ACL_UNSAFE,
+                        CreateMode.PERSISTENT_SEQUENTIAL,
+                        createScaleOutEventCallback,
+                        null);
+			} catch (UnsupportedEncodingException e) {
+				e.printStackTrace();
+			}
 		}
 
 		StringCallback createScaleOutEventCallback = new StringCallback() {
@@ -314,12 +352,16 @@ public class ZooPet {
 		};
 
 		private void createScaleInTask() {
-			zk.create("/synefo/scale-in-event/" + taskName + ":" + taskID + "@" + taskIP + "-", 
-					(taskName + ":" + taskID + "@" + taskIP).getBytes(), 
-					Ids.OPEN_ACL_UNSAFE, 
-					CreateMode.PERSISTENT_SEQUENTIAL, 
-					createScaleInEventCallback, 
-					null);
+			try {
+				zk.create("/synefo/scale-in-event/" + taskName + ":" + taskID + "@" + taskIP + "-",
+                        (taskName + ":" + taskID + "@" + taskIP).getBytes("UTF-8"),
+                        Ids.OPEN_ACL_UNSAFE,
+                        CreateMode.PERSISTENT_SEQUENTIAL,
+                        createScaleInEventCallback,
+                        null);
+			} catch (UnsupportedEncodingException e) {
+				e.printStackTrace();
+			}
 		}
 
 		StringCallback createScaleInEventCallback = new StringCallback() {
