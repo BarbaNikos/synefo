@@ -50,7 +50,7 @@ public class LocalFileProducer implements Serializable {
 
     private static final String EOF = new String("end of file");
 
-    private static final int SIZE = 100000;
+    private static final int SIZE = 10000;
 
     public LocalFileProducer(String pathToFile, String[] schema, String[] projectedSchema, double[] outputRate, int[] checkpoints) {
         this.schema = new Fields(schema);
