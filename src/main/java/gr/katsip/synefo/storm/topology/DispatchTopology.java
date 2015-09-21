@@ -62,7 +62,7 @@ public class DispatchTopology {
          * Stage 0: 2 input streams (lineitem, orders)
          */
         String[] dataSchema = { "attributes", "values" };
-        double[] outputRate = { 5000, 5000, 5000};
+        double[] outputRate = { 3000, 3000, 3000};
         int[] checkpoints = { 0, 30, 60 };
         LocalFileProducer order = new LocalFileProducer(data[0], Order.schema, Order.query5Schema, outputRate, checkpoints);
         order.setSchema(new Fields(dataSchema));
