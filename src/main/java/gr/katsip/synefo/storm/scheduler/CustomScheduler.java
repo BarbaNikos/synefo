@@ -4,6 +4,7 @@ import backtype.storm.scheduler.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +51,8 @@ public class CustomScheduler implements IScheduler {
                     List<ExecutorDetails> lineitemExecutors = componentToExecutors.get("lineitem");
                     List<ExecutorDetails> dispatchExecutors = componentToExecutors.get("dispatch");
                     Collection<SupervisorDetails> supervisors = cluster.getSupervisors().values();
-                    SupervisorDetails orderSupervisor = null, lineitemSupervisor = null, dispatchSupervisor = null;
+                    SupervisorDetails orderSupervisor = null, lineitemSupervisor = null;
+                    List<SupervisorDetails> dispatchSupervisors = new ArrayList<>();
                     for (SupervisorDetails supervisor : supervisors) {
                         if (supervisor.getSchedulerMeta() != null) {
                             Map meta = (Map) supervisor.getSchedulerMeta();
@@ -61,7 +63,7 @@ public class CustomScheduler implements IScheduler {
                                 lineitemSupervisor = supervisor;
                             }
                             if (meta.get("name").equals("supervisor")) {
-                                dispatchSupervisor = supervisor;
+                                dispatchSupervisors.add(supervisor);
                             }
                         }
                     }
@@ -85,15 +87,25 @@ public class CustomScheduler implements IScheduler {
                         availableSlots = cluster.getAvailableSlots(lineitemSupervisor);
                         cluster.assign(availableSlots.get(0), topology.getId(), lineitemExecutors);
                     }
-                    if (dispatchSupervisor != null) {
-                        List<WorkerSlot> availableSlots = cluster.getAvailableSlots(dispatchSupervisor);
-                        if (availableSlots.isEmpty() && !dispatchExecutors.isEmpty()) {
-                            for (Integer port : cluster.getUsedPorts(dispatchSupervisor)) {
-                                cluster.freeSlot((new WorkerSlot(dispatchSupervisor.getId(), port)));
+                    if (dispatchSupervisors.size() > 0) {
+                        for (SupervisorDetails dispatchSupervisor : dispatchSupervisors) {
+                            List<WorkerSlot> availableSlots = cluster.getAvailableSlots(dispatchSupervisor);
+                            if (availableSlots.isEmpty() && !dispatchExecutors.isEmpty()) {
+                                for (Integer port : cluster.getUsedPorts(dispatchSupervisor)) {
+                                    cluster.freeSlot((new WorkerSlot(dispatchSupervisor.getId(), port)));
+                                }
                             }
                         }
-                        availableSlots = cluster.getAvailableSlots(dispatchSupervisor);
-                        cluster.assign(availableSlots.get(0), topology.getId(), dispatchExecutors);
+                        int supervisorIndex = 0;
+                        for (int i = 0; i < dispatchExecutors.size(); i++) {
+                            List<WorkerSlot> availableSlots = cluster.getAvailableSlots(dispatchSupervisors.get(supervisorIndex));
+                            List<ExecutorDetails> dispatchExecutorSubset = dispatchExecutors.subList(i, i + 1);
+                            cluster.assign(availableSlots.get(0), topology.getId(),dispatchExecutorSubset);
+                            if (supervisorIndex > (dispatchSupervisors.size() - 2))
+                                supervisorIndex = 0;
+                            else
+                                supervisorIndex++;
+                        }
                     }
                 }
             }
