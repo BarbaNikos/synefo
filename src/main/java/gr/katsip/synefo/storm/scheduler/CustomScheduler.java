@@ -42,13 +42,15 @@ public class CustomScheduler implements IScheduler {
                 }else {
                     logger.info(this.getClass().getName() + " current assignments: {}");
                 }
-                if (!componentToExecutors.containsKey("order") || !componentToExecutors.containsKey("lineitem")) {
+                if (!componentToExecutors.containsKey("order") || !componentToExecutors.containsKey("lineitem") ||
+                        !componentToExecutors.containsKey("dispatch")) {
                     logger.info(this.getClass().getName() + " special components do not need scheduling.");
                 }else {
                     List<ExecutorDetails> orderExecutors = componentToExecutors.get("order");
                     List<ExecutorDetails> lineitemExecutors = componentToExecutors.get("lineitem");
+                    List<ExecutorDetails> dispatchExecutors = componentToExecutors.get("dispatch");
                     Collection<SupervisorDetails> supervisors = cluster.getSupervisors().values();
-                    SupervisorDetails orderSupervisor = null, lineitemSupervisor = null;
+                    SupervisorDetails orderSupervisor = null, lineitemSupervisor = null, dispatchSupervisor = null;
                     for (SupervisorDetails supervisor : supervisors) {
                         if (supervisor.getSchedulerMeta() != null) {
                             Map meta = (Map) supervisor.getSchedulerMeta();
@@ -57,6 +59,9 @@ public class CustomScheduler implements IScheduler {
                             }
                             if (meta.get("name").equals("lineitem")) {
                                 lineitemSupervisor = supervisor;
+                            }
+                            if (meta.get("name").equals("supervisor")) {
+                                dispatchSupervisor = supervisor;
                             }
                         }
                     }
@@ -79,6 +84,16 @@ public class CustomScheduler implements IScheduler {
                         }
                         availableSlots = cluster.getAvailableSlots(lineitemSupervisor);
                         cluster.assign(availableSlots.get(0), topology.getId(), lineitemExecutors);
+                    }
+                    if (dispatchSupervisor != null) {
+                        List<WorkerSlot> availableSlots = cluster.getAvailableSlots(dispatchSupervisor);
+                        if (availableSlots.isEmpty() && !dispatchExecutors.isEmpty()) {
+                            for (Integer port : cluster.getUsedPorts(dispatchSupervisor)) {
+                                cluster.freeSlot((new WorkerSlot(dispatchSupervisor.getId(), port)));
+                            }
+                        }
+                        availableSlots = cluster.getAvailableSlots(dispatchSupervisor);
+                        cluster.assign(availableSlots.get(0), topology.getId(), dispatchExecutors);
                     }
                 }
             }
