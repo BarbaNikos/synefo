@@ -77,6 +77,14 @@ public class DispatchBolt extends BaseRichBolt {
 
     private transient AssignableMetric stateSize;
 
+    private transient AssignableMetric inputRate;
+
+    private int temporaryInputRate;
+
+    private long throughputCurrentTimestamp;
+
+    private long throughputPreviousTimestamp;
+
     public DispatchBolt(String taskName, String synefoAddress, Integer synefoPort,
                         NewJoinDispatcher dispatcher, String zookeeperAddress, boolean autoScale) {
         this.taskName = taskName;
@@ -209,6 +217,8 @@ public class DispatchBolt extends BaseRichBolt {
         logger.info(strBuild.toString());
         logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + " registered to synefo (time: " +
                 System.currentTimeMillis() + ")");
+        throughputPreviousTimestamp = System.currentTimeMillis();
+        temporaryInputRate = 0;
     }
 
     @Override
@@ -238,10 +248,12 @@ public class DispatchBolt extends BaseRichBolt {
         throughput = new AssignableMetric(null);
         executeLatency = new AssignableMetric(null);
         stateSize = new AssignableMetric(null);
+        inputRate = new AssignableMetric(null);
         context.registerMetric("latency", latency, DispatchBolt.METRIC_REPORT_FREQ_SEC);
         context.registerMetric("execute-latency", executeLatency, DispatchBolt.METRIC_REPORT_FREQ_SEC);
         context.registerMetric("throughput", throughput, DispatchBolt.METRIC_REPORT_FREQ_SEC);
         context.registerMetric("state-size", stateSize, DispatchBolt.METRIC_REPORT_FREQ_SEC);
+        context.registerMetric("input-rate", inputRate, DispatchBolt.METRIC_REPORT_FREQ_SEC);
     }
 
     private boolean isScaleHeader(String header) {
@@ -272,6 +284,14 @@ public class DispatchBolt extends BaseRichBolt {
                 collector.ack(tuple);
                 return;
             }
+        }
+        throughputCurrentTimestamp = System.currentTimeMillis();
+        if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
+            throughputPreviousTimestamp = throughputCurrentTimestamp;
+            inputRate.setValue(temporaryInputRate);
+            temporaryInputRate = 0;
+        }else {
+            temporaryInputRate++;
         }
         /**
          * Remove from both values and fields SYNEFO_HEADER (SYNEFO_TIMESTAMP)

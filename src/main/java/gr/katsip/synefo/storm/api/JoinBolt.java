@@ -75,6 +75,14 @@ public class JoinBolt extends BaseRichBolt {
 
     private transient AssignableMetric stateSize;
 
+    private transient AssignableMetric inputRate;
+
+    private int temporaryInputRate;
+
+    private long throughputCurrentTimestamp;
+
+    private long throughputPreviousTimestamp;
+
     public JoinBolt(String taskName, String synefoAddress, Integer synefoPort,
                     NewJoinJoiner joiner, String zookeeperAddress, boolean AUTO_SCALE) {
         this.taskName = taskName;
@@ -156,6 +164,8 @@ public class JoinBolt extends BaseRichBolt {
         zookeeperClient.start();
         zookeeperClient.getScaleCommand();
         downstreamIndex = new Integer(0);
+        throughputPreviousTimestamp = System.currentTimeMillis();
+        temporaryInputRate = 0;
     }
 
     @Override
@@ -182,10 +192,12 @@ public class JoinBolt extends BaseRichBolt {
         throughput = new AssignableMetric(null);
         executeLatency = new AssignableMetric(null);
         stateSize = new AssignableMetric(null);
+        inputRate = new AssignableMetric(null);
         context.registerMetric("latency", latency, JoinBolt.METRIC_REPORT_FREQ_SEC);
         context.registerMetric("execute-latency", executeLatency, JoinBolt.METRIC_REPORT_FREQ_SEC);
         context.registerMetric("throughput", throughput, JoinBolt.METRIC_REPORT_FREQ_SEC);
         context.registerMetric("state-size", stateSize, JoinBolt.METRIC_REPORT_FREQ_SEC);
+        context.registerMetric("input-rate", inputRate, JoinBolt.METRIC_REPORT_FREQ_SEC);
     }
 
     private boolean isScaleHeader(String header) {
@@ -210,6 +222,14 @@ public class JoinBolt extends BaseRichBolt {
                 outputCollector.ack(tuple);
                 return;
             }
+        }
+        throughputCurrentTimestamp = System.currentTimeMillis();
+        if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
+            throughputPreviousTimestamp = throughputCurrentTimestamp;
+            inputRate.setValue(temporaryInputRate);
+            temporaryInputRate = 0;
+        }else {
+            temporaryInputRate++;
         }
         Values values = new Values(tuple.getValues().toArray());
         values.remove(0);
