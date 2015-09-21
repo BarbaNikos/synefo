@@ -275,4 +275,47 @@ public class NewJoinDispatcher implements Serializable {
     public Fields getOutputSchema() {
         return outputSchema;
     }
+
+    public void mergeState(List<Values> state) {
+        HashMap<String, List<Integer>> receivedOuterRelationIndex = (HashMap<String, List<Integer>>) state.get(0).get(0);
+        HashMap<String, List<Integer>> receivedInnerRelationIndex = (HashMap<String, List<Integer>>) state.get(0).get(1);
+        merge(receivedOuterRelationIndex, outerRelationIndex);
+        merge(receivedInnerRelationIndex, innerRelationIndex);
+    }
+
+    /**
+     * Function to merge the keys from two relation indices
+     * @param receivedRelationIndex
+     * @param currentRelationIndex
+     */
+    private void merge(HashMap<String, List<Integer>> receivedRelationIndex, HashMap<String, List<Integer>> currentRelationIndex) {
+        Iterator<Map.Entry<String, List<Integer>>> iterator = receivedRelationIndex.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<String, List<Integer>> pair = iterator.next();
+            if (currentRelationIndex.containsKey(pair.getKey())) {
+                List<Integer> receivedList = pair.getValue();
+                List<Integer> currentList = currentRelationIndex.get(pair.getKey());
+                for (int i = 1; i < receivedList.size(); i++) {
+                    if (currentList.lastIndexOf(receivedList.get(i)) < 0) {
+                        currentList.add(receivedList.get(i));
+                    }
+                }
+                currentList.set(0, 1);
+                currentRelationIndex.put(pair.getKey(), currentList);
+            }else {
+                List<Integer> receivedList = pair.getValue();
+                receivedList.set(0, 1);
+                currentRelationIndex.put(pair.getKey(), receivedList);
+            }
+        }
+    }
+
+    public List<Values> getState() {
+        state.clear();
+        Values values = new Values();
+        values.add(outerRelationIndex);
+        values.add(innerRelationIndex);
+        state.add(values);
+        return state;
+    }
 }

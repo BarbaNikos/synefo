@@ -390,7 +390,7 @@ public class DispatchBolt extends BaseRichBolt {
                         Socket client = socket.accept();
                         ObjectOutputStream output = new ObjectOutputStream(client.getOutputStream());
                         ObjectInputStream input = new ObjectInputStream(client.getInputStream());
-                        output.write(dispatcher.getState());
+                        output.writeObject(dispatcher.getState());
                         Object response = input.readObject();
                         input.close();
                         output.close();
@@ -415,8 +415,8 @@ public class DispatchBolt extends BaseRichBolt {
                         logger.error("");
                         try {
                             Thread.sleep(10);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
+                        } catch (InterruptedException ei) {
+                            ei.printStackTrace();
                         }
                     }
                 }
