@@ -62,7 +62,7 @@ public class DispatchTopology {
          * Stage 0: 2 input streams (lineitem, orders)
          */
         String[] dataSchema = { "attributes", "values" };
-        double[] outputRate = { 10000, 20000, 10000};
+        double[] outputRate = { 5000, 5000, 5000};
         int[] checkpoints = { 0, 30, 60 };
         LocalFileProducer order = new LocalFileProducer(data[0], Order.schema, Order.query5Schema, outputRate, checkpoints);
         order.setSchema(new Fields(dataSchema));
@@ -86,11 +86,11 @@ public class DispatchTopology {
                 "lineitem", new Fields(LineItem.query5Schema),
                 LineItem.query5Schema[0], LineItem.query5Schema[0], new Fields(dataSchema));
         builder.setBolt("dispatch", new DispatchBolt("dispatch", synefoAddress, synefoPort, dispatcher, zooIP, false),
-                executorNumber * 4)
-                .setNumTasks(scaleFactor * 4)
+                executorNumber * 8)
+                .setNumTasks(scaleFactor * 8)
                 .directGrouping("order")
                 .directGrouping("lineitem");
-        taskNumber += scaleFactor*4;
+        taskNumber += scaleFactor*8;
         taskList = new ArrayList<String>();
         taskList.add("joinorder");
         taskList.add("joinline");
