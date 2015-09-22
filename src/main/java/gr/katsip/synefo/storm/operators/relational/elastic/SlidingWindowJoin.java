@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Random;
+
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
@@ -187,5 +189,19 @@ public class SlidingWindowJoin implements Serializable {
 	public long getNumberOfTuples() {
 		return totalNumberOfTuples;
 	}
-	
+
+	public BasicWindow getStatePart() {
+		Random rand = new Random();
+		int index = rand.nextInt(circularCache.size());
+		BasicWindow window = circularCache.remove(index);
+		stateByteSize -= window.basicWindowStateSize;
+		totalNumberOfTuples -= window.numberOfTuples;
+		return window;
+	}
+
+	public void mergeStatePart(BasicWindow window) {
+		/**
+		 * TODO: Need to figure out how to merge the state
+		 */
+	}
 }

@@ -43,9 +43,9 @@ public class ZooPet {
 
 		private ZooKeeper zk;
 
-		private String zooIP;
+		private String zookeeperAddress;
 
-		private Integer taskID;
+		private Integer taskIdentifier;
 
 		private String taskName;
 
@@ -63,25 +63,21 @@ public class ZooPet {
 		
 		private boolean submittedScaleInTask = false;
 
-		private String taskIP;
+		private String taskAddress;
 
 		/**
 		 * The default constructor of the ZooPet class
-		 * @param zoo_ip the IP address of the ZooKeeper server in the form "ip-1:port-1,ip-2:port-2,...,ip-N:port-N"
-		 * @param task_name the corresponding task's name
-		 * @param task_id the corresponding task's id
-		 * @param task_ip the corresponding task's IP
+		 * @param zookeeperAddress the IP address of the ZooKeeper server in the form "ip-1:port-1,ip-2:port-2,...,ip-N:port-N"
+		 * @param taskName the corresponding task's name
+		 * @param taskIdentifier the corresponding task's id
+		 * @param taskAddress the corresponding task's IP
 		 */
-		public ZooPet(String zoo_ip, String task_name, Integer task_id, String task_ip) {
-			this.zooIP = zoo_ip;
-			this.taskID = task_id;
-			this.taskName = task_name;
+		public ZooPet(String zookeeperAddress, String taskName, Integer taskIdentifier, String taskAddress) {
+			this.zookeeperAddress = zookeeperAddress;
+			this.taskIdentifier = taskIdentifier;
+			this.taskName = taskName;
 			state = BoltState.INIT;
-			this.taskIP = task_ip;
-			cpu = new Pair<Double, Double>();
-			mem = new Pair<Double, Double>();
-			latency = new Pair<Long, Long>();
-			throughput = new Pair<Integer, Integer>();
+			this.taskAddress = taskAddress;
 			pendingCommands = new ConcurrentLinkedQueue<String>();
 		}
 
@@ -94,7 +90,7 @@ public class ZooPet {
 		Watcher boltWatcher = new Watcher() {
 			public void process(WatchedEvent e) {
 				if (e.getType() == Event.EventType.NodeDataChanged) {
-					if (e.getPath().equals("/synefo/bolt-tasks/" + taskName + ":" + taskID + "@" + taskIP)) {
+					if (e.getPath().equals("/synefo/bolt-tasks/" + taskName + ":" + taskIdentifier + "@" + taskAddress)) {
 						/**
 						 * Get scale command, and clean up the directory
 						 */
@@ -185,12 +181,12 @@ public class ZooPet {
 		public synchronized void getScaleCommand() {
 			Stat stat = new Stat();
 			try {
-				String pendingCommand = new String(zk.getData("/synefo/bolt-tasks/" + taskName + ":" + 
-						taskID + "@" + taskIP, 
+				String pendingCommand = new String(zk.getData("/synefo/bolt-tasks/" + taskName + ":" +
+								taskIdentifier + "@" + taskAddress,
 						boltWatcher, 
 						stat), "UTF-8");
 				logger.info("getScaleCommand(): Received scale command \"" + pendingCommand + 
-						"\" (" + taskName + ":" + taskID + "@" + taskIP + ")");
+						"\" (" + taskName + ":" + taskIdentifier + "@" + taskAddress + ")");
 				pendingCommands.offer(pendingCommand);
 			} catch (KeeperException e) {
 				e.printStackTrace();
@@ -225,34 +221,21 @@ public class ZooPet {
 		 */
 		public void start() {
 			try {
-				zk = new ZooKeeper(zooIP, 100000, boltWatcher);
+				zk = new ZooKeeper(zookeeperAddress, 100000, boltWatcher);
 				while(zk.getState() != ZooKeeper.States.CONNECTED) {
 					Thread.sleep(100);
 				}
 				if(zk.exists("/synefo/bolt-tasks", false) != null) {
-					if(zk.exists("/synefo/bolt-tasks/" + taskName + ":" + taskID + "@" + taskIP, false) == null) {
-						zk.create("/synefo/bolt-tasks/" + taskName + ":" + taskID + "@" + taskIP, 
-								("/synefo/bolt-tasks/" + taskName + ":" + taskID + "@" + taskIP).getBytes("UTF-8"),
+					if(zk.exists("/synefo/bolt-tasks/" + taskName + ":" + taskIdentifier + "@" + taskAddress, false) == null) {
+						zk.create("/synefo/bolt-tasks/" + taskName + ":" + taskIdentifier + "@" + taskAddress,
+								("/synefo/bolt-tasks/" + taskName + ":" + taskIdentifier + "@" + taskAddress).getBytes("UTF-8"),
 								Ids.OPEN_ACL_UNSAFE, 
 								CreateMode.PERSISTENT);
 					}
 					Stat stat = new Stat();
-					String thresholds = new String(zk.getData("/synefo/scale-out-event", false, stat), "UTF-8");
-					String[] thresholdTokens = thresholds.split(",");
-					cpu.upperBound = Double.parseDouble(thresholdTokens[0]);
-					mem.upperBound = Double.parseDouble(thresholdTokens[1]);
-					latency.upperBound = Long.parseLong(thresholdTokens[2]);
-					throughput.upperBound = Integer.parseInt(thresholdTokens[3]);
-
-					thresholds = new String(zk.getData("/synefo/scale-in-event", false, stat), "UTF-8");
-					thresholdTokens = thresholds.split(",");
-					cpu.lowerBound = Double.parseDouble(thresholdTokens[0]);
-					mem.lowerBound = Double.parseDouble(thresholdTokens[1]);
-					latency.lowerBound = Long.parseLong(thresholdTokens[2]);
-					throughput.lowerBound = Integer.parseInt(thresholdTokens[3]);
 					state = BoltState.ACTIVE;
 					logger.info("start(): Initialization successful (" + 
-							taskName + ":" + taskID + "@" + taskIP + ")");
+							taskName + ":" + taskIdentifier + "@" + taskAddress + ")");
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -269,171 +252,9 @@ public class ZooPet {
 		public void stop() {
 			try {
 				zk.close();
-				logger.info("stop(): Closing connection (" + taskName + ":" + taskID + "@" + taskIP + ")");
+				logger.info("stop(): Closing connection (" + taskName + ":" + taskIdentifier + "@" + taskAddress + ")");
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
-		
-		/**
-		 * Create scale task based on latency
-		 * @param latency
-		 */
-		public void setLatency(long latency) {
-			if(state == BoltState.ACTIVE) {
-				if(this.latency.upperBound < latency) {
-					/**
-					 * Create also a node under scale-out-event znode with the name of the bolt.
-					 * This way, the SynEFO coordination thread will understand that the bolt 
-					 * is overloaded and that it needs to scale-out.
-					 */
-					if(submittedScaleOutTask != true) {
-						logger.info("setLatency(): Over-utilization detected. Generating scale out command (" + 
-								taskName + ":" + taskID + "@" + taskIP + ")...");
-						createScaleOutTask();
-						submittedScaleOutTask = true;
-						submittedScaleInTask = false;
-					}
-				}else if(this.latency.lowerBound > latency) {
-					/**
-					 * Create also a node under scale-in-event znode with the name of the bolt.
-					 * This way, the SynEFO coordination thread will understand that the bolt 
-					 * is overloaded and that it needs to scale-out.
-					 */
-					if(submittedScaleInTask != true) {
-						logger.info("setLatency(): Under-utilization detected. Generating scale out command (" + 
-								taskName + ":" + taskID + "@" + taskIP + ")...");
-						createScaleInTask();
-						submittedScaleInTask = true;
-						submittedScaleOutTask = false;
-					}
-				}
-			}
-		}
-		
-		/**
-		 * Create scale task based on throughput
-		 * @param throughput
-		 */
-		public void setThroughput(Double throughput) {
-			if(state == BoltState.ACTIVE) {
-				if(this.throughput.lowerBound > throughput) {
-					/**
-					 * Create also a node under scale-out-event znode with the name of the bolt.
-					 * This way, the SynEFO coordination thread will understand that the bolt 
-					 * is overloaded and that it needs to scale-out.
-					 */
-					if(submittedScaleOutTask != true) {
-						logger.info("setThroughput(): Over-utilization detected. Generating scale out command (" + 
-								taskName + ":" + taskID + "@" + taskIP + ")...");
-						createScaleOutTask();
-						submittedScaleOutTask = true;
-						submittedScaleInTask = false;
-					}
-				}else if(this.throughput.upperBound < throughput) {
-					/**
-					 * Create also a node under scale-in-event znode with the name of the bolt.
-					 * This way, the SynEFO coordination thread will understand that the bolt 
-					 * is overloaded and that it needs to scale-out.
-					 */
-					if(submittedScaleInTask != true) {
-						logger.info("setThroughput(): Under-utilization detected. Generating scale out command (" + 
-								taskName + ":" + taskID + "@" + taskIP + ")...");
-						createScaleInTask();
-						submittedScaleInTask = true;
-						submittedScaleOutTask = false;
-					}
-				}
-			}
-		}
-
-		/**
-		 * This function works as a way of avoiding re-submitting 
-		 * scale-out/in requests on the server.
-		 */
-		public void resetSubmittedScaleFlag() {
-			submittedScaleOutTask = false;
-			submittedScaleInTask = false;
-		}
-
-		/**
-		 * Function to create a scale-out task.
-		 */
-		private void createScaleOutTask() {
-			try {
-				zk.create("/synefo/scale-out-event/" + taskName + ":" + taskID + "@" + taskIP + "-",
-                        (taskName + ":" + taskID + "@" + taskIP).getBytes("UTF-8"),
-                        Ids.OPEN_ACL_UNSAFE,
-                        CreateMode.PERSISTENT_SEQUENTIAL,
-                        createScaleOutEventCallback,
-                        null);
-			} catch (UnsupportedEncodingException e) {
-				e.printStackTrace();
-			}
-		}
-
-		StringCallback createScaleOutEventCallback = new StringCallback() {
-			public void processResult(int rc, String path, Object ctx,
-					String name) {
-				switch(Code.get(rc)) {
-				case CONNECTIONLOSS:
-					logger.info("createScaleOutEventCallback(): CONNECTIONLOSS for scale-event-creation");
-					createScaleOutTask();
-					break;
-				case NONODE:
-					logger.info("createScaleOutEventCallback(): NONODE for scale-event-creation");
-					break;
-				case NODEEXISTS:
-					System.out.println("createScaleOutEventCallback(): NODEEXISTS for scale-event-creation");
-					break;
-				case OK:
-					logger.info("createScaleOutEventCallback(): OK for scale-event-creation");
-					break;
-				default:
-					logger.info("createScaleOutEventCallback(): Unexpected scenario: " + 
-							KeeperException.create(Code.get(rc), path));
-					break;
-				}
-			}
-		};
-
-		private void createScaleInTask() {
-			try {
-				zk.create("/synefo/scale-in-event/" + taskName + ":" + taskID + "@" + taskIP + "-",
-                        (taskName + ":" + taskID + "@" + taskIP).getBytes("UTF-8"),
-                        Ids.OPEN_ACL_UNSAFE,
-                        CreateMode.PERSISTENT_SEQUENTIAL,
-                        createScaleInEventCallback,
-                        null);
-			} catch (UnsupportedEncodingException e) {
-				e.printStackTrace();
-			}
-		}
-
-		StringCallback createScaleInEventCallback = new StringCallback() {
-			public void processResult(int rc, String path, Object ctx,
-					String name) {
-				switch(Code.get(rc)) {
-				case CONNECTIONLOSS:
-					logger.info("createScaleInEventCallback(): CONNECTIONLOSS for scale-event-creation");
-					createScaleOutTask();
-					break;
-				case NONODE:
-					logger.info("createScaleInEventCallback(): NONODE for scale-event-creation");
-					break;
-				case NODEEXISTS:
-					logger.info("createScaleInEventCallback(): NODEEXISTS for scale-event-creation");
-					break;
-				case OK:
-					logger.info("createScaleInEventCallback(): OK for scale-event-creation");
-					break;
-				default:
-					logger.info("createScaleInEventCallback(): Unexpected scenario: " + 
-							KeeperException.create(Code.get(rc), path));
-					break;
-
-				}
-			}
-		};
-
 }

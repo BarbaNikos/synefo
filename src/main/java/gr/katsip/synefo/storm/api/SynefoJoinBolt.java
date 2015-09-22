@@ -697,7 +697,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 						") received state from about-to-be-removed node successfully (timestamp: " + currentTimestamp + ").");
 			}
 		}
-		zooPet.resetSubmittedScaleFlag();
+//		zooPet.resetSubmittedScaleFlag();
 		latestSynefoTimestamp = -1;
 	}
 

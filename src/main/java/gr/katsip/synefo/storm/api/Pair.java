@@ -2,7 +2,7 @@ package gr.katsip.synefo.storm.api;
 
 import java.io.Serializable;
 
-public class Pair<T1 extends Number, T2 extends Number> implements Serializable {
+public class Pair<T1, T2> implements Serializable {
 
 	/**
 	 * 

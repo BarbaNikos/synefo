@@ -280,7 +280,7 @@ public class DispatchBolt extends BaseRichBolt {
                 /**
                  * TODO: Revisit this when I ensure proper execution
                  */
-//                handlePunctuationTuple(currentTimestamp, tuple);
+                manageScaleCommand(tuple);
                 collector.ack(tuple);
                 return;
             }
@@ -289,6 +289,9 @@ public class DispatchBolt extends BaseRichBolt {
         if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
             throughputPreviousTimestamp = throughputCurrentTimestamp;
             inputRate.setValue(temporaryInputRate);
+            /**
+             * Set the data values on the zookeeper server
+             */
             temporaryInputRate = 0;
         }else {
             temporaryInputRate++;
@@ -338,6 +341,10 @@ public class DispatchBolt extends BaseRichBolt {
                 scaleAction + "(" + System.currentTimeMillis() + ")");
         if (scaleAction != null && scaleAction.equals(SynefoConstant.ADD_ACTION)) {
             if ((this.taskName + ":" + this.taskIdentifier).equals(taskName + ":" + taskIdentifier)) {
+                /**
+                 * Case where this node is added. Nothing needs to be done for
+                 * notifying the dispatchers.
+                 */
                 logger.info("");
                 try {
                     ServerSocket socket = new ServerSocket(6000 + this.taskIdentifier);
@@ -464,4 +471,5 @@ public class DispatchBolt extends BaseRichBolt {
             this.activeDownstreamTaskIdentifiers = new ArrayList<Integer>(activeDownstreamTasks);
         }
     }
+
 }

@@ -3,7 +3,6 @@ package gr.katsip.synefo.server2;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
@@ -39,7 +38,7 @@ public class ZooMaster {
 
 	private ZooKeeper zk;
 
-	private String zoo_ip;
+	private String zookeeperAddress;
 
 	private SynefoState state;
 
@@ -142,18 +141,17 @@ public class ZooMaster {
 
 	/**
 	 * default constructor of the ZooMaster component.
-	 * @param zoo_ip the ZooKeeper ensemble IP
+	 * @param zookeeperAddress the ZooKeeper ensemble IP
 	 * @param physicalTopology an object reference to the physical-topology submitted to synefo
 	 * @param activeTopology an object reference to the initially active components in the topology submitted to synefo
 	 */
-	public ZooMaster(String zoo_ip, 
+	public ZooMaster(String zookeeperAddress,
 			ConcurrentHashMap<String, ArrayList<String>> physicalTopology, 
 			ConcurrentHashMap<String, ArrayList<String>> activeTopology, 
 			ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation) {
-		this.zoo_ip = zoo_ip;
+		this.zookeeperAddress = zookeeperAddress;
 		state = SynefoState.INIT;
 		this.physicalTopology = physicalTopology;
-//		this.taskToJoinRelation = taskToJoinRelation;
 		this.scaleFunction = new ScaleFunction(physicalTopology, activeTopology, taskToJoinRelation);
 		scaleRequests = new ConcurrentLinkedQueue<String>();
 		servedScaleRequests = new ConcurrentHashMap<String, Boolean>();
@@ -166,7 +164,7 @@ public class ZooMaster {
 	 */
 	public void start() {
 		try {
-			zk = new ZooKeeper(zoo_ip, 100000, synefoWatcher);
+			zk = new ZooKeeper(zookeeperAddress, 100000, synefoWatcher);
 			while(zk.getState() != ZooKeeper.States.CONNECTED) {
 				Thread.sleep(100);
 			}

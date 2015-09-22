@@ -9,6 +9,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.tpch.LocalFileProducer;
+import gr.katsip.synefo.utils.SynefoConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -217,6 +218,68 @@ public class ElasticFileSpout extends BaseRichSpout {
                 index = 0;
             else
                 index += 1;
+        }
+        String command = "";
+        synchronized (zookeeperClient) {
+            if (!zookeeperClient.pendingCommands.isEmpty())
+                command = zookeeperClient.returnScaleCommand();
+        }
+
+    }
+
+    private void manageCommand(String command) {
+        if(command != null && command.length() > 0) {
+            String[] scaleCommandTokens = command.split("[~:@]");
+            String action = scaleCommandTokens[0];
+            String taskWithIp = scaleCommandTokens[1] + ":" + scaleCommandTokens[2] + "@" + scaleCommandTokens[3];
+            String taskIp = scaleCommandTokens[3];
+            String task = scaleCommandTokens[1];
+            Integer task_id = Integer.parseInt(scaleCommandTokens[2]);
+            StringBuilder strBuild = new StringBuilder();
+            strBuild.append(SynefoConstant.PUNCT_TUPLE_TAG + "/");
+            index = 0;
+            if(action.toLowerCase().contains("activate") || action.toLowerCase().contains("deactivate")) {
+                if(action.toLowerCase().equals("activate")) {
+                    activeDownstreamTaskNames.add(taskWithIp);
+                    activeDownstreamTaskIdentifiers.add(task_id);
+                }else if(action.toLowerCase().equals("deactivate")) {
+                    activeDownstreamTaskNames.remove(activeDownstreamTaskNames.indexOf(taskWithIp));
+                    activeDownstreamTaskIdentifiers.remove(activeDownstreamTaskIdentifiers.indexOf(task_id));
+                }
+            }else {
+                if(action.toLowerCase().contains("add")) {
+                    activeDownstreamTaskNames.add(taskWithIp);
+                    activeDownstreamTaskIdentifiers.add(task_id);
+                    strBuild.append(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.ADD_ACTION + "/");
+                }else if(action.toLowerCase().contains("remove")) {
+                    strBuild.append(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.REMOVE_ACTION + "/");
+                }
+                strBuild.append(SynefoConstant.COMP_TAG + ":" + task + ":" + task_id + "/");
+                strBuild.append(SynefoConstant.COMP_NUM_TAG + ":" + activeDownstreamTaskNames.size() + "/");
+                strBuild.append(SynefoConstant.COMP_IP_TAG + ":" + taskIp + "/");
+                /**
+                 * Populate other schema fields with null values,
+                 * after SYNEFO_HEADER
+                 */
+                Values punctValue = new Values();
+                punctValue.add(strBuild.toString());
+                for(int i = 0; i < producer.getSchema().size(); i++) {
+                    punctValue.add(null);
+                }
+                for(Integer d_task : activeDownstreamTaskIdentifiers) {
+                    spoutOutputCollector.emitDirect(d_task, punctValue);
+                }
+                /**
+                 * In the case of removing a downstream task
+                 * we remove it after sending the punctuation tuples, so
+                 * that the removed task is notified to share state
+                 */
+                if(action.toLowerCase().contains("remove") && activeDownstreamTaskNames.indexOf(taskWithIp) >= 0) {
+                    activeDownstreamTaskNames.remove(activeDownstreamTaskNames.indexOf(taskWithIp));
+                    activeDownstreamTaskIdentifiers.remove(activeDownstreamTaskIdentifiers.indexOf(task_id));
+                }
+            }
+            reportCounter = 0;
         }
     }
 }

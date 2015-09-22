@@ -164,4 +164,8 @@ public class NewJoinJoiner implements Serializable {
         return new Fields(joinOutputSchema.toList());
     }
 
+    public HashMap<String, ArrayList<Values>> getStateToBeSent() {
+        return this.slidingWindowJoin.getStatePart().tuples;
+    }
+
 }

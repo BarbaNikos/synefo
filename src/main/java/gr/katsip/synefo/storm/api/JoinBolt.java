@@ -18,10 +18,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by katsip on 9/21/2015.
@@ -275,6 +272,9 @@ public class JoinBolt extends BaseRichBolt {
         if (scaleAction != null && scaleAction.equals(SynefoConstant.ADD_ACTION)) {
             if ((this.taskName + ":" + this.taskIdentifier).equals(taskName + ":" + taskIdentifier)) {
                 try {
+                    /**
+                     * First clear-out the contents of
+                     */
                     ServerSocket socket = new ServerSocket(6000 + this.taskIdentifier);
                     int numberOfConnections = 0;
                     while (numberOfConnections < (taskNumber)) {
@@ -282,9 +282,9 @@ public class JoinBolt extends BaseRichBolt {
                         ObjectOutputStream output = new ObjectOutputStream(client.getOutputStream());
                         ObjectInputStream input = new ObjectInputStream(client.getInputStream());
                         Object response = input.readObject();
-                        if (state instanceof List) {
+                        if (response instanceof List) {
                             List<Values> receivedState = (List<Values>) response;
-                            dispatcher.mergeState(receivedState);
+//                            dispatcher.mergeState(receivedState);
                         }
                         output.flush();
                         input.close();
@@ -299,6 +299,16 @@ public class JoinBolt extends BaseRichBolt {
                     e.printStackTrace();
                 }
             }else {
+                /**
+                 * Other node is added. Required Actions
+                 * 1) Get a list of the keys from the state that is going to be sent
+                 */
+                HashMap<String, ArrayList<Values>> state = joiner.getStateToBeSent();
+                Iterator<Map.Entry<String, ArrayList<Values>>> iterator = state.entrySet().iterator();
+                List<String> keys = new ArrayList<String>();
+                while (iterator.hasNext()) {
+                    keys.add(iterator.next().getKey());
+                }
                 Socket client = null;
                 boolean ATTEMPT = true;
                 while (ATTEMPT) {
@@ -313,10 +323,15 @@ public class JoinBolt extends BaseRichBolt {
                         }
                     }
                 }
+                /**
+                 * 2) Create a z-node under /synefo/join-state/taskName:taskIdentifier/x where x is a sequence number
+                 *    and set the data to as a comma-separated list of the keys
+                 */
+                zookeeperClient.createChildJoinStateDataScaleOut(taskName, taskNumber, keys);
                 try {
                     ObjectOutputStream output = new ObjectOutputStream(client.getOutputStream());
                     ObjectInputStream input = new ObjectInputStream(client.getInputStream());
-                    output.writeObject(dispatcher.getState());
+                    output.writeObject(state);
                     Object response = input.readObject();
                     if (response instanceof String) {
                         input.close();
@@ -341,7 +356,7 @@ public class JoinBolt extends BaseRichBolt {
                         Socket client = socket.accept();
                         ObjectOutputStream output = new ObjectOutputStream(client.getOutputStream());
                         ObjectInputStream input = new ObjectInputStream(client.getInputStream());
-                        output.writeObject(dispatcher.getState());
+//                        output.writeObject(dispatcher.getState());
                         Object response = input.readObject();
                         input.close();
                         output.close();
@@ -375,7 +390,7 @@ public class JoinBolt extends BaseRichBolt {
                     Object response = input.readObject();
                     if (response instanceof List) {
                         List<Values> state = (List<Values>) response;
-                        dispatcher.mergeState(state);
+//                        dispatcher.mergeState(state);
                     }
                     output.writeObject("OK");
                     input.close();

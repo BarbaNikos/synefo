@@ -21,6 +21,8 @@ public class SynefoMaster implements Runnable {
 
 	private ZooMaster tamer;
 
+    private LoadBalancer balancer;
+
 	private ConcurrentHashMap<String, String> taskAddressIndex;
 	
 	private ConcurrentHashMap<String, Integer> taskWorkerPortIndex;
@@ -87,32 +89,35 @@ public class SynefoMaster implements Runnable {
 		/**
 		 * Update ZooKeeper entries and Nodes
 		 */
-		tamer = new ZooMaster(zooHost, physicalTopology, activeTopology, taskToJoinRelation);
-		tamer.start();
-		tamer.setScaleOutThresholds((double) resourceThresholds.get("cpu").upperBound,
-				(double) resourceThresholds.get("memory").upperBound,
-				(int) resourceThresholds.get("latency").upperBound,
-				(int) resourceThresholds.get("throughput").upperBound);
-		tamer.setScaleInThresholds((double) resourceThresholds.get("cpu").lowerBound,
-				(double) resourceThresholds.get("memory").lowerBound,
-				(int) resourceThresholds.get("latency").lowerBound,
-				(int) resourceThresholds.get("throughput").lowerBound);
+//		tamer = new ZooMaster(zooHost, physicalTopology, activeTopology, taskToJoinRelation);
+//        tamer.start();
+//        tamer.setScaleOutThresholds((double) resourceThresholds.get("cpu").upperBound,
+//                (double) resourceThresholds.get("memory").upperBound,
+//                (int) resourceThresholds.get("latency").upperBound,
+//                (int) resourceThresholds.get("throughput").upperBound);
+//        tamer.setScaleInThresholds((double) resourceThresholds.get("cpu").lowerBound,
+//                (double) resourceThresholds.get("memory").lowerBound,
+//                (int) resourceThresholds.get("latency").lowerBound,
+//                (int) resourceThresholds.get("throughput").lowerBound);
 
-//		System.out.println("initial phys-top: " + physicalTopology.toString());
-		ConcurrentHashMap<String, ArrayList<String>> expandedPhysicalTopology = physicalTopologyTaskExpand(taskIdentifierIndex, physicalTopology);
-//		System.out.println("expanded-phys-top: " + expandedPhysicalTopology.toString());
-		physicalTopology.clear();
+        balancer = new LoadBalancer(zooHost, taskToJoinRelation, resourceThresholds);
+        balancer.start();
+
+		ConcurrentHashMap<String, ArrayList<String>> expandedPhysicalTopology = physicalTopologyTaskExpand(
+				taskIdentifierIndex, physicalTopology);
+        physicalTopology.clear();
 		physicalTopology.putAll(expandedPhysicalTopology);
 		/**
 		 * At this point, physicalTopologyWithIds has the actual topology of operators and the task-ids.
 		 */
-		System.out.println("+efo coordinator thread: received task name allocation from Storm cluster. Updating internal structures...");
+		System.out.println("+efo coordinator thread: received task name allocation from Storm cluster. " +
+                "Updating internal structures...");
 		ConcurrentHashMap<String, ArrayList<String>> updatedPhysicalTopology = SynefoMaster.updatePhysicalTopology(
 				taskAddressIndex, taskIdentifierIndex, physicalTopology);
 		physicalTopology.clear();
 		physicalTopology.putAll(updatedPhysicalTopology);
-//		System.out.println("updated-phys-top: " + physicalTopology.toString());
-		activeTopology.clear();
+
+        activeTopology.clear();
 		/**
 		 * Set the following flag to true if you need the minimal 
 		 * active topology to start.
@@ -120,14 +125,16 @@ public class SynefoMaster implements Runnable {
 		activeTopology.putAll(SynefoMaster.getInitialActiveTopologyWithJoinOperators(
 				physicalTopology,
 				ScaleFunction.getInverseTopology(physicalTopology),
-				taskToJoinRelation, false));
+				taskToJoinRelation, true));
 		
-		tamer.setPhysicalTopology();
-		tamer.setActiveTopology();
+//		tamer.setPhysicalTopology();
+//		tamer.setActiveTopology();
 		operationFlag.set(true);
 		taskIdentifierIndex.clear();
-		tamer.setScaleOutEventWatch();
-		tamer.setScaleInEventWatch();
+//		tamer.setScaleOutEventWatch();
+//		tamer.setScaleInEventWatch();
+        balancer.setTopology(physicalTopology);
+        balancer.setTopology(activeTopology);
 		/**
 		 * Fault-tolerance mechanism for when an executor dies 
 		 * and respawns in a different machine
