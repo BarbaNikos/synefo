@@ -202,6 +202,13 @@ public class ZooMaster {
 					}
 					zk.delete("/synefo/bolt-tasks", -1);
 				}
+				if (zk.exists("/synefo/join-state", false) != null) {
+					List<String> children = zk.getChildren("/synefo/join-state", false);
+					for (String child : children) {
+						zk.delete("/synefo/join-state/" + child, -1);
+					}
+					zk.delete("/synefo/join-state", -1);
+				}
 				zk.delete("/synefo", -1);
 			}
 			zk.create("/synefo", "/synefo".getBytes("UTF-8"), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
@@ -210,6 +217,7 @@ public class ZooMaster {
 			zk.create("/synefo/bolt-tasks", "/synefo/bolt-tasks".getBytes("UTF-8"), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 			zk.create("/synefo/active-top", "/synefo/active-top".getBytes("UTF-8"), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 			zk.create("/synefo/physical-top", "/synefo/physical-top".getBytes("UTF-8"), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+			zk.create("/synefo/join-state", "/synefo/join-state".getBytes("UTF-8"), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 			state = SynefoState.BOOTSTRAPPED;
 		}catch(KeeperException e) {
 			e.printStackTrace();

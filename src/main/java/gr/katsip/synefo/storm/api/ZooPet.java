@@ -3,6 +3,7 @@ package gr.katsip.synefo.storm.api;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -106,6 +107,51 @@ public class ZooPet {
 				}
 			}
 		};
+
+	public void createJoinStateNode(String taskName, Integer taskIdentifier) {
+		try {
+			if (zk.exists("/synefo/join-state/" + taskName + ":" + taskIdentifier, false) != null) {
+				zk.delete("/synefo/join-state/" + taskName + ":" + taskIdentifier, -1);
+			}
+		} catch (KeeperException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		try {
+			zk.create("/synefo/join-state/" + taskName + ":" + taskIdentifier, null, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+		} catch (KeeperException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void setJoinStateDataScaleIn(String taskName, Integer taskIdentifier, HashMap<String, List<String>> keyToTaskMap) {
+		try {
+			zk.setData("/synefo/join-state/" + taskName + ":" + taskIdentifier, keyToTaskMap.toString().getBytes("UTF-8"), -1);
+		} catch (KeeperException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void createChildJoinStateDataScaleOut(String receivingTaskName, Integer receivingTaskIdentifier, List<String> keys) {
+		try {
+			zk.create("/synefo/join-state/" + receivingTaskName + ":" + receivingTaskIdentifier,
+					keys.toString().getBytes("UTF-8"), Ids.OPEN_ACL_UNSAFE,
+					CreateMode.PERSISTENT_SEQUENTIAL);
+		} catch (KeeperException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+	}
 
 	public List<Integer> getActiveTopology(String taskName, Integer taskIdentifier, String taskAddress) {
 		Stat stat = new Stat();
