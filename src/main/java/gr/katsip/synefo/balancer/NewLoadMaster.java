@@ -1,5 +1,7 @@
-package gr.katsip.synefo.server2;
+package gr.katsip.synefo.balancer;
 
+import gr.katsip.synefo.server2.JoinOperator;
+import gr.katsip.synefo.server2.ScaleFunction;
 import gr.katsip.synefo.storm.api.Pair;
 
 import java.util.ArrayList;
@@ -7,7 +9,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 

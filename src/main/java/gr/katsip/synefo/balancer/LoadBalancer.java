@@ -1,5 +1,6 @@
-package gr.katsip.synefo.server2;
+package gr.katsip.synefo.balancer;
 
+import gr.katsip.synefo.server2.JoinOperator;
 import gr.katsip.synefo.storm.api.GenericTriplet;
 import gr.katsip.synefo.storm.api.Pair;
 import org.apache.zookeeper.AsyncCallback;
