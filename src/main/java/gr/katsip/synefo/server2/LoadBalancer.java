@@ -1,5 +1,6 @@
 package gr.katsip.synefo.server2;
 
+import gr.katsip.synefo.storm.api.GenericTriplet;
 import gr.katsip.synefo.storm.api.Pair;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
@@ -60,6 +61,7 @@ public class LoadBalancer {
             }
         }
     };
+
     private AsyncCallback.Children2Callback taskChildrenCallback = new AsyncCallback.Children2Callback() {
         @Override
         public void processResult(int i, String s, Object o, List<String> list, Stat stat) {
@@ -90,6 +92,7 @@ public class LoadBalancer {
             }
         }
     };
+
     private AsyncCallback.DataCallback taskDataCallback = new AsyncCallback.DataCallback() {
         @Override
         public void processResult(int i, String s, Object o, byte[] bytes, Stat stat) {
@@ -113,10 +116,32 @@ public class LoadBalancer {
                         e.printStackTrace();
                     }
                     String taskName = s.substring(s.lastIndexOf('/') + 1, s.lastIndexOf(':'));
-                    if (data != null)
-                        scaleFunction.addData(taskName, Integer.parseInt(s.substring(s.lastIndexOf(':') + 1)),
-                            Double.parseDouble(data[0]), Double.parseDouble(data[1]),
-                            Double.parseDouble(data[2]), Double.parseDouble(data[3]), Double.parseDouble(data[4]));
+                    if (data != null) {
+                        GenericTriplet<String, String, String> action = scaleFunction.addData(taskName, Integer.parseInt(s.substring(s.lastIndexOf(':') + 1)),
+                                Double.parseDouble(data[0]), Double.parseDouble(data[1]),
+                                Double.parseDouble(data[2]), Double.parseDouble(data[3]), Double.parseDouble(data[4]));
+                        if (action != null) {
+                            /**
+                             * TODO: Need to
+                             * TODO: 1) update active-topology
+                             */
+                            switch (action.first) {
+                                case "add":
+                                    scaleFunction.activateTask(action.third);
+                                    break;
+                                case "remove":
+                                    scaleFunction.deactivateTask(action.third);
+                                    break;
+                            }
+                            setActiveTopology(
+                                    new ConcurrentHashMap<String, ArrayList<String>>(scaleFunction.getActiveTopology()));
+                            /**
+                             * TODO: 2) set the commands in the /synefo/bolt-tasks
+                             * Add/Remove and Activate/Deactivate
+                             */
+
+                        }
+                    }
                     break;
                 default:
                     logger.info("taskDataCallback Unexpected scenario: " +
@@ -178,7 +203,6 @@ public class LoadBalancer {
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
-        scaleFunction.updateTopology(topology);
     }
 
     public void setActiveTopology(ConcurrentHashMap<String, ArrayList<String>> activeTopology) {
@@ -192,7 +216,6 @@ public class LoadBalancer {
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
-        scaleFunction.updateActiveTopology(activeTopology);
     }
 
     private void nodeInitiatialize() {

@@ -1,6 +1,6 @@
 package gr.katsip.synefo.server2;
 
-import gr.katsip.synefo.storm.api.GenericPair;
+import gr.katsip.synefo.storm.api.GenericTriplet;
 import gr.katsip.synefo.storm.api.Pair;
 
 import java.util.*;
@@ -51,11 +51,15 @@ public class NewScaleFunction {
         this.topology = new HashMap<>(topology);
     }
 
+    public Map<String, ArrayList<String>> getActiveTopology() {
+        return activeTopology;
+    }
+
     public void updateActiveTopology(Map<String, ArrayList<String>> activeTopology) {
         this.activeTopology = new HashMap<>(activeTopology);
     }
 
-    public GenericPair<String, String> addData(String taskName, Integer taskIdentifier, double processor,
+    public GenericTriplet<String, String, String> addData(String taskName, Integer taskIdentifier, double processor,
                         double memory, double latency, double inputRate, double state) {
         String identifier = taskName + ":" + taskIdentifier;
         add(this.processor, identifier, processor);
@@ -71,12 +75,12 @@ public class NewScaleFunction {
             counter = 0;
             return scaleCheck();
         }else {
-            return new GenericPair<>();
+            return new GenericTriplet<>();
         }
     }
 
-    public GenericPair<String, String> scaleCheck() {
-        GenericPair<String, String> scaleAction = null;
+    public GenericTriplet<String, String, String> scaleCheck() {
+        GenericTriplet<String, String, String> scaleAction = null;
         /**
          * First create a list with the overloaded workers
          */
@@ -110,7 +114,7 @@ public class NewScaleFunction {
                 /**
                  * Update active-topology
                  */
-                scaleAction = new GenericPair<String, String>(upstreamTask, chosenTask);
+                scaleAction = new GenericTriplet<String, String, String>("add", upstreamTask, chosenTask);
             }
         }
         /**
@@ -140,10 +144,14 @@ public class NewScaleFunction {
             identifier = Integer.parseInt(slacker.split("[:@]")[1]);
             availableNodes = null;
             if (activeTopology.containsKey(slacker) == false) {
-
+                List<String> activeTasks = NewScaleFunction.getActiveJoinNodes(activeTopology,
+                        upstreamTask, slacker, taskToJoinRelation);
+                if (activeTasks.size() > 0) {
+                    scaleAction = new GenericTriplet<String, String, String>("remove", upstreamTask, slacker);
+                }
             }
         }
-        return null;
+        return scaleAction;
     }
 
     private static String randomChoice(List<String> availableNodes) {
@@ -163,6 +171,54 @@ public class NewScaleFunction {
         }
     }
 
+    public void deactivateTask(String slacker) {
+        Iterator<Map.Entry<String, ArrayList<String>>> itr = activeTopology.entrySet().iterator();
+        while (itr.hasNext()) {
+            Map.Entry<String, ArrayList<String>> pair = itr.next();
+            String upstreamTask = pair.getKey();
+            ArrayList<String> downstreamNodes = pair.getValue();
+            if(downstreamNodes.indexOf(slacker) >= 0) {
+                downstreamNodes.remove(downstreamNodes.indexOf(slacker));
+                activeTopology.put(upstreamTask, downstreamNodes);
+            }
+        }
+        /**
+         * Remove entry of slacker (if exists) from active topology
+         */
+        if(activeTopology.containsKey(slacker)) {
+            activeTopology.remove(slacker);
+        }
+    }
+
+    public void activateTask(String newTask) {
+        /**
+         * Add newTask to the active topology downstream-lists of
+         * all of newTask's upstream nodes.
+         */
+        Iterator<Map.Entry<String, ArrayList<String>>> itr = activeTopology.entrySet().iterator();
+        while(itr.hasNext()) {
+            Map.Entry<String, ArrayList<String>> pair = itr.next();
+            String upstreamNode = pair.getKey();
+            ArrayList<String> activeDownStreamNodes = pair.getValue();
+            ArrayList<String> physicalDownStreamNodes = topology.get(upstreamNode);
+            if(physicalDownStreamNodes.indexOf(newTask) >= 0 && activeDownStreamNodes.indexOf(newTask) < 0) {
+                activeDownStreamNodes.add(newTask);
+                activeTopology.put(upstreamNode, activeDownStreamNodes);
+            }
+        }
+        /**
+         * Add an entry for newTask with all of its active downstream nodes
+         */
+        ArrayList<String> downStreamNodes = topology.get(newTask);
+        ArrayList<String> activeDownStreamNodes = new ArrayList<String>();
+        for(String node : downStreamNodes) {
+            if(activeTopology.containsKey(node)) {
+                activeDownStreamNodes.add(node);
+            }
+        }
+        activeTopology.put(newTask, activeDownStreamNodes);
+    }
+
     public static ArrayList<String> getAvailableTasks(Map<String, ArrayList<String>> topology,
                                                          Map<String, ArrayList<String>> activeTopology,
                                                          String upstreamTask, Integer strugglerIdentifier,
@@ -178,6 +234,25 @@ public class NewScaleFunction {
             }
         }
         return availableNodes;
+    }
+
+    public static List<String> getActiveJoinNodes(Map<String, ArrayList<String>> activeTopology,
+                                                  String upstreamTask, String slacker,
+                                                  Map<Integer, JoinOperator> taskToJoinRelation) {
+        if(activeTopology.containsKey(upstreamTask) == false)
+            return new ArrayList<>();
+        List<String> activeNodes = new ArrayList<String>(activeTopology.get(upstreamTask));
+        List<String> sameRelationActiveNodes = new ArrayList<String>();
+        Integer slackerIdentifier = Integer.parseInt(slacker.split("[:@]")[1]);
+        for(String task : activeNodes) {
+            Integer identifier = Integer.parseInt(task.split("[:@]")[1]);
+            if(taskToJoinRelation.containsKey(identifier) &&
+                    taskToJoinRelation.get(identifier).getRelation()
+                            .equals(taskToJoinRelation.get(slackerIdentifier).getRelation())) {
+                sameRelationActiveNodes.add(task);
+            }
+        }
+        return sameRelationActiveNodes;
     }
 
     public static String getParentNode(Map<String, ArrayList<String>> topology, String taskName) {
