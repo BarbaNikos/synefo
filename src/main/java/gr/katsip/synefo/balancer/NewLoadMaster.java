@@ -31,8 +31,6 @@ public class NewLoadMaster implements Runnable {
 
     private String zookeeperAddress;
 
-    private AtomicBoolean operationFlag;
-
     private AtomicInteger taskNumber = null;
 
     private ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation = null;
@@ -43,7 +41,6 @@ public class NewLoadMaster implements Runnable {
                          ConcurrentHashMap<String, ArrayList<String>> activeTopology,
                          ConcurrentHashMap<String, Integer> taskIdentifierIndex,
                          ConcurrentHashMap<String, String> taskAddressIndex,
-                         AtomicBoolean operationFlag,
                          AtomicInteger taskNumber,
                          ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation) {
         this.topology = topology;
@@ -51,7 +48,6 @@ public class NewLoadMaster implements Runnable {
         this.taskIdentifierIndex = taskIdentifierIndex;
         this.taskAddressIndex = taskAddressIndex;
         this.zookeeperAddress = zookeeperAddress;
-        this.operationFlag = operationFlag;
         this.taskNumber = taskNumber;
         this.taskToJoinRelation = taskToJoinRelation;
     }
@@ -78,17 +74,16 @@ public class NewLoadMaster implements Runnable {
         ConcurrentHashMap<String, ArrayList<String>> expandedTopology = topologyTaskExpand(taskIdentifierIndex,
                 topology);
         ConcurrentHashMap<String, ArrayList<String>> finalTopology = updateTopology(taskAddressIndex, taskIdentifierIndex,
-                topology);
+                expandedTopology);
         topology.clear();
         topology.putAll(finalTopology);
         activeTopology.clear();
         activeTopology.putAll(getInitialActiveTopologyWithJoinOperators(topology,
                 getInverseTopology(topology), taskToJoinRelation, true));
-        operationFlag.set(true);
         taskIdentifierIndex.clear();
         balancer.setTopology(topology);
         balancer.setTopology(activeTopology);
-        while (operationFlag.get()) {
+        while (true) {
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {

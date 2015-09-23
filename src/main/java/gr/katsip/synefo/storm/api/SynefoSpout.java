@@ -94,7 +94,7 @@ public class SynefoSpout extends BaseRichSpout {
 	}
 
 	/**
-	 * The function for registering to Synefo server
+	 * The function for registering to BalanceServer server
 	 */
 	@SuppressWarnings("unchecked")
 	public void registerToSynEFO() {

@@ -41,19 +41,16 @@ public class LoadSlave implements Runnable {
 
     private ConcurrentHashMap<String, String> taskAddressIndex;
 
-    private AtomicBoolean operationFlag;
-
     private AtomicInteger taskNumber = null;
 
     private ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation = null;
 
-    public LoadSlave(ConcurrentHashMap<String, ArrayList<String>> physicalTopology,
+    public LoadSlave(ConcurrentHashMap<String, ArrayList<String>> topology,
                      ConcurrentHashMap<String, ArrayList<String>> activeTopology,
                      ConcurrentHashMap<String, Integer> taskIdentifierIndex,
                      ConcurrentHashMap<String, Integer> taskWorkerPortIndex,
                      InputStream in, OutputStream out,
                      ConcurrentHashMap<String, String> taskAddressIndex,
-                     AtomicBoolean operationFlag,
                      AtomicInteger taskNumber,
                      ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation) {
         this.in = in;
@@ -67,9 +64,8 @@ public class LoadSlave implements Runnable {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        this.topology = topology;
+        this.topology = this.topology;
         this.activeTopology = activeTopology;
-        this.operationFlag = operationFlag;
         this.taskNumber = taskNumber;
         this.taskToJoinRelation = taskToJoinRelation;
     }

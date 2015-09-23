@@ -73,7 +73,8 @@
 							<!-- <mainClass>gr.katsip.synefo.storm.topology.MinimalTopology</mainClass> -->
 							<!-- <mainClass>gr.katsip.synefo.storm.topology.DistributedTopology</mainClass> -->
 							<!-- <mainClass>gr.katsip.synefo.server.main.SynefoMain</mainClass> -->
-							<mainClass>gr.katsip.synefo.server.main.Synefo2Main</mainClass>
+							<!--<mainClass>gr.katsip.synefo.server.main.Synefo2Main</mainClass>-->
+							<mainClass>gr.katsip.synefo.balancer.App</mainClass>
 							<!-- <mainClass>gr.katsip.synefo.tpch.RelationFileExpansion</mainClass> -->
 							<!--  <mainClass>gr.katsip.cestorm.db.StatDebugMain</mainClass> -->
 						</manifest>

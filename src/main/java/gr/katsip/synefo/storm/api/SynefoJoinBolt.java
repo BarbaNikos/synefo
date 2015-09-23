@@ -159,7 +159,7 @@ public class SynefoJoinBolt extends BaseRichBolt {
 			ArrayList<String> downstream = null;
 			logger.info("+EFO-JOIN-BOLT (" + 
 					taskName + ":" + taskID + 
-					") about to receive information from Synefo.");
+					") about to receive information from BalanceServer.");
 			downstream = (ArrayList<String>) input.readObject();
 			if(downstream != null && downstream.size() > 0) {
 				downstreamTasks = new ArrayList<String>(downstream);

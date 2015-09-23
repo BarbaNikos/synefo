@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * ZooPet is the main class for handling interactions between a Storm component and the ZooKeeper service. Every time scale-out/in circumstances 
- * are met, ZooPet handles the creation of the appropriate z-nodes, so that Synefo takes the appropriate actions. Also, ZooPet is responsible for 
+ * are met, ZooPet handles the creation of the appropriate z-nodes, so that BalanceServer takes the appropriate actions. Also, ZooPet is responsible for
  * creating the required z-nodes during the initialization phase.
  * 
  * @author Nick R. Katsipoulakis
@@ -83,7 +83,7 @@ public class ZooPet {
 
 		/**
 		 * The watcher object responsible for handling incoming notifications 
-		 * of newly created scale-out/in commands from Synefo. Every time a change 
+		 * of newly created scale-out/in commands from BalanceServer. Every time a change
 		 * in the z-node's children for a component are changed (normally added new 
 		 * children).
 		 */

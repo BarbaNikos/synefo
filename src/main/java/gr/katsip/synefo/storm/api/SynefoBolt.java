@@ -115,7 +115,7 @@ public class SynefoBolt extends BaseRichBolt {
 	}
 
 	/**
-	 * The function for registering to Synefo server
+	 * The function for registering to BalanceServer server
 	 */
 	@SuppressWarnings("unchecked")
 	public void registerToSynEFO() {
@@ -348,8 +348,8 @@ public class SynefoBolt extends BaseRichBolt {
 			reportCounter += 1;
 		}
 
-		if(autoScale && warmFlag == true)
-			zooPet.setLatency(statistics.getWindowLatency());
+//		if(autoScale && warmFlag == true)
+//			zooPet.setLatency(statistics.getWindowLatency());
 		String scaleCommand = "";
 		synchronized(zooPet) {
 			if(zooPet.pendingCommands.isEmpty() == false) {
@@ -665,7 +665,7 @@ public class SynefoBolt extends BaseRichBolt {
 						") received state from about-to-be-removed node successfully (timestamp: " + System.currentTimeMillis() + ").");
 			}
 		}
-		zooPet.resetSubmittedScaleFlag();
+//		zooPet.resetSubmittedScaleFlag();
 		reportCounter = 0;
 		latestSynefoTimestamp = -1;
 	}
