@@ -191,6 +191,7 @@ public class LoadBalancer {
         cleanup();
         nodeInitiatialize();
         registeredTasks = new ArrayList<>();
+        watchTaskNode(MAIN_ZNODE + "/" + TASK_ZNODE);
     }
 
     public void setTopology(ConcurrentHashMap<String, ArrayList<String>> topology) {
