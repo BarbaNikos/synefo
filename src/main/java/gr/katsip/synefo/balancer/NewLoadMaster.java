@@ -80,6 +80,7 @@ public class NewLoadMaster implements Runnable {
                 topology);
         ConcurrentHashMap<String, ArrayList<String>> finalTopology = Util.updateTopology(taskAddressIndex, taskIdentifierIndex,
                 expandedTopology);
+        System.out.println("NewLoadMaster finalized topology: " + topology.toString());
         topology.clear();
         topology.putAll(finalTopology);
         activeTopology.clear();
