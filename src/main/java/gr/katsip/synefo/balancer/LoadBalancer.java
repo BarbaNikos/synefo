@@ -27,6 +27,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class LoadBalancer {
 
+    private final ConcurrentHashMap<String, String> taskAddressIndex;
+
     Logger logger = LoggerFactory.getLogger(LoadBalancer.class);
 
     private ZooKeeper zooKeeper;
@@ -112,8 +114,8 @@ public class LoadBalancer {
                 case OK:
                     double value = ByteBuffer.wrap(bytes).getDouble();
                     String taskName = s.substring(s.lastIndexOf('/') + 1, s.lastIndexOf(':'));
-                    Integer identifier = Integer.parseInt(s.substring(s.lastIndexOf(':') + 1, s.lastIndexOf("@")));
-                    String taskAddress = s.substring(s.lastIndexOf("@"));
+                    Integer identifier = Integer.parseInt(s.substring(s.lastIndexOf(':') + 1));
+                    String taskAddress = taskAddressIndex.get(taskName + ":" + identifier);
                     logger.info("identified data point from " + taskName + ":" + identifier + "@" + taskAddress + " and the data is " + value);
 //                    GenericTriplet<String, String, String> action = scaleFunction.addData(taskName, Integer.parseInt(s.substring(s.lastIndexOf(':') + 1)),
 //                            Double.parseDouble(data[0]), Double.parseDouble(data[1]),
@@ -141,8 +143,7 @@ public class LoadBalancer {
                          * 2) set the commands in the /synefo/bolt-tasks
                          * Add/Remove and Activate/Deactivate
                          */
-                        List<String> parentTasks = Util.getInverseTopology(getTopology()).get(taskName + ":" +
-                                identifier + "@" + taskAddress);
+                        List<String> parentTasks = Util.getInverseTopology(getTopology()).get(taskName + ":" + identifier);
                         parentTasks.remove(parentTasks.indexOf(action.second));
                         if (action.first.equals("add")) {
                             for (String task : parentTasks) {
@@ -224,9 +225,11 @@ public class LoadBalancer {
 
     public LoadBalancer(String zookeeperAddress,
                          ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation,
-                        Map<String, Pair<Number, Number>> thresholds) {
+                        Map<String, Pair<Number, Number>> thresholds,
+                        ConcurrentHashMap<String, String> taskAddressIndex) {
         this.zookeeperAddress = zookeeperAddress;
         scaleFunction = new NewScaleFunction(new HashMap<>(taskToJoinRelation), thresholds);
+        this.taskAddressIndex = taskAddressIndex;
     }
 
     public void start() {

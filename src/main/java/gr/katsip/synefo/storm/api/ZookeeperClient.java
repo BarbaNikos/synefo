@@ -64,7 +64,7 @@ public class ZookeeperClient {
         public void process(WatchedEvent watchedEvent) {
             if (watchedEvent.getType().equals(Event.EventType.NodeDataChanged)) {
                 if (watchedEvent.getPath().equals(MAIN_ZNODE + "/" + SCALE_ACTION + "/" +
-                        taskName + ":" + identifier + "@" + taskAddress)) {
+                        taskName + ":" + identifier)) {
                     getScaleCommand();
                 }
             }
@@ -73,7 +73,7 @@ public class ZookeeperClient {
 
     public void getScaleCommand() {
         String node = MAIN_ZNODE + "/" + SCALE_ACTION + "/" +
-                taskName + ":" + identifier + "@" + taskAddress;
+                taskName + ":" + identifier;
         try {
             zookeeper.getData(node, watcher, getCommandCallback, node.getBytes("UTF-8"));
         } catch (UnsupportedEncodingException e) {
@@ -127,16 +127,16 @@ public class ZookeeperClient {
     private void create() {
         try {
             zookeeper.create(MAIN_ZNODE + "/" + TASK_ZNODE + "/" +
-                            taskName + ":" + identifier + "@" + taskAddress, (MAIN_ZNODE + "/" + TASK_ZNODE + "/" +
-                            taskName + ":" + identifier + "@" + taskAddress).getBytes("UTF-8"),
+                            taskName + ":" + identifier, (MAIN_ZNODE + "/" + TASK_ZNODE + "/" +
+                            taskName + ":" + identifier).getBytes("UTF-8"),
                     ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             zookeeper.create(MAIN_ZNODE + "/" + JOIN_STATE_ZNODE + "/" +
-                            taskName + ":" + identifier + "@" + taskAddress, (MAIN_ZNODE + "/" + JOIN_STATE_ZNODE + "/" +
-                            taskName + ":" + identifier + "@" + taskAddress).getBytes("UTF-8"),
+                            taskName + ":" + identifier, (MAIN_ZNODE + "/" + JOIN_STATE_ZNODE + "/" +
+                            taskName + ":" + identifier).getBytes("UTF-8"),
                     ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             zookeeper.create(MAIN_ZNODE + "/" + SCALE_ACTION + "/" +
-                            taskName + ":" + identifier + "@" + taskAddress, (MAIN_ZNODE + "/" + SCALE_ACTION + "/" +
-                            taskName + ":" + identifier + "@" + taskAddress).getBytes("UTF-8"),
+                            taskName + ":" + identifier, (MAIN_ZNODE + "/" + SCALE_ACTION + "/" +
+                            taskName + ":" + identifier).getBytes("UTF-8"),
                     ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
         } catch (KeeperException e) {
             e.printStackTrace();
@@ -150,19 +150,19 @@ public class ZookeeperClient {
     private void cleanup() {
         try {
             if (zookeeper.exists(MAIN_ZNODE + "/" + TASK_ZNODE + "/" +
-                    taskName + ":" + identifier + "@" + taskAddress, false) != null) {
+                    taskName + ":" + identifier, false) != null) {
                 zookeeper.delete(MAIN_ZNODE + "/" + TASK_ZNODE + "/" +
-                        taskName + ":" + identifier + "@" + taskAddress, -1);
+                        taskName + ":" + identifier, -1);
             }
             if (zookeeper.exists(MAIN_ZNODE + "/" + SCALE_ACTION + "/" +
-                    taskName + ":" + identifier + "@" + taskAddress, false) != null) {
+                    taskName + ":" + identifier, false) != null) {
                 zookeeper.delete(MAIN_ZNODE + "/" + SCALE_ACTION + "/" +
-                        taskName + ":" + identifier + "@" + taskAddress, -1);
+                        taskName + ":" + identifier, -1);
             }
             if (zookeeper.exists(MAIN_ZNODE + "/" + JOIN_STATE_ZNODE + "/" +
-                    taskName + ":" + identifier + "@" + taskAddress, false) != null) {
+                    taskName + ":" + identifier, false) != null) {
                 zookeeper.delete(MAIN_ZNODE + "/" + JOIN_STATE_ZNODE + "/" +
-                        taskName + ":" + identifier + "@" + taskAddress, -1);
+                        taskName + ":" + identifier, -1);
             }
         } catch (KeeperException e) {
             e.printStackTrace();
@@ -195,7 +195,7 @@ public class ZookeeperClient {
             e.printStackTrace();
         }
         try {
-            return getActiveTopology().get(taskName + ":" + identifier + "@" + taskAddress);
+            return getActiveTopology().get(taskName + ":" + identifier);
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -206,7 +206,7 @@ public class ZookeeperClient {
         List<String> taskNames = getActiveDownstreamTasks();
         List<Integer> taskIdentifiers = new ArrayList<>();
         for (String task : taskNames) {
-            Integer identifier = Integer.parseInt(task.split("[:@]")[1]);
+            Integer identifier = Integer.parseInt(task.split("[:]")[1]);
             taskIdentifiers.add(identifier);
         }
         return taskIdentifiers;
@@ -215,7 +215,7 @@ public class ZookeeperClient {
     public void addInputRateData(Double value) {
         byte[] b = new byte[8];
         ByteBuffer.wrap(b).putDouble(value);
-        zookeeper.setData(MAIN_ZNODE + "/" + TASK_ZNODE + "/" + taskName + ":" + identifier + "@" + taskAddress,
+        zookeeper.setData(MAIN_ZNODE + "/" + TASK_ZNODE + "/" + taskName + ":" + identifier,
                 b, -1, statCallback, b);
     }
 

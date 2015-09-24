@@ -74,13 +74,12 @@ public class NewLoadMaster implements Runnable {
                 e.printStackTrace();
             }
         }
-        balancer = new LoadBalancer(zookeeperAddress, taskToJoinRelation, resourceThresholds);
+        balancer = new LoadBalancer(zookeeperAddress, taskToJoinRelation, resourceThresholds, taskAddressIndex);
         balancer.start();
         ConcurrentHashMap<String, ArrayList<String>> expandedTopology = Util.topologyTaskExpand(taskIdentifierIndex,
                 topology);
         System.out.println("NewLoadMaster updated topology: " + expandedTopology.toString());
-        ConcurrentHashMap<String, ArrayList<String>> finalTopology = Util.updateTopology(taskAddressIndex, taskIdentifierIndex,
-                expandedTopology);
+        ConcurrentHashMap<String, ArrayList<String>> finalTopology = Util.updateTopology(taskIdentifierIndex, expandedTopology);
         System.out.println("NewLoadMaster finalized topology: " + finalTopology.toString());
         topology.clear();
         topology.putAll(finalTopology);

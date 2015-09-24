@@ -127,14 +127,16 @@ public class NewScaleFunction {
         }
         String upstreamTask = getParentNode(topology, struggler);
         ArrayList<String> availableNodes = null;
-        Integer identifier = Integer.parseInt(struggler.split("[:@]")[1]);
+        Integer identifier = Integer.parseInt(struggler.split("[:]")[1]);
         if (upstreamTask != null && taskToJoinRelation.containsKey(identifier)) {
+            System.out.println("scale-function scaleCheck() located average of input-rate " + bottleneck + ", for task " + struggler);
             availableNodes = getAvailableTasks(topology, activeTopology, upstreamTask, identifier, taskToJoinRelation);
             if (availableNodes.size() > 0) {
                 String chosenTask = randomChoice(availableNodes);
                 /**
                  * Update active-topology
                  */
+                System.out.println("scale-function scaleCheck() available scale action add~" + chosenTask);
                 scaleAction = new GenericTriplet<String, String, String>("add", upstreamTask, chosenTask);
             }
         }
@@ -162,7 +164,7 @@ public class NewScaleFunction {
                 }
             }
             upstreamTask = getParentNode(topology, slacker);
-            identifier = Integer.parseInt(slacker.split("[:@]")[1]);
+            identifier = Integer.parseInt(slacker.split("[:]")[1]);
             availableNodes = null;
             if (activeTopology.containsKey(slacker) == false) {
                 List<String> activeTasks = NewScaleFunction.getActiveJoinNodes(activeTopology,
@@ -248,7 +250,7 @@ public class NewScaleFunction {
         ArrayList<String> physicalNodes = topology.get(upstreamTask);
         physicalNodes.removeAll(activeTopology.get(upstreamTask));
         for(String task : physicalNodes) {
-            Integer identifier = Integer.parseInt(task.split("[:@]")[1]);
+            Integer identifier = Integer.parseInt(task.split("[:]")[1]);
             if(taskToJoinRelation.get(identifier).getRelation().equals(
                     taskToJoinRelation.get(strugglerIdentifier).getRelation())) {
                 availableNodes.add(task);
@@ -264,9 +266,9 @@ public class NewScaleFunction {
             return new ArrayList<>();
         List<String> activeNodes = new ArrayList<String>(activeTopology.get(upstreamTask));
         List<String> sameRelationActiveNodes = new ArrayList<String>();
-        Integer slackerIdentifier = Integer.parseInt(slacker.split("[:@]")[1]);
+        Integer slackerIdentifier = Integer.parseInt(slacker.split("[:]")[1]);
         for(String task : activeNodes) {
-            Integer identifier = Integer.parseInt(task.split("[:@]")[1]);
+            Integer identifier = Integer.parseInt(task.split("[:]")[1]);
             if(taskToJoinRelation.containsKey(identifier) &&
                     taskToJoinRelation.get(identifier).getRelation()
                             .equals(taskToJoinRelation.get(slackerIdentifier).getRelation())) {

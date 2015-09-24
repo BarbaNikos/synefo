@@ -177,13 +177,13 @@ public class Util {
             /**
              * Check if this is a layer of Join operators (dispatchers)
              */
-            Integer candidateTask = Integer.parseInt(layerTasks.get(0).split("[:@]")[1]);
+            Integer candidateTask = Integer.parseInt(layerTasks.get(0).split("[:]")[1]);
             if(taskToJoinRelation.containsKey(candidateTask) &&
                     taskToJoinRelation.get(candidateTask).getStep().equals(JoinOperator.Step.JOIN)) {
                 String relation = taskToJoinRelation.get(candidateTask).getRelation();
                 activeTasks.add(layerTasks.get(0));
                 for(int i = 1; i < layerTasks.size(); i++) {
-                    Integer otherCandidateTask = Integer.parseInt(layerTasks.get(i).split("[:@]")[1]);
+                    Integer otherCandidateTask = Integer.parseInt(layerTasks.get(i).split("[:]")[1]);
                     if(taskToJoinRelation.containsKey(otherCandidateTask) &&
                             taskToJoinRelation.get(otherCandidateTask).getStep().equals(JoinOperator.Step.JOIN) &&
                             taskToJoinRelation.get(otherCandidateTask).getRelation().equals(relation) == false) {
@@ -267,4 +267,31 @@ public class Util {
         }
         return updatedTopology;
     }
+
+    public static ConcurrentHashMap<String, ArrayList<String>> updateTopology(ConcurrentHashMap<String, Integer> taskIdentifierIndex,
+                                                                              ConcurrentHashMap<String, ArrayList<String>> topology) {
+        ConcurrentHashMap<String, ArrayList<String>> updatedTopology = new ConcurrentHashMap<String, ArrayList<String>>();
+        Iterator<Map.Entry<String, ArrayList<String>>> itr = topology.entrySet().iterator();
+        while (itr.hasNext()) {
+            Map.Entry<String, ArrayList<String>> pair = itr.next();
+            String taskName = pair.getKey();
+            ArrayList<String> downStreamNames = pair.getValue();
+            String parentTask = taskName + ":" + Integer.toString(taskIdentifierIndex.get(taskName));
+            if (downStreamNames != null && downStreamNames.size() > 0) {
+                ArrayList<String> downStreamIds = new ArrayList<String>();
+                for(String name : downStreamNames) {
+                    if (taskIdentifierIndex.containsKey(name) == false) {
+                        assert taskIdentifierIndex.containsKey(name) == true;
+                    }
+                    String childTask = name + ":" + Integer.toString(taskIdentifierIndex.get(name));
+                    downStreamIds.add(childTask);
+                }
+                updatedTopology.put(parentTask, downStreamIds);
+            }else {
+                updatedTopology.put(parentTask, new ArrayList<String>());
+            }
+        }
+        return updatedTopology;
+    }
+
 }

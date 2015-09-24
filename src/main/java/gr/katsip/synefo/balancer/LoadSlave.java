@@ -116,10 +116,10 @@ public class LoadSlave implements Runnable {
         }
         ArrayList<String> downstream = null;
         ArrayList<String> activeDownstream = null;
-        if (topology.containsKey(taskName + ":" + identifier + "@" + taskAddress)) {
-            downstream = new ArrayList<>(topology.get(taskName + ":" + identifier + "@" + taskAddress));
-            if (activeTopology.containsKey(taskName + ":" + identifier + "@" + taskAddress)) {
-                activeDownstream = new ArrayList<>(activeTopology.get(taskName + ":" + identifier + "@" + taskAddress));
+        if (topology.containsKey(taskName + ":" + identifier)) {
+            downstream = new ArrayList<>(topology.get(taskName + ":" + identifier));
+            if (activeTopology.containsKey(taskName + ":" + identifier)) {
+                activeDownstream = new ArrayList<>(activeTopology.get(taskName + ":" + identifier));
             }else {
                 activeDownstream = new ArrayList<>();
             }
@@ -177,8 +177,8 @@ public class LoadSlave implements Runnable {
         HashMap<String, ArrayList<String>> relationTaskIndex = null;
         if (operator.getStep() == JoinOperator.Step.DISPATCH) {
             relationTaskIndex = new HashMap<String, ArrayList<String>>();
-            for (String task : topology.get(taskName + ":" + identifier + "@" + taskAddress)) {
-                Integer identifier = Integer.parseInt(task.split("[:@]")[1]);
+            for (String task : topology.get(taskName + ":" + identifier)) {
+                Integer identifier = Integer.parseInt(task.split("[:]")[1]);
                 JoinOperator op = taskToJoinRelation.get(identifier);
                 if (relationTaskIndex.containsKey(op.getRelation())) {
                     ArrayList<String> ops = relationTaskIndex.get(op.getRelation());
@@ -193,10 +193,10 @@ public class LoadSlave implements Runnable {
         }
         ArrayList<String> downstream = null;
         ArrayList<String> activeDownstream = null;
-        if (topology.containsKey(taskName + ":" + identifier + "@" + taskAddress)) {
-            downstream = new ArrayList<>(topology.get(taskName + ":" + identifier + "@" + taskAddress));
-            if (activeTopology.containsKey(taskName + ":" + identifier + "@" + taskAddress)) {
-                activeDownstream = new ArrayList<>(activeTopology.get(taskName + ":" + identifier + "@" + taskAddress));
+        if (topology.containsKey(taskName + ":" + identifier)) {
+            downstream = new ArrayList<>(topology.get(taskName + ":" + identifier));
+            if (activeTopology.containsKey(taskName + ":" + identifier)) {
+                activeDownstream = new ArrayList<>(activeTopology.get(taskName + ":" + identifier));
             }else {
                 activeDownstream = new ArrayList<>();
             }
