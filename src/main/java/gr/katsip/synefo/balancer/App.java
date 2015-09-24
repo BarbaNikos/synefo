@@ -19,8 +19,8 @@ public class App {
         String zookeeperAddress = args[1];
         HashMap<String, Pair<Number, Number>> inputRateThresholds = new HashMap<>();
         Pair<Number, Number> pair = new Pair<>();
-        pair.lowerBound = new Integer(1000);
-        pair.upperBound = new Integer(1000);
+        pair.lowerBound = new Integer(500);
+        pair.upperBound = new Integer(500);
         inputRateThresholds.put("input-rate", pair);
 //        BalanceServer server = new BalanceServer(zookeeperAddress, parser.get_thresholds(), null);
         BalanceServer server = new BalanceServer(zookeeperAddress, inputRateThresholds, null);
