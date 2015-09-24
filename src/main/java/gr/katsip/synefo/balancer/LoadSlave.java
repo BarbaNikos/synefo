@@ -151,6 +151,9 @@ public class LoadSlave implements Runnable {
         String joinStep = values.get("JOIN_STEP");
         String relation = values.get("JOIN_RELATION");
         identifier = Integer.parseInt(values.get("TASK_ID"));
+        taskName = values.get("TASK_NAME");
+        taskAddress = values.get("TASK_IP");
+        workerPort = Integer.parseInt(values.get("WORKER_PORT"));
         JoinOperator operator = new JoinOperator(identifier,
                 (joinStep.equals("DISPATCH") ? JoinOperator.Step.DISPATCH : JoinOperator.Step.JOIN),
                 relation);
