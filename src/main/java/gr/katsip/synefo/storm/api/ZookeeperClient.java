@@ -99,7 +99,7 @@ public class ZookeeperClient {
                     } catch (UnsupportedEncodingException e) {
                         e.printStackTrace();
                     }
-                    if (command.length() > 0 && command.equals("") == false) {
+                    if (command.length() > 0 && command.equals("") == false && command.lastIndexOf("/") < 0) {
                         logger.info("OK command: " + command);
                         commands.add(command);
                     }
@@ -135,7 +135,7 @@ public class ZookeeperClient {
                             taskName + ":" + identifier + "@" + taskAddress).getBytes("UTF-8"),
                     ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             zookeeper.create(MAIN_ZNODE + "/" + SCALE_ACTION + "/" +
-                            taskName + ":" + identifier + "@" + taskAddress, (MAIN_ZNODE + "/" + TASK_ZNODE + "/" +
+                            taskName + ":" + identifier + "@" + taskAddress, (MAIN_ZNODE + "/" + SCALE_ACTION + "/" +
                             taskName + ":" + identifier + "@" + taskAddress).getBytes("UTF-8"),
                     ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
         } catch (KeeperException e) {
