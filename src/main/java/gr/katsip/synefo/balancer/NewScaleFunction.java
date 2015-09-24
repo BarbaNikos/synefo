@@ -109,6 +109,7 @@ public class NewScaleFunction {
         String struggler = "";
         Double bottleneck = -1.0;
         Iterator<Map.Entry<String, List<Double>>> iterator = inputRate.entrySet().iterator();
+        System.out.println("scale-function performs a scale-check");
         while (iterator.hasNext()) {
             Map.Entry<String, List<Double>> pair = iterator.next();
             Double average = 0.0;
