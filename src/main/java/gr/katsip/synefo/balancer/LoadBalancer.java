@@ -60,7 +60,8 @@ public class LoadBalancer {
                     /**
                      * New task registered
                      */
-                    logger.info("identified NodeChildrenChanged event on " + watchedEvent.getPath());
+//                    logger.info("identified NodeChildrenChanged event on " + watchedEvent.getPath());
+                    System.out.println("identified NodeChildrenChanged event on \" + watchedEvent.getPath()");
                     watchTaskNode(watchedEvent.getPath());
                 }
             }else if (watchedEvent.getType() == Event.EventType.NodeDataChanged) {
@@ -74,7 +75,8 @@ public class LoadBalancer {
         public void processResult(int i, String s, Object o, List<String> list, Stat stat) {
             switch (KeeperException.Code.get(i)) {
                 case CONNECTIONLOSS:
-                    logger.error("taskChildrenCallback CONNECTIONLOSS");
+//                    logger.error("taskChildrenCallback CONNECTIONLOSS");
+                    System.out.println("taskChildrenCallback CONNECTIONLOSS");
                     try {
                         watchTaskNode(new String((byte[]) o, "UTF-8"));
                     } catch (UnsupportedEncodingException e) {
@@ -82,11 +84,13 @@ public class LoadBalancer {
                     }
                     break;
                 case NONODE:
-                    logger.error("taskChildrenCallback NONODE");
+//                    logger.error("taskChildrenCallback NONODE");
+                    System.out.println("taskChildrenCallback NONODE");
                     break;
                 case OK:
                     list.removeAll(registeredTasks);
-                    logger.info("taskChildrenCallback OK: new nodes: " + registeredTasks.toString());
+//                    logger.info("taskChildrenCallback OK: new nodes: " + registeredTasks.toString());
+                    System.out.println("taskChildrenCallback OK: new nodes: " + registeredTasks.toString());
                     for (String child : list) {
                         getTaskData(s + "/" + child);
                     }
@@ -105,25 +109,27 @@ public class LoadBalancer {
         public void processResult(int i, String s, Object o, byte[] bytes, Stat stat) {
             switch (KeeperException.Code.get(i)) {
                 case CONNECTIONLOSS:
-                    logger.error("taskChildrenCallback CONNECTIONLOSS");
+//                    logger.error("taskChildrenCallback CONNECTIONLOSS");
+                    System.out.println("taskChildrenCallback CONNECTIONLOSS");
                     getTaskData(s);
                     break;
                 case NONODE:
-                    logger.error("taskChildrenCallback NONODE");
+//                    logger.error("taskChildrenCallback NONODE");
+                    System.out.println("taskChildrenCallback NONODE");
                     break;
                 case OK:
                     double value = ByteBuffer.wrap(bytes).getDouble();
                     String taskName = s.substring(s.lastIndexOf('/') + 1, s.lastIndexOf(':'));
                     Integer identifier = Integer.parseInt(s.substring(s.lastIndexOf(':') + 1));
                     String taskAddress = taskAddressIndex.get(taskName + ":" + identifier);
-                    logger.info("identified data point from " + taskName + ":" + identifier + "@" + taskAddress + " and the data is " + value);
+                    System.out.println("identified data point from " + taskName + ":" + identifier + "@" + taskAddress + " and the data is " + value);
 //                    GenericTriplet<String, String, String> action = scaleFunction.addData(taskName, Integer.parseInt(s.substring(s.lastIndexOf(':') + 1)),
 //                            Double.parseDouble(data[0]), Double.parseDouble(data[1]),
 //                            Double.parseDouble(data[2]), Double.parseDouble(data[3]), Double.parseDouble(data[4]));
                     GenericTriplet<String, String, String> action = scaleFunction.addInputRateData(
                             taskName, identifier, value);
                     if (action != null) {
-                        logger.info("action generated " + action.first + " for upstream task: " +
+                        System.out.println("action generated " + action.first + " for upstream task: " +
                                 action.second + " directed to: " + action.third);
                         /**
                          * Need to
@@ -160,7 +166,7 @@ public class LoadBalancer {
 
                     break;
                 default:
-                    logger.info("taskDataCallback Unexpected scenario: " +
+                    System.out.println("taskDataCallback Unexpected scenario: " +
                             KeeperException.create(KeeperException.Code.get(i), s));
                     break;
             }
@@ -172,7 +178,7 @@ public class LoadBalancer {
             String[] tokens = new String[0];
             switch (KeeperException.Code.get(i)) {
                 case CONNECTIONLOSS:
-                    logger.error("CONNECTIONLOSS");
+                    System.out.println("CONNECTIONLOSS");
                     try {
                         tokens = (new String((byte[]) o, "UTF-8")).split(",");
                     } catch (UnsupportedEncodingException e) {
@@ -181,7 +187,7 @@ public class LoadBalancer {
                     setScaleAction(tokens[0], tokens[1], tokens[2]);
                     break;
                 case NONODE:
-                    logger.error("NONODE");
+                    System.out.println("NONODE");
                     try {
                         tokens = (new String((byte[]) o, "UTF-8")).split(",");
                     } catch (UnsupportedEncodingException e) {
