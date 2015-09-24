@@ -13,9 +13,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -34,6 +35,8 @@ public class ZookeeperClient {
     private static final String TASK_ZNODE = "task";
 
     private static final String JOIN_STATE_ZNODE = "state";
+
+    private static final String SCALE_ACTION = "scale";
 
     private ZooKeeper zookeeper;
 
@@ -69,7 +72,7 @@ public class ZookeeperClient {
     };
 
     public void getScaleCommand() {
-        String node = MAIN_ZNODE + "/" + TASK_ZNODE + "/" +
+        String node = MAIN_ZNODE + "/" + SCALE_ACTION + "/" +
                 taskName + ":" + identifier + "@" + taskAddress;
         try {
             zookeeper.getData(node, watcher, getCommandCallback, node.getBytes("UTF-8"));
@@ -129,6 +132,10 @@ public class ZookeeperClient {
                             taskName + ":" + identifier + "@" + taskAddress, (MAIN_ZNODE + "/" + JOIN_STATE_ZNODE + "/" +
                             taskName + ":" + identifier + "@" + taskAddress).getBytes("UTF-8"),
                     ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+            zookeeper.create(MAIN_ZNODE + "/" + SCALE_ACTION + "/" +
+                            taskName + ":" + identifier + "@" + taskAddress, (MAIN_ZNODE + "/" + TASK_ZNODE + "/" +
+                            taskName + ":" + identifier + "@" + taskAddress).getBytes("UTF-8"),
+                    ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
         } catch (KeeperException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
@@ -145,6 +152,16 @@ public class ZookeeperClient {
                 zookeeper.delete(MAIN_ZNODE + "/" + TASK_ZNODE + "/" +
                         taskName + ":" + identifier + "@" + taskAddress, -1);
             }
+            if (zookeeper.exists(MAIN_ZNODE + "/" + SCALE_ACTION + "/" +
+                    taskName + ":" + identifier + "@" + taskAddress, false) != null) {
+                zookeeper.delete(MAIN_ZNODE + "/" + SCALE_ACTION + "/" +
+                        taskName + ":" + identifier + "@" + taskAddress, -1);
+            }
+            if (zookeeper.exists(MAIN_ZNODE + "/" + JOIN_STATE_ZNODE + "/" +
+                    taskName + ":" + identifier + "@" + taskAddress, false) != null) {
+                zookeeper.delete(MAIN_ZNODE + "/" + JOIN_STATE_ZNODE + "/" +
+                        taskName + ":" + identifier + "@" + taskAddress, -1);
+            }
         } catch (KeeperException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
@@ -152,7 +169,7 @@ public class ZookeeperClient {
         }
     }
 
-    private HashMap<String, ArrayList<String>> getActiveTopology() throws UnsupportedEncodingException {
+    private ConcurrentHashMap<String, ArrayList<String>> getActiveTopology() throws UnsupportedEncodingException {
         Stat stat = new Stat();
         byte[] data = null;
         try {
@@ -192,5 +209,32 @@ public class ZookeeperClient {
         }
         return taskIdentifiers;
     }
+
+    public void addInputRateData(Double value) {
+        byte[] b = new byte[8];
+        ByteBuffer.wrap(b).putDouble(value);
+        zookeeper.setData(MAIN_ZNODE + "/" + TASK_ZNODE + "/" + taskName + ":" + identifier + "@" + taskAddress,
+                b, -1, statCallback, b);
+    }
+
+    private AsyncCallback.StatCallback statCallback = new AsyncCallback.StatCallback() {
+        @Override
+        public void processResult(int i, String s, Object o, Stat stat) {
+            switch (KeeperException.Code.get(i)) {
+                case CONNECTIONLOSS:
+                    logger.error(" CONNECTIONLOSS");
+                    double value = ByteBuffer.wrap((byte[]) o).getDouble();
+                    addInputRateData(value);
+                    break;
+                case NONODE:
+                    logger.error(" NONODE");
+                    break;
+                case OK:
+                    break;
+                default:
+                    break;
+            }
+        }
+    };
 
 }

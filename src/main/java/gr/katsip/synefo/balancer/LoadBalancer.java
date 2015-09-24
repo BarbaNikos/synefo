@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -41,6 +42,8 @@ public class LoadBalancer {
     private static final String ACTIVE_TOPOLOGY_ZNODE = "active";
 
     private static final String TASK_ZNODE = "task";
+
+    private static final String SCALE_ACTION = "scale";
 
     private static final String JOIN_STATE_ZNODE = "state";
 
@@ -106,43 +109,40 @@ public class LoadBalancer {
                     logger.info("taskChildrenCallback NONODE");
                     break;
                 case OK:
-                    /**
-                     * Data retrieved successfully, need to be provided to
-                     * Scale-function
-                     */
-                    String[] data = null;
-                    try {
-                        data = (new String(bytes, "UTF-8")).split(",");
-                    } catch (UnsupportedEncodingException e) {
-                        e.printStackTrace();
-                    }
+                    double value = ByteBuffer.wrap(bytes).getDouble();
                     String taskName = s.substring(s.lastIndexOf('/') + 1, s.lastIndexOf(':'));
-                    if (data != null) {
-                        GenericTriplet<String, String, String> action = scaleFunction.addData(taskName, Integer.parseInt(s.substring(s.lastIndexOf(':') + 1)),
-                                Double.parseDouble(data[0]), Double.parseDouble(data[1]),
-                                Double.parseDouble(data[2]), Double.parseDouble(data[3]), Double.parseDouble(data[4]));
-                        if (action != null) {
-                            /**
-                             * TODO: Need to
-                             * TODO: 1) update active-topology
-                             */
-                            switch (action.first) {
-                                case "add":
-                                    scaleFunction.activateTask(action.third);
-                                    break;
-                                case "remove":
-                                    scaleFunction.deactivateTask(action.third);
-                                    break;
-                            }
-                            setActiveTopology(
-                                    new ConcurrentHashMap<String, ArrayList<String>>(scaleFunction.getActiveTopology()));
-                            /**
-                             * TODO: 2) set the commands in the /synefo/bolt-tasks
-                             * Add/Remove and Activate/Deactivate
-                             */
-
+                    Integer identifier = Integer.parseInt(s.substring(s.lastIndexOf(':') + 1, s.lastIndexOf("@")));
+                    String taskAddress = s.substring(s.lastIndexOf("@"));
+//                    GenericTriplet<String, String, String> action = scaleFunction.addData(taskName, Integer.parseInt(s.substring(s.lastIndexOf(':') + 1)),
+//                            Double.parseDouble(data[0]), Double.parseDouble(data[1]),
+//                            Double.parseDouble(data[2]), Double.parseDouble(data[3]), Double.parseDouble(data[4]));
+                    GenericTriplet<String, String, String> action = scaleFunction.addInputRateData(
+                            taskName, identifier, value);
+                    if (action != null) {
+                        /**
+                         * Need to
+                         * 1) update active-topology
+                         */
+                        switch (action.first) {
+                            case "add":
+                                scaleFunction.activateTask(action.third);
+                                break;
+                            case "remove":
+                                scaleFunction.deactivateTask(action.third);
+                                break;
                         }
+                        setActiveTopology(
+                                new ConcurrentHashMap<String, ArrayList<String>>(scaleFunction.getActiveTopology()));
+                        /**
+                         * TODO: 2) set the commands in the /synefo/bolt-tasks
+                         * Add/Remove and Activate/Deactivate
+                         */
+                        List<String> parentTasks = Util.getInverseTopology(getTopology()).get(taskName + ":" +
+                                identifier + "@" + taskAddress);
+                        parentTasks.remove(parentTasks.indexOf(action.second));
+
                     }
+
                     break;
                 default:
                     logger.info("taskDataCallback Unexpected scenario: " +
@@ -197,7 +197,7 @@ public class LoadBalancer {
     public void setTopology(ConcurrentHashMap<String, ArrayList<String>> topology) {
         try {
             zooKeeper.setData(MAIN_ZNODE + "/" + TOPOLOGY_ZNODE,
-                    topology.toString().getBytes("UTF-8"), -1);
+                    Util.serializeTopology(topology).getBytes("UTF-8"), -1);
         } catch (KeeperException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
@@ -207,10 +207,25 @@ public class LoadBalancer {
         }
     }
 
+    public ConcurrentHashMap<String, ArrayList<String>> getTopology() {
+        Stat stat = new Stat();
+        try {
+            String data = new String(zooKeeper.getData(MAIN_ZNODE + "/" + TOPOLOGY_ZNODE, false, stat), "UTF-8");
+            return Util.deserializeTopology(data);
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        } catch (KeeperException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     public void setActiveTopology(ConcurrentHashMap<String, ArrayList<String>> activeTopology) {
         try {
             zooKeeper.setData(MAIN_ZNODE + "/" + ACTIVE_TOPOLOGY_ZNODE,
-                    activeTopology.toString().getBytes("UTF-8"), -1);
+                    Util.serializeTopology(activeTopology).getBytes("UTF-8"), -1);
         } catch (KeeperException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
@@ -218,6 +233,21 @@ public class LoadBalancer {
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
+    }
+
+    public ConcurrentHashMap<String, ArrayList<String>> getActiveTopology() {
+        Stat stat = new Stat();
+        try {
+            String data = new String(zooKeeper.getData(MAIN_ZNODE + "/" + ACTIVE_TOPOLOGY_ZNODE, false, stat), "UTF-8");
+            return Util.deserializeTopology(data);
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        } catch (KeeperException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     private void nodeInitiatialize() {
@@ -229,6 +259,8 @@ public class LoadBalancer {
             zooKeeper.create(MAIN_ZNODE + "/" + TASK_ZNODE,
                     ("").getBytes("UTF-8"), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             zooKeeper.create(MAIN_ZNODE + "/" + JOIN_STATE_ZNODE,
+                    ("").getBytes("UTF-8"), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+            zooKeeper.create(MAIN_ZNODE + "/" + SCALE_ACTION,
                     ("").getBytes("UTF-8"), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
         } catch (KeeperException e) {
             e.printStackTrace();
@@ -244,6 +276,7 @@ public class LoadBalancer {
         recursiveDelete(MAIN_ZNODE + "/" + ACTIVE_TOPOLOGY_ZNODE);
         recursiveDelete(MAIN_ZNODE + "/" + TASK_ZNODE);
         recursiveDelete(MAIN_ZNODE + "/" + JOIN_STATE_ZNODE);
+        recursiveDelete(MAIN_ZNODE + "/" + SCALE_ACTION);
     }
 
     private void recursiveDelete(String znode) {

@@ -79,6 +79,21 @@ public class NewScaleFunction {
         }
     }
 
+    public GenericTriplet<String, String, String> addInputRateData(String taskName, Integer taskIdentifier, double inputRate) {
+        String identifier = taskName + ":" + taskIdentifier;
+        add(this.inputRate, identifier, inputRate);
+        counter++;
+        if (counter >= SCALE_EPOCH) {
+            /**
+             * Check if scale is needed
+             */
+            counter = 0;
+            return scaleCheck();
+        }else {
+            return new GenericTriplet<>();
+        }
+    }
+
     public GenericTriplet<String, String, String> scaleCheck() {
         GenericTriplet<String, String, String> scaleAction = null;
         /**

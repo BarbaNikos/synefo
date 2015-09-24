@@ -266,9 +266,6 @@ public class DispatchBolt extends BaseRichBolt {
                     .fieldIndex("SYNEFO_HEADER"));
             if (header != null && !header.equals("") && header.contains("/") &&
                     isScaleHeader(header)) {
-                /**
-                 * TODO: Revisit this when I ensure proper execution
-                 */
                 manageScaleCommand(tuple);
                 collector.ack(tuple);
                 return;
@@ -278,6 +275,7 @@ public class DispatchBolt extends BaseRichBolt {
         if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
             throughputPreviousTimestamp = throughputCurrentTimestamp;
             inputRate.setValue(temporaryInputRate);
+            zookeeperClient.addInputRateData((double) temporaryInputRate);
             /**
              * Set the data values on the zookeeper server
              */
@@ -309,9 +307,10 @@ public class DispatchBolt extends BaseRichBolt {
             SYSTEM_WARM_FLAG = true;
 
         String command = "";
-        if (!zookeeperClient.commands.isEmpty())
+        if (!zookeeperClient.commands.isEmpty()) {
             command = zookeeperClient.commands.poll();
-        manageCommand(command);
+            manageCommand(command);
+        }
     }
 
     @Override
@@ -322,6 +321,10 @@ public class DispatchBolt extends BaseRichBolt {
         outputFieldsDeclarer.declare(new Fields(producerSchema));
     }
 
+    /**
+     * TODO: Need to revisit this one when join scale-outs are complete.
+     * @param command
+     */
     public void manageCommand(String command) {
         String[] scaleCommandTokens = command.split("[~:@]");
         String action = scaleCommandTokens[0];
@@ -376,13 +379,14 @@ public class DispatchBolt extends BaseRichBolt {
             SYSTEM_WARM_FLAG = false;
         logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": received scale-command: " +
                 scaleAction + "(" + System.currentTimeMillis() + ")");
-        if (scaleAction != null && scaleAction.equals(SynefoConstant.ADD_ACTION)) {
+        if (scaleAction.equals(SynefoConstant.ADD_ACTION)) {
             if ((this.taskName + ":" + this.taskIdentifier).equals(taskName + ":" + taskIdentifier)) {
                 /**
                  * Case where this node is added. Nothing needs to be done for
                  * notifying the dispatchers.
                  */
-                logger.info("");
+                logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": about to receive " +
+                taskNumber + " states.");
                 try {
                     ServerSocket socket = new ServerSocket(6000 + this.taskIdentifier);
                     int numberOfConnections = 0;
@@ -407,8 +411,9 @@ public class DispatchBolt extends BaseRichBolt {
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
-                logger.info("");
+                logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": successfully received.");
             }else {
+                logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": about to send state");
                 Socket client = null;
                 boolean ATTEMPT = true;
                 while (ATTEMPT) {
@@ -424,7 +429,7 @@ public class DispatchBolt extends BaseRichBolt {
                         }
                     }
                 }
-                logger.info("");
+                logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": connected to remote dispatcher.");
                 try {
                     ObjectOutputStream output = new ObjectOutputStream(client.getOutputStream());
                     ObjectInputStream input = new ObjectInputStream(client.getInputStream());
@@ -440,11 +445,13 @@ public class DispatchBolt extends BaseRichBolt {
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
-                logger.info("");
+                logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": properly sent state.");
             }
             activeDownstreamTaskIdentifiers = zookeeperClient.getActiveDownstreamTaskIdentifiers();
-        }else if (scaleAction != null && scaleAction.equals(SynefoConstant.REMOVE_ACTION)) {
+        }else if (scaleAction.equals(SynefoConstant.REMOVE_ACTION)) {
             if ((this.taskName + ":" + this.taskIdentifier).equals(taskName + ":" + taskIdentifier)) {
+                logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": about to send " +
+                        taskNumber + " states.");
                 try {
                     ServerSocket socket = new ServerSocket(6000 + this.taskIdentifier);
                     int numberOfConnections = 0;
@@ -465,8 +472,10 @@ public class DispatchBolt extends BaseRichBolt {
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
-                logger.info("");
+                logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": properly sent states (" +
+                        taskNumber + ".");
             }else {
+                logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": about to receive state.");
                 Socket client = null;
                 boolean ATTEMPT = true;
                 while (ATTEMPT) {
@@ -492,6 +501,7 @@ public class DispatchBolt extends BaseRichBolt {
                     }
                     output.writeObject("OK");
                     input.close();
+                    output.flush();
                     output.close();
                     client.close();
                 } catch (IOException e) {
@@ -499,7 +509,7 @@ public class DispatchBolt extends BaseRichBolt {
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
-                logger.info("");
+                logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": successfully received state.");
             }
             activeDownstreamTaskIdentifiers = zookeeperClient.getActiveDownstreamTaskIdentifiers();
         }
