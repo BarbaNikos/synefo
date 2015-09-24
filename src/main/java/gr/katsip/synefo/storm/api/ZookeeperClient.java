@@ -63,7 +63,7 @@ public class ZookeeperClient {
         @Override
         public void process(WatchedEvent watchedEvent) {
             if (watchedEvent.getType().equals(Event.EventType.NodeDataChanged)) {
-                if (watchedEvent.getPath().equals(MAIN_ZNODE + "/" + TASK_ZNODE + "/" +
+                if (watchedEvent.getPath().equals(MAIN_ZNODE + "/" + SCALE_ACTION + "/" +
                         taskName + ":" + identifier + "@" + taskAddress)) {
                     getScaleCommand();
                 }
