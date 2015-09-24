@@ -149,7 +149,7 @@ public class LoadBalancer {
                          * 2) set the commands in the /synefo/bolt-tasks
                          * Add/Remove and Activate/Deactivate
                          */
-                        List<String> parentTasks = Util.getInverseTopology(getTopology()).get(taskName + ":" + identifier);
+                        List<String> parentTasks = Util.getInverseTopology(getTopology()).get(action.third);
                         parentTasks.remove(parentTasks.indexOf(action.second));
                         if (action.first.equals("add")) {
                             for (String task : parentTasks) {
