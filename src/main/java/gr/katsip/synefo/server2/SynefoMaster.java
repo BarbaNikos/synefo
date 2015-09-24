@@ -102,7 +102,7 @@ public class SynefoMaster implements Runnable {
 //                (int) resourceThresholds.get("latency").lowerBound,
 //                (int) resourceThresholds.get("throughput").lowerBound);
 
-        balancer = new LoadBalancer(zooHost, taskToJoinRelation, resourceThresholds);
+        balancer = new LoadBalancer(zooHost, taskToJoinRelation, resourceThresholds, taskAddressIndex);
         balancer.start();
 
 		ConcurrentHashMap<String, ArrayList<String>> expandedPhysicalTopology = physicalTopologyTaskExpand(
