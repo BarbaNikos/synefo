@@ -212,9 +212,10 @@ public class ElasticFileSpout extends BaseRichSpout {
                 index += 1;
         }
         String command = "";
-        if (!zookeeperClient.commands.isEmpty())
+        if (!zookeeperClient.commands.isEmpty()) {
             command = zookeeperClient.commands.poll();
-        manageCommand(command);
+            manageCommand(command);
+        }
     }
 
     private void manageCommand(String command) {

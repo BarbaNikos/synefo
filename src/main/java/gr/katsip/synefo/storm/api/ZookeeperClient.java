@@ -72,8 +72,7 @@ public class ZookeeperClient {
     };
 
     public void getScaleCommand() {
-        String node = MAIN_ZNODE + "/" + SCALE_ACTION + "/" +
-                taskName + ":" + identifier;
+        String node = MAIN_ZNODE + "/" + SCALE_ACTION + "/" + taskName + ":" + identifier;
         try {
             zookeeper.getData(node, watcher, getCommandCallback, node.getBytes("UTF-8"));
         } catch (UnsupportedEncodingException e) {
@@ -215,8 +214,7 @@ public class ZookeeperClient {
     public void addInputRateData(Double value) {
         byte[] b = new byte[8];
         ByteBuffer.wrap(b).putDouble(value);
-        zookeeper.setData(MAIN_ZNODE + "/" + TASK_ZNODE + "/" + taskName + ":" + identifier,
-                b, -1, statCallback, b);
+        zookeeper.setData(MAIN_ZNODE + "/" + TASK_ZNODE + "/" + taskName + ":" + identifier, b, -1, statCallback, b);
     }
 
     private AsyncCallback.StatCallback statCallback = new AsyncCallback.StatCallback() {
