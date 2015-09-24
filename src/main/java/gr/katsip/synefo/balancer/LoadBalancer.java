@@ -268,6 +268,7 @@ public class LoadBalancer {
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
+        scaleFunction.updateTopology(topology);
     }
 
     public ConcurrentHashMap<String, ArrayList<String>> getTopology() {
@@ -296,6 +297,7 @@ public class LoadBalancer {
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
+        scaleFunction.updateActiveTopology(activeTopology);
     }
 
     public ConcurrentHashMap<String, ArrayList<String>> getActiveTopology() {

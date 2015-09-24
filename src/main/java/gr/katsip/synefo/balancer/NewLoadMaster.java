@@ -88,6 +88,8 @@ public class NewLoadMaster implements Runnable {
                 Util.getInverseTopology(topology), taskToJoinRelation, true));
         logger.info("finalized topology: " + topology.toString());
         logger.info("finalized active topology: " + topology.toString());
+        balancer.setTopology(topology);
+        balancer.setActiveTopology(activeTopology);
         taskIdentifierIndex.clear();
         balancer.setTopology(topology);
         balancer.setTopology(activeTopology);
