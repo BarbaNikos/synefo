@@ -11,7 +11,7 @@ import java.util.*;
  */
 public class NewScaleFunction {
 
-    private static final int SCALE_EPOCH = 1000;
+    private static final int SCALE_EPOCH = 5;
 
     private int counter;
 
@@ -113,16 +113,18 @@ public class NewScaleFunction {
         while (iterator.hasNext()) {
             Map.Entry<String, List<Double>> pair = iterator.next();
             Double average = 0.0;
-            for (int i = pair.getValue().size() - 1; i >= (pair.getValue().size() - 4); i--) {
-                average += pair.getValue().get(i);
-            }
-            average = average / 3.0;
-            if (average >= thresholds.get("input-rate").upperBound.doubleValue() &&
-                    overloadedWorkers.indexOf(pair.getKey()) < 0) {
-                overloadedWorkers.add(pair.getKey());
-                if (average > bottleneck) {
-                    struggler = pair.getKey();
-                    bottleneck = average;
+            if (pair.getValue().size() >= 5) {
+                for (int i = pair.getValue().size() - 1; i >= (pair.getValue().size() - 4); i--) {
+                    average += pair.getValue().get(i);
+                }
+                average = average / 3.0;
+                if (average >= thresholds.get("input-rate").upperBound.doubleValue() &&
+                        overloadedWorkers.indexOf(pair.getKey()) < 0) {
+                    overloadedWorkers.add(pair.getKey());
+                    if (average > bottleneck) {
+                        struggler = pair.getKey();
+                        bottleneck = average;
+                    }
                 }
             }
         }
@@ -152,15 +154,17 @@ public class NewScaleFunction {
             while (iterator.hasNext()) {
                 Map.Entry<String, List<Double>> pair = iterator.next();
                 Double average = 0.0;
-                for (int i = pair.getValue().size() - 1; i >= (pair.getValue().size() - 4); i--) {
-                    average += pair.getValue().get(i);
-                }
-                if (average <= thresholds.get("input-rate").lowerBound.doubleValue() &&
-                        underloadedWorkers.indexOf(pair.getKey()) < 0) {
-                    underloadedWorkers.add(pair.getKey());
-                    if (average < opening) {
-                        slacker = pair.getKey();
-                        opening = average;
+                if (pair.getValue().size() >= 5) {
+                    for (int i = pair.getValue().size() - 1; i >= (pair.getValue().size() - 4); i--) {
+                        average += pair.getValue().get(i);
+                    }
+                    if (average <= thresholds.get("input-rate").lowerBound.doubleValue() &&
+                            underloadedWorkers.indexOf(pair.getKey()) < 0) {
+                        underloadedWorkers.add(pair.getKey());
+                        if (average < opening) {
+                            slacker = pair.getKey();
+                            opening = average;
+                        }
                     }
                 }
             }
