@@ -40,7 +40,7 @@ public class Util {
                 String key = tokens[0];
                 String[] values = tokens[1].split(",");
                 ArrayList<String> tasks = new ArrayList<String>();
-                for(int i = 1; i < values.length; i++) {
+                for(int i = 0; i < values.length; i++) {
                     tasks.add(values[i]);
                 }
                 topology.put(key, tasks);
