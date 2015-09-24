@@ -61,7 +61,7 @@ public class LoadBalancer {
                      * New task registered
                      */
 //                    logger.info("identified NodeChildrenChanged event on " + watchedEvent.getPath());
-                    System.out.println("identified NodeChildrenChanged event on \" + watchedEvent.getPath()");
+                    System.out.println("identified NodeChildrenChanged event on " + watchedEvent.getPath());
                     watchTaskNode(watchedEvent.getPath());
                 }
             }else if (watchedEvent.getType() == Event.EventType.NodeDataChanged) {
@@ -122,13 +122,13 @@ public class LoadBalancer {
                     String taskName = s.substring(s.lastIndexOf('/') + 1, s.lastIndexOf(':'));
                     Integer identifier = Integer.parseInt(s.substring(s.lastIndexOf(':') + 1));
                     String taskAddress = taskAddressIndex.get(taskName + ":" + identifier);
-                    System.out.println("identified data point from " + taskName + ":" + identifier + "@" + taskAddress + " and the data is " + value);
+                    System.out.println("identified data point from " + taskName + ":" + identifier + " and the data is " + value);
 //                    GenericTriplet<String, String, String> action = scaleFunction.addData(taskName, Integer.parseInt(s.substring(s.lastIndexOf(':') + 1)),
 //                            Double.parseDouble(data[0]), Double.parseDouble(data[1]),
 //                            Double.parseDouble(data[2]), Double.parseDouble(data[3]), Double.parseDouble(data[4]));
                     GenericTriplet<String, String, String> action = scaleFunction.addInputRateData(
                             taskName, identifier, value);
-                    if (action != null) {
+                    if (action.first != null) {
                         System.out.println("action generated " + action.first + " for upstream task: " +
                                 action.second + " directed to: " + action.third);
                         /**

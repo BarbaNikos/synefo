@@ -16,6 +16,7 @@ public class GenericTriplet<T1, T2, T3> implements Serializable {
     public GenericTriplet() {
         this.first = null;
         this.second = null;
+        this.third = null;
     }
 
     public GenericTriplet(T1 first, T2 second, T3 third) {
