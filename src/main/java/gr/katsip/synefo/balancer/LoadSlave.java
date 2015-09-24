@@ -64,7 +64,7 @@ public class LoadSlave implements Runnable {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        this.topology = this.topology;
+        this.topology = topology;
         this.activeTopology = activeTopology;
         this.taskNumber = taskNumber;
         this.taskToJoinRelation = taskToJoinRelation;
