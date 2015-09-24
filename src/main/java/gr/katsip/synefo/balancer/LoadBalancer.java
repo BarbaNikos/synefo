@@ -203,11 +203,12 @@ public class LoadBalancer {
         }
     };
 
-    private void setScaleAction(String task, String action, String targetTask) {
+    private void setScaleAction(String taskWithIdentifier, String action, String targetTaskWithIdentifier) {
         try {
-            zooKeeper.setData(MAIN_ZNODE + "/" + SCALE_ACTION + "/" + task,
-                    (action + "~" + targetTask).getBytes("UTF-8"), -1,
-                    setActionCallback, (task + "," + action + "," + targetTask).getBytes("UTF-8"));
+            zooKeeper.setData(MAIN_ZNODE + "/" + SCALE_ACTION + "/" + taskWithIdentifier,
+                    (action + "~" + targetTaskWithIdentifier + "@" +
+                            taskAddressIndex.get(targetTaskWithIdentifier)).getBytes("UTF-8"), -1,
+                    setActionCallback, (taskWithIdentifier + "," + action + "," + targetTaskWithIdentifier).getBytes("UTF-8"));
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
