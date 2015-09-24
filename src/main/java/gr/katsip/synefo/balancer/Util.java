@@ -38,12 +38,16 @@ public class Util {
             if (pair != "") {
                 String[] tokens = pair.split("=");
                 String key = tokens[0];
-                String[] values = tokens[1].split(",");
-                ArrayList<String> tasks = new ArrayList<String>();
-                for(int i = 0; i < values.length; i++) {
-                    tasks.add(values[i]);
+                if (tokens.length > 1) {
+                    String[] values = tokens[1].split(",");
+                    ArrayList<String> tasks = new ArrayList<String>();
+                    for (int i = 0; i < values.length; i++) {
+                        tasks.add(values[i]);
+                    }
+                    topology.put(key, tasks);
+                }else {
+                    topology.put(key, new ArrayList<String>());
                 }
-                topology.put(key, tasks);
             }
         }
         return topology;
