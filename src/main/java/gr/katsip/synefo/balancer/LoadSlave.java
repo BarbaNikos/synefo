@@ -236,8 +236,8 @@ public class LoadSlave implements Runnable {
         } catch (ClassNotFoundException | IOException e1) {
             e1.printStackTrace();
         }
-        topology.clear();
-        topology.putAll(topology);
+        this.topology.clear();
+        this.topology.putAll(topology);
         Integer providedTaskNumber = Integer.parseInt(values.get("TASK_NUM"));
         this.taskNumber.compareAndSet(-1, providedTaskNumber);
         String _ack = "+EFO_ACK";
