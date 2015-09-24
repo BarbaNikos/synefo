@@ -128,6 +128,7 @@ public class NewScaleFunction {
                 }
             }
         }
+        System.out.println("scale-function located struggler: " + struggler + ", with bottleneck: " + bottleneck);
         String upstreamTask = getParentNode(topology, struggler);
         ArrayList<String> availableNodes = null;
         Integer identifier = Integer.parseInt(struggler.split("[:]")[1]);
