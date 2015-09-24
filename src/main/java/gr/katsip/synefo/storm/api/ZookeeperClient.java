@@ -99,8 +99,10 @@ public class ZookeeperClient {
                     } catch (UnsupportedEncodingException e) {
                         e.printStackTrace();
                     }
-                    logger.info("OK command: " + command);
-                    commands.add(command);
+                    if (command.length() > 0 && command.equals("") == false) {
+                        logger.info("OK command: " + command);
+                        commands.add(command);
+                    }
                     break;
                 default:
             }

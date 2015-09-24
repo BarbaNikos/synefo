@@ -99,6 +99,7 @@ public class LoadSlave implements Runnable {
         taskName = values.get("TASK_NAME");
         taskAddress = values.get("TASK_IP");
         workerPort = Integer.parseInt(values.get("WORKER_PORT"));
+        System.out.println("LoadSlave: spout connected with name=" + taskName + ", id=" + identifier + ", address=" + taskAddress);
         taskAddressIndex.putIfAbsent(taskName + ":" + identifier, taskAddress);
         taskWorkerPortIndex.putIfAbsent(taskName + ":" + identifier, workerPort);
         taskIdentifierIndex.putIfAbsent(taskName, identifier);
@@ -153,6 +154,8 @@ public class LoadSlave implements Runnable {
         JoinOperator operator = new JoinOperator(identifier,
                 (joinStep.equals("DISPATCH") ? JoinOperator.Step.DISPATCH : JoinOperator.Step.JOIN),
                 relation);
+        System.out.println("LoadSlave: bolt connected with name=" + taskName + ", id=" + identifier + ", address=" +
+                taskAddress + ", join=" + joinStep);
         this.taskToJoinRelation.putIfAbsent(identifier, operator);
         identifier = Integer.parseInt(values.get("TASK_ID"));
         taskName = values.get("TASK_NAME");
