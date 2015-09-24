@@ -84,7 +84,7 @@ public class LoadSlave implements Runnable {
                     spout(msg._values);
                     break;
                 case "JOIN_BOLT":
-                    bolt("JOIN_BOLT", msg._values);
+                    bolt(msg._values);
                     break;
                 case "TOPOLOGY":
                     topology(msg._values);
@@ -119,6 +119,8 @@ public class LoadSlave implements Runnable {
             downstream = new ArrayList<>(topology.get(taskName + ":" + identifier + "@" + taskAddress));
             if (activeTopology.containsKey(taskName + ":" + identifier + "@" + taskAddress)) {
                 activeDownstream = new ArrayList<>(activeTopology.get(taskName + ":" + identifier + "@" + taskAddress));
+            }else {
+                activeDownstream = new ArrayList<>();
             }
         }else {
             downstream = new ArrayList<>();
@@ -144,7 +146,7 @@ public class LoadSlave implements Runnable {
         }
     }
 
-    public void bolt(String type, HashMap<String, String> values) {
+    public void bolt(HashMap<String, String> values) {
         String joinStep = values.get("JOIN_STEP");
         String relation = values.get("JOIN_RELATION");
         identifier = Integer.parseInt(values.get("TASK_ID"));
@@ -189,6 +191,8 @@ public class LoadSlave implements Runnable {
             downstream = new ArrayList<>(topology.get(taskName + ":" + identifier + "@" + taskAddress));
             if (activeTopology.containsKey(taskName + ":" + identifier + "@" + taskAddress)) {
                 activeDownstream = new ArrayList<>(activeTopology.get(taskName + ":" + identifier + "@" + taskAddress));
+            }else {
+                activeDownstream = new ArrayList<>();
             }
         }else {
             downstream = new ArrayList<>();

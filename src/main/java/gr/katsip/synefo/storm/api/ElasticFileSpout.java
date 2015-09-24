@@ -45,8 +45,6 @@ public class ElasticFileSpout extends BaseRichSpout {
 
     private int workerPort;
 
-    private int reportCounter;
-
     private ArrayList<String> downstreamTaskNames = null;
 
     private ArrayList<Integer> downstreamTaskIdentifiers = null;
@@ -57,7 +55,7 @@ public class ElasticFileSpout extends BaseRichSpout {
 
     private int index;
 
-    private ZooPet zookeeperClient;
+    private ZookeeperClient zookeeperClient;
 
     private String taskAddress;
 
@@ -79,14 +77,12 @@ public class ElasticFileSpout extends BaseRichSpout {
         this.synefoPort = synefoPort;
         this.producer = producer;
         this.zooAddress = zooAddress;
-        reportCounter = 0;
     }
 
     public void register() {
         Socket socket;
         ObjectOutputStream output = null;
         ObjectInputStream input = null;
-        socket = null;
         SynefoMessage msg = new SynefoMessage();
         msg._type = SynefoMessage.Type.REG;
         msg._values.put("TASK_TYPE", "SPOUT");
@@ -99,11 +95,8 @@ public class ElasticFileSpout extends BaseRichSpout {
             output = new ObjectOutputStream(socket.getOutputStream());
             input = new ObjectInputStream(socket.getInputStream());
             output.writeObject(msg);
-            output.flush();
-            msg = null;
-            ArrayList<String> downstream = null;
-            downstream = (ArrayList<String>) input.readObject();
-            if(downstream != null && downstream.size() > 0) {
+            ArrayList<String> downstream = (ArrayList<String>) input.readObject();
+            if (downstream.size() > 0) {
                 downstreamTaskNames = new ArrayList<String>(downstream);
                 downstreamTaskIdentifiers = new ArrayList<Integer>();
                 for(String task : downstreamTaskNames) {
@@ -114,9 +107,8 @@ public class ElasticFileSpout extends BaseRichSpout {
                 downstreamTaskNames = new ArrayList<String>();
                 downstreamTaskIdentifiers = new ArrayList<Integer>();
             }
-            ArrayList<String> activeDownstream = null;
-            activeDownstream = (ArrayList<String>) input.readObject();
-            if(activeDownstream != null && activeDownstream.size() > 0) {
+            ArrayList<String> activeDownstream = (ArrayList<String>) input.readObject();
+            if (activeDownstream.size() > 0) {
                 activeDownstreamTaskNames = new ArrayList<String>(activeDownstream);
                 activeDownstreamTaskIdentifiers = new ArrayList<Integer>();
                 for(String task : activeDownstreamTaskNames) {
@@ -151,7 +143,7 @@ public class ElasticFileSpout extends BaseRichSpout {
         /**
          * Handshake with ZooKeeper
          */
-        zookeeperClient.start();
+        zookeeperClient.init();
         zookeeperClient.getScaleCommand();
         logger.info("ELASTIC-SPOUT-" + taskName + ":" + taskIdentifier + " registered (time: " + System.currentTimeMillis() + ")");
     }
@@ -195,7 +187,7 @@ public class ElasticFileSpout extends BaseRichSpout {
         } catch (UnknownHostException e1) {
             e1.printStackTrace();
         }
-        zookeeperClient = new ZooPet(zooAddress, taskName, taskIdentifier, taskAddress);
+        zookeeperClient = new ZookeeperClient(zooAddress, taskName, taskIdentifier, taskAddress);
         if (activeDownstreamTaskNames == null && downstreamTaskNames == null)
             register();
         initMetrics(topologyContext);
@@ -220,15 +212,13 @@ public class ElasticFileSpout extends BaseRichSpout {
                 index += 1;
         }
         String command = "";
-        synchronized (zookeeperClient) {
-            if (!zookeeperClient.pendingCommands.isEmpty())
-                command = zookeeperClient.returnScaleCommand();
-        }
-
+        if (!zookeeperClient.commands.isEmpty())
+            command = zookeeperClient.commands.poll();
+        manageCommand(command);
     }
 
     private void manageCommand(String command) {
-        if(command != null && command.length() > 0) {
+        if(command.length() > 0) {
             String[] scaleCommandTokens = command.split("[~:@]");
             String action = scaleCommandTokens[0];
             String taskWithIp = scaleCommandTokens[1] + ":" + scaleCommandTokens[2] + "@" + scaleCommandTokens[3];
@@ -279,7 +269,6 @@ public class ElasticFileSpout extends BaseRichSpout {
                     activeDownstreamTaskIdentifiers.remove(activeDownstreamTaskIdentifiers.indexOf(task_id));
                 }
             }
-            reportCounter = 0;
         }
     }
 }

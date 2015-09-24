@@ -43,7 +43,7 @@ public class DispatchBolt extends BaseRichBolt {
 
     private int synefoPort;
 
-    private ZooPet zookeeperClient;
+    private ZookeeperClient zookeeperClient;
 
     private List<String> downstreamTaskNames;
 
@@ -123,31 +123,26 @@ public class DispatchBolt extends BaseRichBolt {
             output = new ObjectOutputStream(socket.getOutputStream());
             input = new ObjectInputStream(socket.getInputStream());
             output.writeObject(msg);
-            output.flush();
-            msg = null;
-            ArrayList<String> downstream = null;
             logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": connected to synefo");
-            downstream = (ArrayList<String>) input.readObject();
-            if(downstream != null && downstream.size() > 0) {
+            ArrayList<String> downstream = (ArrayList<String>) input.readObject();
+            if (downstream.size() > 0) {
                 downstreamTaskNames = new ArrayList<String>(downstream);
                 downstreamTaskIdentifiers = new ArrayList<Integer>();
                 Iterator<String> itr = downstreamTaskNames.iterator();
-                while(itr.hasNext()) {
+                while (itr.hasNext()) {
                     String[] tokens = itr.next().split("[:@]");
                     Integer task = Integer.parseInt(tokens[1]);
                     downstreamTaskIdentifiers.add(task);
                 }
             }else {
-                downstreamTaskNames = new ArrayList<String>();
                 downstreamTaskIdentifiers = new ArrayList<Integer>();
             }
-            ArrayList<String> activeDownstream = null;
-            activeDownstream = (ArrayList<String>) input.readObject();
-            if(activeDownstream != null && activeDownstream.size() > 0) {
+            ArrayList<String> activeDownstream = (ArrayList<String>) input.readObject();
+            if (activeDownstream.size() > 0) {
                 activeDownstreamTaskNames = new ArrayList<String>(activeDownstream);
                 activeDownstreamTaskIdentifiers = new ArrayList<Integer>();
                 Iterator<String> itr = activeDownstreamTaskNames.iterator();
-                while(itr.hasNext()) {
+                while (itr.hasNext()) {
                     String[] tokens = itr.next().split("[:@]");
                     Integer task = Integer.parseInt(tokens[1]);
                     activeDownstreamTaskIdentifiers.add(task);
@@ -187,11 +182,6 @@ public class DispatchBolt extends BaseRichBolt {
                     relationTaskIndex);
             output.writeObject(new String("OK"));
             dispatcher.setTaskToRelationIndex(activeRelationToTaskIndex);
-            output.flush();
-            /**
-             * Closing channels of communication with
-             * SynEFO server
-             */
             output.close();
             input.close();
             socket.close();
@@ -207,7 +197,7 @@ public class DispatchBolt extends BaseRichBolt {
         /**
          * Handshake with ZooKeeper
          */
-        zookeeperClient.start();
+        zookeeperClient.init();
         zookeeperClient.getScaleCommand();
         StringBuilder strBuild = new StringBuilder();
         strBuild.append("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": active tasks: ");
@@ -215,8 +205,7 @@ public class DispatchBolt extends BaseRichBolt {
             strBuild.append(activeTask + " ");
         }
         logger.info(strBuild.toString());
-        logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + " registered to synefo (time: " +
-                System.currentTimeMillis() + ")");
+        logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + " registered to load-balancer");
         throughputPreviousTimestamp = System.currentTimeMillis();
         temporaryInputRate = 0;
     }
@@ -235,7 +224,7 @@ public class DispatchBolt extends BaseRichBolt {
         } catch (UnknownHostException e1) {
             e1.printStackTrace();
         }
-        zookeeperClient = new ZooPet(zookeeperAddress, taskName, taskIdentifier, taskAddress);
+        zookeeperClient = new ZookeeperClient(zookeeperAddress, taskName, taskIdentifier, taskAddress);
         if(downstreamTaskNames == null && activeDownstreamTaskNames == null)
             register();
         initMetrics(topologyContext);
@@ -318,6 +307,11 @@ public class DispatchBolt extends BaseRichBolt {
         tupleCounter++;
         if (tupleCounter >= WARM_UP_THRESHOLD && !SYSTEM_WARM_FLAG)
             SYSTEM_WARM_FLAG = true;
+
+        String command = "";
+        if (!zookeeperClient.commands.isEmpty())
+            command = zookeeperClient.commands.poll();
+        manageCommand(command);
     }
 
     @Override
@@ -326,6 +320,49 @@ public class DispatchBolt extends BaseRichBolt {
         producerSchema.add("SYNEFO_HEADER");
         producerSchema.addAll(dispatcher.getOutputSchema().toList());
         outputFieldsDeclarer.declare(new Fields(producerSchema));
+    }
+
+    public void manageCommand(String command) {
+        String[] scaleCommandTokens = command.split("[~:@]");
+        String action = scaleCommandTokens[0];
+        String taskWithAddress = scaleCommandTokens[1] + ":" + scaleCommandTokens[2] + "@" + scaleCommandTokens[3];
+        String taskAddress = scaleCommandTokens[3];
+        String task = scaleCommandTokens[1];
+        Integer taskIdentifier = Integer.parseInt(scaleCommandTokens[2]);
+        StringBuilder strBuild = new StringBuilder();
+        strBuild.append(SynefoConstant.PUNCT_TUPLE_TAG + "/");
+        if (action.toLowerCase().contains("activate") || action.toLowerCase().contains("deactivate")) {
+
+        }else {
+            if (action.toLowerCase().contains("add")) {
+                strBuild.append(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.ADD_ACTION + "/");
+                activeDownstreamTaskNames.add(taskWithAddress);
+                activeDownstreamTaskIdentifiers.add(taskIdentifier);
+                /**
+                 * TODO: Here I need to update the taskToRelationIndex accordingly
+                 */
+            }else if (action.toLowerCase().contains("remove")) {
+                strBuild.append(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.REMOVE_ACTION + "/");
+                /**
+                 * TODO: Here I need to update the taskToRelationIndex accordingly
+                 */
+            }
+            strBuild.append(SynefoConstant.COMP_TAG + ":" + task + ":" + taskIdentifier + "/");
+            strBuild.append(SynefoConstant.COMP_NUM_TAG + ":" + activeDownstreamTaskNames.size() + "/");
+            strBuild.append(SynefoConstant.COMP_IP_TAG + ":" + taskIdentifier + "/");
+            Values punctValue = new Values();
+            punctValue.add(strBuild.toString());
+            for(int i = 0; i < dispatcher.getOutputSchema().size(); i++) {
+                punctValue.add(null);
+            }
+            for(Integer d_task : activeDownstreamTaskIdentifiers) {
+                collector.emitDirect(d_task, punctValue);
+            }
+            if(action.toLowerCase().contains("remove") && activeDownstreamTaskNames.indexOf(taskWithAddress) >= 0) {
+                activeDownstreamTaskNames.remove(activeDownstreamTaskNames.indexOf(taskWithAddress));
+                activeDownstreamTaskIdentifiers.remove(activeDownstreamTaskIdentifiers.indexOf(taskWithAddress));
+            }
+        }
     }
 
     public void manageScaleCommand(Tuple tuple) {
@@ -405,9 +442,7 @@ public class DispatchBolt extends BaseRichBolt {
                 }
                 logger.info("");
             }
-            List<Integer> activeDownstreamTasks =
-                    zookeeperClient.getActiveTopology(this.taskName, this.taskIdentifier, this.taskAddress);
-            this.activeDownstreamTaskIdentifiers = new ArrayList<Integer>(activeDownstreamTasks);
+            activeDownstreamTaskIdentifiers = zookeeperClient.getActiveDownstreamTaskIdentifiers();
         }else if (scaleAction != null && scaleAction.equals(SynefoConstant.REMOVE_ACTION)) {
             if ((this.taskName + ":" + this.taskIdentifier).equals(taskName + ":" + taskIdentifier)) {
                 try {
@@ -466,10 +501,7 @@ public class DispatchBolt extends BaseRichBolt {
                 }
                 logger.info("");
             }
-            List<Integer> activeDownstreamTasks =
-                    zookeeperClient.getActiveTopology(this.taskName, this.taskIdentifier, this.taskAddress);
-            this.activeDownstreamTaskIdentifiers = new ArrayList<Integer>(activeDownstreamTasks);
+            activeDownstreamTaskIdentifiers = zookeeperClient.getActiveDownstreamTaskIdentifiers();
         }
     }
-
 }
