@@ -169,7 +169,7 @@ public class LoadSlave implements Runnable {
             }
         }
         HashMap<String, ArrayList<String>> relationTaskIndex = null;
-        if (operator != null && operator.getStep() == JoinOperator.Step.DISPATCH) {
+        if (operator.getStep() == JoinOperator.Step.DISPATCH) {
             relationTaskIndex = new HashMap<String, ArrayList<String>>();
             for (String task : topology.get(taskName + ":" + identifier + "@" + taskAddress)) {
                 Integer identifier = Integer.parseInt(task.split("[:@]")[1]);
