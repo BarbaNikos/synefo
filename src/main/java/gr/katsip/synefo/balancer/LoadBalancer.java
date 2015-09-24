@@ -58,6 +58,7 @@ public class LoadBalancer {
                     /**
                      * New task registered
                      */
+                    logger.info("identified NodeChildrenChanged event on " + watchedEvent.getPath());
                     watchTaskNode(watchedEvent.getPath());
                 }
             }else if (watchedEvent.getType() == Event.EventType.NodeDataChanged) {
@@ -71,7 +72,7 @@ public class LoadBalancer {
         public void processResult(int i, String s, Object o, List<String> list, Stat stat) {
             switch (KeeperException.Code.get(i)) {
                 case CONNECTIONLOSS:
-                    logger.info("taskChildrenCallback CONNECTIONLOSS");
+                    logger.error("taskChildrenCallback CONNECTIONLOSS");
                     try {
                         watchTaskNode(new String((byte[]) o, "UTF-8"));
                     } catch (UnsupportedEncodingException e) {
@@ -79,7 +80,7 @@ public class LoadBalancer {
                     }
                     break;
                 case NONODE:
-                    logger.info("taskChildrenCallback NONODE");
+                    logger.error("taskChildrenCallback NONODE");
                     break;
                 case OK:
                     list.removeAll(registeredTasks);
@@ -102,23 +103,26 @@ public class LoadBalancer {
         public void processResult(int i, String s, Object o, byte[] bytes, Stat stat) {
             switch (KeeperException.Code.get(i)) {
                 case CONNECTIONLOSS:
-                    logger.info("taskChildrenCallback CONNECTIONLOSS");
+                    logger.error("taskChildrenCallback CONNECTIONLOSS");
                     getTaskData(s);
                     break;
                 case NONODE:
-                    logger.info("taskChildrenCallback NONODE");
+                    logger.error("taskChildrenCallback NONODE");
                     break;
                 case OK:
                     double value = ByteBuffer.wrap(bytes).getDouble();
                     String taskName = s.substring(s.lastIndexOf('/') + 1, s.lastIndexOf(':'));
                     Integer identifier = Integer.parseInt(s.substring(s.lastIndexOf(':') + 1, s.lastIndexOf("@")));
                     String taskAddress = s.substring(s.lastIndexOf("@"));
+                    logger.info("identified data point from " + taskName + ":" + identifier + "@" + taskAddress + " and the data is " + value);
 //                    GenericTriplet<String, String, String> action = scaleFunction.addData(taskName, Integer.parseInt(s.substring(s.lastIndexOf(':') + 1)),
 //                            Double.parseDouble(data[0]), Double.parseDouble(data[1]),
 //                            Double.parseDouble(data[2]), Double.parseDouble(data[3]), Double.parseDouble(data[4]));
                     GenericTriplet<String, String, String> action = scaleFunction.addInputRateData(
                             taskName, identifier, value);
                     if (action != null) {
+                        logger.info("action generated " + action.first + " for upstream task: " +
+                                action.second + " directed to: " + action.third);
                         /**
                          * Need to
                          * 1) update active-topology
@@ -134,13 +138,23 @@ public class LoadBalancer {
                         setActiveTopology(
                                 new ConcurrentHashMap<String, ArrayList<String>>(scaleFunction.getActiveTopology()));
                         /**
-                         * TODO: 2) set the commands in the /synefo/bolt-tasks
+                         * 2) set the commands in the /synefo/bolt-tasks
                          * Add/Remove and Activate/Deactivate
                          */
                         List<String> parentTasks = Util.getInverseTopology(getTopology()).get(taskName + ":" +
                                 identifier + "@" + taskAddress);
                         parentTasks.remove(parentTasks.indexOf(action.second));
-
+                        if (action.first.equals("add")) {
+                            for (String task : parentTasks) {
+                                setScaleAction(task, "activate", action.third);
+                            }
+                            setScaleAction(action.second, action.first, action.third);
+                        }else if (action.first.equals("remove")) {
+                            for (String task : parentTasks) {
+                                setScaleAction(task, "deactivate", action.third);
+                            }
+                            setScaleAction(action.second, action.first, action.third);
+                        }
                     }
 
                     break;
@@ -151,6 +165,46 @@ public class LoadBalancer {
             }
         }
     };
+    private AsyncCallback.StatCallback setActionCallback = new AsyncCallback.StatCallback() {
+        @Override
+        public void processResult(int i, String s, Object o, Stat stat) {
+            String[] tokens = new String[0];
+            switch (KeeperException.Code.get(i)) {
+                case CONNECTIONLOSS:
+                    logger.error("CONNECTIONLOSS");
+                    try {
+                        tokens = (new String((byte[]) o, "UTF-8")).split(",");
+                    } catch (UnsupportedEncodingException e) {
+                        e.printStackTrace();
+                    }
+                    setScaleAction(tokens[0], tokens[1], tokens[2]);
+                    break;
+                case NONODE:
+                    logger.error("NONODE");
+                    try {
+                        tokens = (new String((byte[]) o, "UTF-8")).split(",");
+                    } catch (UnsupportedEncodingException e) {
+                        e.printStackTrace();
+                    }
+                    setScaleAction(tokens[0], tokens[1], tokens[2]);
+                    break;
+                case OK:
+                    break;
+                default:
+                    break;
+            }
+        }
+    };
+
+    private void setScaleAction(String task, String action, String targetTask) {
+        try {
+            zooKeeper.setData(MAIN_ZNODE + "/" + SCALE_ACTION + "/" + task,
+                    (action + "~" + targetTask).getBytes("UTF-8"), -1,
+                    setActionCallback, (task + "," + action + "," + targetTask).getBytes("UTF-8"));
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+    }
 
     private void getTaskData(String taskNode) {
         try {

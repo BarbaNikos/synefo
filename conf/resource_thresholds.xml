@@ -1,43 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <thresholds>
 	<resource>
-		<key>cpu-min</key>
-		<value>0.1</value>
-	</resource>
-	<resource>
-		<key>cpu-max</key>
-		<value>0.5</value>
-	</resource>
-	<resource>
-		<key>memory-min</key>
-		<value>0.1</value>
-	</resource>
-	<resource>
-		<key>memory-max</key>
-		<value>0.4</value>
-	</resource>
-	<resource>
-		<key>latency-min</key>
-		<value>3</value>
-	</resource>
-	<resource>
-		<key>latency-max</key>
-		<value>50</value>
-	</resource>
-	<resource>
-		<key>throughput-min</key>
-		<value>100</value>
-	</resource>
-	<resource>
-		<key>throughput-max</key>
-		<value>600</value>
-	</resource>
-	<resource>
-		<key>input-rate-min</key>
-		<value>1000</value>
-	</resource>
-	<resource>
-		<key>input-rate-max</key>
-		<value>2000</value>
-	</resource>
+		<key>input-rate</key>
+		<min>1000</min>
+		<max>1000</max>
 </thresholds>

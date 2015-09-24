@@ -3,6 +3,8 @@ package gr.katsip.synefo.balancer;
 import gr.katsip.synefo.server2.JoinOperator;
 import gr.katsip.synefo.server2.ScaleFunction;
 import gr.katsip.synefo.storm.api.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -16,6 +18,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Created by nick on 9/22/15.
  */
 public class NewLoadMaster implements Runnable {
+
+    Logger logger = LoggerFactory.getLogger(NewLoadMaster.class);
 
     private ConcurrentHashMap<String, ArrayList<String>> topology;
 
@@ -50,6 +54,7 @@ public class NewLoadMaster implements Runnable {
         this.zookeeperAddress = zookeeperAddress;
         this.taskNumber = taskNumber;
         this.taskToJoinRelation = taskToJoinRelation;
+        this.resourceThresholds = resourceThresholds;
     }
 
 
@@ -83,6 +88,7 @@ public class NewLoadMaster implements Runnable {
         taskIdentifierIndex.clear();
         balancer.setTopology(topology);
         balancer.setTopology(activeTopology);
+        logger.info(" initiated the whole process.");
         while (true) {
             try {
                 Thread.sleep(500);

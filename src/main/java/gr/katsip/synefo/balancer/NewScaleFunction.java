@@ -45,6 +45,12 @@ public class NewScaleFunction {
         if (thresholds != null) {
             this.thresholds = thresholds;
         }
+        //TODO: Change the following
+        this.thresholds = new HashMap<String, Pair<Number, Number>>();
+        Pair<Number, Number> pair = new Pair<>();
+        pair.lowerBound = 1000;
+        pair.upperBound = 1000;
+        this.thresholds.put("input-rate", pair);
     }
 
     public void updateTopology(Map<String, ArrayList<String>> topology) {

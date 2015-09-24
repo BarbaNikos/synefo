@@ -1,6 +1,9 @@
 package gr.katsip.synefo.balancer;
 
 import gr.katsip.synefo.TopologyXMLParser.ResourceThresholdParser;
+import gr.katsip.synefo.storm.api.Pair;
+
+import java.util.HashMap;
 
 /**
  * Created by nick on 9/23/15.
@@ -14,6 +17,11 @@ public class App {
         ResourceThresholdParser parser = new ResourceThresholdParser();
         parser.parseThresholds(args[0]);
         String zookeeperAddress = args[1];
+        HashMap<String, Pair<String, String>> inputRateThresholds = new HashMap<>();
+        Pair<String, String> pair = new Pair<>();
+        pair.lowerBound = "1000";
+        pair.upperBound = "1000";
+        inputRateThresholds.put("input-rate", pair);
         BalanceServer server = new BalanceServer(zookeeperAddress, parser.get_thresholds(), null);
         server.runServer();
     }
