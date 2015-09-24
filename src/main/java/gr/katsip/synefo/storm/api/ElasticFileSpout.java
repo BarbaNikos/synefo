@@ -218,6 +218,7 @@ public class ElasticFileSpout extends BaseRichSpout {
     }
 
     private void manageCommand(String command) {
+        logger.info("command " + command);
         if(command.length() > 0) {
             String[] scaleCommandTokens = command.split("[~:@]");
             String action = scaleCommandTokens[0];
