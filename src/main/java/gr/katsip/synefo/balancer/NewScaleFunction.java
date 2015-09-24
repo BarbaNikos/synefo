@@ -130,6 +130,7 @@ public class NewScaleFunction {
         }
         System.out.println("scale-function located struggler: " + struggler + ", with bottleneck: " + bottleneck);
         String upstreamTask = getParentNode(topology, struggler);
+        System.out.println("scale-function located struggler\'s (" + struggler + ") parent task: " + upstreamTask);
         ArrayList<String> availableNodes = null;
         Integer identifier = Integer.parseInt(struggler.split("[:]")[1]);
         if (upstreamTask != null && taskToJoinRelation.containsKey(identifier)) {
