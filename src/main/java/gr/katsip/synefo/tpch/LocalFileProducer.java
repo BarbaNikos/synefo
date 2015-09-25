@@ -52,7 +52,8 @@ public class LocalFileProducer implements Serializable {
 
     private static final int SIZE = 10000;
 
-    public LocalFileProducer(String pathToFile, String[] schema, String[] projectedSchema, double[] outputRate, int[] checkpoints) {
+    public LocalFileProducer(String pathToFile, String[] schema, String[] projectedSchema, double[] outputRate,
+                             int[] checkpoints) {
         this.schema = new Fields(schema);
         this.projectedSchema = new Fields(projectedSchema);
         this.pathToFile = pathToFile;
@@ -97,7 +98,6 @@ public class LocalFileProducer implements Serializable {
 
     public int nextTuple(SpoutOutputCollector spoutOutputCollector, Integer taskIdentifier,
                          HashMap<Values, Long> tupleStatistics) {
-
         while (System.nanoTime() <= nextTimestamp) {
             try {
                 Thread.sleep(1);

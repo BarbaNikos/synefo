@@ -97,7 +97,7 @@ public class LoadBalancer {
                     registeredTasks.addAll(list);
                     break;
                 default:
-                    logger.info("taskChildrenCallback Unexpected scenario: " +
+                    logger.error("unexpected scenario: " +
                             KeeperException.create(KeeperException.Code.get(i), s));
                     break;
             }
@@ -166,7 +166,7 @@ public class LoadBalancer {
 
                     break;
                 default:
-                    System.out.println("taskDataCallback Unexpected scenario: " +
+                    logger.error("unexpected scenario: " +
                             KeeperException.create(KeeperException.Code.get(i), s));
                     break;
             }
@@ -198,6 +198,8 @@ public class LoadBalancer {
                 case OK:
                     break;
                 default:
+                    logger.error("unexpected scenario: " +
+                            KeeperException.create(KeeperException.Code.get(i), s));
                     break;
             }
         }

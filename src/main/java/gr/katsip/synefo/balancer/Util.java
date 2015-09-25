@@ -284,9 +284,6 @@ public class Util {
             if (downStreamNames != null && downStreamNames.size() > 0) {
                 ArrayList<String> downStreamIds = new ArrayList<String>();
                 for(String name : downStreamNames) {
-                    if (taskIdentifierIndex.containsKey(name) == false) {
-                        assert taskIdentifierIndex.containsKey(name) == true;
-                    }
                     String childTask = name + ":" + Integer.toString(taskIdentifierIndex.get(name));
                     downStreamIds.add(childTask);
                 }

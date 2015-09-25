@@ -59,7 +59,6 @@ public class ZookeeperClient {
     }
 
     Watcher watcher = new Watcher() {
-
         @Override
         public void process(WatchedEvent watchedEvent) {
             if (watchedEvent.getType().equals(Event.EventType.NodeDataChanged)) {
@@ -104,6 +103,8 @@ public class ZookeeperClient {
                     }
                     break;
                 default:
+                    logger.error("unexpected scenario: " +
+                            org.apache.zookeeper.KeeperException.create(org.apache.zookeeper.KeeperException.Code.get(i), s));
             }
         }
     };
@@ -232,6 +233,8 @@ public class ZookeeperClient {
                 case OK:
                     break;
                 default:
+                    logger.error("unexpected scenario: " +
+                            org.apache.zookeeper.KeeperException.create(org.apache.zookeeper.KeeperException.Code.get(i), s));
                     break;
             }
         }
