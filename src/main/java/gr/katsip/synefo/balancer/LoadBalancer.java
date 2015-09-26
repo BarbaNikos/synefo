@@ -150,6 +150,7 @@ public class LoadBalancer {
                          * Add/Remove and Activate/Deactivate
                          */
                         List<String> parentTasks = Util.getInverseTopology(getTopology()).get(action.third);
+                        System.out.println("parent-tasks of node " + action.third + " are: " + parentTasks.toString());
                         parentTasks.remove(parentTasks.indexOf(action.second));
                         if (action.first.equals("add")) {
                             for (String task : parentTasks) {
@@ -300,7 +301,6 @@ public class LoadBalancer {
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
-        scaleFunction.updateActiveTopology(activeTopology);
     }
 
     public ConcurrentHashMap<String, ArrayList<String>> getActiveTopology() {

@@ -238,7 +238,7 @@ public class NewScaleFunction {
          * all of newTask's upstream nodes.
          */
         Iterator<Map.Entry<String, ArrayList<String>>> itr = activeTopology.entrySet().iterator();
-        while(itr.hasNext()) {
+        while (itr.hasNext()) {
             Map.Entry<String, ArrayList<String>> pair = itr.next();
             String upstreamNode = pair.getKey();
             ArrayList<String> activeDownStreamNodes = pair.getValue();
@@ -253,8 +253,8 @@ public class NewScaleFunction {
          */
         ArrayList<String> downStreamNodes = topology.get(newTask);
         ArrayList<String> activeDownStreamNodes = new ArrayList<String>();
-        for(String node : downStreamNodes) {
-            if(activeTopology.containsKey(node)) {
+        for (String node : downStreamNodes) {
+            if (activeTopology.containsKey(node)) {
                 activeDownStreamNodes.add(node);
             }
         }
