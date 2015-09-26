@@ -128,21 +128,23 @@ public class NewScaleFunction {
                 }
             }
         }
-        System.out.println("scale-function located struggler: " + struggler + ", with bottleneck: " + bottleneck);
-        String upstreamTask = getParentNode(topology, struggler);
-        System.out.println("scale-function located struggler\'s (" + struggler + ") parent task: " + upstreamTask);
-        ArrayList<String> availableNodes = null;
-        Integer identifier = Integer.parseInt(struggler.split("[:]")[1]);
-        if (upstreamTask != null && taskToJoinRelation.containsKey(identifier)) {
-            System.out.println("scale-function scaleCheck() located average of input-rate " + bottleneck + ", for task " + struggler);
-            availableNodes = getAvailableTasks(topology, activeTopology, upstreamTask, identifier, taskToJoinRelation);
-            if (availableNodes.size() > 0) {
-                String chosenTask = randomChoice(availableNodes);
-                /**
-                 * Update active-topology
-                 */
-                System.out.println("scale-function scaleCheck() available scale action add~" + chosenTask);
-                scaleAction = new GenericTriplet<String, String, String>("add", upstreamTask, chosenTask);
+        if (bottleneck > 0) {
+            System.out.println("scale-function located struggler: " + struggler + ", with bottleneck: " + bottleneck);
+            String upstreamTask = getParentNode(topology, struggler);
+            System.out.println("scale-function located struggler\'s (" + struggler + ") parent task: " + upstreamTask);
+            ArrayList<String> availableNodes = null;
+            Integer identifier = Integer.parseInt(struggler.split("[:]")[1]);
+            if (upstreamTask != null && taskToJoinRelation.containsKey(identifier)) {
+                System.out.println("scale-function scaleCheck() located average of input-rate " + bottleneck + ", for task " + struggler);
+                availableNodes = getAvailableTasks(topology, activeTopology, upstreamTask, identifier, taskToJoinRelation);
+                if (availableNodes.size() > 0) {
+                    String chosenTask = randomChoice(availableNodes);
+                    /**
+                     * Update active-topology
+                     */
+                    System.out.println("scale-function scaleCheck() available scale action add~" + chosenTask);
+                    scaleAction = new GenericTriplet<String, String, String>("add", upstreamTask, chosenTask);
+                }
             }
         }
         /**
@@ -170,9 +172,9 @@ public class NewScaleFunction {
                     }
                 }
             }
-            upstreamTask = getParentNode(topology, slacker);
-            identifier = Integer.parseInt(slacker.split("[:]")[1]);
-            availableNodes = null;
+            String upstreamTask = getParentNode(topology, slacker);
+            Integer identifier = Integer.parseInt(slacker.split("[:]")[1]);
+            ArrayList<String> availableNodes = null;
             if (activeTopology.containsKey(slacker) == false) {
                 List<String> activeTasks = NewScaleFunction.getActiveJoinNodes(activeTopology,
                         upstreamTask, slacker, taskToJoinRelation);
