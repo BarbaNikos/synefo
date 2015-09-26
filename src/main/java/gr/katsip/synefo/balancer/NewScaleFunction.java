@@ -5,6 +5,7 @@ import gr.katsip.synefo.storm.api.GenericTriplet;
 import gr.katsip.synefo.storm.api.Pair;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by katsip on 9/22/2015.
@@ -109,7 +110,7 @@ public class NewScaleFunction {
         String struggler = "";
         Double bottleneck = -1.0;
         Iterator<Map.Entry<String, List<Double>>> iterator = inputRate.entrySet().iterator();
-        System.out.println("scale-function performs a scale-check");
+//        System.out.println("scale-function performs a scale-check");
         while (iterator.hasNext()) {
             Map.Entry<String, List<Double>> pair = iterator.next();
             Double average = 0.0;
@@ -130,7 +131,11 @@ public class NewScaleFunction {
         }
         if (bottleneck > 0) {
             System.out.println("scale-function located struggler: " + struggler + ", with bottleneck: " + bottleneck);
-            String upstreamTask = getParentNode(topology, struggler);
+            String upstreamTask = null;
+            List<String> parentTasks = Util.getInverseTopology(new ConcurrentHashMap<String, ArrayList<String>>(topology))
+                    .get(struggler);
+            if (parentTasks.size() > 0)
+                upstreamTask = parentTasks.get(0);
             System.out.println("scale-function located struggler\'s (" + struggler + ") parent task: " + upstreamTask);
             ArrayList<String> availableNodes = null;
             Integer identifier = Integer.parseInt(struggler.split("[:]")[1]);
@@ -172,7 +177,11 @@ public class NewScaleFunction {
                     }
                 }
             }
-            String upstreamTask = getParentNode(topology, slacker);
+            String upstreamTask = null;
+            List<String> parentTasks = Util.getInverseTopology(new ConcurrentHashMap<String, ArrayList<String>>(topology))
+                    .get(slacker);
+            if (parentTasks.size() > 0)
+                upstreamTask = parentTasks.get(0);
             Integer identifier = Integer.parseInt(slacker.split("[:]")[1]);
             ArrayList<String> availableNodes = null;
             if (activeTopology.containsKey(slacker) == false) {
@@ -287,16 +296,4 @@ public class NewScaleFunction {
         return sameRelationActiveNodes;
     }
 
-    public static String getParentNode(Map<String, ArrayList<String>> topology, String taskName) {
-        Iterator<Map.Entry<String, ArrayList<String>>> itr = topology.entrySet().iterator();
-        while(itr.hasNext()) {
-            Map.Entry<String, ArrayList<String>> pair = itr.next();
-            ArrayList<String> tasks = pair.getValue();
-            for(String t : tasks) {
-                if(t.equals(taskName))
-                    return pair.getKey();
-            }
-        }
-        return null;
-    }
 }
