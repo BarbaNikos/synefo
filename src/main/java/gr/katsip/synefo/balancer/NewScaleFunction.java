@@ -134,6 +134,7 @@ public class NewScaleFunction {
             String upstreamTask = null;
             List<String> parentTasks = Util.getInverseTopology(new ConcurrentHashMap<String, ArrayList<String>>(topology))
                     .get(struggler);
+            System.out.println("parent-tasks: " + parentTasks.toString());
             if (parentTasks.size() > 0)
                 upstreamTask = parentTasks.get(0);
             System.out.println("scale-function located struggler\'s (" + struggler + ") parent task: " + upstreamTask);
