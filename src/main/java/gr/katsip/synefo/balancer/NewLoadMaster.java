@@ -87,7 +87,9 @@ public class NewLoadMaster implements Runnable {
         activeTopology.putAll(Util.getInitialActiveTopologyWithJoinOperators(topology,
                 Util.getInverseTopology(topology), taskToJoinRelation, true));
         balancer.setTopology(topology);
+        balancer.updateScaleFunctionTopology(topology);
         balancer.setActiveTopology(activeTopology);
+        balancer.updateScaleFunctionActiveTopology(activeTopology);
         taskIdentifierIndex.clear();
 
         logger.info(" initiated the whole process.");

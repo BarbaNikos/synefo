@@ -261,6 +261,10 @@ public class LoadBalancer {
         watchTaskNode(MAIN_ZNODE + "/" + TASK_ZNODE);
     }
 
+    public void updateScaleFunctionTopology(ConcurrentHashMap<String, ArrayList<String>> topology) {
+        scaleFunction.updateTopology(topology);
+    }
+
     public void setTopology(ConcurrentHashMap<String, ArrayList<String>> topology) {
         try {
             zooKeeper.setData(MAIN_ZNODE + "/" + TOPOLOGY_ZNODE,
@@ -272,7 +276,6 @@ public class LoadBalancer {
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
-        scaleFunction.updateTopology(topology);
     }
 
     public ConcurrentHashMap<String, ArrayList<String>> getTopology() {
@@ -288,6 +291,10 @@ public class LoadBalancer {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public void updateScaleFunctionActiveTopology(ConcurrentHashMap<String, ArrayList<String>> activeTopology) {
+        scaleFunction.updateTopology(activeTopology);
     }
 
     public void setActiveTopology(ConcurrentHashMap<String, ArrayList<String>> activeTopology) {
