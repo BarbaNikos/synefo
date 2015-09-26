@@ -266,11 +266,12 @@ public class NewScaleFunction {
                                                          String upstreamTask, Integer strugglerIdentifier,
                                                          Map<Integer, JoinOperator> taskToJoinRelation) {
         ArrayList<String> availableNodes = new ArrayList<String>();
-        ArrayList<String> physicalNodes = topology.get(upstreamTask);
+        ArrayList<String> physicalNodes = new ArrayList<String>(topology.get(upstreamTask));
         physicalNodes.removeAll(activeTopology.get(upstreamTask));
         for(String task : physicalNodes) {
             Integer identifier = Integer.parseInt(task.split("[:]")[1]);
-            if(taskToJoinRelation.get(identifier).getRelation().equals(
+            if (taskToJoinRelation.get(identifier).getStep().equals(taskToJoinRelation.get(strugglerIdentifier).getStep()) &&
+                    taskToJoinRelation.get(identifier).getRelation().equals(
                     taskToJoinRelation.get(strugglerIdentifier).getRelation())) {
                 availableNodes.add(task);
             }
