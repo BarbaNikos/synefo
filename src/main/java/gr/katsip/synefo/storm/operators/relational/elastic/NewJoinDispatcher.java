@@ -162,9 +162,9 @@ public class NewJoinDispatcher implements Serializable {
     private int dispatch(String primaryKey, String foreignKey, HashMap<String, List<Integer>> primaryRelationIndex,
                         String primaryRelationName, HashMap<String, List<Integer>> secondaryRelationIndex,
                         Fields attributeNames, Values attributeValues, OutputCollector collector, Tuple anchor) {
-        logger.info("dispatch() called primary-key: " + primaryKey + ", foreign-key: " + foreignKey +
-        " primary-relation: " + primaryRelationName + ", attributes: " + attributeNames.toList().toString() +
-        " values: " + attributeValues.toString());
+//        logger.info("dispatch() called primary-key: " + primaryKey + ", foreign-key: " + foreignKey +
+//        " primary-relation: " + primaryRelationName + ", attributes: " + attributeNames.toList().toString() +
+//        " values: " + attributeValues.toString());
         /**
          * STORE:
          * 2 cases: (a) primary-key has been encountered before (b) primary-key has not been encountered before
@@ -184,7 +184,7 @@ public class NewJoinDispatcher implements Serializable {
                     collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), anchor, tuple);
                 else
                     collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), tuple);
-                logger.info("dispatch() primary key is maintained by task " + dispatchInfo.get(dispatchInfo.get(0)) + ".");
+//                logger.info("dispatch() primary key is maintained by task " + dispatchInfo.get(dispatchInfo.get(0)) + ".");
             }
             if (dispatchInfo.get(0) >= (dispatchInfo.size() - 1)) {
                 dispatchInfo.set(0, 1);
@@ -192,14 +192,14 @@ public class NewJoinDispatcher implements Serializable {
                 int tmp = dispatchInfo.get(0);
                 dispatchInfo.set(0, ++tmp);
             }
-            logger.info("dispatch() incremented index to task " + dispatchInfo.get(dispatchInfo.get(0)) + ".");
+//            logger.info("dispatch() incremented index to task " + dispatchInfo.get(dispatchInfo.get(0)) + ".");
             primaryRelationIndex.put(primaryKey, dispatchInfo);
         }else {
             if (taskToRelationIndex.get(primaryRelationName).size() > 0) {
-                logger.info("dispatch() primary key is not maintained, pick random task from " +
-                        taskToRelationIndex.get(primaryRelationName).size() + " tasks.");
+//                logger.info("dispatch() primary key is not maintained, pick random task from " +
+//                        taskToRelationIndex.get(primaryRelationName).size() + " tasks.");
                 Integer victimTask = taskToRelationIndex.get(primaryRelationName).get(0);
-                logger.info("dispatch() picked task " + victimTask + " to send tuple to.");
+//                logger.info("dispatch() picked task " + victimTask + " to send tuple to.");
                 ArrayList<Integer> sharedKeyTasks = new ArrayList<>();
                 Iterator<Map.Entry<String, List<Integer>>> iterator = primaryRelationIndex.entrySet().iterator();
                 while(iterator.hasNext()) {
@@ -224,7 +224,7 @@ public class NewJoinDispatcher implements Serializable {
                         collector.emitDirect(victimTask, tuple);
                 }
                 primaryRelationIndex.put(primaryKey, sharedKeyTasks);
-                logger.info("dispatch() shared keys with task " + victimTask + " are tasks: " + sharedKeyTasks.toString());
+//                logger.info("dispatch() shared keys with task " + victimTask + " are tasks: " + sharedKeyTasks.toString());
             }
         }
         /**
