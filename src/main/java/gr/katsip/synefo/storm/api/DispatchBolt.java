@@ -391,7 +391,7 @@ public class DispatchBolt extends BaseRichBolt {
                 try {
                     ServerSocket socket = new ServerSocket(6000 + this.taskIdentifier);
                     int numberOfConnections = 0;
-                    while (numberOfConnections < (taskNumber)) {
+                    while (numberOfConnections < (taskNumber - 1)) {
                         Socket client = socket.accept();
                         ObjectOutputStream output = new ObjectOutputStream(client.getOutputStream());
                         ObjectInputStream input = new ObjectInputStream(client.getInputStream());
@@ -456,7 +456,7 @@ public class DispatchBolt extends BaseRichBolt {
                 try {
                     ServerSocket socket = new ServerSocket(6000 + this.taskIdentifier);
                     int numberOfConnections = 0;
-                    while (numberOfConnections < (taskNumber)) {
+                    while (numberOfConnections < (taskNumber - 1)) {
                         Socket client = socket.accept();
                         ObjectOutputStream output = new ObjectOutputStream(client.getOutputStream());
                         ObjectInputStream input = new ObjectInputStream(client.getInputStream());
