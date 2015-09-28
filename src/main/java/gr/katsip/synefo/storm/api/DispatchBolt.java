@@ -387,7 +387,7 @@ public class DispatchBolt extends BaseRichBolt {
                  * notifying the dispatchers.
                  */
                 logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": about to receive " +
-                taskNumber + " states.");
+                        taskNumber + " states.");
                 try {
                     ServerSocket socket = new ServerSocket(6000 + this.taskIdentifier);
                     int numberOfConnections = 0;
@@ -512,7 +512,14 @@ public class DispatchBolt extends BaseRichBolt {
                 }
                 logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": successfully received state.");
             }
-            activeDownstreamTaskIdentifiers = zookeeperClient.getActiveDownstreamTaskIdentifiers();
+            /**
+             * If the current bolt has not been removed, update
+             * the active downstream tasks from ZooKeeper.
+             * Otherwise, it will return null and a NullPointerExcpetion
+             * will be thrown
+             */
+            if ((this.taskName + ":" + this.taskIdentifier).equals(taskName + ":" + taskIdentifier) == false)
+                activeDownstreamTaskIdentifiers = zookeeperClient.getActiveDownstreamTaskIdentifiers();
         }
     }
 }

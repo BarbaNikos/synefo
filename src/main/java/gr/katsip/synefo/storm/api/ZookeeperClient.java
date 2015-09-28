@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -185,6 +186,30 @@ public class ZookeeperClient {
         return Util.deserializeTopology(new String(data, "UTF-8"));
     }
 
+    private ConcurrentHashMap<String, ArrayList<String>> getTopology() throws UnsupportedEncodingException {
+        Stat stat = new Stat();
+        byte[] data = null;
+        try {
+            data = zookeeper.getData(MAIN_ZNODE + "/" + TOPOLOGY_ZNODE, false, stat);
+        } catch (KeeperException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        logger.info("data received: " + new String(data, "UTF-8"));
+        return Util.deserializeTopology(new String(data, "UTF-8"));
+    }
+
+    public List<String> getDownstreamTasks() {
+        logger.info("about to request downstream tasks for taskName: " + taskName + ", id: " + identifier);
+        try {
+            return getTopology().get(taskName + ":" + identifier);
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return new ArrayList<String>();
+    }
+
     public List<String> getActiveDownstreamTasks() {
         logger.info("about to request downstream tasks for taskName: " + taskName + ", id: " + identifier);
         try {
@@ -193,6 +218,16 @@ public class ZookeeperClient {
             e.printStackTrace();
         }
         return new ArrayList<String>();
+    }
+
+    public List<Integer> getDownstreamTaskIdentifiers() {
+        List<String> taskNames = getDownstreamTasks();
+        List<Integer> taskIdentifiers = new ArrayList<>();
+        for (String task : taskNames) {
+            Integer identifier = Integer.parseInt(task.split("[:]")[1]);
+            taskIdentifiers.add(identifier);
+        }
+        return taskIdentifiers;
     }
 
     public List<Integer> getActiveDownstreamTaskIdentifiers() {
