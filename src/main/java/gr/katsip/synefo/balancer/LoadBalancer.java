@@ -238,7 +238,7 @@ public class LoadBalancer {
                         Map<String, Pair<Number, Number>> thresholds,
                         ConcurrentHashMap<String, String> taskAddressIndex) {
         this.zookeeperAddress = zookeeperAddress;
-        scaleFunction = new NewScaleFunction(new HashMap<>(taskToJoinRelation), thresholds);
+        scaleFunction = new NewScaleFunction(new ConcurrentHashMap<>(taskToJoinRelation), thresholds);
         this.taskAddressIndex = taskAddressIndex;
     }
 

@@ -272,8 +272,8 @@ public class NewScaleFunction {
         activeTopology.put(newTask, activeDownStreamNodes);
     }
 
-    public static ArrayList<String> getAvailableTasks(Map<String, ArrayList<String>> topology,
-                                                         Map<String, ArrayList<String>> activeTopology,
+    public static ArrayList<String> getAvailableTasks(final Map<String, ArrayList<String>> topology,
+                                                         final Map<String, ArrayList<String>> activeTopology,
                                                          String upstreamTask, Integer strugglerIdentifier,
                                                          Map<Integer, JoinOperator> taskToJoinRelation) {
         ArrayList<String> availableNodes = new ArrayList<String>();
