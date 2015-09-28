@@ -14,7 +14,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class NewScaleFunction {
 
-    private static final int SCALE_EPOCH = 5;
+    private static final int SCALE_EPOCH = 20;
 
     private int counter;
 
