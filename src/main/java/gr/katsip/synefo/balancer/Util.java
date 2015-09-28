@@ -140,7 +140,7 @@ public class Util {
          * If minimal flag is set to false, then all existing nodes
          * will be set as active
          */
-        if(minimalFlag == false) {
+        if (!minimalFlag) {
             activeTopology.putAll(topology);
             return activeTopology;
         }
@@ -148,25 +148,25 @@ public class Util {
          * Add all source operators first
          */
         Iterator<Map.Entry<String, ArrayList<String>>> itr = inverseTopology.entrySet().iterator();
-        while(itr.hasNext()) {
+        while (itr.hasNext()) {
             Map.Entry<String, ArrayList<String>> pair = itr.next();
             String taskName = pair.getKey();
             ArrayList<String> parentTasks = pair.getValue();
-            if(parentTasks == null) {
+            if (parentTasks == null) {
                 activeTasks.add(taskName);
-            }else if(parentTasks != null && parentTasks.size() == 0) {
+            }else if (parentTasks != null && parentTasks.size() == 0) {
                 activeTasks.add(taskName);
             }
         }
         /**
-         * Add all drain operators second
+         * Add all drain operators (operators with no down-stream tasks) second
          */
         itr = topology.entrySet().iterator();
-        while(itr.hasNext()) {
+        while (itr.hasNext()) {
             Map.Entry<String, ArrayList<String>> pair = itr.next();
             String taskName = pair.getKey();
             ArrayList<String> childTasks = pair.getValue();
-            if(childTasks == null || childTasks.size() == 0) {
+            if (childTasks == null || childTasks.size() == 0) {
                 activeTasks.add(taskName);
             }
         }
@@ -217,20 +217,20 @@ public class Util {
         return activeTopology;
     }
 
-    public static ConcurrentHashMap<String, ArrayList<String>> topologyTaskExpand(ConcurrentHashMap<String, Integer> taskIdentifierIndex,
-                                                                                  ConcurrentHashMap<String, ArrayList<String>> topology) {
+    public static ConcurrentHashMap<String, ArrayList<String>> topologyTaskExpand(final ConcurrentHashMap<String, Integer> taskIdentifierIndex,
+                                                                                  final ConcurrentHashMap<String, ArrayList<String>> topology) {
         ConcurrentHashMap<String, ArrayList<String>> physicalTopologyWithIds = new ConcurrentHashMap<String, ArrayList<String>>();
         Iterator<Map.Entry<String, Integer>> taskNameIterator = taskIdentifierIndex.entrySet().iterator();
         while(taskNameIterator.hasNext()) {
             Map.Entry<String, Integer> pair = taskNameIterator.next();
             String taskName = pair.getKey();
             String taskNameWithoutId = taskName.split("_")[0];
-            ArrayList<String> downstreamTaskList = topology.get(taskNameWithoutId);
+            ArrayList<String> downstreamTaskList = new ArrayList<>(topology.get(taskNameWithoutId));
             if (downstreamTaskList != null && downstreamTaskList.size() > 0) {
                 ArrayList<String> downstreamTaskWithIdList = new ArrayList<String>();
-                for(String downstreamTask : downstreamTaskList) {
+                for (String downstreamTask : downstreamTaskList) {
                     Iterator<Map.Entry<String, Integer>> downstreamTaskIterator = taskIdentifierIndex.entrySet().iterator();
-                    while(downstreamTaskIterator.hasNext()) {
+                    while (downstreamTaskIterator.hasNext()) {
                         Map.Entry<String, Integer> downstreamPair = downstreamTaskIterator.next();
                         if(downstreamPair.getKey().split("_")[0].equals(downstreamTask)) {
                             downstreamTaskWithIdList.add(downstreamPair.getKey());
@@ -238,42 +238,44 @@ public class Util {
                     }
                 }
                 physicalTopologyWithIds.put(taskName, downstreamTaskWithIdList);
+            } else {
+                physicalTopologyWithIds.put(taskName, downstreamTaskList);
             }
         }
         return physicalTopologyWithIds;
     }
 
-    public static ConcurrentHashMap<String, ArrayList<String>> updateTopology(ConcurrentHashMap<String, String> taskAddressIndex,
-                                                                              ConcurrentHashMap<String, Integer> taskIdentifierIndex,
-                                                                              ConcurrentHashMap<String, ArrayList<String>> topology) {
-        ConcurrentHashMap<String, ArrayList<String>> updatedTopology = new ConcurrentHashMap<String, ArrayList<String>>();
-        Iterator<Map.Entry<String, ArrayList<String>>> itr = topology.entrySet().iterator();
-        while(itr.hasNext()) {
-            Map.Entry<String, ArrayList<String>> pair = itr.next();
-            String taskName = pair.getKey();
-            ArrayList<String> downStreamNames = pair.getValue();
-            String parentTask = taskName + ":" + Integer.toString(taskIdentifierIndex.get(taskName)) + "@" +
-                    taskAddressIndex.get(taskName + ":" + Integer.toString(taskIdentifierIndex.get(taskName)));
-            if(downStreamNames != null && downStreamNames.size() > 0) {
-                ArrayList<String> downStreamIds = new ArrayList<String>();
-                for(String name : downStreamNames) {
-                    if(taskIdentifierIndex.containsKey(name) == false) {
-                        assert taskIdentifierIndex.containsKey(name) == true;
-                    }
-                    String childTask = name + ":" + Integer.toString(taskIdentifierIndex.get(name)) + "@" +
-                            taskAddressIndex.get(name + ":" + Integer.toString(taskIdentifierIndex.get(name)));
-                    downStreamIds.add(childTask);
-                }
-                updatedTopology.put(parentTask, downStreamIds);
-            }else {
-                updatedTopology.put(parentTask, new ArrayList<String>());
-            }
-        }
-        return updatedTopology;
-    }
+//    public static ConcurrentHashMap<String, ArrayList<String>> updateTopology(final ConcurrentHashMap<String, String> taskAddressIndex,
+//                                                                              final ConcurrentHashMap<String, Integer> taskIdentifierIndex,
+//                                                                              final ConcurrentHashMap<String, ArrayList<String>> topology) {
+//        ConcurrentHashMap<String, ArrayList<String>> updatedTopology = new ConcurrentHashMap<String, ArrayList<String>>();
+//        Iterator<Map.Entry<String, ArrayList<String>>> itr = topology.entrySet().iterator();
+//        while(itr.hasNext()) {
+//            Map.Entry<String, ArrayList<String>> pair = itr.next();
+//            String taskName = pair.getKey();
+//            ArrayList<String> downStreamNames = pair.getValue();
+//            String parentTask = taskName + ":" + Integer.toString(taskIdentifierIndex.get(taskName)) + "@" +
+//                    taskAddressIndex.get(taskName + ":" + Integer.toString(taskIdentifierIndex.get(taskName)));
+//            if(downStreamNames != null && downStreamNames.size() > 0) {
+//                ArrayList<String> downStreamIds = new ArrayList<String>();
+//                for(String name : downStreamNames) {
+//                    if(taskIdentifierIndex.containsKey(name) == false) {
+//                        assert taskIdentifierIndex.containsKey(name) == true;
+//                    }
+//                    String childTask = name + ":" + Integer.toString(taskIdentifierIndex.get(name)) + "@" +
+//                            taskAddressIndex.get(name + ":" + Integer.toString(taskIdentifierIndex.get(name)));
+//                    downStreamIds.add(childTask);
+//                }
+//                updatedTopology.put(parentTask, downStreamIds);
+//            }else {
+//                updatedTopology.put(parentTask, new ArrayList<String>());
+//            }
+//        }
+//        return updatedTopology;
+//    }
 
-    public static ConcurrentHashMap<String, ArrayList<String>> updateTopology(ConcurrentHashMap<String, Integer> taskIdentifierIndex,
-                                                                              ConcurrentHashMap<String, ArrayList<String>> topology) {
+    public static ConcurrentHashMap<String, ArrayList<String>> updateTopology(final ConcurrentHashMap<String, Integer> taskIdentifierIndex,
+                                                                              final ConcurrentHashMap<String, ArrayList<String>> topology) {
         ConcurrentHashMap<String, ArrayList<String>> updatedTopology = new ConcurrentHashMap<String, ArrayList<String>>();
         Iterator<Map.Entry<String, ArrayList<String>>> itr = topology.entrySet().iterator();
         while (itr.hasNext()) {
