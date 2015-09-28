@@ -6,6 +6,8 @@ import gr.katsip.synefo.storm.api.Pair;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Created by katsip on 9/22/2015.
@@ -16,19 +18,21 @@ public class NewScaleFunction {
 
     private int counter;
 
-    private HashMap<String, List<Double>> processor;
+    private ConcurrentHashMap<String, List<Double>> processor;
 
-    private HashMap<String, List<Double>> memory;
+    private ConcurrentHashMap<String, List<Double>> memory;
 
-    private HashMap<String, List<Double>> latency;
+    private ConcurrentHashMap<String, List<Double>> latency;
 
-    private HashMap<String, List<Double>> inputRate;
+    private ConcurrentHashMap<String, List<Double>> inputRate;
 
-    private HashMap<String, List<Double>> state;
+    private ConcurrentHashMap<String, List<Double>> state;
 
     private ConcurrentHashMap<String, ArrayList<String>> topology;
 
     private ConcurrentHashMap<String, ArrayList<String>> activeTopology;
+
+    private final ReadWriteLock writeLock = new ReentrantReadWriteLock();
 
     private Map<Integer, JoinOperator> taskToJoinRelation;
 
@@ -36,12 +40,12 @@ public class NewScaleFunction {
 
     public NewScaleFunction(Map<Integer, JoinOperator> taskToJoinRelation,
                             Map<String, Pair<Number, Number>> thresholds) {
-        processor = new HashMap<>();
-        memory = new HashMap<>();
-        latency = new HashMap<>();
-        inputRate = new HashMap<>();
-        state = new HashMap<>();
-        this.taskToJoinRelation = new HashMap<>(taskToJoinRelation);
+        processor = new ConcurrentHashMap<>();
+        memory = new ConcurrentHashMap<>();
+        latency = new ConcurrentHashMap<>();
+        inputRate = new ConcurrentHashMap<>();
+        state = new ConcurrentHashMap<>();
+        this.taskToJoinRelation = new ConcurrentHashMap<>(taskToJoinRelation);
         counter = 0;
         if (thresholds != null) {
             this.thresholds = thresholds;
@@ -90,14 +94,18 @@ public class NewScaleFunction {
         String identifier = taskName + ":" + taskIdentifier;
         add(this.inputRate, identifier, inputRate);
         counter++;
+        GenericTriplet<String, String, String> scaleAction = null;
         if (counter >= SCALE_EPOCH) {
             /**
              * Check if scale is needed
              */
             counter = 0;
-            return scaleCheck();
+            writeLock.writeLock().lock();
+            scaleAction = scaleCheck();
+            writeLock.writeLock().unlock();
+            return scaleAction;
         }else {
-            return new GenericTriplet<>();
+            return new GenericTriplet<String, String, String>();
         }
     }
 
@@ -204,7 +212,7 @@ public class NewScaleFunction {
         return availableNodes.get(random.nextInt(availableNodes.size()));
     }
 
-    private void add(HashMap<String, List<Double>> storage, String identifier, Double data) {
+    private void add(ConcurrentHashMap<String, List<Double>> storage, String identifier, Double data) {
         if (storage.containsKey(identifier)) {
             List<Double> points = storage.get(identifier);
             points.add(data);
