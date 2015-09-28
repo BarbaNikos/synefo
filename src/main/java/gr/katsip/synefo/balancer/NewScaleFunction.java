@@ -142,7 +142,10 @@ public class NewScaleFunction {
             Integer identifier = Integer.parseInt(struggler.split("[:]")[1]);
             if (upstreamTask != null && taskToJoinRelation.containsKey(identifier)) {
                 System.out.println("scale-function scaleCheck() located average of input-rate " + bottleneck + ", for task " + struggler);
+                System.out.println("scale-function topology view: " + topology.toString());
+                System.out.println("scale-function active-topology view: " + activeTopology.toString());
                 availableNodes = getAvailableTasks(topology, activeTopology, upstreamTask, identifier, taskToJoinRelation);
+                System.out.println("scale-function available nodes located: " + availableNodes.toString());
                 if (availableNodes.size() > 0) {
                     String chosenTask = randomChoice(availableNodes);
                     /**
