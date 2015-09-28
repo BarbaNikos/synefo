@@ -26,9 +26,9 @@ public class NewScaleFunction {
 
     private HashMap<String, List<Double>> state;
 
-    private Map<String, ArrayList<String>> topology;
+    private ConcurrentHashMap<String, ArrayList<String>> topology;
 
-    private Map<String, ArrayList<String>> activeTopology;
+    private ConcurrentHashMap<String, ArrayList<String>> activeTopology;
 
     private Map<Integer, JoinOperator> taskToJoinRelation;
 
@@ -55,7 +55,7 @@ public class NewScaleFunction {
     }
 
     public void updateTopology(Map<String, ArrayList<String>> topology) {
-        this.topology = new HashMap<>(topology);
+        this.topology = new ConcurrentHashMap<>(topology);
     }
 
     public Map<String, ArrayList<String>> getActiveTopology() {
@@ -63,7 +63,7 @@ public class NewScaleFunction {
     }
 
     public void updateActiveTopology(Map<String, ArrayList<String>> activeTopology) {
-        this.activeTopology = new HashMap<>(activeTopology);
+        this.activeTopology = new ConcurrentHashMap<>(activeTopology);
     }
 
     public GenericTriplet<String, String, String> addData(String taskName, Integer taskIdentifier, double processor,
