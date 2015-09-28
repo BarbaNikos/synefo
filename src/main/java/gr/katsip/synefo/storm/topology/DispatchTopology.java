@@ -7,14 +7,10 @@ import backtype.storm.generated.InvalidTopologyException;
 import backtype.storm.metric.LoggingMetricsConsumer;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
-import gr.katsip.synefo.storm.api.DispatchBolt;
-import gr.katsip.synefo.storm.api.ElasticFileSpout;
-import gr.katsip.synefo.storm.api.SynefoJoinBolt;
-import gr.katsip.synefo.storm.api.SynefoSpout;
+import gr.katsip.synefo.storm.api.*;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
-import gr.katsip.synefo.storm.operators.relational.elastic.JoinDispatcher;
-import gr.katsip.synefo.storm.operators.relational.elastic.JoinJoiner;
 import gr.katsip.synefo.storm.operators.relational.elastic.NewJoinDispatcher;
+import gr.katsip.synefo.storm.operators.relational.elastic.NewJoinJoiner;
 import gr.katsip.synefo.tpch.*;
 
 import java.io.IOException;
@@ -98,20 +94,20 @@ public class DispatchTopology {
         /**
          * Stage 2 : join joiners
          */
-        JoinJoiner joiner = new JoinJoiner("order", new Fields(Order.query5Schema), "lineitem",
+        NewJoinJoiner joiner = new NewJoinJoiner("order", new Fields(Order.query5Schema), "lineitem",
                 new Fields(LineItem.query5Schema), "O_ORDERKEY", "L_ORDERKEY", windowSizeInMinutes, 1000);
         joiner.setOutputSchema(new Fields(dataSchema));
-        builder.setBolt("joinorder", new SynefoJoinBolt("joinorder", synefoAddress, synefoPort,
+        builder.setBolt("joinorder", new JoinBolt("joinorder", synefoAddress, synefoPort,
                 joiner, zooIP, false), executorNumber)
                 .setNumTasks(scaleFactor)
                 .directGrouping("dispatch");
         taskNumber += scaleFactor;
         topology.put("joinorder", new ArrayList<String>());
 
-        joiner = new JoinJoiner("lineitem", new Fields(LineItem.query5Schema),
+        joiner = new NewJoinJoiner("lineitem", new Fields(LineItem.query5Schema),
                 "order", new Fields(Order.query5Schema), "L_ORDERKEY", "O_ORDERKEY", windowSizeInMinutes, 1000);
         joiner.setOutputSchema(new Fields(dataSchema));
-        builder.setBolt("joinline", new SynefoJoinBolt("joinline", synefoAddress, synefoPort,
+        builder.setBolt("joinline", new JoinBolt("joinline", synefoAddress, synefoPort,
                 joiner, zooIP, false), executorNumber)
                 .setNumTasks(scaleFactor)
                 .directGrouping("dispatch");
