@@ -165,7 +165,6 @@ public class LoadBalancer {
                             setScaleAction(action.second, action.first, action.third);
                         }
                     }
-
                     break;
                 default:
                     logger.error("unexpected scenario: " +

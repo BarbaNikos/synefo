@@ -168,9 +168,10 @@ public class NewScaleFunction {
          * Check for scale-in action
          */
         if (scaleAction == null) {
+            System.out.println("scale-function scaleChec() about to check for *SCALE-IN* action.");
             List<String> underloadedWorkers = new ArrayList<>();
             String slacker = "";
-            Double opening = thresholds.get("input-rate").upperBound.doubleValue();
+            Double opening = thresholds.get("input-rate").lowerBound.doubleValue();
             iterator = inputRate.entrySet().iterator();
             while (iterator.hasNext()) {
                 Map.Entry<String, List<Double>> pair = iterator.next();
@@ -189,20 +190,24 @@ public class NewScaleFunction {
                     }
                 }
             }
-            String upstreamTask = null;
-            List<String> parentTasks = Util.getInverseTopology(new ConcurrentHashMap<String, ArrayList<String>>(topology))
-                    .get(slacker);
-            if (parentTasks.size() > 0)
-                upstreamTask = parentTasks.get(0);
-            Integer identifier = Integer.parseInt(slacker.split("[:]")[1]);
-            ArrayList<String> availableNodes = null;
-            if (activeTopology.containsKey(slacker) == false) {
-                List<String> activeTasks = NewScaleFunction.getActiveJoinNodes(activeTopology,
-                        upstreamTask, slacker, taskToJoinRelation);
-                if (activeTasks.size() > 0) {
-                    scaleAction = new GenericTriplet<String, String, String>("remove", upstreamTask, slacker);
+            if (opening <= thresholds.get("input-rate").lowerBound.doubleValue()) {
+                String upstreamTask = null;
+                List<String> parentTasks = Util.getInverseTopology(new ConcurrentHashMap<String, ArrayList<String>>(topology))
+                        .get(slacker);
+                if (parentTasks.size() > 0)
+                    upstreamTask = parentTasks.get(0);
+                System.out.println("scale-function located slacker's (" + slacker + ") parent (" + upstreamTask + ") for an opening of" + opening);
+                Integer identifier = Integer.parseInt(slacker.split("[:]")[1]);
+                if (activeTopology.containsKey(slacker) == true) {
+                    List<String> activeTasks = NewScaleFunction.getActiveJoinNodes(activeTopology,
+                            upstreamTask, slacker, taskToJoinRelation);
+                    if (activeTasks.size() > 0) {
+                        System.out.println("scale-function ready to scale-in task: " + slacker + " (parent: " + upstreamTask + ")");
+                        scaleAction = new GenericTriplet<String, String, String>("remove", upstreamTask, slacker);
+                    }
                 }
             }
+
         }
         return scaleAction;
     }
