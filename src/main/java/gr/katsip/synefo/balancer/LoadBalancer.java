@@ -294,7 +294,7 @@ public class LoadBalancer {
     }
 
     public void updateScaleFunctionActiveTopology(ConcurrentHashMap<String, ArrayList<String>> activeTopology) {
-        scaleFunction.updateTopology(activeTopology);
+        scaleFunction.updateActiveTopology(activeTopology);
     }
 
     public void setActiveTopology(ConcurrentHashMap<String, ArrayList<String>> activeTopology) {
