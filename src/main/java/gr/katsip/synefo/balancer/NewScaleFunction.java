@@ -180,6 +180,7 @@ public class NewScaleFunction {
                     for (int i = pair.getValue().size() - 1; i >= (pair.getValue().size() - 4); i--) {
                         average += pair.getValue().get(i);
                     }
+                    average = average / 3.0;
                     if (average <= thresholds.get("input-rate").lowerBound.doubleValue() &&
                             underloadedWorkers.indexOf(pair.getKey()) < 0) {
                         underloadedWorkers.add(pair.getKey());
