@@ -12,6 +12,7 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
+import org.omg.SendingContext.RunTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
@@ -142,9 +143,15 @@ public class LoadBalancer {
                             switch (action.first) {
                                 case "add":
                                     scaleFunction.activateTask(action.third);
+                                    if (!scaleFunction.getActiveTopology().containsKey(action.third)) {
+                                        throw new RuntimeException("Error in updating active-topology (add)");
+                                    }
                                     break;
                                 case "remove":
                                     scaleFunction.deactivateTask(action.third);
+                                    if (scaleFunction.getActiveTopology().containsKey(action.third)) {
+                                        throw new RuntimeException("Error in updating active-topology (remove)");
+                                    }
                                     break;
                             }
                             setActiveTopology(

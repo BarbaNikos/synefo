@@ -172,7 +172,7 @@ public class ZookeeperClient {
         }
     }
 
-    private ConcurrentHashMap<String, ArrayList<String>> getActiveTopology() throws UnsupportedEncodingException {
+    public ConcurrentHashMap<String, ArrayList<String>> getActiveTopology() throws UnsupportedEncodingException {
         Stat stat = new Stat();
         byte[] data = null;
         try {

@@ -19,6 +19,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by katsip on 9/14/2015.
@@ -512,8 +513,19 @@ public class DispatchBolt extends BaseRichBolt {
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
+//                activeDownstreamTaskIdentifiers = zookeeperClient.getActiveDownstreamTaskIdentifiers();
+                while (true) {
+                    try {
+                        ConcurrentHashMap<String, ArrayList<String>> activeTopology = zookeeperClient.getActiveTopology();
+                        if (activeTopology.containsKey(this.taskName + ":" + this.taskIdentifier)) {
+                            activeDownstreamTaskIdentifiers = zookeeperClient.getActiveDownstreamTaskIdentifiers();
+                            break;
+                        }
+                    } catch (UnsupportedEncodingException e) {
+                        e.printStackTrace();
+                    }
+                }
                 logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": successfully received state. about to request updated active downstream-tasks");
-                activeDownstreamTaskIdentifiers = zookeeperClient.getActiveDownstreamTaskIdentifiers();
             }
         }
     }
