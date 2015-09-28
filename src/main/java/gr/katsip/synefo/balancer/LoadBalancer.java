@@ -3,6 +3,7 @@ package gr.katsip.synefo.balancer;
 import gr.katsip.synefo.server2.JoinOperator;
 import gr.katsip.synefo.storm.api.GenericTriplet;
 import gr.katsip.synefo.storm.api.Pair;
+import gr.katsip.synefo.storm.operators.relational.StringComparator;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -127,42 +128,52 @@ public class LoadBalancer {
 //                    GenericTriplet<String, String, String> action = scaleFunction.addData(taskName, Integer.parseInt(s.substring(s.lastIndexOf(':') + 1)),
 //                            Double.parseDouble(data[0]), Double.parseDouble(data[1]),
 //                            Double.parseDouble(data[2]), Double.parseDouble(data[3]), Double.parseDouble(data[4]));
-                    GenericTriplet<String, String, String> action = scaleFunction.addInputRateData(
-                            taskName, identifier, value);
-                    if (action.first != null) {
-                        System.out.println("action generated " + action.first + " for upstream task: " +
-                                action.second + " directed to: " + action.third);
-                        /**
-                         * Need to
-                         * 1) update active-topology
-                         */
-                        switch (action.first) {
-                            case "add":
-                                scaleFunction.activateTask(action.third);
-                                break;
-                            case "remove":
-                                scaleFunction.deactivateTask(action.third);
-                                break;
-                        }
-                        setActiveTopology(
-                                new ConcurrentHashMap<String, ArrayList<String>>(scaleFunction.getActiveTopology()));
-                        /**
-                         * 2) set the commands in the /synefo/bolt-tasks
-                         * Add/Remove and Activate/Deactivate
-                         */
-                        List<String> parentTasks = Util.getInverseTopology(getTopology()).get(action.third);
-                        System.out.println("parent-tasks of node " + action.third + " are: " + parentTasks.toString());
-                        parentTasks.remove(parentTasks.indexOf(action.second));
-                        if (action.first.equals("add")) {
-                            for (String task : parentTasks) {
-                                setScaleAction(task, "activate", action.third);
+                    synchronized (this) {
+                        GenericTriplet<String, String, String> action = scaleFunction.addInputRateData(
+                                taskName, identifier, value);
+                        if (action.first != null) {
+                            System.out.println("action generated " + action.first + " for upstream task: " +
+                                    action.second + " directed to: " + action.third);
+                            initializeTaskCompletionStatus(action.third);
+                            /**
+                             * Need to
+                             * 1) update active-topology
+                             */
+                            switch (action.first) {
+                                case "add":
+                                    scaleFunction.activateTask(action.third);
+                                    break;
+                                case "remove":
+                                    scaleFunction.deactivateTask(action.third);
+                                    break;
                             }
-                            setScaleAction(action.second, action.first, action.third);
-                        }else if (action.first.equals("remove")) {
-                            for (String task : parentTasks) {
-                                setScaleAction(task, "deactivate", action.third);
+                            setActiveTopology(
+                                    new ConcurrentHashMap<String, ArrayList<String>>(scaleFunction.getActiveTopology()));
+                            /**
+                             * 2) set the commands in the /synefo/bolt-tasks
+                             * Add/Remove and Activate/Deactivate
+                             */
+                            List<String> parentTasks = Util.getInverseTopology(getTopology()).get(action.third);
+                            System.out.println("parent-tasks of node " + action.third + " are: " + parentTasks.toString());
+                            parentTasks.remove(parentTasks.indexOf(action.second));
+                            if (action.first.equals("add")) {
+                                for (String task : parentTasks) {
+                                    setScaleAction(task, "activate", action.third);
+                                }
+                                setScaleAction(action.second, action.first, action.third);
+                            } else if (action.first.equals("remove")) {
+                                for (String task : parentTasks) {
+                                    setScaleAction(task, "deactivate", action.third);
+                                }
+                                setScaleAction(action.second, action.first, action.third);
                             }
-                            setScaleAction(action.second, action.first, action.third);
+                            while (waitForScaleAction(action.third)) {
+                                try {
+                                    Thread.sleep(100);
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                            }
                         }
                     }
                     break;
@@ -173,6 +184,37 @@ public class LoadBalancer {
             }
         }
     };
+
+    private void initializeTaskCompletionStatus(String task) {
+        try {
+            zooKeeper.setData(MAIN_ZNODE + "/" + TASK_ZNODE + "/" + task, ("").getBytes("UTF-8"), -1);
+        } catch (KeeperException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private boolean waitForScaleAction(String task) {
+        Stat stat = new Stat();
+        byte[] data = null;
+        try {
+            data = zooKeeper.getData(MAIN_ZNODE + "/" + TASK_ZNODE + "/" + task, false, stat);
+            String message = new String(data, "UTF-8");
+            if (message.equals("DONE"))
+                return true;
+        } catch (KeeperException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     private AsyncCallback.StatCallback setActionCallback = new AsyncCallback.StatCallback() {
         @Override
         public void processResult(int i, String s, Object o, Stat stat) {

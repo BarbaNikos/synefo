@@ -413,6 +413,7 @@ public class DispatchBolt extends BaseRichBolt {
                     e.printStackTrace();
                 }
                 logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": successfully received.");
+                zookeeperClient.notifyActionComplete();
             }else {
                 logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": about to send state");
                 Socket client = null;
@@ -475,6 +476,7 @@ public class DispatchBolt extends BaseRichBolt {
                 }
                 logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": properly sent states (" +
                         taskNumber + ".");
+                zookeeperClient.notifyActionComplete();
             }else {
                 logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": about to receive state.");
                 Socket client = null;

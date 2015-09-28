@@ -268,4 +268,15 @@ public class ZookeeperClient {
         }
     };
 
+    public void notifyActionComplete() {
+        try {
+            zookeeper.setData(MAIN_ZNODE + "/" + TASK_ZNODE + "/" + taskName + ":" + identifier, ("DONE").getBytes("UTF-8"), -1);
+        } catch (KeeperException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+    }
 }
