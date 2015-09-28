@@ -168,10 +168,10 @@ public class NewScaleFunction {
          * Check for scale-in action
          */
         if (scaleAction == null) {
-            System.out.println("scale-function scaleChec() about to check for *SCALE-IN* action.");
+            System.out.println("scale-function scaleCheck() about to check for *SCALE-IN* action.");
             List<String> underloadedWorkers = new ArrayList<>();
             String slacker = "";
-            Double opening = thresholds.get("input-rate").lowerBound.doubleValue();
+            Double opening = thresholds.get("input-rate").upperBound.doubleValue();
             iterator = inputRate.entrySet().iterator();
             while (iterator.hasNext()) {
                 Map.Entry<String, List<Double>> pair = iterator.next();
