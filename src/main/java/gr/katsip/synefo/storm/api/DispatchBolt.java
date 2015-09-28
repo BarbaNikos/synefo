@@ -510,16 +510,9 @@ public class DispatchBolt extends BaseRichBolt {
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
-                logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": successfully received state.");
-            }
-            /**
-             * If the current bolt has not been removed, update
-             * the active downstream tasks from ZooKeeper.
-             * Otherwise, it will return null and a NullPointerExcpetion
-             * will be thrown
-             */
-            if ((this.taskName + ":" + this.taskIdentifier).equals(taskName + ":" + taskIdentifier) == false)
+                logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": successfully received state. about to request updated active downstream-tasks");
                 activeDownstreamTaskIdentifiers = zookeeperClient.getActiveDownstreamTaskIdentifiers();
+            }
         }
     }
 }
