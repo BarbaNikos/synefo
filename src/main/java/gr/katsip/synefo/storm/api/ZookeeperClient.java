@@ -181,19 +181,12 @@ public class ZookeeperClient {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+        logger.info("data received: " + new String(data, "UTF-8"));
         return Util.deserializeTopology(new String(data, "UTF-8"));
     }
 
     public List<String> getActiveDownstreamTasks() {
-        Stat stat = new Stat();
-        byte[] data;
-        try {
-            data = zookeeper.getData(MAIN_ZNODE + "/" + ACTIVE_TOPOLOGY_ZNODE, false, stat);
-        } catch (KeeperException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        logger.info("about to request downstream tasks for taskName: " + taskName + ", id: " + identifier);
         try {
             return getActiveTopology().get(taskName + ":" + identifier);
         } catch (UnsupportedEncodingException e) {

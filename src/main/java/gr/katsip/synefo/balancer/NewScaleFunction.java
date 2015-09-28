@@ -197,7 +197,7 @@ public class NewScaleFunction {
                         .get(slacker);
                 if (parentTasks.size() > 0)
                     upstreamTask = parentTasks.get(0);
-                System.out.println("scale-function located slacker's (" + slacker + ") parent (" + upstreamTask + ") for an opening of" + opening);
+                System.out.println("scale-function located slacker's (" + slacker + ") parent (" + upstreamTask + ") for an opening of " + opening);
                 Integer identifier = Integer.parseInt(slacker.split("[:]")[1]);
                 if (activeTopology.containsKey(slacker) == true) {
                     List<String> activeTasks = NewScaleFunction.getActiveJoinNodes(activeTopology,
