@@ -138,20 +138,20 @@ public class NewScaleFunction {
             }
         }
         if (bottleneck > 0) {
-            System.out.println("scale-function located struggler: " + struggler + ", with bottleneck: " + bottleneck);
+//            System.out.println("scale-function located struggler: " + struggler + ", with bottleneck: " + bottleneck);
             String upstreamTask = null;
             List<String> parentTasks = Util.getInverseTopology(new ConcurrentHashMap<String, ArrayList<String>>(topology))
                     .get(struggler);
             System.out.println("parent-tasks: " + parentTasks.toString());
             if (parentTasks.size() > 0)
                 upstreamTask = parentTasks.get(0);
-            System.out.println("scale-function located struggler\'s (" + struggler + ") parent task: " + upstreamTask);
+//            System.out.println("scale-function located struggler\'s (" + struggler + ") parent task: " + upstreamTask);
             ArrayList<String> availableNodes = null;
             Integer identifier = Integer.parseInt(struggler.split("[:]")[1]);
             if (upstreamTask != null && taskToJoinRelation.containsKey(identifier)) {
                 System.out.println("scale-function scaleCheck() located average of input-rate " + bottleneck + ", for task " + struggler);
-                System.out.println("scale-function topology view: " + topology.toString());
-                System.out.println("scale-function active-topology view: " + activeTopology.toString());
+//                System.out.println("scale-function topology view: " + topology.toString());
+//                System.out.println("scale-function active-topology view: " + activeTopology.toString());
                 availableNodes = getAvailableTasks(topology, activeTopology, upstreamTask, identifier, taskToJoinRelation);
                 System.out.println("scale-function available nodes located: " + availableNodes.toString());
                 if (availableNodes.size() > 0) {

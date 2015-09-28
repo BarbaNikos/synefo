@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Created by katsip on 9/22/2015.
@@ -257,7 +258,7 @@ public class LoadBalancer {
         }
         cleanup();
         nodeInitiatialize();
-        registeredTasks = new ArrayList<>();
+        registeredTasks = new CopyOnWriteArrayList<>();
         watchTaskNode(MAIN_ZNODE + "/" + TASK_ZNODE);
     }
 
