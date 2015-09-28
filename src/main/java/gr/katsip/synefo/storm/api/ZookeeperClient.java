@@ -193,19 +193,16 @@ public class ZookeeperClient {
         }
         if (stat.getVersion() > activeTopologyVersion) {
             activeTopologyVersion = stat.getVersion();
-            try {
-                logger.info("data received (version:" + activeTopologyVersion + ": " + new String(data, "UTF-8"));
-            } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
-            }
-            try {
-                return Util.deserializeTopology(new String(data, "UTF-8"));
-            } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
-            }
-        }else {
-            logger.error("stale data received with version " + stat.getVersion() + " (already had: " + activeTopologyVersion + ").");
-            return null;
+        }
+        try {
+            logger.info("data received (version:" + activeTopologyVersion + ": " + new String(data, "UTF-8"));
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        try {
+            return Util.deserializeTopology(new String(data, "UTF-8"));
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
         }
         return null;
     }
