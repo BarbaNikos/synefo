@@ -142,24 +142,24 @@ public class NewScaleFunction {
             String upstreamTask = null;
             List<String> parentTasks = Util.getInverseTopology(new ConcurrentHashMap<String, ArrayList<String>>(topology))
                     .get(struggler);
-            System.out.println("parent-tasks: " + parentTasks.toString());
+            System.out.println("thread-" + Thread.currentThread().getId() + " parent-tasks: " + parentTasks.toString());
             if (parentTasks.size() > 0)
                 upstreamTask = parentTasks.get(0);
 //            System.out.println("scale-function located struggler\'s (" + struggler + ") parent task: " + upstreamTask);
             ArrayList<String> availableNodes = null;
             Integer identifier = Integer.parseInt(struggler.split("[:]")[1]);
             if (upstreamTask != null && taskToJoinRelation.containsKey(identifier)) {
-                System.out.println("scale-function scaleCheck() located average of input-rate " + bottleneck + ", for task " + struggler);
+                System.out.println("thread-" + Thread.currentThread().getId() + " scale-function scaleCheck() located average of input-rate " + bottleneck + ", for task " + struggler);
 //                System.out.println("scale-function topology view: " + topology.toString());
 //                System.out.println("scale-function active-topology view: " + activeTopology.toString());
                 availableNodes = getAvailableTasks(topology, activeTopology, upstreamTask, identifier, taskToJoinRelation);
-                System.out.println("scale-function available nodes located: " + availableNodes.toString());
+                System.out.println("thread-" + Thread.currentThread().getId() + " scale-function available nodes located: " + availableNodes.toString());
                 if (availableNodes.size() > 0) {
                     String chosenTask = randomChoice(availableNodes);
                     /**
                      * Update active-topology
                      */
-                    System.out.println("scale-function scaleCheck() available scale action add~" + chosenTask);
+                    System.out.println("thread-" + Thread.currentThread().getId() + " scale-function scaleCheck() available scale action add~" + chosenTask);
                     scaleAction = new GenericTriplet<String, String, String>("add", upstreamTask, chosenTask);
                 }
             }
@@ -199,13 +199,13 @@ public class NewScaleFunction {
                         .get(slacker);
                 if (parentTasks.size() > 0)
                     upstreamTask = parentTasks.get(0);
-                System.out.println("scale-function located slacker's (" + slacker + ") parent (" + upstreamTask +
+                System.out.println("thread-" + Thread.currentThread().getId() + " scale-function located slacker's (" + slacker + ") parent (" + upstreamTask +
                         ") for an opening of " + opening);
                 if (activeTopology.containsKey(slacker) == true) {
                     List<String> activeTasks = NewScaleFunction.getActiveJoinNodes(activeTopology,
                             upstreamTask, slacker, taskToJoinRelation);
                     if (activeTasks.size() > 0) {
-                        System.out.println("scale-function ready to scale-in task: " + slacker + " (parent: " + upstreamTask + ")");
+                        System.out.println("thread-" + Thread.currentThread().getId() + " scale-function ready to scale-in task: " + slacker + " (parent: " + upstreamTask + ")");
                         scaleAction = new GenericTriplet<String, String, String>("remove", upstreamTask, slacker);
                     }
                 }

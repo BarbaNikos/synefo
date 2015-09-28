@@ -125,7 +125,7 @@ public class LoadBalancer {
                     String taskName = s.substring(s.lastIndexOf('/') + 1, s.lastIndexOf(':'));
                     Integer identifier = Integer.parseInt(s.substring(s.lastIndexOf(':') + 1));
                     String taskAddress = taskAddressIndex.get(taskName + ":" + identifier);
-                    System.out.println("identified data point from " + taskName + ":" + identifier + " and the data is " + value);
+                    System.out.println("thread-" + Thread.currentThread().getId() + " identified data point from " + taskName + ":" + identifier + " and the data is " + value);
 //                    GenericTriplet<String, String, String> action = scaleFunction.addData(taskName, Integer.parseInt(s.substring(s.lastIndexOf(':') + 1)),
 //                            Double.parseDouble(data[0]), Double.parseDouble(data[1]),
 //                            Double.parseDouble(data[2]), Double.parseDouble(data[3]), Double.parseDouble(data[4]));
@@ -133,7 +133,7 @@ public class LoadBalancer {
                         GenericTriplet<String, String, String> action = scaleFunction.addInputRateData(
                                 taskName, identifier, value);
                         if (action.first != null) {
-                            System.out.println("action generated " + action.first + " for upstream task: " +
+                            System.out.println("thread-" + Thread.currentThread().getId() + " action generated " + action.first + " for upstream task: " +
                                     action.second + " directed to: " + action.third);
                             initializeTaskCompletionStatus(action.third);
                             /**
@@ -144,14 +144,14 @@ public class LoadBalancer {
                                 case "add":
                                     scaleFunction.activateTask(action.third);
                                     if (!scaleFunction.getActiveTopology().containsKey(action.third)) {
-                                        System.out.println("Error in updating active-topology (add)");
+                                        System.out.println("thread-" + Thread.currentThread().getId() + " Error in updating active-topology (add)");
                                         System.exit(1);
                                     }
                                     break;
                                 case "remove":
                                     scaleFunction.deactivateTask(action.third);
                                     if (scaleFunction.getActiveTopology().containsKey(action.third)) {
-                                        System.out.println("Error in updating active-topology (remove)");
+                                        System.out.println("thread-" + Thread.currentThread().getId() + " Error in updating active-topology (remove)");
                                         System.exit(1);
                                     }
                                     break;
@@ -163,7 +163,7 @@ public class LoadBalancer {
                              * Add/Remove and Activate/Deactivate
                              */
                             List<String> parentTasks = Util.getInverseTopology(getTopology()).get(action.third);
-                            System.out.println("parent-tasks of node " + action.third + " are: " + parentTasks.toString());
+                            System.out.println("thread-" + Thread.currentThread().getId() + " parent-tasks of node " + action.third + " are: " + parentTasks.toString());
                             parentTasks.remove(parentTasks.indexOf(action.second));
                             if (action.first.equals("add")) {
                                 for (String task : parentTasks) {
