@@ -231,17 +231,12 @@ public class ElasticFileSpout extends BaseRichSpout {
             strBuild.append(SynefoConstant.PUNCT_TUPLE_TAG + "/");
             index = 0;
             if(action.toLowerCase().contains("activate") || action.toLowerCase().contains("deactivate")) {
-                if(action.toLowerCase().equals("activate")) {
-                    activeDownstreamTaskNames.add(taskWithIp);
-                    activeDownstreamTaskIdentifiers.add(task_id);
-                }else if(action.toLowerCase().equals("deactivate")) {
-                    activeDownstreamTaskNames.remove(activeDownstreamTaskNames.indexOf(taskWithIp));
-                    activeDownstreamTaskIdentifiers.remove(activeDownstreamTaskIdentifiers.indexOf(task_id));
-                }
+                activeDownstreamTaskNames = new ArrayList<>(zookeeperClient.getActiveDownstreamTasks());
+                activeDownstreamTaskIdentifiers = new ArrayList<>(zookeeperClient.getActiveDownstreamTaskIdentifiers());
             }else {
                 if(action.toLowerCase().contains("add")) {
-                    activeDownstreamTaskNames.add(taskWithIp);
-                    activeDownstreamTaskIdentifiers.add(task_id);
+                    activeDownstreamTaskNames = new ArrayList<>(zookeeperClient.getActiveDownstreamTasks());
+                    activeDownstreamTaskIdentifiers = new ArrayList<>(zookeeperClient.getActiveDownstreamTaskIdentifiers());
                     strBuild.append(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.ADD_ACTION + "/");
                 }else if(action.toLowerCase().contains("remove")) {
                     strBuild.append(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.REMOVE_ACTION + "/");
@@ -267,8 +262,8 @@ public class ElasticFileSpout extends BaseRichSpout {
                  * that the removed task is notified to share state
                  */
                 if(action.toLowerCase().contains("remove") && activeDownstreamTaskNames.indexOf(taskWithIp) >= 0) {
-                    activeDownstreamTaskNames.remove(activeDownstreamTaskNames.indexOf(taskWithIp));
-                    activeDownstreamTaskIdentifiers.remove(activeDownstreamTaskIdentifiers.indexOf(task_id));
+                    activeDownstreamTaskNames = new ArrayList<>(zookeeperClient.getActiveDownstreamTasks());
+                    activeDownstreamTaskIdentifiers = new ArrayList<>(zookeeperClient.getActiveDownstreamTaskIdentifiers());
                 }
             }
         }
