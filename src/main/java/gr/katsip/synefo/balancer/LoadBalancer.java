@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Created by katsip on 9/22/2015.
@@ -54,16 +56,15 @@ public class LoadBalancer {
 
     private NewScaleFunction scaleFunction;
 
-    Watcher watcher = new Watcher() {
+    private int activeTopologyVersion;
 
+    private final ReadWriteLock writeLock = new ReentrantReadWriteLock();
+
+    Watcher watcher = new Watcher() {
         @Override
         public void process(WatchedEvent watchedEvent) {
             if (watchedEvent.getType() == Event.EventType.NodeChildrenChanged) {
                 if (watchedEvent.getPath().equals(MAIN_ZNODE + "/" + TASK_ZNODE)) {
-                    /**
-                     * New task registered
-                     */
-//                    logger.info("identified NodeChildrenChanged event on " + watchedEvent.getPath());
                     System.out.println("identified NodeChildrenChanged event on " + watchedEvent.getPath());
                     watchTaskNode(watchedEvent.getPath());
                 }
@@ -78,7 +79,6 @@ public class LoadBalancer {
         public void processResult(int i, String s, Object o, List<String> list, Stat stat) {
             switch (KeeperException.Code.get(i)) {
                 case CONNECTIONLOSS:
-//                    logger.error("taskChildrenCallback CONNECTIONLOSS");
                     System.out.println("taskChildrenCallback CONNECTIONLOSS");
                     try {
                         watchTaskNode(new String((byte[]) o, "UTF-8"));
@@ -87,12 +87,10 @@ public class LoadBalancer {
                     }
                     break;
                 case NONODE:
-//                    logger.error("taskChildrenCallback NONODE");
                     System.out.println("taskChildrenCallback NONODE");
                     break;
                 case OK:
                     list.removeAll(registeredTasks);
-//                    logger.info("taskChildrenCallback OK: new nodes: " + registeredTasks.toString());
                     System.out.println("taskChildrenCallback OK: new nodes: " + registeredTasks.toString());
                     for (String child : list) {
                         getTaskData(s + "/" + child);
@@ -112,79 +110,80 @@ public class LoadBalancer {
         public void processResult(int i, String s, Object o, byte[] bytes, Stat stat) {
             switch (KeeperException.Code.get(i)) {
                 case CONNECTIONLOSS:
-//                    logger.error("taskChildrenCallback CONNECTIONLOSS");
                     System.out.println("taskChildrenCallback CONNECTIONLOSS");
                     getTaskData(s);
                     break;
                 case NONODE:
-//                    logger.error("taskChildrenCallback NONODE");
                     System.out.println("taskChildrenCallback NONODE");
                     break;
                 case OK:
                     double value = ByteBuffer.wrap(bytes).getDouble();
                     String taskName = s.substring(s.lastIndexOf('/') + 1, s.lastIndexOf(':'));
                     Integer identifier = Integer.parseInt(s.substring(s.lastIndexOf(':') + 1));
-                    String taskAddress = taskAddressIndex.get(taskName + ":" + identifier);
-                    System.out.println("thread-" + Thread.currentThread().getId() + " identified data point from " + taskName + ":" + identifier + " and the data is " + value);
+                    System.out.println("thread-" + Thread.currentThread().getId() + " identified data point from " +
+                            taskName + ":" + identifier + " and the data is " + value);
 //                    GenericTriplet<String, String, String> action = scaleFunction.addData(taskName, Integer.parseInt(s.substring(s.lastIndexOf(':') + 1)),
 //                            Double.parseDouble(data[0]), Double.parseDouble(data[1]),
 //                            Double.parseDouble(data[2]), Double.parseDouble(data[3]), Double.parseDouble(data[4]));
-                    synchronized (this) {
-                        GenericTriplet<String, String, String> action = scaleFunction.addInputRateData(
-                                taskName, identifier, value);
-                        if (action.first != null) {
-                            System.out.println("thread-" + Thread.currentThread().getId() + " action generated " + action.first + " for upstream task: " +
-                                    action.second + " directed to: " + action.third);
-                            initializeTaskCompletionStatus(action.third);
-                            /**
-                             * Need to
-                             * 1) update active-topology
-                             */
-                            switch (action.first) {
-                                case "add":
-                                    scaleFunction.activateTask(action.third);
-                                    if (!scaleFunction.getActiveTopology().containsKey(action.third)) {
-                                        System.out.println("thread-" + Thread.currentThread().getId() + " Error in updating active-topology (add)");
-                                        System.exit(1);
-                                    }
-                                    break;
-                                case "remove":
-                                    scaleFunction.deactivateTask(action.third);
-                                    if (scaleFunction.getActiveTopology().containsKey(action.third)) {
-                                        System.out.println("thread-" + Thread.currentThread().getId() + " Error in updating active-topology (remove)");
-                                        System.exit(1);
-                                    }
-                                    break;
+                    writeLock.writeLock().lock();
+                    GenericTriplet<String, String, String> action = scaleFunction.addInputRateData(
+                            taskName, identifier, value);
+                    if (action.first != null) {
+                        System.out.println("thread-" + Thread.currentThread().getId() + " action generated " +
+                                action.first + " for upstream task: " + action.second + " directed to: " +
+                                action.third);
+                        initializeTaskCompletionStatus(action.third);
+                        /**
+                         * Need to
+                         * 1) update active-topology
+                         */
+                        switch (action.first) {
+                            case "add":
+                                scaleFunction.activateTask(action.third);
+                                if (!scaleFunction.getActiveTopology().containsKey(action.third)) {
+                                    System.out.println("thread-" + Thread.currentThread().getId() +
+                                            " Error in updating active-topology (add)");
+                                    System.exit(1);
+                                }
+                                break;
+                            case "remove":
+                                scaleFunction.deactivateTask(action.third);
+                                if (scaleFunction.getActiveTopology().containsKey(action.third)) {
+                                    System.out.println("thread-" + Thread.currentThread().getId() +
+                                            " Error in updating active-topology (remove)");
+                                    System.exit(1);
+                                }
+                                break;
+                        }
+                        setActiveTopology(new ConcurrentHashMap<String, ArrayList<String>>(scaleFunction.getActiveTopology()));
+                        /**
+                         * 2) set the commands in the /synefo/bolt-tasks
+                         * Add/Remove and Activate/Deactivate
+                         */
+                        List<String> parentTasks = Util.getInverseTopology(getTopology()).get(action.third);
+                        System.out.println("thread-" + Thread.currentThread().getId() + " parent-tasks of node " +
+                                action.third + " are: " + parentTasks.toString());
+                        parentTasks.remove(parentTasks.indexOf(action.second));
+                        if (action.first.equals("add")) {
+                            for (String task : parentTasks) {
+                                setScaleAction(task, "activate", action.third);
                             }
-                            setActiveTopology(
-                                    new ConcurrentHashMap<String, ArrayList<String>>(scaleFunction.getActiveTopology()));
-                            /**
-                             * 2) set the commands in the /synefo/bolt-tasks
-                             * Add/Remove and Activate/Deactivate
-                             */
-                            List<String> parentTasks = Util.getInverseTopology(getTopology()).get(action.third);
-                            System.out.println("thread-" + Thread.currentThread().getId() + " parent-tasks of node " + action.third + " are: " + parentTasks.toString());
-                            parentTasks.remove(parentTasks.indexOf(action.second));
-                            if (action.first.equals("add")) {
-                                for (String task : parentTasks) {
-                                    setScaleAction(task, "activate", action.third);
-                                }
-                                setScaleAction(action.second, action.first, action.third);
-                            } else if (action.first.equals("remove")) {
-                                for (String task : parentTasks) {
-                                    setScaleAction(task, "deactivate", action.third);
-                                }
-                                setScaleAction(action.second, action.first, action.third);
+                            setScaleAction(action.second, action.first, action.third);
+                        } else if (action.first.equals("remove")) {
+                            for (String task : parentTasks) {
+                                setScaleAction(task, "deactivate", action.third);
                             }
-                            while (waitForScaleAction(action.third)) {
-                                try {
-                                    Thread.sleep(100);
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
-                                }
+                            setScaleAction(action.second, action.first, action.third);
+                        }
+                        while (waitForScaleAction(action.third)) {
+                            try {
+                                Thread.sleep(100);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
                             }
                         }
                     }
+                    writeLock.writeLock().unlock();
                     break;
                 default:
                     logger.error("unexpected scenario: " +
@@ -248,6 +247,7 @@ public class LoadBalancer {
                     setScaleAction(tokens[0], tokens[1], tokens[2]);
                     break;
                 case OK:
+                    System.out.println("LoadBalancer: set scale action version" + stat.getVersion() + " for path: " + s);
                     break;
                 default:
                     logger.error("unexpected scenario: " +
@@ -285,12 +285,13 @@ public class LoadBalancer {
     }
 
     public LoadBalancer(String zookeeperAddress,
-                         ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation,
+                        ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation,
                         Map<String, Pair<Number, Number>> thresholds,
                         ConcurrentHashMap<String, String> taskAddressIndex) {
         this.zookeeperAddress = zookeeperAddress;
         scaleFunction = new NewScaleFunction(new ConcurrentHashMap<>(taskToJoinRelation), thresholds);
         this.taskAddressIndex = taskAddressIndex;
+        this.activeTopologyVersion = -1;
     }
 
     public void start() {
@@ -349,9 +350,14 @@ public class LoadBalancer {
     }
 
     public void setActiveTopology(final ConcurrentHashMap<String, ArrayList<String>> activeTopology) {
+        Stat stat = null;
         try {
-            zooKeeper.setData(MAIN_ZNODE + "/" + ACTIVE_TOPOLOGY_ZNODE,
+            stat = zooKeeper.setData(MAIN_ZNODE + "/" + ACTIVE_TOPOLOGY_ZNODE,
                     Util.serializeTopology(activeTopology).getBytes("UTF-8"), -1);
+            if (stat.getVersion() > activeTopologyVersion) {
+                activeTopologyVersion = stat.getVersion();
+                System.out.println("LoadBalancer: updated active topology to version " + activeTopologyVersion);
+            }
         } catch (KeeperException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
@@ -365,6 +371,7 @@ public class LoadBalancer {
         Stat stat = new Stat();
         try {
             String data = new String(zooKeeper.getData(MAIN_ZNODE + "/" + ACTIVE_TOPOLOGY_ZNODE, false, stat), "UTF-8");
+            System.out.println("LoadBalancer: retrieved active topology version: " + stat.getVersion());
             return Util.deserializeTopology(data);
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();

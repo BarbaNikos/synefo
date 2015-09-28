@@ -51,12 +51,18 @@ public class ZookeeperClient {
 
     public ConcurrentLinkedQueue<String> commands;
 
+    private int commandVersion;
+
+    private int activeTopologyVersion;
+
     public ZookeeperClient(String zookeeperAddress, String taskName, Integer identifier, String taskAddress) {
         this.zookeeperAddress = zookeeperAddress;
         this.taskName = taskName;
         this.identifier = identifier;
         this.taskAddress = taskAddress;
         commands = new ConcurrentLinkedQueue<>();
+        commandVersion = -1;
+        activeTopologyVersion = -1;
     }
 
     Watcher watcher = new Watcher() {
@@ -98,9 +104,12 @@ public class ZookeeperClient {
                     } catch (UnsupportedEncodingException e) {
                         e.printStackTrace();
                     }
-                    if (command.length() > 0 && command.equals("") == false && command.lastIndexOf("/") < 0) {
-                        logger.info("OK command: " + command);
-                        commands.add(command);
+                    if (stat.getVersion() >= commandVersion) {
+                        if (command.length() > 0 && command.equals("") == false && command.lastIndexOf("/") < 0) {
+                            logger.info("OK command: " + command);
+                            commands.add(command);
+                            commandVersion = stat.getVersion();
+                        }
                     }
                     break;
                 default:
@@ -172,7 +181,7 @@ public class ZookeeperClient {
         }
     }
 
-    public ConcurrentHashMap<String, ArrayList<String>> getActiveTopology() throws UnsupportedEncodingException {
+    public ConcurrentHashMap<String, ArrayList<String>> getActiveTopology() {
         Stat stat = new Stat();
         byte[] data = null;
         try {
@@ -182,8 +191,23 @@ public class ZookeeperClient {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        logger.info("data received: " + new String(data, "UTF-8"));
-        return Util.deserializeTopology(new String(data, "UTF-8"));
+        if (stat.getVersion() > activeTopologyVersion) {
+            activeTopologyVersion = stat.getVersion();
+            try {
+                logger.info("data received (version:" + activeTopologyVersion + ": " + new String(data, "UTF-8"));
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
+            try {
+                return Util.deserializeTopology(new String(data, "UTF-8"));
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
+        }else {
+            logger.error("stale data received with version " + stat.getVersion() + " (already had: " + activeTopologyVersion + ").");
+            return null;
+        }
+        return null;
     }
 
     private ConcurrentHashMap<String, ArrayList<String>> getTopology() throws UnsupportedEncodingException {
@@ -212,32 +236,40 @@ public class ZookeeperClient {
 
     public List<String> getActiveDownstreamTasks() {
         logger.info("about to request downstream tasks for taskName: " + taskName + ", id: " + identifier);
-        try {
-            return getActiveTopology().get(taskName + ":" + identifier);
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+        ConcurrentHashMap<String, ArrayList<String>> activeTopology = getActiveTopology();
+        if (activeTopology != null) {
+            return activeTopology.get(taskName + ":" + identifier);
+        }else {
+            return new ArrayList<String>();
         }
-        return new ArrayList<String>();
     }
 
     public List<Integer> getDownstreamTaskIdentifiers() {
         List<String> taskNames = getDownstreamTasks();
-        List<Integer> taskIdentifiers = new ArrayList<>();
-        for (String task : taskNames) {
-            Integer identifier = Integer.parseInt(task.split("[:]")[1]);
-            taskIdentifiers.add(identifier);
+        if (taskNames.size() > 0) {
+            List<Integer> taskIdentifiers = new ArrayList<>();
+            for (String task : taskNames) {
+                Integer identifier = Integer.parseInt(task.split("[:]")[1]);
+                taskIdentifiers.add(identifier);
+            }
+            return taskIdentifiers;
+        }else {
+            return new ArrayList<Integer>();
         }
-        return taskIdentifiers;
     }
 
     public List<Integer> getActiveDownstreamTaskIdentifiers() {
         List<String> taskNames = getActiveDownstreamTasks();
-        List<Integer> taskIdentifiers = new ArrayList<>();
-        for (String task : taskNames) {
-            Integer identifier = Integer.parseInt(task.split("[:]")[1]);
-            taskIdentifiers.add(identifier);
+        if (taskNames.size() > 0) {
+            List<Integer> taskIdentifiers = new ArrayList<>();
+            for (String task : taskNames) {
+                Integer identifier = Integer.parseInt(task.split("[:]")[1]);
+                taskIdentifiers.add(identifier);
+            }
+            return taskIdentifiers;
+        }else {
+            return new ArrayList<Integer>();
         }
-        return taskIdentifiers;
     }
 
     public void addInputRateData(Double value) {

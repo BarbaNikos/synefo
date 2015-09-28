@@ -32,8 +32,6 @@ public class NewScaleFunction {
 
     private ConcurrentHashMap<String, ArrayList<String>> activeTopology;
 
-    private final ReadWriteLock writeLock = new ReentrantReadWriteLock();
-
     private Map<Integer, JoinOperator> taskToJoinRelation;
 
     private Map<String, Pair<Number, Number>> thresholds;

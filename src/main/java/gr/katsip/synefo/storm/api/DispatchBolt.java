@@ -388,7 +388,7 @@ public class DispatchBolt extends BaseRichBolt {
                  * notifying the dispatchers.
                  */
                 logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": about to receive " +
-                        taskNumber + " states.");
+                        (taskNumber - 1) + " pieces of state.");
                 try {
                     ServerSocket socket = new ServerSocket(6000 + this.taskIdentifier);
                     int numberOfConnections = 0;
@@ -413,7 +413,9 @@ public class DispatchBolt extends BaseRichBolt {
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
-                logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": successfully received.");
+                activeDownstreamTaskIdentifiers = zookeeperClient.getActiveDownstreamTaskIdentifiers();
+                logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": successfully received " +
+                        (taskNumber - 1) + " pieces of state.");
                 zookeeperClient.notifyActionComplete();
             }else {
                 logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": about to send state");
@@ -498,19 +500,19 @@ public class DispatchBolt extends BaseRichBolt {
                         List<Values> state = (List<Values>) response;
                         dispatcher.mergeState(state);
                     }
-                    while (true) {
-                        try {
-                            ConcurrentHashMap<String, ArrayList<String>> activeTopology = zookeeperClient.getActiveTopology();
-                            logger.info("awaiting for updated version of active-topology");
-                            if (activeTopology.containsKey(this.taskName + ":" + this.taskIdentifier)) {
-                                activeDownstreamTaskIdentifiers = zookeeperClient.getActiveDownstreamTaskIdentifiers();
-                                break;
-                            }
-                        } catch (UnsupportedEncodingException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": successfully received state. about to request updated active downstream-tasks");
+//                    while (true) {
+//                        try {
+//                            ConcurrentHashMap<String, ArrayList<String>> activeTopology = zookeeperClient.getActiveTopology();
+//                            logger.info("awaiting for updated version of active-topology");
+//                            if (activeTopology.containsKey(this.taskName + ":" + this.taskIdentifier)) {
+//                                activeDownstreamTaskIdentifiers = zookeeperClient.getActiveDownstreamTaskIdentifiers();
+//                                break;
+//                            }
+//                        } catch (UnsupportedEncodingException e) {
+//                            e.printStackTrace();
+//                        }
+//                    }
+                    logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": successfully received state.");
                     output.writeObject("OK");
                     input.close();
                     output.flush();
