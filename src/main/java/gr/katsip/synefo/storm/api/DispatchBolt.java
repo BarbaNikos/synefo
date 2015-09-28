@@ -436,21 +436,16 @@ public class DispatchBolt extends BaseRichBolt {
                 try {
                     ObjectOutputStream output = new ObjectOutputStream(client.getOutputStream());
                     ObjectInputStream input = new ObjectInputStream(client.getInputStream());
+                    activeDownstreamTaskIdentifiers = zookeeperClient.getActiveDownstreamTaskIdentifiers();
                     output.writeObject(dispatcher.getState());
-                    Object response = input.readObject();
-                    if (response instanceof String) {
-                        input.close();
-                        output.close();
-                        client.close();
-                    }
+                    input.close();
+                    output.close();
+                    client.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
                 logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": properly sent state.");
             }
-            activeDownstreamTaskIdentifiers = zookeeperClient.getActiveDownstreamTaskIdentifiers();
         }else if (scaleAction.equals(SynefoConstant.REMOVE_ACTION)) {
             if ((this.taskName + ":" + this.taskIdentifier).equals(taskName + ":" + taskIdentifier)) {
                 logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": about to send " +
@@ -503,6 +498,19 @@ public class DispatchBolt extends BaseRichBolt {
                         List<Values> state = (List<Values>) response;
                         dispatcher.mergeState(state);
                     }
+                    while (true) {
+                        try {
+                            ConcurrentHashMap<String, ArrayList<String>> activeTopology = zookeeperClient.getActiveTopology();
+                            logger.info("awaiting for updated version of active-topology");
+                            if (activeTopology.containsKey(this.taskName + ":" + this.taskIdentifier)) {
+                                activeDownstreamTaskIdentifiers = zookeeperClient.getActiveDownstreamTaskIdentifiers();
+                                break;
+                            }
+                        } catch (UnsupportedEncodingException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": successfully received state. about to request updated active downstream-tasks");
                     output.writeObject("OK");
                     input.close();
                     output.flush();
@@ -513,19 +521,6 @@ public class DispatchBolt extends BaseRichBolt {
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
-//                activeDownstreamTaskIdentifiers = zookeeperClient.getActiveDownstreamTaskIdentifiers();
-                while (true) {
-                    try {
-                        ConcurrentHashMap<String, ArrayList<String>> activeTopology = zookeeperClient.getActiveTopology();
-                        if (activeTopology.containsKey(this.taskName + ":" + this.taskIdentifier)) {
-                            activeDownstreamTaskIdentifiers = zookeeperClient.getActiveDownstreamTaskIdentifiers();
-                            break;
-                        }
-                    } catch (UnsupportedEncodingException e) {
-                        e.printStackTrace();
-                    }
-                }
-                logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": successfully received state. about to request updated active downstream-tasks");
             }
         }
     }

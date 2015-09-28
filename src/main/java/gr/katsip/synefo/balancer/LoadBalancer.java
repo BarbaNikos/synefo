@@ -144,13 +144,15 @@ public class LoadBalancer {
                                 case "add":
                                     scaleFunction.activateTask(action.third);
                                     if (!scaleFunction.getActiveTopology().containsKey(action.third)) {
-                                        throw new RuntimeException("Error in updating active-topology (add)");
+                                        System.out.println("Error in updating active-topology (add)");
+                                        System.exit(1);
                                     }
                                     break;
                                 case "remove":
                                     scaleFunction.deactivateTask(action.third);
                                     if (scaleFunction.getActiveTopology().containsKey(action.third)) {
-                                        throw new RuntimeException("Error in updating active-topology (remove)");
+                                        System.out.println("Error in updating active-topology (remove)");
+                                        System.exit(1);
                                     }
                                     break;
                             }
@@ -346,7 +348,7 @@ public class LoadBalancer {
         scaleFunction.updateActiveTopology(activeTopology);
     }
 
-    public void setActiveTopology(ConcurrentHashMap<String, ArrayList<String>> activeTopology) {
+    public void setActiveTopology(final ConcurrentHashMap<String, ArrayList<String>> activeTopology) {
         try {
             zooKeeper.setData(MAIN_ZNODE + "/" + ACTIVE_TOPOLOGY_ZNODE,
                     Util.serializeTopology(activeTopology).getBytes("UTF-8"), -1);
