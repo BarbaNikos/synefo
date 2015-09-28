@@ -100,9 +100,9 @@ public class NewScaleFunction {
              * Check if scale is needed
              */
             counter = 0;
-            writeLock.writeLock().lock();
+//            writeLock.writeLock().lock();
             scaleAction = scaleCheck();
-            writeLock.writeLock().unlock();
+//            writeLock.writeLock().unlock();
             return scaleAction;
         }else {
             return new GenericTriplet<String, String, String>();
@@ -168,7 +168,7 @@ public class NewScaleFunction {
          * Check for scale-in action
          */
         if (scaleAction == null) {
-            System.out.println("scale-function scaleCheck() about to check for *SCALE-IN* action.");
+//            System.out.println("scale-function scaleCheck() about to check for *SCALE-IN* action.");
             List<String> underloadedWorkers = new ArrayList<>();
             String slacker = "";
             Double opening = thresholds.get("input-rate").upperBound.doubleValue();
@@ -176,6 +176,8 @@ public class NewScaleFunction {
             while (iterator.hasNext()) {
                 Map.Entry<String, List<Double>> pair = iterator.next();
                 Double average = 0.0;
+                if (!activeTopology.containsKey(pair.getKey()))
+                    continue;
                 if (pair.getValue().size() >= 5) {
                     for (int i = pair.getValue().size() - 1; i >= (pair.getValue().size() - 4); i--) {
                         average += pair.getValue().get(i);
@@ -197,8 +199,8 @@ public class NewScaleFunction {
                         .get(slacker);
                 if (parentTasks.size() > 0)
                     upstreamTask = parentTasks.get(0);
-                System.out.println("scale-function located slacker's (" + slacker + ") parent (" + upstreamTask + ") for an opening of " + opening);
-                Integer identifier = Integer.parseInt(slacker.split("[:]")[1]);
+                System.out.println("scale-function located slacker's (" + slacker + ") parent (" + upstreamTask +
+                        ") for an opening of " + opening);
                 if (activeTopology.containsKey(slacker) == true) {
                     List<String> activeTasks = NewScaleFunction.getActiveJoinNodes(activeTopology,
                             upstreamTask, slacker, taskToJoinRelation);
