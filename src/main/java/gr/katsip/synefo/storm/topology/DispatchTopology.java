@@ -82,11 +82,11 @@ public class DispatchTopology {
                 "lineitem", new Fields(LineItem.query5Schema),
                 LineItem.query5Schema[0], LineItem.query5Schema[0], new Fields(dataSchema));
         builder.setBolt("dispatch", new DispatchBolt("dispatch", synefoAddress, synefoPort, dispatcher, zooIP, false),
-                executorNumber * 8)
-                .setNumTasks(scaleFactor * 8)
+                executorNumber * 4)
+                .setNumTasks(scaleFactor * 4)
                 .directGrouping("order")
                 .directGrouping("lineitem");
-        taskNumber += scaleFactor*8;
+        taskNumber += scaleFactor*4;
         taskList = new ArrayList<String>();
         taskList.add("joinorder");
         taskList.add("joinline");

@@ -11,6 +11,9 @@ import backtype.storm.tuple.Values;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.operators.relational.elastic.NewJoinJoiner;
 import gr.katsip.synefo.utils.SynefoConstant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -24,6 +27,8 @@ import java.util.*;
  * Created by katsip on 9/21/2015.
  */
 public class JoinBolt extends BaseRichBolt {
+
+    Logger logger = LoggerFactory.getLogger(JoinBolt.class);
 
     private static final int METRIC_REPORT_FREQ_SEC = 5;
 
@@ -49,7 +54,7 @@ public class JoinBolt extends BaseRichBolt {
 
     private Integer workerPort;
 
-    private ZooPet zookeeperClient;
+    private ZookeeperClient zookeeperClient;
 
     private List<String> downstreamTaskNames;
 
@@ -159,9 +164,15 @@ public class JoinBolt extends BaseRichBolt {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        zookeeperClient.start();
-        zookeeperClient.createJoinStateNode(taskName, taskIdentifier);
+        zookeeperClient.init();
         zookeeperClient.getScaleCommand();
+        StringBuilder strBuild = new StringBuilder();
+        strBuild.append("JOIN-BOLT-" + taskName + ":" + taskIdentifier + ": active tasks: ");
+        for(String activeTask : activeDownstreamTaskNames) {
+            strBuild.append(activeTask + " ");
+        }
+        logger.info(strBuild.toString());
+        logger.info("JOIN-BOLT-" + taskName + ":" + taskIdentifier + " registered to load-balancer");
         downstreamIndex = new Integer(0);
         throughputPreviousTimestamp = System.currentTimeMillis();
         temporaryInputRate = 0;
@@ -178,7 +189,7 @@ public class JoinBolt extends BaseRichBolt {
         } catch(UnknownHostException e) {
             e.printStackTrace();
         }
-        zookeeperClient = new ZooPet(zookeeperAddress, taskName, taskIdentifier, taskAddress);
+        zookeeperClient = new ZookeeperClient(zookeeperAddress, taskName, taskIdentifier, taskAddress);
         if(downstreamTaskNames == null && activeDownstreamTaskNames == null)
             register();
         initMetrics(topologyContext);
@@ -210,6 +221,9 @@ public class JoinBolt extends BaseRichBolt {
     public void execute(Tuple tuple) {
         String header = "";
         if (!tuple.getFields().contains("SYNEFO_HEADER")) {
+            logger.error("JOIN-BOLT-" + taskName + ":" + taskIdentifier +
+                    " missing synefo header (source: " +
+                    tuple.getSourceTask() + ")");
             outputCollector.fail(tuple);
             return;
         }else {
@@ -250,6 +264,12 @@ public class JoinBolt extends BaseRichBolt {
         tupleCounter++;
         if (tupleCounter >= WARM_UP_THRESHOLD && !SYSTEM_WARM_FLAG)
             SYSTEM_WARM_FLAG = true;
+        String command = "";
+        if (!zookeeperClient.commands.isEmpty()) {
+            command = zookeeperClient.commands.poll();
+            //TODO: Populate the following
+//            manageCommand(command);
+        }
     }
 
     @Override
@@ -327,7 +347,7 @@ public class JoinBolt extends BaseRichBolt {
                  * 2) Create a z-node under /synefo/join-state/taskName:taskIdentifier/x where x is a sequence number
                  *    and set the data to as a comma-separated list of the keys
                  */
-                zookeeperClient.createChildJoinStateDataScaleOut(taskName, taskNumber, keys);
+//                zookeeperClient.createChildJoinStateDataScaleOut(taskName, taskNumber, keys);
                 try {
                     ObjectOutputStream output = new ObjectOutputStream(client.getOutputStream());
                     ObjectInputStream input = new ObjectInputStream(client.getInputStream());
@@ -344,9 +364,9 @@ public class JoinBolt extends BaseRichBolt {
                     e.printStackTrace();
                 }
             }
-            List<Integer> activeDownstreamTasks =
-                    zookeeperClient.getActiveTopology(this.taskName, this.taskIdentifier, this.taskAddress);
-            this.activeDownstreamTaskIdentifiers = new ArrayList<Integer>(activeDownstreamTasks);
+//            List<Integer> activeDownstreamTasks =
+//                    zookeeperClient.getActiveTopology(this.taskName, this.taskIdentifier, this.taskAddress);
+//            this.activeDownstreamTaskIdentifiers = new ArrayList<Integer>(activeDownstreamTasks);
         }else if (scaleAction != null && scaleAction.equals(SynefoConstant.REMOVE_ACTION)) {
             if ((this.taskName + ":" + this.taskIdentifier).equals(taskName + ":" + taskIdentifier)) {
                 try {
@@ -402,9 +422,9 @@ public class JoinBolt extends BaseRichBolt {
                     e.printStackTrace();
                 }
             }
-            List<Integer> activeDownstreamTasks =
-                    zookeeperClient.getActiveTopology(this.taskName, this.taskIdentifier, this.taskAddress);
-            this.activeDownstreamTaskIdentifiers = new ArrayList<Integer>(activeDownstreamTasks);
+//            List<Integer> activeDownstreamTasks =
+//                    zookeeperClient.getActiveTopology(this.taskName, this.taskIdentifier, this.taskAddress);
+//            this.activeDownstreamTaskIdentifiers = new ArrayList<Integer>(activeDownstreamTasks);
         }
     }
 }
