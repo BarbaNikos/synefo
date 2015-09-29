@@ -297,4 +297,24 @@ public class Util {
         return updatedTopology;
     }
 
+    public static List<String> getActiveJoinNodes(Map<String, ArrayList<String>> activeTopology,
+                                                  String upstreamTask, String slacker,
+                                                  Map<Integer, JoinOperator> taskToJoinRelation) {
+        if(activeTopology.containsKey(upstreamTask) == false)
+            return new ArrayList<>();
+        List<String> activeNodes = new ArrayList<String>(activeTopology.get(upstreamTask));
+        List<String> sameRelationActiveNodes = new ArrayList<String>();
+        Integer slackerIdentifier = Integer.parseInt(slacker.split("[:]")[1]);
+        for(String task : activeNodes) {
+            Integer identifier = Integer.parseInt(task.split("[:]")[1]);
+            if(taskToJoinRelation.containsKey(identifier) &&
+                    taskToJoinRelation.get(identifier).getRelation()
+                            .equals(taskToJoinRelation.get(slackerIdentifier).getRelation()) &&
+                    identifier != slackerIdentifier) {
+                sameRelationActiveNodes.add(task);
+            }
+        }
+        return sameRelationActiveNodes;
+    }
+
 }

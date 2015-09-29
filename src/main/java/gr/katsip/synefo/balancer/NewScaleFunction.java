@@ -6,6 +6,7 @@ import gr.katsip.synefo.storm.api.Pair;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -200,10 +201,12 @@ public class NewScaleFunction {
                 System.out.println("thread-" + Thread.currentThread().getId() + " scale-function located slacker's (" + slacker + ") parent (" + upstreamTask +
                         ") for an opening of " + opening);
                 if (activeTopology.containsKey(slacker) == true) {
-                    List<String> activeTasks = NewScaleFunction.getActiveJoinNodes(activeTopology,
+                    List<String> activeTasks = Util.getActiveJoinNodes(activeTopology,
                             upstreamTask, slacker, taskToJoinRelation);
+                    System.out.println("thread-" + Thread.currentThread().getId() + " scale-function located active-tasks: " + activeTasks.toString());
                     if (activeTasks.size() > 0) {
-                        System.out.println("thread-" + Thread.currentThread().getId() + " scale-function ready to scale-in task: " + slacker + " (parent: " + upstreamTask + ")");
+                        System.out.println("thread-" + Thread.currentThread().getId() + " scale-function ready to scale-in task: " +
+                                slacker + " (parent: " + upstreamTask + ")");
                         scaleAction = new GenericTriplet<String, String, String>("remove", upstreamTask, slacker);
                     }
                 }
@@ -289,30 +292,11 @@ public class NewScaleFunction {
             Integer identifier = Integer.parseInt(task.split("[:]")[1]);
             if (taskToJoinRelation.get(identifier).getStep().equals(taskToJoinRelation.get(strugglerIdentifier).getStep()) &&
                     taskToJoinRelation.get(identifier).getRelation().equals(
-                    taskToJoinRelation.get(strugglerIdentifier).getRelation())) {
+                            taskToJoinRelation.get(strugglerIdentifier).getRelation())) {
                 availableNodes.add(task);
             }
         }
         return availableNodes;
-    }
-
-    public static List<String> getActiveJoinNodes(Map<String, ArrayList<String>> activeTopology,
-                                                  String upstreamTask, String slacker,
-                                                  Map<Integer, JoinOperator> taskToJoinRelation) {
-        if(activeTopology.containsKey(upstreamTask) == false)
-            return new ArrayList<>();
-        List<String> activeNodes = new ArrayList<String>(activeTopology.get(upstreamTask));
-        List<String> sameRelationActiveNodes = new ArrayList<String>();
-        Integer slackerIdentifier = Integer.parseInt(slacker.split("[:]")[1]);
-        for(String task : activeNodes) {
-            Integer identifier = Integer.parseInt(task.split("[:]")[1]);
-            if(taskToJoinRelation.containsKey(identifier) &&
-                    taskToJoinRelation.get(identifier).getRelation()
-                            .equals(taskToJoinRelation.get(slackerIdentifier).getRelation())) {
-                sameRelationActiveNodes.add(task);
-            }
-        }
-        return sameRelationActiveNodes;
     }
 
 }
