@@ -60,6 +60,8 @@ public class LoadBalancer {
 
     private final ReadWriteLock writeLock = new ReentrantReadWriteLock();
 
+    private int SCALE_ACTION_COMPLETE_VERSION = -1;
+
     Watcher watcher = new Watcher() {
         @Override
         public void process(WatchedEvent watchedEvent) {
@@ -134,50 +136,48 @@ public class LoadBalancer {
                                 action.third);
                         initializeTaskCompletionStatus(action.third);
                         /**
-                         * Need to
-                         * 1) update active-topology
+                         * Need to (1) update active-topology
                          */
-                        System.out.println("LoadBalancer: active-topology before addition/removal of task: " + scaleFunction.getActiveTopology().toString());
+//                        System.out.println("LoadBalancer: active-topology before addition/removal of task: " +
+//                                scaleFunction.getActiveTopology().toString());
                         switch (action.first) {
                             case "add":
                                 scaleFunction.activateTask(action.third);
-                                System.out.println("LoadBalancer: about to activate task: " + action.third);
-                                if (!scaleFunction.getActiveTopology().containsKey(action.third)) {
-                                    System.out.println("thread-" + Thread.currentThread().getId() +
-                                            " Error in updating active-topology (add)");
-                                    System.exit(1);
-                                }
-                                System.out.println("LoadBalancer: active-topology after addition of task: " + scaleFunction.getActiveTopology().toString());
+//                                System.out.println("LoadBalancer: about to activate task: " + action.third);
+//                                if (!scaleFunction.getActiveTopology().containsKey(action.third)) {
+//                                    System.out.println("thread-" + Thread.currentThread().getId() +
+//                                            " Error in updating active-topology (add)");
+//                                    System.exit(1);
+//                                }
+//                                System.out.println("LoadBalancer: active-topology after addition of task: " + scaleFunction.getActiveTopology().toString());
                                 break;
                             case "remove":
                                 scaleFunction.deactivateTask(action.third);
-                                System.out.println("LoadBalancer: about to de-activate task: " + action.third);
-                                if (scaleFunction.getActiveTopology().containsKey(action.third)) {
-                                    System.out.println("thread-" + Thread.currentThread().getId() +
-                                            " Error in updating active-topology (remove)");
-                                    System.exit(1);
-                                }
-                                System.out.println("LoadBalancer: active-topology after removal of task: " + scaleFunction.getActiveTopology().toString());
+//                                System.out.println("LoadBalancer: about to de-activate task: " + action.third);
+//                                if (scaleFunction.getActiveTopology().containsKey(action.third)) {
+//                                    System.out.println("thread-" + Thread.currentThread().getId() +
+//                                            " Error in updating active-topology (remove)");
+//                                    System.exit(1);
+//                                }
+//                                System.out.println("LoadBalancer: active-topology after removal of task: " + scaleFunction.getActiveTopology().toString());
                                 break;
                         }
-                        setActiveTopology(new ConcurrentHashMap<String, ArrayList<String>>(scaleFunction.getActiveTopology()));
+                        setActiveTopology(new ConcurrentHashMap<>(scaleFunction.getActiveTopology()));
                         /**
                          * 2) set the commands in the /synefo/bolt-tasks
                          * Add/Remove and Activate/Deactivate
                          */
                         List<String> parentTasks = Util.getInverseTopology(getTopology()).get(action.third);
-                        System.out.println("thread-" + Thread.currentThread().getId() + " parent-tasks of node " +
-                                action.third + " are: " + parentTasks.toString());
+//                        System.out.println("thread-" + Thread.currentThread().getId() + " parent-tasks of node " +
+//                                action.third + " are: " + parentTasks.toString());
                         parentTasks.remove(parentTasks.indexOf(action.second));
                         if (action.first.equals("add")) {
-                            for (String task : parentTasks) {
+                            for (String task : parentTasks)
                                 setScaleAction(task, "activate", action.third);
-                            }
                             setScaleAction(action.second, action.first, action.third);
                         } else if (action.first.equals("remove")) {
-                            for (String task : parentTasks) {
+                            for (String task : parentTasks)
                                 setScaleAction(task, "deactivate", action.third);
-                            }
                             setScaleAction(action.second, action.first, action.third);
                         }
                         while (waitForScaleAction(action.third)) {
@@ -199,8 +199,11 @@ public class LoadBalancer {
     };
 
     private void initializeTaskCompletionStatus(String task) {
+        Stat stat = null;
         try {
-            zooKeeper.setData(MAIN_ZNODE + "/" + TASK_ZNODE + "/" + task, ("").getBytes("UTF-8"), -1);
+            stat = zooKeeper.setData(MAIN_ZNODE + "/" + TASK_ZNODE + "/" + task, ("").getBytes("UTF-8"), -1);
+            SCALE_ACTION_COMPLETE_VERSION = stat.getVersion();
+            System.out.println("LoadBalancer: initiated scale action with version: " + SCALE_ACTION_COMPLETE_VERSION);
         } catch (KeeperException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
@@ -212,12 +215,17 @@ public class LoadBalancer {
 
     private boolean waitForScaleAction(String task) {
         Stat stat = new Stat();
-        byte[] data = null;
         try {
-            data = zooKeeper.getData(MAIN_ZNODE + "/" + TASK_ZNODE + "/" + task, false, stat);
+            byte[] data = zooKeeper.getData(MAIN_ZNODE + "/" + TASK_ZNODE + "/" + task, false, stat);
             String message = new String(data, "UTF-8");
-            if (message.equals("DONE"))
+            if (message.equals("DONE")) {
+                if (stat.getVersion() <= SCALE_ACTION_COMPLETE_VERSION && SCALE_ACTION_COMPLETE_VERSION != -1) {
+                    System.out.println("LoadBalancer: something might have gone WRONG. Previous update version: " +
+                    SCALE_ACTION_COMPLETE_VERSION + ", retrieved version: " + stat.getVersion());
+                }
+                SCALE_ACTION_COMPLETE_VERSION = -1;
                 return true;
+            }
         } catch (KeeperException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {

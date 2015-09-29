@@ -78,14 +78,13 @@ public class NewScaleFunction {
         add(this.inputRate, identifier, inputRate);
         add(this.state, identifier, state);
         counter++;
-        if (counter >= SCALE_EPOCH) {
-            /**
-             * Check if scale is needed
-             */
+        GenericTriplet<String, String, String> scaleAction = null;
+        if (counter >= SCALE_EPOCH && activeTopology.containsKey(identifier)) {
             counter = 0;
-            return scaleCheck();
+            scaleAction = scaleCheck();
+            return scaleAction;
         }else {
-            return new GenericTriplet<>();
+            return new GenericTriplet<String, String, String>();
         }
     }
 
@@ -94,14 +93,9 @@ public class NewScaleFunction {
         add(this.inputRate, identifier, inputRate);
         counter++;
         GenericTriplet<String, String, String> scaleAction = null;
-        if (counter >= SCALE_EPOCH) {
-            /**
-             * Check if scale is needed
-             */
+        if (counter >= SCALE_EPOCH && activeTopology.containsKey(identifier)) {
             counter = 0;
-//            writeLock.writeLock().lock();
             scaleAction = scaleCheck();
-//            writeLock.writeLock().unlock();
             return scaleAction;
         }else {
             return new GenericTriplet<String, String, String>();
@@ -111,15 +105,16 @@ public class NewScaleFunction {
     public GenericTriplet<String, String, String> scaleCheck() {
         GenericTriplet<String, String, String> scaleAction = null;
         /**
-         * First create a list with the overloaded workers
+         * Check for scale-out action
          */
         List<String> overloadedWorkers = new ArrayList<>();
         String struggler = "";
         Double bottleneck = -1.0;
         Iterator<Map.Entry<String, List<Double>>> iterator = inputRate.entrySet().iterator();
-//        System.out.println("scale-function performs a scale-check");
         while (iterator.hasNext()) {
             Map.Entry<String, List<Double>> pair = iterator.next();
+            if (!activeTopology.containsKey(pair.getKey()))
+                continue;
             Double average = 0.0;
             if (pair.getValue().size() >= 5) {
                 for (int i = pair.getValue().size() - 1; i >= (pair.getValue().size() - 4); i--) {
@@ -148,18 +143,14 @@ public class NewScaleFunction {
             ArrayList<String> availableNodes = null;
             Integer identifier = Integer.parseInt(struggler.split("[:]")[1]);
             if (upstreamTask != null && taskToJoinRelation.containsKey(identifier)) {
-                System.out.println("thread-" + Thread.currentThread().getId() + " scale-function scaleCheck() located average of input-rate " + bottleneck + ", for task " + struggler);
-//                System.out.println("scale-function topology view: " + topology.toString());
-//                System.out.println("scale-function active-topology view: " + activeTopology.toString());
-                availableNodes = getAvailableTasks(topology, activeTopology, upstreamTask, identifier, taskToJoinRelation);
-                System.out.println("thread-" + Thread.currentThread().getId() + " scale-function available nodes located: " + availableNodes.toString());
+                System.out.println("thread-" + Thread.currentThread().getId() +
+                        " scale-function scaleCheck() located average of input-rate " + bottleneck + ", for task " + struggler);
+                availableNodes = Util.getAvailableTasks(topology, activeTopology, upstreamTask, identifier, taskToJoinRelation);
                 if (availableNodes.size() > 0) {
-                    String chosenTask = randomChoice(availableNodes);
-                    /**
-                     * Update active-topology
-                     */
-                    System.out.println("thread-" + Thread.currentThread().getId() + " scale-function scaleCheck() available scale action add~" + chosenTask);
-                    scaleAction = new GenericTriplet<String, String, String>("add", upstreamTask, chosenTask);
+                    String chosenTask = Util.randomElementSelection(availableNodes);
+                    System.out.println("thread-" + Thread.currentThread().getId() +
+                            " scale-function scaleCheck() available scale action add~" + chosenTask);
+                    scaleAction = new GenericTriplet<>("add", upstreamTask, chosenTask);
                 }
             }
         }
@@ -167,7 +158,6 @@ public class NewScaleFunction {
          * Check for scale-in action
          */
         if (scaleAction == null) {
-//            System.out.println("scale-function scaleCheck() about to check for *SCALE-IN* action.");
             List<String> underloadedWorkers = new ArrayList<>();
             String slacker = "";
             Double opening = thresholds.get("input-rate").upperBound.doubleValue();
@@ -192,33 +182,28 @@ public class NewScaleFunction {
                     }
                 }
             }
-            if (opening <= thresholds.get("input-rate").lowerBound.doubleValue()) {
+            if (slacker.equals("") == false && opening <= thresholds.get("input-rate").lowerBound.doubleValue()) {
                 String upstreamTask = null;
-                List<String> parentTasks = Util.getInverseTopology(new ConcurrentHashMap<String, ArrayList<String>>(topology))
+                List<String> parentTasks = Util.getInverseTopology(new ConcurrentHashMap<>(topology))
                         .get(slacker);
                 if (parentTasks.size() > 0)
                     upstreamTask = parentTasks.get(0);
-                System.out.println("thread-" + Thread.currentThread().getId() + " scale-function located slacker's (" + slacker + ") parent (" + upstreamTask +
-                        ") for an opening of " + opening);
-                if (activeTopology.containsKey(slacker) == true) {
+                System.out.println("thread-" + Thread.currentThread().getId() + " scale-function located slacker's (" +
+                        slacker + ") parent (" + upstreamTask + ") for an opening of " + opening);
+                if (activeTopology.containsKey(slacker)) {
                     List<String> activeTasks = Util.getActiveJoinNodes(activeTopology,
                             upstreamTask, slacker, taskToJoinRelation);
-                    System.out.println("thread-" + Thread.currentThread().getId() + " scale-function located active-tasks: " + activeTasks.toString());
+                    System.out.println("thread-" + Thread.currentThread().getId() + " scale-function located active-tasks: " +
+                            activeTasks.toString());
                     if (activeTasks.size() > 0) {
                         System.out.println("thread-" + Thread.currentThread().getId() + " scale-function ready to scale-in task: " +
                                 slacker + " (parent: " + upstreamTask + ")");
-                        scaleAction = new GenericTriplet<String, String, String>("remove", upstreamTask, slacker);
+                        scaleAction = new GenericTriplet<>("remove", upstreamTask, slacker);
                     }
                 }
             }
-
         }
         return scaleAction;
-    }
-
-    private static String randomChoice(List<String> availableNodes) {
-        Random random = new Random();
-        return availableNodes.get(random.nextInt(availableNodes.size()));
     }
 
     private void add(ConcurrentHashMap<String, List<Double>> storage, String identifier, Double data) {
@@ -279,24 +264,6 @@ public class NewScaleFunction {
             }
         }
         activeTopology.put(newTask, activeDownStreamNodes);
-    }
-
-    public static ArrayList<String> getAvailableTasks(final Map<String, ArrayList<String>> topology,
-                                                         final Map<String, ArrayList<String>> activeTopology,
-                                                         String upstreamTask, Integer strugglerIdentifier,
-                                                         Map<Integer, JoinOperator> taskToJoinRelation) {
-        ArrayList<String> availableNodes = new ArrayList<String>();
-        ArrayList<String> physicalNodes = new ArrayList<String>(topology.get(upstreamTask));
-        physicalNodes.removeAll(activeTopology.get(upstreamTask));
-        for(String task : physicalNodes) {
-            Integer identifier = Integer.parseInt(task.split("[:]")[1]);
-            if (taskToJoinRelation.get(identifier).getStep().equals(taskToJoinRelation.get(strugglerIdentifier).getStep()) &&
-                    taskToJoinRelation.get(identifier).getRelation().equals(
-                            taskToJoinRelation.get(strugglerIdentifier).getRelation())) {
-                availableNodes.add(task);
-            }
-        }
-        return availableNodes;
     }
 
 }

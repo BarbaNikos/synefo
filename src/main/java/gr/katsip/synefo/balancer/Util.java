@@ -297,9 +297,9 @@ public class Util {
         return updatedTopology;
     }
 
-    public static List<String> getActiveJoinNodes(Map<String, ArrayList<String>> activeTopology,
-                                                  String upstreamTask, String slacker,
-                                                  Map<Integer, JoinOperator> taskToJoinRelation) {
+    public static List<String> getActiveJoinNodes(final Map<String, ArrayList<String>> activeTopology,
+                                                  final String upstreamTask, final String slacker,
+                                                  final Map<Integer, JoinOperator> taskToJoinRelation) {
         if(activeTopology.containsKey(upstreamTask) == false)
             return new ArrayList<>();
         List<String> activeNodes = new ArrayList<String>(activeTopology.get(upstreamTask));
@@ -315,6 +315,29 @@ public class Util {
             }
         }
         return sameRelationActiveNodes;
+    }
+
+    public static ArrayList<String> getAvailableTasks(final Map<String, ArrayList<String>> topology,
+                                                      final Map<String, ArrayList<String>> activeTopology,
+                                                      final String upstreamTask, final Integer strugglerIdentifier,
+                                                      Map<Integer, JoinOperator> taskToJoinRelation) {
+        ArrayList<String> availableTasks = new ArrayList<String>();
+        ArrayList<String> allTasks = new ArrayList<String>(topology.get(upstreamTask));
+        allTasks.removeAll(activeTopology.get(upstreamTask));
+        for(String task : allTasks) {
+            Integer identifier = Integer.parseInt(task.split("[:]")[1]);
+            if (taskToJoinRelation.get(identifier).getStep().equals(taskToJoinRelation.get(strugglerIdentifier).getStep()) &&
+                    taskToJoinRelation.get(identifier).getRelation().equals(
+                            taskToJoinRelation.get(strugglerIdentifier).getRelation())) {
+                availableTasks.add(task);
+            }
+        }
+        return availableTasks;
+    }
+
+    public static String randomElementSelection(final List<String> availableNodes) {
+        Random random = new Random();
+        return availableNodes.get(random.nextInt(availableNodes.size()));
     }
 
 }
