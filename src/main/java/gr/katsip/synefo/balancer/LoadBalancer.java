@@ -137,22 +137,27 @@ public class LoadBalancer {
                          * Need to
                          * 1) update active-topology
                          */
+                        System.out.println("LoadBalancer: active-topology before addition/removal of task: " + scaleFunction.getActiveTopology().toString());
                         switch (action.first) {
                             case "add":
                                 scaleFunction.activateTask(action.third);
+                                System.out.println("LoadBalancer: about to activate task: " + action.third);
                                 if (!scaleFunction.getActiveTopology().containsKey(action.third)) {
                                     System.out.println("thread-" + Thread.currentThread().getId() +
                                             " Error in updating active-topology (add)");
                                     System.exit(1);
                                 }
+                                System.out.println("LoadBalancer: active-topology after addition of task: " + scaleFunction.getActiveTopology().toString());
                                 break;
                             case "remove":
                                 scaleFunction.deactivateTask(action.third);
+                                System.out.println("LoadBalancer: about to de-activate task: " + action.third);
                                 if (scaleFunction.getActiveTopology().containsKey(action.third)) {
                                     System.out.println("thread-" + Thread.currentThread().getId() +
                                             " Error in updating active-topology (remove)");
                                     System.exit(1);
                                 }
+                                System.out.println("LoadBalancer: active-topology after removal of task: " + scaleFunction.getActiveTopology().toString());
                                 break;
                         }
                         setActiveTopology(new ConcurrentHashMap<String, ArrayList<String>>(scaleFunction.getActiveTopology()));
