@@ -364,10 +364,7 @@ public class ZookeeperClient {
                 case OK:
                     try {
                         String data = new String(bytes, "UTF-8");
-                        if (data.equals("")) {
-                            String context = new String((byte[]) o, "UTF-8");
-                            getJoinState(context.split(",")[0], context.split(",")[1]);
-                        }else {
+                        if (data.equals("") == false) {
                             /**
                              * Data is returned, I need to do something
                              */

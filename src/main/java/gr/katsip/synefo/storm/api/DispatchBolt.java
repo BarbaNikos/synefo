@@ -229,6 +229,10 @@ public class DispatchBolt extends BaseRichBolt {
         initMetrics(topologyContext);
         SYSTEM_WARM_FLAG = false;
         tupleCounter = 0;
+        SCALE_ACTION_FLAG = false;
+        elasticTask = "";
+        scaleAction = "";
+        zookeeperClient.clearActionData();
     }
 
     private void initMetrics(TopologyContext context) {

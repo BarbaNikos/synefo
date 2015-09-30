@@ -327,6 +327,10 @@ public class NewJoinDispatcher implements Serializable {
      * @param result
      */
     public void updateIndex(String scaleAction, String taskWithIdentifier, ConcurrentHashMap<String, ArrayList<String>> result) {
+        if (scaleAction.equals("add") || scaleAction.equals("activate")) {
 
+        }else if (scaleAction.equals("remove") || scaleAction.equals("deactivate")) {
+
+        }
     }
 }
