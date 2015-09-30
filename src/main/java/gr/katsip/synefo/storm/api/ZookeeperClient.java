@@ -16,6 +16,7 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -55,6 +56,23 @@ public class ZookeeperClient {
 
     private int activeTopologyVersion;
 
+    private String elasticTask = "";
+
+    private String scaleAction = "";
+
+    private ConcurrentHashMap<String, ArrayList<String>> scaleResult = null;
+
+    public ConcurrentHashMap<String, ArrayList<String>> getScaleResult() {
+        return scaleResult;
+    }
+
+    public void clearActionData() {
+        scaleResult.clear();
+        scaleResult = null;
+        elasticTask = "";
+        scaleAction = "";
+    }
+
     public ZookeeperClient(String zookeeperAddress, String taskName, Integer identifier, String taskAddress) {
         this.zookeeperAddress = zookeeperAddress;
         this.taskName = taskName;
@@ -72,6 +90,9 @@ public class ZookeeperClient {
                 if (watchedEvent.getPath().equals(MAIN_ZNODE + "/" + SCALE_ACTION + "/" +
                         taskName + ":" + identifier)) {
                     getScaleCommand();
+                }else if (watchedEvent.getPath().contains(MAIN_ZNODE + "/" + JOIN_STATE_ZNODE + "/")) {
+                    if (scaleAction.equals("") == false && elasticTask.equals("") == false)
+                        getJoinState(scaleAction, elasticTask);
                 }
             }
         }
@@ -308,4 +329,60 @@ public class ZookeeperClient {
             e.printStackTrace();
         }
     }
+
+    public void getJoinState(String action, String taskWithIdentifier) {
+        if (scaleAction != "" || elasticTask != "")
+            logger.error(" something went wrong and scale-action (" + scaleAction + ") and elastic-task (" +
+                    elasticTask + ") are not initialized.");
+        this.scaleAction = action;
+        this.elasticTask = taskWithIdentifier;
+        try {
+            zookeeper.getData(MAIN_ZNODE + "/" + JOIN_STATE_ZNODE + "/" + elasticTask, watcher,
+                    joinStateCallback,
+                    (scaleAction + "," + elasticTask).getBytes("UTF-8"));
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private AsyncCallback.DataCallback joinStateCallback = new AsyncCallback.DataCallback() {
+        @Override
+        public void processResult(int i, String s, Object o, byte[] bytes, Stat stat) {
+            switch (org.apache.zookeeper.KeeperException.Code.get(i)) {
+                case CONNECTIONLOSS:
+                    logger.info("CONNECTIONLOSS");
+                    try {
+                        String context = new String((byte[]) o, "UTF-8");
+                        getJoinState(context.split(",")[0], context.split(",")[1]);
+                    } catch (UnsupportedEncodingException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                case NONODE:
+                    logger.info("NONODE");
+                    break;
+                case OK:
+                    try {
+                        String data = new String(bytes, "UTF-8");
+                        if (data.equals("")) {
+                            String context = new String((byte[]) o, "UTF-8");
+                            getJoinState(context.split(",")[0], context.split(",")[1]);
+                        }else {
+                            /**
+                             * Data is returned, I need to do something
+                             */
+                            scaleResult = new ConcurrentHashMap<>(
+                                    Util.deserializeTopology(new String(bytes, "UTF-8")));
+                        }
+                    } catch (UnsupportedEncodingException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                default:
+                    logger.error("unexpected scenario: " +
+                        org.apache.zookeeper.KeeperException.create(org.apache.zookeeper.KeeperException.Code.get(i), s));
+                    break;
+            }
+        }
+    };
 }

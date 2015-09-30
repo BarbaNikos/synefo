@@ -36,13 +36,17 @@ public class DispatchBolt extends BaseRichBolt {
 
     private String taskName;
 
-    private int workerPort;
+    private int taskIdentifier;
 
     private String taskAddress;
+
+    private int workerPort;
 
     private String synefoAddress;
 
     private int synefoPort;
+
+    private String zookeeperAddress;
 
     private ZookeeperClient zookeeperClient;
 
@@ -58,15 +62,9 @@ public class DispatchBolt extends BaseRichBolt {
 
     private List<Values> state;
 
-    private String zookeeperAddress;
-
     private HashMap<String, List<Integer>> relationTaskIndex;
 
-    private boolean AUTO_SCALE_FLAG;
-
     private boolean SYSTEM_WARM_FLAG;
-
-    private int taskIdentifier;
 
     private int tupleCounter;
 
@@ -86,8 +84,14 @@ public class DispatchBolt extends BaseRichBolt {
 
     private long throughputPreviousTimestamp;
 
+    private boolean SCALE_ACTION_FLAG = false;
+
+    private String scaleAction = "";
+
+    private String elasticTask = "";
+
     public DispatchBolt(String taskName, String synefoAddress, Integer synefoPort,
-                        NewJoinDispatcher dispatcher, String zookeeperAddress, boolean autoScale) {
+                        NewJoinDispatcher dispatcher, String zookeeperAddress) {
         this.taskName = taskName;
         this.workerPort = -1;
         this.synefoAddress = synefoAddress;
@@ -100,7 +104,6 @@ public class DispatchBolt extends BaseRichBolt {
         state = new ArrayList<Values>();
         this.dispatcher.initializeState(state);
         this.zookeeperAddress = zookeeperAddress;
-        AUTO_SCALE_FLAG = autoScale;
         SYSTEM_WARM_FLAG = false;
         relationTaskIndex = null;
         tupleCounter = 0;
@@ -127,8 +130,8 @@ public class DispatchBolt extends BaseRichBolt {
             logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": connected to synefo");
             ArrayList<String> downstream = (ArrayList<String>) input.readObject();
             if (downstream.size() > 0) {
-                downstreamTaskNames = new ArrayList<String>(downstream);
-                downstreamTaskIdentifiers = new ArrayList<Integer>();
+                downstreamTaskNames = new ArrayList<>(downstream);
+                downstreamTaskIdentifiers = new ArrayList<>();
                 Iterator<String> itr = downstreamTaskNames.iterator();
                 while (itr.hasNext()) {
                     String[] tokens = itr.next().split("[:@]");
@@ -136,12 +139,13 @@ public class DispatchBolt extends BaseRichBolt {
                     downstreamTaskIdentifiers.add(task);
                 }
             }else {
-                downstreamTaskIdentifiers = new ArrayList<Integer>();
+                downstreamTaskNames = new ArrayList<>();
+                downstreamTaskIdentifiers = new ArrayList<>();
             }
             ArrayList<String> activeDownstream = (ArrayList<String>) input.readObject();
             if (activeDownstream.size() > 0) {
-                activeDownstreamTaskNames = new ArrayList<String>(activeDownstream);
-                activeDownstreamTaskIdentifiers = new ArrayList<Integer>();
+                activeDownstreamTaskNames = new ArrayList<>(activeDownstream);
+                activeDownstreamTaskIdentifiers = new ArrayList<>();
                 Iterator<String> itr = activeDownstreamTaskNames.iterator();
                 while (itr.hasNext()) {
                     String[] tokens = itr.next().split("[:@]");
@@ -149,8 +153,8 @@ public class DispatchBolt extends BaseRichBolt {
                     activeDownstreamTaskIdentifiers.add(task);
                 }
             }else {
-                activeDownstreamTaskNames = new ArrayList<String>();
-                activeDownstreamTaskIdentifiers = new ArrayList<Integer>();
+                activeDownstreamTaskNames = new ArrayList<>();
+                activeDownstreamTaskIdentifiers = new ArrayList<>();
             }
             /**
              * The following step is only for Dispatch-Bolts:
@@ -195,9 +199,6 @@ public class DispatchBolt extends BaseRichBolt {
         } catch (NullPointerException e) {
             logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": threw " + e.getMessage());
         }
-        /**
-         * Handshake with ZooKeeper
-         */
         zookeeperClient.init();
         zookeeperClient.getScaleCommand();
         StringBuilder strBuild = new StringBuilder();
@@ -216,9 +217,6 @@ public class DispatchBolt extends BaseRichBolt {
         this.collector = outputCollector;
         taskIdentifier = topologyContext.getThisTaskId();
         workerPort = topologyContext.getThisWorkerPort();
-        /**
-         * Update the taskName and extend it with the task-id (support for multi-core)
-         */
         taskName = taskName + "_" + taskIdentifier;
         try {
             taskAddress = InetAddress.getLocalHost().getHostAddress();
@@ -277,9 +275,6 @@ public class DispatchBolt extends BaseRichBolt {
             throughputPreviousTimestamp = throughputCurrentTimestamp;
             inputRate.setValue(temporaryInputRate);
             zookeeperClient.addInputRateData((double) temporaryInputRate);
-            /**
-             * Set the data values on the zookeeper server
-             */
             temporaryInputRate = 0;
         }else {
             temporaryInputRate++;
@@ -293,7 +288,7 @@ public class DispatchBolt extends BaseRichBolt {
         fieldList.remove(0);
         Fields fields = new Fields(fieldList);
         long startTime = System.currentTimeMillis();
-        if (activeDownstreamTaskIdentifiers != null && activeDownstreamTaskIdentifiers.size() > 0) {
+        if (activeDownstreamTaskIdentifiers.size() > 0) {
             dispatcher.execute(tuple, collector, fields, values);
             collector.ack(tuple);
         }else {
@@ -307,8 +302,19 @@ public class DispatchBolt extends BaseRichBolt {
         if (tupleCounter >= WARM_UP_THRESHOLD && !SYSTEM_WARM_FLAG)
             SYSTEM_WARM_FLAG = true;
 
+        if (SCALE_ACTION_FLAG) {
+            ConcurrentHashMap<String, ArrayList<String>> result = zookeeperClient.getScaleResult();
+            if (result != null) {
+                dispatcher.updateIndex(scaleAction, elasticTask, result);
+                zookeeperClient.clearActionData();
+                elasticTask = "";
+                scaleAction = "";
+                SCALE_ACTION_FLAG = false;
+            }
+        }
+
         String command = "";
-        if (!zookeeperClient.commands.isEmpty()) {
+        if (!zookeeperClient.commands.isEmpty() && SCALE_ACTION_FLAG == false) {
             command = zookeeperClient.commands.poll();
             manageCommand(command);
         }
@@ -322,12 +328,7 @@ public class DispatchBolt extends BaseRichBolt {
         outputFieldsDeclarer.declare(new Fields(producerSchema));
     }
 
-    /**
-     * TODO: Need to revisit this one when join scale-outs are complete.
-     * @param command
-     */
     public void manageCommand(String command) {
-        logger.info("command " + command);
         String[] scaleCommandTokens = command.split("[~:@]");
         String action = scaleCommandTokens[0];
         String taskWithAddress = scaleCommandTokens[1] + ":" + scaleCommandTokens[2] + "@" + scaleCommandTokens[3];
@@ -336,36 +337,45 @@ public class DispatchBolt extends BaseRichBolt {
         Integer taskIdentifier = Integer.parseInt(scaleCommandTokens[2]);
         StringBuilder strBuild = new StringBuilder();
         strBuild.append(SynefoConstant.PUNCT_TUPLE_TAG + "/");
+        /**
+         * Set a watch on the /synefo/state/task and set the SCALE_ACTION_FLAG to true
+         */
+        zookeeperClient.getJoinState(action.toLowerCase(), task + ":" + taskIdentifier);
+        SCALE_ACTION_FLAG = true;
+        scaleAction = action.toLowerCase();
+        elasticTask = task + ":" + taskIdentifier;
         if (action.toLowerCase().contains("activate") || action.toLowerCase().contains("deactivate")) {
-
+            activeDownstreamTaskNames = new ArrayList<>(zookeeperClient.getActiveDownstreamTasks());
+            activeDownstreamTaskIdentifiers = new ArrayList<>(zookeeperClient.getActiveDownstreamTaskIdentifiers());
         }else {
             if (action.toLowerCase().contains("add")) {
+                activeDownstreamTaskNames = new ArrayList<>(zookeeperClient.getActiveDownstreamTasks());
+                activeDownstreamTaskIdentifiers = new ArrayList<>(zookeeperClient.getActiveDownstreamTaskIdentifiers());
                 strBuild.append(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.ADD_ACTION + "/");
-                activeDownstreamTaskNames.add(taskWithAddress);
-                activeDownstreamTaskIdentifiers.add(taskIdentifier);
-                /**
-                 * TODO: Here I need to update the taskToRelationIndex accordingly
-                 */
             }else if (action.toLowerCase().contains("remove")) {
                 strBuild.append(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.REMOVE_ACTION + "/");
-                /**
-                 * TODO: Here I need to update the taskToRelationIndex accordingly
-                 */
             }
             strBuild.append(SynefoConstant.COMP_TAG + ":" + task + ":" + taskIdentifier + "/");
             strBuild.append(SynefoConstant.COMP_NUM_TAG + ":" + activeDownstreamTaskNames.size() + "/");
-            strBuild.append(SynefoConstant.COMP_IP_TAG + ":" + taskIdentifier + "/");
+            strBuild.append(SynefoConstant.COMP_IP_TAG + ":" + taskAddress + "/");
+            /**
+             * Populate other schema fields with null values,
+             * after SYNEFO_HEADER
+             */
             Values punctValue = new Values();
             punctValue.add(strBuild.toString());
-            for(int i = 0; i < dispatcher.getOutputSchema().size(); i++) {
+            for(int i = 0; i < dispatcher.getOutputSchema().size(); i++)
                 punctValue.add(null);
-            }
-            for(Integer d_task : activeDownstreamTaskIdentifiers) {
+            for(Integer d_task : activeDownstreamTaskIdentifiers)
                 collector.emitDirect(d_task, punctValue);
-            }
+            /**
+             * In the case of removing a downstream task
+             * we remove it after sending the punctuation tuples, so
+             * that the removed task is notified to share state
+             */
             if(action.toLowerCase().contains("remove") && activeDownstreamTaskNames.indexOf(taskWithAddress) >= 0) {
-                activeDownstreamTaskNames.remove(activeDownstreamTaskNames.indexOf(taskWithAddress));
-                activeDownstreamTaskIdentifiers.remove(activeDownstreamTaskIdentifiers.indexOf(taskWithAddress));
+                activeDownstreamTaskNames = new ArrayList<>(zookeeperClient.getActiveDownstreamTasks());
+                activeDownstreamTaskIdentifiers = new ArrayList<>(zookeeperClient.getActiveDownstreamTaskIdentifiers());
             }
         }
     }
@@ -500,18 +510,6 @@ public class DispatchBolt extends BaseRichBolt {
                         List<Values> state = (List<Values>) response;
                         dispatcher.mergeState(state);
                     }
-//                    while (true) {
-//                        try {
-//                            ConcurrentHashMap<String, ArrayList<String>> activeTopology = zookeeperClient.getActiveTopology();
-//                            logger.info("awaiting for updated version of active-topology");
-//                            if (activeTopology.containsKey(this.taskName + ":" + this.taskIdentifier)) {
-//                                activeDownstreamTaskIdentifiers = zookeeperClient.getActiveDownstreamTaskIdentifiers();
-//                                break;
-//                            }
-//                        } catch (UnsupportedEncodingException e) {
-//                            e.printStackTrace();
-//                        }
-//                    }
                     logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": successfully received state.");
                     output.writeObject("OK");
                     input.close();

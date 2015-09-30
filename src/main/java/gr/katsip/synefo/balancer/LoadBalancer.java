@@ -135,6 +135,8 @@ public class LoadBalancer {
                                 action.first + " for upstream task: " + action.second + " directed to: " +
                                 action.third);
                         initializeTaskCompletionStatus(action.third);
+                        if (scaleFunction.getTaskToRelationIndex().get(action.third).getStep().equals(JoinOperator.Step.JOIN))
+                            initializeStateNode(action.third);
                         /**
                          * Need to (1) update active-topology
                          */
@@ -197,6 +199,19 @@ public class LoadBalancer {
             }
         }
     };
+
+    private void initializeStateNode(String task) {
+        Stat stat = null;
+        try {
+            stat = zooKeeper.setData(MAIN_ZNODE + "/" + JOIN_STATE_ZNODE + "/" + task, ("").getBytes("UTF-8"), -1);
+        } catch (KeeperException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+    }
 
     private void initializeTaskCompletionStatus(String task) {
         Stat stat = null;

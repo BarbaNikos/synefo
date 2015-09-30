@@ -266,4 +266,8 @@ public class NewScaleFunction {
         activeTopology.put(newTask, activeDownStreamNodes);
     }
 
+    public Map<Integer, JoinOperator> getTaskToRelationIndex() {
+        return new HashMap<>(taskToJoinRelation);
+    }
+
 }

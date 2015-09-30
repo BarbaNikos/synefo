@@ -34,25 +34,21 @@ public class JoinBolt extends BaseRichBolt {
 
     private static final int WARM_UP_THRESHOLD = 10000;
 
+    private OutputCollector collector;
+
     private String taskName;
-
-    private String synefoAddress;
-
-    private Integer synefoPort;
-
-    private NewJoinJoiner joiner;
-
-    private String zookeeperAddress;
-
-    private boolean AUTO_SCALE;
-
-    private String taskAddress;
-
-    private OutputCollector outputCollector;
 
     private Integer taskIdentifier;
 
-    private Integer workerPort;
+    private String taskAddress;
+
+    private int workerPort;
+
+    private String synefoAddress;
+
+    private int synefoPort;
+
+    private String zookeeperAddress;
 
     private ZookeeperClient zookeeperClient;
 
@@ -64,11 +60,15 @@ public class JoinBolt extends BaseRichBolt {
 
     private List<Integer> activeDownstreamTaskIdentifiers;
 
-    private int tupleCounter;
+    private Integer downstreamIndex;
+
+    private NewJoinJoiner joiner;
+
+    private List<Values> state;
 
     private boolean SYSTEM_WARM_FLAG;
 
-    private Integer downstreamIndex;
+    private int tupleCounter;
 
     private transient AssignableMetric latency;
 
@@ -87,17 +87,20 @@ public class JoinBolt extends BaseRichBolt {
     private long throughputPreviousTimestamp;
 
     public JoinBolt(String taskName, String synefoAddress, Integer synefoPort,
-                    NewJoinJoiner joiner, String zookeeperAddress, boolean AUTO_SCALE) {
+                    NewJoinJoiner joiner, String zookeeperAddress) {
         this.taskName = taskName;
+        this.workerPort = -1;
         this.synefoAddress = synefoAddress;
         this.synefoPort = synefoPort;
-        this.joiner = joiner;
-        this.zookeeperAddress = zookeeperAddress;
-        this.AUTO_SCALE = AUTO_SCALE;
         downstreamTaskNames = null;
+        downstreamTaskIdentifiers = null;
         activeDownstreamTaskNames = null;
-        tupleCounter = 0;
+        activeDownstreamTaskIdentifiers = null;
+        this.joiner = joiner;
+        state = new ArrayList<Values>();
+        this.zookeeperAddress = zookeeperAddress;
         SYSTEM_WARM_FLAG = false;
+        tupleCounter = 0;
     }
 
     public void register() {
@@ -119,49 +122,41 @@ public class JoinBolt extends BaseRichBolt {
             input = new ObjectInputStream(socket.getInputStream());
             output.writeObject(message);
             output.flush();
-            message = null;
-            ArrayList<String> downstream = null;
-            try {
-                downstream = (ArrayList<String>) input.readObject();
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            }
-            if(downstream != null && downstream.size() > 0) {
-                downstreamTaskNames = new ArrayList<String>(downstream);
-                downstreamTaskIdentifiers = new ArrayList<Integer>();
+            logger.info("JOIN-BOLT-" + taskName + ":" + taskIdentifier + ": connected to synefo");
+            ArrayList<String> downstream = (ArrayList<String>) input.readObject();
+            if(downstream.size() > 0) {
+                downstreamTaskNames = new ArrayList<>(downstream);
+                downstreamTaskIdentifiers = new ArrayList<>();
                 Iterator<String> itr = downstreamTaskNames.iterator();
-                while(itr.hasNext()) {
+                while (itr.hasNext()) {
                     String[] tokens = itr.next().split("[:@]");
                     Integer task = Integer.parseInt(tokens[1]);
                     downstreamTaskIdentifiers.add(task);
                 }
             }else {
-                downstreamTaskNames = new ArrayList<String>();
-                downstreamTaskIdentifiers = new ArrayList<Integer>();
+                downstreamTaskNames = new ArrayList<>();
+                downstreamTaskIdentifiers = new ArrayList<>();
             }
-            ArrayList<String> activeDownstream = null;
-            try {
-                activeDownstream = (ArrayList<String>) input.readObject();
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            }
-            if(activeDownstream != null && activeDownstream.size() > 0) {
-                activeDownstreamTaskNames = new ArrayList<String>(activeDownstream);
-                activeDownstreamTaskIdentifiers = new ArrayList<Integer>();
+            ArrayList<String> activeDownstream = (ArrayList<String>) input.readObject();
+            if (activeDownstream.size() > 0) {
+                activeDownstreamTaskNames = new ArrayList<>(activeDownstream);
+                activeDownstreamTaskIdentifiers = new ArrayList<>();
                 Iterator<String> itr = activeDownstreamTaskNames.iterator();
-                while(itr.hasNext()) {
+                while (itr.hasNext()) {
                     String[] tokens = itr.next().split("[:@]");
                     Integer task = Integer.parseInt(tokens[1]);
                     activeDownstreamTaskIdentifiers.add(task);
                 }
             }else {
-                activeDownstreamTaskNames = new ArrayList<String>();
-                activeDownstreamTaskIdentifiers = new ArrayList<Integer>();
+                activeDownstreamTaskNames = new ArrayList<>();
+                activeDownstreamTaskIdentifiers = new ArrayList<>();
             }
             output.close();
             input.close();
             socket.close();
         } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
         zookeeperClient.init();
@@ -173,14 +168,14 @@ public class JoinBolt extends BaseRichBolt {
         }
         logger.info(strBuild.toString());
         logger.info("JOIN-BOLT-" + taskName + ":" + taskIdentifier + " registered to load-balancer");
-        downstreamIndex = new Integer(0);
+        downstreamIndex = 0;
         throughputPreviousTimestamp = System.currentTimeMillis();
         temporaryInputRate = 0;
     }
 
     @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
-        this.outputCollector = outputCollector;
+        this.collector = outputCollector;
         taskIdentifier = topologyContext.getThisTaskId();
         workerPort = topologyContext.getThisWorkerPort();
         taskName = taskName + "_" + taskIdentifier;
@@ -224,15 +219,18 @@ public class JoinBolt extends BaseRichBolt {
             logger.error("JOIN-BOLT-" + taskName + ":" + taskIdentifier +
                     " missing synefo header (source: " +
                     tuple.getSourceTask() + ")");
-            outputCollector.fail(tuple);
+            collector.fail(tuple);
             return;
         }else {
-            header = tuple.getString(tuple.getFields().fieldIndex("SYNEFO_HEADER"));
-            if (header != null && !header.equals("") && header.contains("/") && isScaleHeader(header)) {
+            header = tuple.getString(tuple.getFields()
+                    .fieldIndex("SYNEFO_HEADER"));
+            if (header != null && !header.equals("") && header.contains("/") &&
+                    isScaleHeader(header)) {
                 /**
                  * TODO: Finish up the handle punctuation tuple
                  */
-                outputCollector.ack(tuple);
+                manageScaleCommand(tuple);
+                collector.ack(tuple);
                 return;
             }
         }
@@ -240,10 +238,14 @@ public class JoinBolt extends BaseRichBolt {
         if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
             throughputPreviousTimestamp = throughputCurrentTimestamp;
             inputRate.setValue(temporaryInputRate);
+            zookeeperClient.addInputRateData((double) temporaryInputRate);
             temporaryInputRate = 0;
         }else {
             temporaryInputRate++;
         }
+        /**
+         * Remove from both values and fields SYNEFO_HEADER (SYNEFO_TIMESTAMP)
+         */
         Values values = new Values(tuple.getValues().toArray());
         values.remove(0);
         List<String> fieldList = tuple.getFields().toList();
@@ -251,24 +253,26 @@ public class JoinBolt extends BaseRichBolt {
         Fields fields = new Fields(fieldList);
         long startTime = System.currentTimeMillis();
         if (activeDownstreamTaskIdentifiers.size() > 0) {
-            joiner.execute(tuple, outputCollector, activeDownstreamTaskIdentifiers,
+            joiner.execute(tuple, collector, activeDownstreamTaskIdentifiers,
                     downstreamIndex, fields, values, null);
-            outputCollector.ack(tuple);
+            collector.ack(tuple);
         }else {
-            joiner.execute(tuple, outputCollector, activeDownstreamTaskIdentifiers,
+            joiner.execute(tuple, collector, activeDownstreamTaskIdentifiers,
                     downstreamIndex, fields, values, null);
-            outputCollector.ack(tuple);
+            collector.ack(tuple);
         }
         long endTime = System.currentTimeMillis();
+        executeLatency.setValue((endTime - startTime));
 
         tupleCounter++;
         if (tupleCounter >= WARM_UP_THRESHOLD && !SYSTEM_WARM_FLAG)
             SYSTEM_WARM_FLAG = true;
+
         String command = "";
         if (!zookeeperClient.commands.isEmpty()) {
             command = zookeeperClient.commands.poll();
             //TODO: Populate the following
-//            manageCommand(command);
+            manageCommand(command);
         }
     }
 
@@ -278,6 +282,10 @@ public class JoinBolt extends BaseRichBolt {
         producerSchema.add("SYNEFO_HEADER");
         producerSchema.addAll(joiner.getOutputSchema().toList());
         outputFieldsDeclarer.declare(new Fields(producerSchema));
+    }
+
+    public void manageCommand(String command) {
+
     }
 
     public void manageScaleCommand(Tuple tuple) {

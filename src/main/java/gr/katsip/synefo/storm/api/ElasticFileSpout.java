@@ -219,18 +219,17 @@ public class ElasticFileSpout extends BaseRichSpout {
     }
 
     private void manageCommand(String command) {
-        logger.info("command " + command);
         if(command.length() > 0) {
             String[] scaleCommandTokens = command.split("[~:@]");
             String action = scaleCommandTokens[0];
-            String taskWithIp = scaleCommandTokens[1] + ":" + scaleCommandTokens[2] + "@" + scaleCommandTokens[3];
-            String taskIp = scaleCommandTokens[3];
+            String taskWithAddress = scaleCommandTokens[1] + ":" + scaleCommandTokens[2] + "@" + scaleCommandTokens[3];
+            String taskAddress = scaleCommandTokens[3];
             String task = scaleCommandTokens[1];
-            Integer task_id = Integer.parseInt(scaleCommandTokens[2]);
+            Integer taskIdentifier = Integer.parseInt(scaleCommandTokens[2]);
             StringBuilder strBuild = new StringBuilder();
             strBuild.append(SynefoConstant.PUNCT_TUPLE_TAG + "/");
             index = 0;
-            if(action.toLowerCase().contains("activate") || action.toLowerCase().contains("deactivate")) {
+            if (action.toLowerCase().contains("activate") || action.toLowerCase().contains("deactivate")) {
                 activeDownstreamTaskNames = new ArrayList<>(zookeeperClient.getActiveDownstreamTasks());
                 activeDownstreamTaskIdentifiers = new ArrayList<>(zookeeperClient.getActiveDownstreamTaskIdentifiers());
             }else {
@@ -241,27 +240,25 @@ public class ElasticFileSpout extends BaseRichSpout {
                 }else if(action.toLowerCase().contains("remove")) {
                     strBuild.append(SynefoConstant.ACTION_PREFIX + ":" + SynefoConstant.REMOVE_ACTION + "/");
                 }
-                strBuild.append(SynefoConstant.COMP_TAG + ":" + task + ":" + task_id + "/");
+                strBuild.append(SynefoConstant.COMP_TAG + ":" + task + ":" + taskIdentifier + "/");
                 strBuild.append(SynefoConstant.COMP_NUM_TAG + ":" + activeDownstreamTaskNames.size() + "/");
-                strBuild.append(SynefoConstant.COMP_IP_TAG + ":" + taskIp + "/");
+                strBuild.append(SynefoConstant.COMP_IP_TAG + ":" + taskAddress + "/");
                 /**
                  * Populate other schema fields with null values,
                  * after SYNEFO_HEADER
                  */
                 Values punctValue = new Values();
                 punctValue.add(strBuild.toString());
-                for(int i = 0; i < producer.getSchema().size(); i++) {
+                for(int i = 0; i < producer.getSchema().size(); i++)
                     punctValue.add(null);
-                }
-                for(Integer d_task : activeDownstreamTaskIdentifiers) {
+                for(Integer d_task : activeDownstreamTaskIdentifiers)
                     spoutOutputCollector.emitDirect(d_task, punctValue);
-                }
                 /**
                  * In the case of removing a downstream task
                  * we remove it after sending the punctuation tuples, so
                  * that the removed task is notified to share state
                  */
-                if(action.toLowerCase().contains("remove") && activeDownstreamTaskNames.indexOf(taskWithIp) >= 0) {
+                if(action.toLowerCase().contains("remove") && activeDownstreamTaskNames.indexOf(taskWithAddress) >= 0) {
                     activeDownstreamTaskNames = new ArrayList<>(zookeeperClient.getActiveDownstreamTasks());
                     activeDownstreamTaskIdentifiers = new ArrayList<>(zookeeperClient.getActiveDownstreamTaskIdentifiers());
                 }

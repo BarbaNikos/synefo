@@ -81,7 +81,7 @@ public class DispatchTopology {
                 Order.query5Schema[0], Order.query5Schema[0],
                 "lineitem", new Fields(LineItem.query5Schema),
                 LineItem.query5Schema[0], LineItem.query5Schema[0], new Fields(dataSchema));
-        builder.setBolt("dispatch", new DispatchBolt("dispatch", synefoAddress, synefoPort, dispatcher, zooIP, false),
+        builder.setBolt("dispatch", new DispatchBolt("dispatch", synefoAddress, synefoPort, dispatcher, zooIP),
                 executorNumber * 4)
                 .setNumTasks(scaleFactor * 4)
                 .directGrouping("order")
@@ -98,7 +98,7 @@ public class DispatchTopology {
                 new Fields(LineItem.query5Schema), "O_ORDERKEY", "L_ORDERKEY", windowSizeInMinutes, 1000);
         joiner.setOutputSchema(new Fields(dataSchema));
         builder.setBolt("joinorder", new JoinBolt("joinorder", synefoAddress, synefoPort,
-                joiner, zooIP, false), executorNumber)
+                joiner, zooIP), executorNumber)
                 .setNumTasks(scaleFactor)
                 .directGrouping("dispatch");
         taskNumber += scaleFactor;
@@ -108,7 +108,7 @@ public class DispatchTopology {
                 "order", new Fields(Order.query5Schema), "L_ORDERKEY", "O_ORDERKEY", windowSizeInMinutes, 1000);
         joiner.setOutputSchema(new Fields(dataSchema));
         builder.setBolt("joinline", new JoinBolt("joinline", synefoAddress, synefoPort,
-                joiner, zooIP, false), executorNumber)
+                joiner, zooIP), executorNumber)
                 .setNumTasks(scaleFactor)
                 .directGrouping("dispatch");
         taskNumber += scaleFactor;

@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by katsip on 9/11/2015.
@@ -317,5 +318,15 @@ public class NewJoinDispatcher implements Serializable {
         values.add(innerRelationIndex);
         state.add(values);
         return state;
+    }
+
+    /**
+     * TODO: Need to complete this
+     * @param scaleAction
+     * @param taskWithIdentifier
+     * @param result
+     */
+    public void updateIndex(String scaleAction, String taskWithIdentifier, ConcurrentHashMap<String, ArrayList<String>> result) {
+
     }
 }
