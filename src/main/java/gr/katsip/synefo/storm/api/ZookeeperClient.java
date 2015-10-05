@@ -67,7 +67,8 @@ public class ZookeeperClient {
     }
 
     public void clearActionData() {
-        scaleResult.clear();
+        if (scaleResult != null)
+            scaleResult.clear();
         scaleResult = null;
         elasticTask = "";
         scaleAction = "";
