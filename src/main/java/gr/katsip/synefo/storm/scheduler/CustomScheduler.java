@@ -62,9 +62,9 @@ public class CustomScheduler implements IScheduler {
                             if (meta.get("name").equals("lineitem")) {
                                 lineitemSupervisor = supervisor;
                             }
-                            if (meta.get("name").equals("supervisor")) {
-                                dispatchSupervisors.add(supervisor);
-                            }
+//                            if (meta.get("name").equals("supervisor")) {
+//                                dispatchSupervisors.add(supervisor);
+//                            }
                         }
                     }
                     if (orderSupervisor != null) {
@@ -87,26 +87,26 @@ public class CustomScheduler implements IScheduler {
                         availableSlots = cluster.getAvailableSlots(lineitemSupervisor);
                         cluster.assign(availableSlots.get(0), topology.getId(), lineitemExecutors);
                     }
-                    if (dispatchSupervisors.size() > 0) {
-                        for (SupervisorDetails dispatchSupervisor : dispatchSupervisors) {
-                            List<WorkerSlot> availableSlots = cluster.getAvailableSlots(dispatchSupervisor);
-                            if (availableSlots.isEmpty() && !dispatchExecutors.isEmpty()) {
-                                for (Integer port : cluster.getUsedPorts(dispatchSupervisor)) {
-                                    cluster.freeSlot((new WorkerSlot(dispatchSupervisor.getId(), port)));
-                                }
-                            }
-                        }
-                        int supervisorIndex = 0;
-                        for (int i = 0; i < dispatchExecutors.size(); i++) {
-                            List<WorkerSlot> availableSlots = cluster.getAvailableSlots(dispatchSupervisors.get(supervisorIndex));
-                            List<ExecutorDetails> dispatchExecutorSubset = dispatchExecutors.subList(i, i + 1);
-                            cluster.assign(availableSlots.get(0), topology.getId(),dispatchExecutorSubset);
-                            if (supervisorIndex > (dispatchSupervisors.size() - 2))
-                                supervisorIndex = 0;
-                            else
-                                supervisorIndex++;
-                        }
-                    }
+//                    if (dispatchSupervisors.size() > 0) {
+//                        for (SupervisorDetails dispatchSupervisor : dispatchSupervisors) {
+//                            List<WorkerSlot> availableSlots = cluster.getAvailableSlots(dispatchSupervisor);
+//                            if (availableSlots.isEmpty() && !dispatchExecutors.isEmpty()) {
+//                                for (Integer port : cluster.getUsedPorts(dispatchSupervisor)) {
+//                                    cluster.freeSlot((new WorkerSlot(dispatchSupervisor.getId(), port)));
+//                                }
+//                            }
+//                        }
+//                        int supervisorIndex = 0;
+//                        for (int i = 0; i < dispatchExecutors.size(); i++) {
+//                            List<WorkerSlot> availableSlots = cluster.getAvailableSlots(dispatchSupervisors.get(supervisorIndex));
+//                            List<ExecutorDetails> dispatchExecutorSubset = dispatchExecutors.subList(i, i + 1);
+//                            cluster.assign(availableSlots.get(0), topology.getId(),dispatchExecutorSubset);
+//                            if (supervisorIndex > (dispatchSupervisors.size() - 2))
+//                                supervisorIndex = 0;
+//                            else
+//                                supervisorIndex++;
+//                        }
+//                    }
                 }
             }
         }
