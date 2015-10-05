@@ -143,14 +143,14 @@ public class DispatchTopology {
         conf.setDebug(false);
         conf.registerMetricsConsumer(LoggingMetricsConsumer.class, scaleFactor);
         conf.setNumWorkers(workerNum);
-        conf.put(Config.TOPOLOGY_WORKER_CHILDOPTS,
-                "-Xmx8192m -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:NewSize=128m -XX:CMSInitiatingOccupancyFraction=70 -XX:-CMSConcurrentMTEnabled -Djava.net.preferIPv4Stack=true");
+//        conf.put(Config.TOPOLOGY_WORKER_CHILDOPTS,
+//                "-Xmx8192m -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:NewSize=128m -XX:CMSInitiatingOccupancyFraction=70 -XX:-CMSConcurrentMTEnabled -Djava.net.preferIPv4Stack=true");
         conf.put(Config.TOPOLOGY_RECEIVER_BUFFER_SIZE, 8);
         conf.put(Config.TOPOLOGY_MAX_SPOUT_PENDING, maxSpoutPending);
         conf.setNumAckers(workerNum);
-        conf.put(Config.TOPOLOGY_TRANSFER_BUFFER_SIZE, 32);
-        conf.put(Config.TOPOLOGY_EXECUTOR_RECEIVE_BUFFER_SIZE, 16384);
-        conf.put(Config.TOPOLOGY_EXECUTOR_SEND_BUFFER_SIZE, 16384);
+//        conf.put(Config.TOPOLOGY_TRANSFER_BUFFER_SIZE, 32);
+//        conf.put(Config.TOPOLOGY_EXECUTOR_RECEIVE_BUFFER_SIZE, 16384);
+//        conf.put(Config.TOPOLOGY_EXECUTOR_SEND_BUFFER_SIZE, 16384);
         StormSubmitter.submitTopology("join-dispatch", conf, builder.createTopology());
     }
 }
