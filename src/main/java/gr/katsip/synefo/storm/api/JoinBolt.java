@@ -8,6 +8,7 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import gr.katsip.synefo.balancer.Util;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.operators.relational.elastic.NewJoinJoiner;
 import gr.katsip.synefo.utils.SynefoConstant;
@@ -226,9 +227,6 @@ public class JoinBolt extends BaseRichBolt {
                     .fieldIndex("SYNEFO_HEADER"));
             if (header != null && !header.equals("") && header.contains("/") &&
                     isScaleHeader(header)) {
-                /**
-                 * TODO: Finish up the handle punctuation tuple
-                 */
                 manageScaleCommand(tuple);
                 collector.ack(tuple);
                 return;
@@ -295,24 +293,23 @@ public class JoinBolt extends BaseRichBolt {
         String taskIdentifier = tokens[5];
         Integer taskNumber = Integer.parseInt(tokens[7]);
         String taskAddress = tokens[9];
+        List<String> keys = null;
         if (SYSTEM_WARM_FLAG)
             SYSTEM_WARM_FLAG = false;
         if (scaleAction != null && scaleAction.equals(SynefoConstant.ADD_ACTION)) {
             if ((this.taskName + ":" + this.taskIdentifier).equals(taskName + ":" + taskIdentifier)) {
                 try {
-                    /**
-                     * First clear-out the contents of
-                     */
                     ServerSocket socket = new ServerSocket(6000 + this.taskIdentifier);
                     int numberOfConnections = 0;
+                    HashMap<String, ArrayList<Values>> state = new HashMap<String, ArrayList<Values>>();
                     while (numberOfConnections < (taskNumber)) {
                         Socket client = socket.accept();
                         ObjectOutputStream output = new ObjectOutputStream(client.getOutputStream());
                         ObjectInputStream input = new ObjectInputStream(client.getInputStream());
                         Object response = input.readObject();
-                        if (response instanceof List) {
-                            List<Values> receivedState = (List<Values>) response;
-//                            dispatcher.mergeState(receivedState);
+                        if (response instanceof HashMap) {
+                            HashMap<String, ArrayList<Values>> statePacket = (HashMap<String, ArrayList<Values>>) response;
+                            Util.mergeState(state, statePacket);
                         }
                         output.flush();
                         input.close();
@@ -320,20 +317,27 @@ public class JoinBolt extends BaseRichBolt {
                         client.close();
                         numberOfConnections++;
                     }
+                    /**
+                     * Set the state accordingly
+                     */
+                    keys = joiner.setState(state);
                     socket.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
+                /**
+                 * Notify the keys that it currently maintains
+                 */
+                zookeeperClient.setJoinState(this.taskName, this.taskIdentifier, keys);
             }else {
                 /**
                  * Other node is added. Required Actions
-                 * 1) Get a list of the keys from the state that is going to be sent
+                 * CAUTION: This version ends up in false-positives for keys that are sent to the other nodes.
                  */
                 HashMap<String, ArrayList<Values>> state = joiner.getStateToBeSent();
                 Iterator<Map.Entry<String, ArrayList<Values>>> iterator = state.entrySet().iterator();
-                List<String> keys = new ArrayList<String>();
                 while (iterator.hasNext()) {
                     keys.add(iterator.next().getKey());
                 }
@@ -351,15 +355,14 @@ public class JoinBolt extends BaseRichBolt {
                         }
                     }
                 }
-                /**
-                 * 2) Create a z-node under /synefo/join-state/taskName:taskIdentifier/x where x is a sequence number
-                 *    and set the data to as a comma-separated list of the keys
-                 */
-//                zookeeperClient.createChildJoinStateDataScaleOut(taskName, taskNumber, keys);
                 try {
                     ObjectOutputStream output = new ObjectOutputStream(client.getOutputStream());
                     ObjectInputStream input = new ObjectInputStream(client.getInputStream());
-                    output.writeObject(state);
+                    /**
+                     * Get part of state to be sent
+                     */
+                    HashMap<String, ArrayList<Values>> statePacket = joiner.getStateToBeSent();
+                    output.writeObject(statePacket);
                     Object response = input.readObject();
                     if (response instanceof String) {
                         input.close();
@@ -372,11 +375,13 @@ public class JoinBolt extends BaseRichBolt {
                     e.printStackTrace();
                 }
             }
-//            List<Integer> activeDownstreamTasks =
-//                    zookeeperClient.getActiveTopology(this.taskName, this.taskIdentifier, this.taskAddress);
-//            this.activeDownstreamTaskIdentifiers = new ArrayList<Integer>(activeDownstreamTasks);
         }else if (scaleAction != null && scaleAction.equals(SynefoConstant.REMOVE_ACTION)) {
             if ((this.taskName + ":" + this.taskIdentifier).equals(taskName + ":" + taskIdentifier)) {
+                /**
+                 * Keep track of keys that they are sent out to other people
+                 * create a list with elements of type: <task-x=key-l,key-m,...,key-z>
+                 */
+                keys = new ArrayList<>();
                 try {
                     ServerSocket socket = new ServerSocket(6000 + this.taskIdentifier);
                     int numberOfConnections = 0;
@@ -384,14 +389,28 @@ public class JoinBolt extends BaseRichBolt {
                         Socket client = socket.accept();
                         ObjectOutputStream output = new ObjectOutputStream(client.getOutputStream());
                         ObjectInputStream input = new ObjectInputStream(client.getInputStream());
-//                        output.writeObject(dispatcher.getState());
+                        HashMap<String, ArrayList<Values>> statePacket = joiner.getStateToBeSent();
+                        output.writeObject(statePacket);
                         Object response = input.readObject();
+                        if (response instanceof Integer) {
+                            Integer receiverTask = (Integer) response;
+                            Iterator<Map.Entry<String, ArrayList<Values>>> iterator = statePacket.entrySet().iterator();
+                            StringBuilder stringBuilder = new StringBuilder();
+                            while (iterator.hasNext()) {
+                                stringBuilder.append(iterator.next().getKey() + ",");
+                            }
+                            if (stringBuilder.length() > 0 && stringBuilder.charAt(stringBuilder.length() - 1) == ',') {
+                                stringBuilder.setLength(stringBuilder.length() - 1);
+                            }
+                            keys.add(receiverTask + "=" + stringBuilder.toString());
+                        }
                         input.close();
                         output.close();
                         client.close();
                         numberOfConnections++;
                     }
                     socket.close();
+                    zookeeperClient.setJoinState(this.taskName, this.taskIdentifier, keys);
                 } catch (IOException e) {
                     e.printStackTrace();
                 } catch (ClassNotFoundException e) {
@@ -416,11 +435,11 @@ public class JoinBolt extends BaseRichBolt {
                     ObjectOutputStream output = new ObjectOutputStream(client.getOutputStream());
                     ObjectInputStream input = new ObjectInputStream(client.getInputStream());
                     Object response = input.readObject();
-                    if (response instanceof List) {
-                        List<Values> state = (List<Values>) response;
-//                        dispatcher.mergeState(state);
+                    if (response instanceof HashMap) {
+                        HashMap<String, ArrayList<Values>> statePacket = (HashMap<String, ArrayList<Values>>) response;
+                        joiner.addToState(statePacket);
                     }
-                    output.writeObject("OK");
+                    output.writeObject(this.taskIdentifier);
                     input.close();
                     output.close();
                     client.close();
@@ -430,9 +449,6 @@ public class JoinBolt extends BaseRichBolt {
                     e.printStackTrace();
                 }
             }
-//            List<Integer> activeDownstreamTasks =
-//                    zookeeperClient.getActiveTopology(this.taskName, this.taskIdentifier, this.taskAddress);
-//            this.activeDownstreamTaskIdentifiers = new ArrayList<Integer>(activeDownstreamTasks);
         }
     }
 }

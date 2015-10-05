@@ -65,88 +65,6 @@ public class NewJoinDispatcher implements Serializable {
     }
 
     /**
-     * add task to relation indices inside the Dispatcher's structures. This method needs to be called when a task is
-     * added.
-     * @param relationName the relation to which the operator is added
-     * @param originalTask the originally active task
-     * @param newTask the newly added operator
-     */
-    public void expandTask(String relationName, Integer originalTask, Integer newTask) {
-        Iterator<Map.Entry<String, List<Integer>>> iterator = null;
-        HashMap<String, List<Integer>> indexCopy = null;
-        if (relationName.equals(outerRelationName)) {
-           iterator = outerRelationIndex.entrySet().iterator();
-            indexCopy = new HashMap<>(outerRelationIndex);
-        }else {
-            iterator = innerRelationIndex.entrySet().iterator();
-            indexCopy = new HashMap<>(innerRelationIndex);
-        }
-        String key = "";
-        List<Integer> taskList = null;
-        while (iterator != null && iterator.hasNext()) {
-            Map.Entry<String, List<Integer>> pair = iterator.next();
-            taskList = pair.getValue();
-            if (taskList.lastIndexOf(originalTask) != -1 && taskList.lastIndexOf(originalTask) != 0) {
-                key = pair.getKey();
-                taskList.add(newTask);
-                taskList.set(0, 1);
-                indexCopy.put(key, new ArrayList<Integer>(taskList));
-            }
-        }
-        if (relationName.equals(outerRelationName)) {
-            outerRelationIndex.clear();
-            outerRelationIndex.putAll(indexCopy);
-        }else {
-            innerRelationIndex.clear();
-            innerRelationIndex.putAll(indexCopy);
-        }
-        List<Integer> tasks = taskToRelationIndex.get(relationName);
-        tasks.add(newTask);
-        taskToRelationIndex.put(relationName, tasks);
-    }
-
-    /**
-     * remove task from relation indices inside the Dispatcher's structures. This method needs to be called when a task
-     * is removed.
-     * @param relationName the relation from which the operator belongs to
-     * @param remainingTask the remaining active operator
-     * @param removedTask the removed operator
-     */
-    public void mergeTask(String relationName, Integer remainingTask, Integer removedTask) {
-        Iterator<Map.Entry<String, List<Integer>>> iterator = null;
-        HashMap<String, List<Integer>> indexCopy = null;
-        if (relationName.equals(outerRelationName)) {
-            iterator = outerRelationIndex.entrySet().iterator();
-            indexCopy = new HashMap<>(outerRelationIndex);
-        }else {
-            iterator = innerRelationIndex.entrySet().iterator();
-            indexCopy = new HashMap<>(innerRelationIndex);
-        }
-        String key = "";
-        List<Integer> taskList = null;
-        while (iterator != null && iterator.hasNext()) {
-            Map.Entry<String, List<Integer>> pair = iterator.next();
-            taskList = pair.getValue();
-            if (taskList.lastIndexOf(removedTask) != -1 && taskList.lastIndexOf(removedTask) != 0) {
-                key = pair.getKey();
-                taskList.remove(taskList.lastIndexOf(removedTask));
-                taskList.set(0, 1);
-                indexCopy.put(key, taskList);
-            }
-        }
-        if (relationName.equals(outerRelationName)) {
-            outerRelationIndex.clear();
-            outerRelationIndex.putAll(indexCopy);
-        }else {
-            innerRelationIndex.clear();
-            innerRelationIndex.putAll(indexCopy);
-        }
-        List<Integer> tasks = taskToRelationIndex.get(relationName);
-        tasks.remove(tasks.lastIndexOf(removedTask));
-        taskToRelationIndex.put(relationName, tasks);
-    }
-
-    /**
      * This function initializes the internal structure which keeps track of the active tasks and in
      * which relation they belong to.
      * @caution Need to have the ACTIVE tasks!
@@ -161,8 +79,8 @@ public class NewJoinDispatcher implements Serializable {
     }
 
     private int dispatch(String primaryKey, String foreignKey, HashMap<String, List<Integer>> primaryRelationIndex,
-                        String primaryRelationName, HashMap<String, List<Integer>> secondaryRelationIndex,
-                        Fields attributeNames, Values attributeValues, OutputCollector collector, Tuple anchor) {
+                         String primaryRelationName, HashMap<String, List<Integer>> secondaryRelationIndex,
+                         Fields attributeNames, Values attributeValues, OutputCollector collector, Tuple anchor) {
 //        logger.info("dispatch() called primary-key: " + primaryKey + ", foreign-key: " + foreignKey +
 //        " primary-relation: " + primaryRelationName + ", attributes: " + attributeNames.toList().toString() +
 //        " values: " + attributeValues.toString());
@@ -264,7 +182,6 @@ public class NewJoinDispatcher implements Serializable {
             String foreignKey = (String) attributeValues.get(innerRelationSchema.fieldIndex(innerRelationForeignKey));
             dispatch(primaryKey, foreignKey, innerRelationIndex, innerRelationName, outerRelationIndex,
                     attributeNames, attributeValues, collector, anchor);
-
         }
         return 0;
     }
@@ -321,16 +238,70 @@ public class NewJoinDispatcher implements Serializable {
     }
 
     /**
-     * TODO: Need to complete this
      * @param scaleAction
      * @param taskWithIdentifier
      * @param result
      */
-    public void updateIndex(String scaleAction, String taskWithIdentifier, ConcurrentHashMap<String, ArrayList<String>> result) {
+    public void updateIndex(String scaleAction, String taskWithIdentifier, String relation, List<String> result) {
+        Integer identifier = Integer.parseInt(taskWithIdentifier.split(":")[1]);
+        HashMap<String, List<Integer>> relationIndex = null;
+        if (relation.equals(innerRelationName))
+            relationIndex = innerRelationIndex;
+        else if (relation.equals(outerRelationName))
+            relationIndex = outerRelationIndex;
+        else
+            return;
         if (scaleAction.equals("add") || scaleAction.equals("activate")) {
-
+            /**
+             * First update the taskToRelationIndex (add the task that was removed)
+             */
+            List<Integer> tasks = taskToRelationIndex.get(relation);
+            tasks.add(identifier);
+            taskToRelationIndex.put(relation, tasks);
+            for (String key : result) {
+                if (relationIndex.containsKey(key)) {
+                    List<Integer> currentIndex = relationIndex.get(key);
+                    if (currentIndex.lastIndexOf(identifier) <= 0) {
+                        currentIndex.add(identifier);
+                        currentIndex.set(0, 1);
+                        relationIndex.put(key, currentIndex);
+                    }
+                }else {
+                    List<Integer> newIndex = new ArrayList<>();
+                    newIndex.add(1);
+                    newIndex.add(identifier);
+                    relationIndex.put(key, newIndex);
+                }
+            }
         }else if (scaleAction.equals("remove") || scaleAction.equals("deactivate")) {
-
+            /**
+             * First update the taskToRelationIndex (remove the task that was removed)
+             */
+            List<Integer> tasks = taskToRelationIndex.get(relation);
+            tasks.remove(tasks.lastIndexOf(identifier));
+            taskToRelationIndex.put(relation, tasks);
+            /**
+             * Then update for each key the task that received it.
+             */
+            for (String addedKeysToTask : result) {
+                Integer task = Integer.parseInt(addedKeysToTask.split("=")[0]);
+                String[] newKeys = addedKeysToTask.split("=")[1].split(",");
+                for (String key : newKeys) {
+                    if (relationIndex.containsKey(key)) {
+                        List<Integer> currentIndex = relationIndex.get(key);
+                        if (currentIndex.lastIndexOf(task) <= 0) {
+                            currentIndex.add(task);
+                            currentIndex.set(0, 1);
+                            relationIndex.put(key, currentIndex);
+                        }
+                    }else {
+                        List<Integer> newIndex = new ArrayList<>();
+                        newIndex.add(1);
+                        newIndex.add(task);
+                        relationIndex.put(key, newIndex);
+                    }
+                }
+            }
         }
     }
 }

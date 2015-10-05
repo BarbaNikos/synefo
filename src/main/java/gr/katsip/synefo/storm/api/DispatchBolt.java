@@ -14,6 +14,7 @@ import gr.katsip.synefo.utils.SynefoConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.*;
+import java.lang.reflect.Array;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -180,11 +181,13 @@ public class DispatchBolt extends BaseRichBolt {
                     if (activeDownstreamTaskIdentifiers.lastIndexOf(task) >= 0)
                         tasks.add(identifier);
                 }
-                activeRelationToTaskIndex.put(relation, identifiers);
+                activeRelationToTaskIndex.put(relation, tasks);
                 relationTaskIndex.put(relation, identifiers);
             }
             logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": task-to-relation index after processing: " +
                     relationTaskIndex);
+            logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": (active) task-to-relation index after processing: " +
+                    activeRelationToTaskIndex);
             output.writeObject(new String("OK"));
             dispatcher.setTaskToRelationIndex(activeRelationToTaskIndex);
             output.close();
@@ -307,9 +310,18 @@ public class DispatchBolt extends BaseRichBolt {
             SYSTEM_WARM_FLAG = true;
 
         if (SCALE_ACTION_FLAG) {
-            ConcurrentHashMap<String, ArrayList<String>> result = zookeeperClient.getScaleResult();
+            List<String> result = zookeeperClient.getScaleResult();
             if (result != null) {
-                dispatcher.updateIndex(scaleAction, elasticTask, result);
+                String relation = "";
+                Iterator<Map.Entry<String, List<Integer>>> iterator = relationTaskIndex.entrySet().iterator();
+                while (iterator.hasNext()) {
+                    Map.Entry<String, List<Integer>> entry = iterator.next();
+                    if (entry.getValue().lastIndexOf(Integer.parseInt(elasticTask.split(":")[1])) >= 0) {
+                        relation = entry.getKey();
+                        break;
+                    }
+                }
+                dispatcher.updateIndex(scaleAction, elasticTask, relation, result);
                 zookeeperClient.clearActionData();
                 elasticTask = "";
                 scaleAction = "";

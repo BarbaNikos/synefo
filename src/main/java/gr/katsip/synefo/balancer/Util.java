@@ -1,5 +1,6 @@
 package gr.katsip.synefo.balancer;
 
+import backtype.storm.tuple.Values;
 import gr.katsip.synefo.server2.JoinOperator;
 
 import java.util.*;
@@ -338,6 +339,45 @@ public class Util {
     public static String randomElementSelection(final List<String> availableNodes) {
         Random random = new Random();
         return availableNodes.get(random.nextInt(availableNodes.size()));
+    }
+
+    public static void mergeState(HashMap<String, ArrayList<Values>> state, final HashMap<String, ArrayList<Values>> statePacket) {
+        Iterator<Map.Entry<String, ArrayList<Values>>> packetIterator = statePacket.entrySet().iterator();
+        while (packetIterator.hasNext()) {
+            Map.Entry<String, ArrayList<Values>> entry = packetIterator.next();
+            if (state.containsKey(entry.getKey())) {
+                //Merge two lists together
+                ArrayList<Values> current = new ArrayList<>(state.get(entry.getKey()));
+                for (Values tuple : entry.getValue()) {
+                    if (current.lastIndexOf(tuple) < 0) {
+                        current.add(tuple);
+                    }
+                }
+                state.put(entry.getKey(), current);
+            }else {
+                state.put(entry.getKey(), new ArrayList<Values>(entry.getValue()));
+            }
+        }
+    }
+
+    public static String serializeList(final List<String> list) {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (String element : list) {
+            stringBuilder.append(element + ",");
+        }
+        if (stringBuilder.length() > 0 && stringBuilder.charAt(stringBuilder.length() - 1) == ',') {
+            stringBuilder.setLength(stringBuilder.length() - 1);
+        }
+        return stringBuilder.toString();
+    }
+
+    public static List<String> deserializeList(final String serializedList) {
+        List<String> list = new ArrayList<>();
+        String[] elements = serializedList.split(",");
+        for (String element : elements) {
+            list.add(element);
+        }
+        return list;
     }
 
 }

@@ -1,10 +1,7 @@
 package gr.katsip.synefo.storm.operators.relational.elastic;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Random;
+import java.util.*;
 
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
@@ -17,7 +14,6 @@ public class SlidingWindowJoin implements Serializable {
 	private static final long serialVersionUID = -557386415760782256L;
 
 	public class BasicWindow implements Serializable {
-		
 		/**
 		 * 
 		 */
@@ -32,6 +28,14 @@ public class SlidingWindowJoin implements Serializable {
 		public long basicWindowStateSize;
 		
 		public long numberOfTuples;
+
+        public BasicWindow() {
+            basicWindowStateSize = 0L;
+            numberOfTuples = 0L;
+            tuples = new HashMap<>();
+            startingTimestamp = 0L;
+            endingTimestamp = 0L;
+        }
 		
 	}
 	
@@ -62,7 +66,8 @@ public class SlidingWindowJoin implements Serializable {
 	 * @param tupleSchema the schema of the tuples that will be stored
 	 * @param joinAttribute the name of the join attribute
 	 */
-	public SlidingWindowJoin(long windowSize, long slide, Fields tupleSchema, String joinAttribute, String storedRelation, String otherRelation) {
+	public SlidingWindowJoin(long windowSize, long slide, Fields tupleSchema, String joinAttribute, String storedRelation,
+							 String otherRelation) {
 		circularCache = new LinkedList<BasicWindow>();
 		this.windowSize = windowSize;
 		this.slide = slide;
@@ -191,17 +196,36 @@ public class SlidingWindowJoin implements Serializable {
 	}
 
 	public BasicWindow getStatePart() {
-		Random rand = new Random();
-		int index = rand.nextInt(circularCache.size());
-		BasicWindow window = circularCache.remove(index);
-		stateByteSize -= window.basicWindowStateSize;
-		totalNumberOfTuples -= window.numberOfTuples;
-		return window;
+        if (circularCache.size() > 0) {
+            Random rand = new Random();
+            int index = rand.nextInt(circularCache.size());
+            BasicWindow window = circularCache.remove(index);
+            stateByteSize -= window.basicWindowStateSize;
+            totalNumberOfTuples -= window.numberOfTuples;
+            return window;
+        }else {
+            return new BasicWindow();
+        }
 	}
 
-	public void mergeStatePart(BasicWindow window) {
-		/**
-		 * TODO: Need to figure out how to merge the state
-		 */
+	public void initializeState(HashMap<String, ArrayList<Values>> state) {
+		circularCache.clear();
+        circularCacheSize = 0;
+        stateByteSize = 0L;
+        totalNumberOfTuples = 0;
+        BasicWindow window = new BasicWindow();
+        window.startingTimestamp = System.currentTimeMillis();
+        window.endingTimestamp = window.startingTimestamp + slide;
+        window.tuples = state;
+        Iterator<Map.Entry<String, ArrayList<Values>>> stateIterator = window.tuples.entrySet().iterator();
+        while (stateIterator.hasNext()) {
+            for (Values tuple : stateIterator.next().getValue()) {
+                window.numberOfTuples += 1;
+                window.basicWindowStateSize += tuple.toArray().toString().length();
+            }
+        }
+        totalNumberOfTuples = window.numberOfTuples;
+        stateByteSize = window.basicWindowStateSize;
+        circularCache.add(window);
 	}
 }

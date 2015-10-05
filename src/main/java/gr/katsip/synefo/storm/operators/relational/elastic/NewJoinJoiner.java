@@ -7,10 +7,7 @@ import backtype.storm.tuple.Values;
 import org.apache.commons.lang.ArrayUtils;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by katsip on 9/21/2015.
@@ -142,10 +139,31 @@ public class NewJoinJoiner implements Serializable {
         return outputSchema;
     }
 
-    public void mergeState(Fields receivedStateSchema,
-                           List<Values> receivedStateValues) {
-        // TODO Auto-generated method stub
+    public List<String> setState(HashMap<String, ArrayList<Values>> statePacket) {
+        slidingWindowJoin.initializeState(statePacket);
+        List<String> keys = new ArrayList<>();
+        Iterator<Map.Entry<String, ArrayList<Values>>> iterator = statePacket.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<String, ArrayList<Values>> entry = iterator.next();
+            if (keys.lastIndexOf(entry.getKey()) < 0)
+                keys.add(entry.getKey());
+        }
+        return keys;
+    }
 
+    public void addToState(HashMap<String, ArrayList<Values>> statePacket) {
+        long currentTimestamp = System.currentTimeMillis();
+        Iterator<Map.Entry<String, ArrayList<Values>>> iterator = statePacket.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<String, ArrayList<Values>> entry = iterator.next();
+            for (Values tuple : entry.getValue()) {
+                slidingWindowJoin.insertTuple(currentTimestamp, tuple);
+            }
+        }
+    }
+
+    public HashMap<String, ArrayList<Values>> getStateToBeSent() {
+        return this.slidingWindowJoin.getStatePart().tuples;
     }
 
     public String operatorStep() {
@@ -162,10 +180,6 @@ public class NewJoinJoiner implements Serializable {
 
     public Fields getJoinOutputSchema() {
         return new Fields(joinOutputSchema.toList());
-    }
-
-    public HashMap<String, ArrayList<Values>> getStateToBeSent() {
-        return this.slidingWindowJoin.getStatePart().tuples;
     }
 
 }

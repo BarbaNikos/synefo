@@ -60,9 +60,9 @@ public class ZookeeperClient {
 
     private String scaleAction = "";
 
-    private ConcurrentHashMap<String, ArrayList<String>> scaleResult = null;
+    private List<String> scaleResult = null;
 
-    public ConcurrentHashMap<String, ArrayList<String>> getScaleResult() {
+    public List<String> getScaleResult() {
         return scaleResult;
     }
 
@@ -345,6 +345,18 @@ public class ZookeeperClient {
         }
     }
 
+    public void setJoinState(String taskName, Integer identifier, List<String> keys) {
+        try {
+            zookeeper.setData(MAIN_ZNODE + "/" + JOIN_STATE_ZNODE + "/" + taskName + ":" + identifier, Util.serializeList(keys).getBytes("UTF-8"), -1);
+        } catch (KeeperException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+    }
+
     private AsyncCallback.DataCallback joinStateCallback = new AsyncCallback.DataCallback() {
         @Override
         public void processResult(int i, String s, Object o, byte[] bytes, Stat stat) {
@@ -365,11 +377,7 @@ public class ZookeeperClient {
                     try {
                         String data = new String(bytes, "UTF-8");
                         if (data.equals("") == false) {
-                            /**
-                             * Data is returned, I need to do something
-                             */
-                            scaleResult = new ConcurrentHashMap<>(
-                                    Util.deserializeTopology(new String(bytes, "UTF-8")));
+                            scaleResult = Util.deserializeList(new String(bytes, "UTF-8"));
                         }
                     } catch (UnsupportedEncodingException e) {
                         e.printStackTrace();
