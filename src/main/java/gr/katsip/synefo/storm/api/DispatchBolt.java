@@ -178,7 +178,7 @@ public class DispatchBolt extends BaseRichBolt {
                 for (String task : pair.getValue()) {
                     Integer identifier = Integer.parseInt(task.split("[:@]")[1]);
                     identifiers.add(identifier);
-                    if (activeDownstreamTaskIdentifiers.lastIndexOf(task) >= 0)
+                    if (activeDownstreamTaskIdentifiers.lastIndexOf(identifier) >= 0)
                         tasks.add(identifier);
                 }
                 activeRelationToTaskIndex.put(relation, tasks);
