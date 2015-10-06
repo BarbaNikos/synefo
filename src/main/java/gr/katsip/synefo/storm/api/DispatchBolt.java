@@ -345,6 +345,7 @@ public class DispatchBolt extends BaseRichBolt {
     }
 
     public void manageCommand(String command) {
+        logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + " received scale-command \"" + command + "\"");
         String[] scaleCommandTokens = command.split("[~:@]");
         String action = scaleCommandTokens[0];
         String taskWithAddress = scaleCommandTokens[1] + ":" + scaleCommandTokens[2] + "@" + scaleCommandTokens[3];

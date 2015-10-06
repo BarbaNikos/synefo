@@ -220,6 +220,7 @@ public class ElasticFileSpout extends BaseRichSpout {
 
     private void manageCommand(String command) {
         if(command.length() > 0) {
+            logger.info("ELASTIC-SPOUT-" + taskName + ":" + taskIdentifier + " received a scale-command \"" + command + "\"");
             String[] scaleCommandTokens = command.split("[~:@]");
             String action = scaleCommandTokens[0];
             String taskWithAddress = scaleCommandTokens[1] + ":" + scaleCommandTokens[2] + "@" + scaleCommandTokens[3];
