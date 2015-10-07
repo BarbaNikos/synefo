@@ -1,4 +1,4 @@
-package gr.katsip.synefo.balancer;
+package gr.katsip.synefo.utils;
 
 import backtype.storm.tuple.Values;
 import gr.katsip.synefo.server2.JoinOperator;
@@ -10,6 +10,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * Created by katsip on 9/24/2015.
  */
 public class Util {
+
+    public static int BOLT_STAT_BATCH_SIZE = 1000;
 
     public static String serializeTopology(ConcurrentHashMap<String, ArrayList<String>> topology) {
         StringBuilder strBuild = new StringBuilder();

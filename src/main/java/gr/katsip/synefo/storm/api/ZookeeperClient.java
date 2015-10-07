@@ -1,6 +1,6 @@
 package gr.katsip.synefo.storm.api;
 
-import gr.katsip.synefo.balancer.Util;
+import gr.katsip.synefo.utils.Util;
 import org.apache.storm.zookeeper.AsyncCallback;
 import org.apache.storm.zookeeper.CreateMode;
 import org.apache.storm.zookeeper.KeeperException;
@@ -13,10 +13,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -60,6 +58,10 @@ public class ZookeeperClient {
 
     private String scaleAction = "";
 
+    private StringBuilder serializedStatistics;
+
+    private int statisticCounter;
+
     private List<String> scaleResult = null;
 
     public List<String> getScaleResult() {
@@ -82,6 +84,8 @@ public class ZookeeperClient {
         commands = new ConcurrentLinkedQueue<>();
         commandVersion = -1;
         activeTopologyVersion = -1;
+        serializedStatistics = new StringBuilder();
+        statisticCounter = 0;
     }
 
     Watcher watcher = new Watcher() {
@@ -292,9 +296,23 @@ public class ZookeeperClient {
     }
 
     public void addInputRateData(Double value) {
-        byte[] b = new byte[8];
-        ByteBuffer.wrap(b).putDouble(value);
-        zookeeper.setData(MAIN_ZNODE + "/" + TASK_ZNODE + "/" + taskName + ":" + identifier, b, -1, statCallback, b);
+        statisticCounter++;
+        if (statisticCounter >= Util.BOLT_STAT_BATCH_SIZE) {
+            try {
+                zookeeper.setData(MAIN_ZNODE + "/" + TASK_ZNODE + "/" + taskName + ":" + identifier,
+                        serializedStatistics.toString().getBytes("UTF-8"), -1, statCallback,
+                        serializedStatistics.toString().getBytes("UTF-8"));
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
+            statisticCounter = 0;
+            serializedStatistics = new StringBuilder();
+        }else {
+            serializedStatistics.append("," + value);
+        }
+//        byte[] b = new byte[8];
+//        ByteBuffer.wrap(b).putDouble(value);
+//        zookeeper.setData(MAIN_ZNODE + "/" + TASK_ZNODE + "/" + taskName + ":" + identifier, b, -1, statCallback, b);
     }
 
     private AsyncCallback.StatCallback statCallback = new AsyncCallback.StatCallback() {

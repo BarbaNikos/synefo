@@ -3,7 +3,7 @@ package gr.katsip.synefo.balancer;
 import gr.katsip.synefo.server2.JoinOperator;
 import gr.katsip.synefo.storm.api.GenericTriplet;
 import gr.katsip.synefo.storm.api.Pair;
-import gr.katsip.synefo.storm.operators.relational.StringComparator;
+import gr.katsip.synefo.utils.Util;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -12,14 +12,12 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
-import org.omg.SendingContext.RunTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -119,17 +117,27 @@ public class LoadBalancer {
                     System.out.println("taskChildrenCallback NONODE");
                     break;
                 case OK:
-                    double value = ByteBuffer.wrap(bytes).getDouble();
                     String taskName = s.substring(s.lastIndexOf('/') + 1, s.lastIndexOf(':'));
                     Integer identifier = Integer.parseInt(s.substring(s.lastIndexOf(':') + 1));
                     System.out.println("thread-" + Thread.currentThread().getId() + " identified data point from " +
-                            taskName + ":" + identifier + " and the data is " + value);
+                            taskName + ":" + identifier + ".");
+//                    double value = ByteBuffer.wrap(bytes).getDouble();
+                    String data = ByteBuffer.wrap(bytes).toString();
+                    for (String dataPoint : data.split(",")) {
+                        double value = Double.parseDouble(dataPoint);
+                        scaleFunction.addInputRateDataBatch(taskName, identifier, value);
+                    }
+//                    String taskName = s.substring(s.lastIndexOf('/') + 1, s.lastIndexOf(':'));
+//                    Integer identifier = Integer.parseInt(s.substring(s.lastIndexOf(':') + 1));
+//                    System.out.println("thread-" + Thread.currentThread().getId() + " identified data point from " +
+//                            taskName + ":" + identifier + " and the data is " + value);
 //                    GenericTriplet<String, String, String> action = scaleFunction.addData(taskName, Integer.parseInt(s.substring(s.lastIndexOf(':') + 1)),
 //                            Double.parseDouble(data[0]), Double.parseDouble(data[1]),
 //                            Double.parseDouble(data[2]), Double.parseDouble(data[3]), Double.parseDouble(data[4]));
                     writeLock.writeLock().lock();
-                    GenericTriplet<String, String, String> action = scaleFunction.addInputRateData(
-                            taskName, identifier, value);
+//                    GenericTriplet<String, String, String> action = scaleFunction.addInputRateData(
+//                            taskName, identifier, value);
+                    GenericTriplet<String, String, String> action = scaleFunction.scaleCheckAfterBatch(taskName, identifier);
                     if (action.first != null) {
                         System.out.println("thread-" + Thread.currentThread().getId() + " action generated " +
                                 action.first + " for upstream task: " + action.second + " directed to: " +

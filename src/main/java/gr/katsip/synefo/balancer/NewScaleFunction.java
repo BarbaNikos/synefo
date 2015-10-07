@@ -3,12 +3,10 @@ package gr.katsip.synefo.balancer;
 import gr.katsip.synefo.server2.JoinOperator;
 import gr.katsip.synefo.storm.api.GenericTriplet;
 import gr.katsip.synefo.storm.api.Pair;
+import gr.katsip.synefo.utils.Util;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Created by katsip on 9/22/2015.
@@ -77,6 +75,23 @@ public class NewScaleFunction {
         add(this.latency, identifier, latency);
         add(this.inputRate, identifier, inputRate);
         add(this.state, identifier, state);
+        counter++;
+        GenericTriplet<String, String, String> scaleAction = null;
+        if (counter >= SCALE_EPOCH && activeTopology.containsKey(identifier)) {
+            counter = 0;
+            scaleAction = scaleCheck();
+            return scaleAction;
+        }else {
+            return new GenericTriplet<String, String, String>();
+        }
+    }
+
+    public void addInputRateDataBatch(String taskName, Integer taskIdentifier, double inputRate) {
+        add(this.inputRate, taskName + ":" + taskIdentifier, inputRate);
+    }
+
+    public GenericTriplet<String, String, String> scaleCheckAfterBatch(String taskName, Integer taskIdentifier) {
+        String identifier = taskName + ":" + taskIdentifier;
         counter++;
         GenericTriplet<String, String, String> scaleAction = null;
         if (counter >= SCALE_EPOCH && activeTopology.containsKey(identifier)) {
