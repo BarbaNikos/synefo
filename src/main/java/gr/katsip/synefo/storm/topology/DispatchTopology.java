@@ -58,18 +58,18 @@ public class DispatchTopology {
          * Stage 0: 2 input streams (lineitem, orders)
          */
         String[] dataSchema = { "attributes", "values" };
-        double[] outputRate = { 2000, 2000, 2000};
+        double[] outputRate = { 1000, 1000, 1000};
         int[] checkpoints = { 0, 30, 60 };
         LocalFileProducer order = new LocalFileProducer(data[0], Order.schema, Order.query5Schema, outputRate, checkpoints);
         order.setSchema(new Fields(dataSchema));
         LocalFileProducer lineitem = new LocalFileProducer(data[1], LineItem.schema, LineItem.query5Schema, outputRate, checkpoints);
         lineitem.setSchema(new Fields(dataSchema));
         builder.setSpout("order",
-                new ElasticFileSpout("order", synefoAddress, synefoPort, order, zooIP), 2);
-        taskNumber += 2;
+                new ElasticFileSpout("order", synefoAddress, synefoPort, order, zooIP), 3);
+        taskNumber += 3;
         builder.setSpout("lineitem",
-                new ElasticFileSpout("lineitem", synefoAddress, synefoPort, lineitem, zooIP), 2);
-        taskNumber += 2;
+                new ElasticFileSpout("lineitem", synefoAddress, synefoPort, lineitem, zooIP), 3);
+        taskNumber += 3;
         taskList = new ArrayList<String>();
         taskList.add("dispatch");
         topology.put("order", taskList);
@@ -144,7 +144,7 @@ public class DispatchTopology {
         conf.registerMetricsConsumer(LoggingMetricsConsumer.class, scaleFactor);
         conf.setNumWorkers(workerNum);
         conf.put(Config.TOPOLOGY_WORKER_CHILDOPTS,
-                "-Xmx8192m -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:NewSize=128m -XX:CMSInitiatingOccupancyFraction=70 -XX:-CMSConcurrentMTEnabled -Djava.net.preferIPv4Stack=true");
+                "-Xmx4096m -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:NewSize=128m -XX:CMSInitiatingOccupancyFraction=70 -XX:-CMSConcurrentMTEnabled -Djava.net.preferIPv4Stack=true");
         conf.put(Config.TOPOLOGY_RECEIVER_BUFFER_SIZE, 8);
         conf.put(Config.TOPOLOGY_MAX_SPOUT_PENDING, maxSpoutPending);
         conf.setNumAckers(workerNum);
