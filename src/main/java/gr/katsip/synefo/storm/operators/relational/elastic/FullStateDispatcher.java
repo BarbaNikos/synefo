@@ -67,10 +67,12 @@ public class FullStateDispatcher implements Serializable, Dispatcher {
      * @caution Need to have the ACTIVE tasks!
      * @param taskToRelationIndex the Hash-map with the initially active tasks and the relation they belong to.
      */
+    @Override
     public void setTaskToRelationIndex(HashMap<String, List<Integer>> taskToRelationIndex) {
         this.taskToRelationIndex = new HashMap<>(taskToRelationIndex);
     }
 
+    @Override
     public void setOutputSchema(Fields outputSchema) {
         this.outputSchema = new Fields(outputSchema.toList());
     }
@@ -168,6 +170,7 @@ public class FullStateDispatcher implements Serializable, Dispatcher {
         return 0;
     }
 
+    @Override
     public int execute(Tuple anchor, OutputCollector collector, Fields fields, Values values) {
         Fields attributeNames = new Fields(((Fields) values.get(0)).toList());
         Values attributeValues = (Values) values.get(1);
@@ -185,10 +188,12 @@ public class FullStateDispatcher implements Serializable, Dispatcher {
         return 0;
     }
 
+    @Override
     public Fields getOutputSchema() {
         return outputSchema;
     }
 
+    @Override
     public void mergeState(List<Values> state) {
         HashMap<String, List<Integer>> receivedOuterRelationIndex = (HashMap<String, List<Integer>>) state.get(0).get(0);
         HashMap<String, List<Integer>> receivedInnerRelationIndex = (HashMap<String, List<Integer>>) state.get(0).get(1);
@@ -223,6 +228,7 @@ public class FullStateDispatcher implements Serializable, Dispatcher {
         }
     }
 
+    @Override
     public List<Values> getState() {
         List<Values> state = new ArrayList<Values>();
         Values values = new Values();
@@ -232,6 +238,7 @@ public class FullStateDispatcher implements Serializable, Dispatcher {
         return state;
     }
 
+    @Override
     public long getStateSize() {
         return stateSize;
     }
@@ -241,6 +248,7 @@ public class FullStateDispatcher implements Serializable, Dispatcher {
      * @param taskWithIdentifier
      * @param result
      */
+    @Override
     public void updateIndex(String scaleAction, String taskWithIdentifier, String relation, List<String> result) {
         Integer identifier = Integer.parseInt(taskWithIdentifier.split(":")[1]);
         HashMap<String, List<Integer>> relationIndex = null;
