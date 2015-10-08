@@ -46,8 +46,6 @@ public class ZookeeperClient {
 
     private String taskName;
 
-    private String taskAddress;
-
     public ConcurrentLinkedQueue<String> commands;
 
     private int commandVersion;
@@ -80,7 +78,6 @@ public class ZookeeperClient {
         this.zookeeperAddress = zookeeperAddress;
         this.taskName = taskName;
         this.identifier = identifier;
-        this.taskAddress = taskAddress;
         commands = new ConcurrentLinkedQueue<>();
         commandVersion = -1;
         activeTopologyVersion = -1;
@@ -297,6 +294,7 @@ public class ZookeeperClient {
 
     public void addInputRateData(Double value) {
         statisticCounter++;
+        serializedStatistics.append("," + value);
         if (statisticCounter >= Util.BOLT_STAT_BATCH_SIZE) {
             try {
                 zookeeper.setData(MAIN_ZNODE + "/" + TASK_ZNODE + "/" + taskName + ":" + identifier,
@@ -307,8 +305,6 @@ public class ZookeeperClient {
             }
             statisticCounter = 0;
             serializedStatistics = new StringBuilder();
-        }else {
-            serializedStatistics.append("," + value);
         }
 //        byte[] b = new byte[8];
 //        ByteBuffer.wrap(b).putDouble(value);
