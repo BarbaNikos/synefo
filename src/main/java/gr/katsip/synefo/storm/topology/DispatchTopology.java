@@ -65,11 +65,11 @@ public class DispatchTopology {
         LocalFileProducer lineitem = new LocalFileProducer(data[1], LineItem.schema, LineItem.query5Schema, outputRate, checkpoints);
         lineitem.setSchema(new Fields(dataSchema));
         builder.setSpout("order",
-                new ElasticFileSpout("order", synefoAddress, synefoPort, order, zooIP), 3);
-        taskNumber += 3;
+                new ElasticFileSpout("order", synefoAddress, synefoPort, order, zooIP), 2);
+        taskNumber += 2;
         builder.setSpout("lineitem",
-                new ElasticFileSpout("lineitem", synefoAddress, synefoPort, lineitem, zooIP), 3);
-        taskNumber += 3;
+                new ElasticFileSpout("lineitem", synefoAddress, synefoPort, lineitem, zooIP), 2);
+        taskNumber += 2;
         taskList = new ArrayList<String>();
         taskList.add("dispatch");
         topology.put("order", taskList);
