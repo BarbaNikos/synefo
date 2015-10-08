@@ -324,6 +324,7 @@ public class ZookeeperClient {
                     logger.error(" NONODE");
                     break;
                 case OK:
+                    logger.info(" successfully pushed statistic data (version: " + stat.getVersion() + ")");
                     break;
                 default:
                     logger.error("unexpected scenario: " +
