@@ -281,6 +281,7 @@ public class DispatchBolt extends BaseRichBolt {
         if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
             throughputPreviousTimestamp = throughputCurrentTimestamp;
             inputRate.setValue(temporaryInputRate);
+            logger.info("about to add a new input-rate data point.");
             zookeeperClient.addInputRateData((double) temporaryInputRate);
             temporaryInputRate = 0;
         }else {

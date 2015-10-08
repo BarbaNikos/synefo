@@ -293,9 +293,11 @@ public class ZookeeperClient {
     }
 
     public void addInputRateData(Double value) {
+        logger.info("adding a data point to the buffer");
         statisticCounter++;
         serializedStatistics.append("," + value);
         if (statisticCounter >= Util.BOLT_STAT_BATCH_SIZE) {
+            logger.info("stat buffer is full. Time to push");
             try {
                 zookeeper.setData(MAIN_ZNODE + "/" + TASK_ZNODE + "/" + taskName + ":" + identifier,
                         serializedStatistics.toString().getBytes("UTF-8"), -1, statCallback,
