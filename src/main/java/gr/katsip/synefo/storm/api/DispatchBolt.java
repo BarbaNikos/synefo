@@ -61,17 +61,11 @@ public class DispatchBolt extends BaseRichBolt {
 
     private NewJoinDispatcher dispatcher;
 
-    private List<Values> state;
-
     private HashMap<String, List<Integer>> relationTaskIndex;
 
     private boolean SYSTEM_WARM_FLAG;
 
     private int tupleCounter;
-
-    private transient AssignableMetric latency;
-
-    private transient AssignableMetric throughput;
 
     private transient AssignableMetric executeLatency;
 
@@ -80,6 +74,10 @@ public class DispatchBolt extends BaseRichBolt {
     private transient AssignableMetric inputRate;
 
     private int temporaryInputRate;
+
+    private long lastExecuteLatencyMetric = 0L;
+
+    private long lastStateSizeMetric = 0L;
 
     private long throughputCurrentTimestamp;
 
@@ -102,8 +100,6 @@ public class DispatchBolt extends BaseRichBolt {
         activeDownstreamTaskNames = null;
         activeDownstreamTaskIdentifiers = null;
         this.dispatcher = dispatcher;
-        state = new ArrayList<Values>();
-        this.dispatcher.initializeState(state);
         this.zookeeperAddress = zookeeperAddress;
         SYSTEM_WARM_FLAG = false;
         relationTaskIndex = null;
@@ -239,14 +235,10 @@ public class DispatchBolt extends BaseRichBolt {
     }
 
     private void initMetrics(TopologyContext context) {
-        latency = new AssignableMetric(null);
-        throughput = new AssignableMetric(null);
         executeLatency = new AssignableMetric(null);
         stateSize = new AssignableMetric(null);
         inputRate = new AssignableMetric(null);
-        context.registerMetric("latency", latency, DispatchBolt.METRIC_REPORT_FREQ_SEC);
         context.registerMetric("execute-latency", executeLatency, DispatchBolt.METRIC_REPORT_FREQ_SEC);
-        context.registerMetric("throughput", throughput, DispatchBolt.METRIC_REPORT_FREQ_SEC);
         context.registerMetric("state-size", stateSize, DispatchBolt.METRIC_REPORT_FREQ_SEC);
         context.registerMetric("input-rate", inputRate, DispatchBolt.METRIC_REPORT_FREQ_SEC);
     }
@@ -281,7 +273,8 @@ public class DispatchBolt extends BaseRichBolt {
         if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
             throughputPreviousTimestamp = throughputCurrentTimestamp;
             inputRate.setValue(temporaryInputRate);
-            logger.info("about to add a new input-rate data point.");
+            executeLatency.setValue(lastExecuteLatencyMetric);
+            stateSize.setValue(lastStateSizeMetric);
             zookeeperClient.addInputRateData((double) temporaryInputRate);
             temporaryInputRate = 0;
         }else {
@@ -304,7 +297,8 @@ public class DispatchBolt extends BaseRichBolt {
             collector.ack(tuple);
         }
         long endTime = System.currentTimeMillis();
-        executeLatency.setValue((endTime - startTime));
+        lastExecuteLatencyMetric = endTime - startTime;
+        lastStateSizeMetric = dispatcher.getStateSize();
 
         tupleCounter++;
         if (tupleCounter >= WARM_UP_THRESHOLD && !SYSTEM_WARM_FLAG)
@@ -425,7 +419,7 @@ public class DispatchBolt extends BaseRichBolt {
                         ObjectOutputStream output = new ObjectOutputStream(client.getOutputStream());
                         ObjectInputStream input = new ObjectInputStream(client.getInputStream());
                         Object response = input.readObject();
-                        if (state instanceof List) {
+                        if (response instanceof List) {
                             List<Values> receivedState = (List<Values>) response;
                             dispatcher.mergeState(receivedState);
                         }

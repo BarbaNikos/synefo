@@ -65,15 +65,13 @@ public class JoinBolt extends BaseRichBolt {
 
     private NewJoinJoiner joiner;
 
-    private List<Values> state;
-
     private boolean SYSTEM_WARM_FLAG;
 
     private int tupleCounter;
 
-    private transient AssignableMetric latency;
+//    private transient AssignableMetric latency;
 
-    private transient AssignableMetric throughput;
+//    private transient AssignableMetric throughput;
 
     private transient AssignableMetric executeLatency;
 
@@ -87,6 +85,10 @@ public class JoinBolt extends BaseRichBolt {
 
     private long throughputPreviousTimestamp;
 
+    private long lastExecuteLatencyMetric = 0L;
+
+    private long lastStateSizeMetric = 0L;
+
     public JoinBolt(String taskName, String synefoAddress, Integer synefoPort,
                     NewJoinJoiner joiner, String zookeeperAddress) {
         this.taskName = taskName;
@@ -98,7 +100,6 @@ public class JoinBolt extends BaseRichBolt {
         activeDownstreamTaskNames = null;
         activeDownstreamTaskIdentifiers = null;
         this.joiner = joiner;
-        state = new ArrayList<Values>();
         this.zookeeperAddress = zookeeperAddress;
         SYSTEM_WARM_FLAG = false;
         tupleCounter = 0;
@@ -194,14 +195,10 @@ public class JoinBolt extends BaseRichBolt {
     }
 
     private void initMetrics(TopologyContext context) {
-        latency = new AssignableMetric(null);
-        throughput = new AssignableMetric(null);
         executeLatency = new AssignableMetric(null);
         stateSize = new AssignableMetric(null);
         inputRate = new AssignableMetric(null);
-        context.registerMetric("latency", latency, JoinBolt.METRIC_REPORT_FREQ_SEC);
         context.registerMetric("execute-latency", executeLatency, JoinBolt.METRIC_REPORT_FREQ_SEC);
-        context.registerMetric("throughput", throughput, JoinBolt.METRIC_REPORT_FREQ_SEC);
         context.registerMetric("state-size", stateSize, JoinBolt.METRIC_REPORT_FREQ_SEC);
         context.registerMetric("input-rate", inputRate, JoinBolt.METRIC_REPORT_FREQ_SEC);
     }
@@ -236,6 +233,8 @@ public class JoinBolt extends BaseRichBolt {
         if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
             throughputPreviousTimestamp = throughputCurrentTimestamp;
             inputRate.setValue(temporaryInputRate);
+            executeLatency.setValue(lastExecuteLatencyMetric);
+            stateSize.setValue(lastStateSizeMetric);
             zookeeperClient.addInputRateData((double) temporaryInputRate);
             temporaryInputRate = 0;
         }else {
@@ -260,7 +259,8 @@ public class JoinBolt extends BaseRichBolt {
             collector.ack(tuple);
         }
         long endTime = System.currentTimeMillis();
-        executeLatency.setValue((endTime - startTime));
+        lastExecuteLatencyMetric = endTime - startTime;
+        lastStateSizeMetric = joiner.getStateSize();
 
         tupleCounter++;
         if (tupleCounter >= WARM_UP_THRESHOLD && !SYSTEM_WARM_FLAG)
@@ -269,7 +269,7 @@ public class JoinBolt extends BaseRichBolt {
         String command = "";
         if (!zookeeperClient.commands.isEmpty()) {
             command = zookeeperClient.commands.poll();
-            //TODO: Populate the following
+            //TODO: Populate the following (currently not supported)
             manageCommand(command);
         }
     }
@@ -283,7 +283,7 @@ public class JoinBolt extends BaseRichBolt {
     }
 
     public void manageCommand(String command) {
-
+        //TODO: Not supported yet!
     }
 
     public void manageScaleCommand(Tuple tuple) {

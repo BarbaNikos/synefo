@@ -18,8 +18,6 @@ public class NewJoinDispatcher implements Serializable {
 
     Logger logger = LoggerFactory.getLogger(NewJoinDispatcher.class);
 
-    private List<Values> state;
-
     private String outerRelationName;
 
     private String innerRelationName;
@@ -27,8 +25,6 @@ public class NewJoinDispatcher implements Serializable {
     private Fields outerRelationSchema;
 
     private Fields innerRelationSchema;
-
-    private Fields resultSchema;
 
     private String outerRelationKey;
 
@@ -45,6 +41,8 @@ public class NewJoinDispatcher implements Serializable {
     private HashMap<String, List<Integer>> taskToRelationIndex;
 
     private Fields outputSchema;
+
+    private long stateSize = 0L;
 
     public NewJoinDispatcher(String outerRelationName, Fields outerRelationSchema,
                              String outerRelationKey, String outerRelationForeignKey,
@@ -142,6 +140,8 @@ public class NewJoinDispatcher implements Serializable {
                     else
                         collector.emitDirect(victimTask, tuple);
                 }
+                //Increment state by the size of shared-key-tasks (bytes) and the length of the key + pointer (int)
+                stateSize = stateSize + sharedKeyTasks.toString().length() + primaryKey.length() + 4;
                 primaryRelationIndex.put(primaryKey, sharedKeyTasks);
 //                logger.info("dispatch() shared keys with task " + victimTask + " are tasks: " + sharedKeyTasks.toString());
             }
@@ -186,10 +186,6 @@ public class NewJoinDispatcher implements Serializable {
         return 0;
     }
 
-    public void initializeState(List<Values> state) {
-        this.state = state;
-    }
-
     public Fields getOutputSchema() {
         return outputSchema;
     }
@@ -229,12 +225,16 @@ public class NewJoinDispatcher implements Serializable {
     }
 
     public List<Values> getState() {
-        state.clear();
+        List<Values> state = new ArrayList<Values>();
         Values values = new Values();
         values.add(outerRelationIndex);
         values.add(innerRelationIndex);
         state.add(values);
         return state;
+    }
+
+    public long getStateSize() {
+        return stateSize;
     }
 
     /**
@@ -304,4 +304,5 @@ public class NewJoinDispatcher implements Serializable {
             }
         }
     }
+
 }
