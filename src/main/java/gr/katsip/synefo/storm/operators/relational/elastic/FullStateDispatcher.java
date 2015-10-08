@@ -9,14 +9,13 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by katsip on 9/11/2015.
  */
-public class NewJoinDispatcher implements Serializable {
+public class FullStateDispatcher implements Serializable, Dispatcher {
 
-    Logger logger = LoggerFactory.getLogger(NewJoinDispatcher.class);
+    Logger logger = LoggerFactory.getLogger(FullStateDispatcher.class);
 
     private String outerRelationName;
 
@@ -44,10 +43,10 @@ public class NewJoinDispatcher implements Serializable {
 
     private long stateSize = 0L;
 
-    public NewJoinDispatcher(String outerRelationName, Fields outerRelationSchema,
-                             String outerRelationKey, String outerRelationForeignKey,
-                             String innerRelationName, Fields innerRelationSchema,
-                             String innerRelationKey, String innerRelationForeignKey, Fields outputSchema) {
+    public FullStateDispatcher(String outerRelationName, Fields outerRelationSchema,
+                               String outerRelationKey, String outerRelationForeignKey,
+                               String innerRelationName, Fields innerRelationSchema,
+                               String innerRelationKey, String innerRelationForeignKey, Fields outputSchema) {
         this.outerRelationName = outerRelationName;
         this.outerRelationSchema = new Fields(outerRelationSchema.toList());
         this.outerRelationKey = outerRelationKey;

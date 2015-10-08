@@ -9,18 +9,17 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
-import gr.katsip.synefo.storm.operators.relational.elastic.NewJoinDispatcher;
+import gr.katsip.synefo.storm.operators.relational.elastic.Dispatcher;
+import gr.katsip.synefo.storm.operators.relational.elastic.FullStateDispatcher;
 import gr.katsip.synefo.utils.SynefoConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.*;
-import java.lang.reflect.Array;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by katsip on 9/14/2015.
@@ -59,7 +58,7 @@ public class DispatchBolt extends BaseRichBolt {
 
     private List<Integer> activeDownstreamTaskIdentifiers;
 
-    private NewJoinDispatcher dispatcher;
+    private Dispatcher dispatcher;
 
     private HashMap<String, List<Integer>> relationTaskIndex;
 
@@ -90,7 +89,7 @@ public class DispatchBolt extends BaseRichBolt {
     private String elasticTask = "";
 
     public DispatchBolt(String taskName, String synefoAddress, Integer synefoPort,
-                        NewJoinDispatcher dispatcher, String zookeeperAddress) {
+                        Dispatcher dispatcher, String zookeeperAddress) {
         this.taskName = taskName;
         this.workerPort = -1;
         this.synefoAddress = synefoAddress;

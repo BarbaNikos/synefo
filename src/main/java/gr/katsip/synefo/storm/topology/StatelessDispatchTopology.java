@@ -7,11 +7,16 @@ import backtype.storm.generated.InvalidTopologyException;
 import backtype.storm.metric.LoggingMetricsConsumer;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
-import gr.katsip.synefo.storm.api.*;
+import gr.katsip.synefo.storm.api.DispatchBolt;
+import gr.katsip.synefo.storm.api.ElasticFileSpout;
+import gr.katsip.synefo.storm.api.JoinBolt;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.operators.relational.elastic.FullStateDispatcher;
 import gr.katsip.synefo.storm.operators.relational.elastic.NewJoinJoiner;
-import gr.katsip.synefo.tpch.*;
+import gr.katsip.synefo.storm.operators.relational.elastic.StatelessDispatcher;
+import gr.katsip.synefo.tpch.LineItem;
+import gr.katsip.synefo.tpch.LocalFileProducer;
+import gr.katsip.synefo.tpch.Order;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -22,9 +27,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 /**
- * Created by katsip on 9/15/2015.
+ * Created by katsip on 10/8/2015.
  */
-public class DispatchTopology {
+public class StatelessDispatchTopology {
 
     public static void main(String[] args) throws UnknownHostException, IOException, InterruptedException,
             ClassNotFoundException, AlreadyAliveException, InvalidTopologyException {
@@ -77,7 +82,7 @@ public class DispatchTopology {
         /**
          * Stage 1: join dispatchers
          */
-        FullStateDispatcher dispatcher = new FullStateDispatcher("order", new Fields(Order.query5Schema),
+        StatelessDispatcher dispatcher = new StatelessDispatcher("order", new Fields(Order.query5Schema),
                 Order.query5Schema[0], Order.query5Schema[0],
                 "lineitem", new Fields(LineItem.query5Schema),
                 LineItem.query5Schema[0], LineItem.query5Schema[0], new Fields(dataSchema));
