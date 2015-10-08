@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Util {
 
-    public static int BOLT_STAT_BATCH_SIZE = 500;
+    public static int BOLT_STAT_BATCH_SIZE = 5;
 
     public static String serializeTopology(ConcurrentHashMap<String, ArrayList<String>> topology) {
         StringBuilder strBuild = new StringBuilder();
