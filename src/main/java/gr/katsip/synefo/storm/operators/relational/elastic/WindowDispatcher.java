@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -66,7 +67,7 @@ public class WindowDispatcher implements Serializable, Dispatcher {
 
     private long slide;
 
-    private List<DispatchWindow> circularCache;
+    private LinkedList<DispatchWindow> circularCache;
 
     private int cacheSize;
 
@@ -101,8 +102,54 @@ public class WindowDispatcher implements Serializable, Dispatcher {
         this.outputSchema = new Fields(outputSchema.toList());
     }
 
+    private int dispatch(String primaryKey, String foreignKey, HashMap<String, List<Integer>> primaryRelationIndex,
+                         String primaryRelationName, HashMap<String, List<Integer>> secondaryRelationIndex,
+                         Fields attributeNames, Values attributeValues, OutputCollector collector, Tuple anchor) {
+        if (primaryRelationIndex.containsKey(primaryKey)) {
+            List<Integer> dispatchInfo = primaryRelationIndex.get(primaryKey);
+            Values tuple = new Values();
+            tuple.add("0");
+            tuple.add(attributeNames);
+            tuple.add(attributeValues);
+            if (collector != null) {
+                if (anchor != null) {
+                    collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), anchor, tuple);
+                }else {
+                    collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), tuple);
+                }
+            }
+            if (dispatchInfo.get(0) >= (dispatchInfo.size() - 1)) {
+                dispatchInfo.set(0, 1);
+            }else {
+                int tmp = dispatchInfo.get(0);
+                dispatchInfo.set(0, ++tmp);
+            }
+        }else {
+
+        }
+        return 0;
+    }
+
     @Override
     public int execute(Tuple anchor, OutputCollector collector, Fields fields, Values values) {
+        long currentTimestamp = System.currentTimeMillis();
+        Fields attributeNames = new Fields(((Fields) values.get(0)).toList());
+        Values attributeValues = (Values) values.get(1);
+        for (DispatchWindow window : circularCache) {
+            if(window.end >= currentTimestamp) {
+                if (Arrays.equals(attributeNames.toList().toArray(), outerRelationSchema.toList().toArray())) {
+                    String primaryKey = (String) attributeValues.get(outerRelationSchema.fieldIndex(outerRelationKey));
+                    String foreignKey = (String) attributeValues.get(outerRelationSchema.fieldIndex(outerRelationForeignKey));
+                    dispatch(primaryKey, foreignKey, window.outerRelationIndex, outerRelationName, window.innerRelationIndex,
+                            attributeNames, attributeValues, collector, anchor);
+                }else if (Arrays.equals(attributeNames.toList().toArray(), innerRelationSchema.toList().toArray())) {
+                    String primaryKey = (String) attributeValues.get(innerRelationSchema.fieldIndex(innerRelationKey));
+                    String foreignKey = (String) attributeValues.get(innerRelationSchema.fieldIndex(innerRelationForeignKey));
+                    dispatch(primaryKey, foreignKey, window.innerRelationIndex, innerRelationName, window.outerRelationIndex,
+                            attributeNames, attributeValues, collector, anchor);
+                }
+            }
+        }
         return 0;
     }
 
@@ -123,7 +170,7 @@ public class WindowDispatcher implements Serializable, Dispatcher {
 
     @Override
     public long getStateSize() {
-        return 0;
+        return stateSize;
     }
 
     @Override
