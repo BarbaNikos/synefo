@@ -102,7 +102,7 @@ public class FullStateDispatcher implements Serializable, Dispatcher {
                     collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), anchor, tuple);
                 else
                     collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), tuple);
-//                logger.info("dispatch() primary key is maintained by task " + dispatchInfo.get(dispatchInfo.get(0)) + ".");
+                logger.info("dispatch() primary key is maintained by task " + dispatchInfo.get(dispatchInfo.get(0)) + ".");
             }
             if (dispatchInfo.get(0) >= (dispatchInfo.size() - 1)) {
                 dispatchInfo.set(0, 1);
@@ -110,7 +110,7 @@ public class FullStateDispatcher implements Serializable, Dispatcher {
                 int tmp = dispatchInfo.get(0);
                 dispatchInfo.set(0, ++tmp);
             }
-//            logger.info("dispatch() incremented index to task " + dispatchInfo.get(dispatchInfo.get(0)) + ".");
+            logger.info("dispatch() incremented index to task " + dispatchInfo.get(dispatchInfo.get(0)) + ".");
             primaryRelationIndex.put(primaryKey, dispatchInfo);
         }else {
             if (taskToRelationIndex.get(primaryRelationName).size() > 0) {
@@ -118,19 +118,9 @@ public class FullStateDispatcher implements Serializable, Dispatcher {
 //                        taskToRelationIndex.get(primaryRelationName).size() + " tasks.");
                 Integer victimTask = taskToRelationIndex.get(primaryRelationName).get(0);
 //                logger.info("dispatch() picked task " + victimTask + " to send tuple to.");
-                ArrayList<Integer> sharedKeyTasks = new ArrayList<>();
-                Iterator<Map.Entry<String, List<Integer>>> iterator = primaryRelationIndex.entrySet().iterator();
-                while(iterator.hasNext()) {
-                    Map.Entry<String, List<Integer>> pair = iterator.next();
-                    if (pair.getValue().lastIndexOf(victimTask) != -1 && pair.getValue().lastIndexOf(victimTask) != 0) {
-                        List<Integer> tmp = new ArrayList<>(pair.getValue().subList(1, pair.getValue().size()));
-                        tmp.remove(victimTask);
-                        tmp.removeAll(sharedKeyTasks);
-                        sharedKeyTasks.addAll(tmp);
-                    }
-                }
-                sharedKeyTasks.add(victimTask);
-                sharedKeyTasks.add(0, 1);
+                ArrayList<Integer> tasks = new ArrayList<>();
+                tasks.add(victimTask);
+                tasks.add(0, 1);
                 Values tuple = new Values();
                 tuple.add("0");
                 tuple.add(attributeNames);
@@ -142,9 +132,9 @@ public class FullStateDispatcher implements Serializable, Dispatcher {
                         collector.emitDirect(victimTask, tuple);
                 }
                 //Increment state by the size of shared-key-tasks (bytes) and the length of the key + pointer (int)
-                stateSize = stateSize + sharedKeyTasks.toString().length() + primaryKey.length() + 4;
-                primaryRelationIndex.put(primaryKey, sharedKeyTasks);
-//                logger.info("dispatch() shared keys with task " + victimTask + " are tasks: " + sharedKeyTasks.toString());
+                stateSize = stateSize + tasks.toString().length() + primaryKey.length() + 4;
+                primaryRelationIndex.put(primaryKey, tasks);
+//                logger.info("dispatch() shared keys with task " + victimTask + " are tasks: " + tasks.toString());
             }
         }
         /**

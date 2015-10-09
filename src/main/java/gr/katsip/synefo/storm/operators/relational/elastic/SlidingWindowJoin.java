@@ -118,7 +118,7 @@ public class SlidingWindowJoin implements Serializable {
 			 * Creation of the new basic window
 			 */
 			BasicWindow basicWindow = new BasicWindow();
-			if(circularCache.size() > 0) {
+			if (circularCache.size() > 0) {
 				basicWindow.startingTimestamp = circularCache.getFirst().startingTimestamp + slide;
 			}else {
 				basicWindow.startingTimestamp = currentTimestamp;
