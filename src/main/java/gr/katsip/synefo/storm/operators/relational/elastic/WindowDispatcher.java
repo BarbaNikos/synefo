@@ -236,11 +236,31 @@ public class WindowDispatcher implements Serializable, Dispatcher {
     @Override
     public void mergeState(List<Values> state) {
         //TODO: Complete this one
+        DispatchWindow receivedWindow = (DispatchWindow) state.get(0).get(0);
+
     }
 
     @Override
     public List<Values> getState() {
-        return null;
+        if (circularCache.size() > 0) {
+            Random rand = new Random();
+            int index = rand.nextInt(circularCache.size());
+            DispatchWindow window = circularCache.remove(index);
+            stateSize -= window.stateSize;
+            Values tuple = new Values();
+            tuple.add(window);
+            List<Values> state = new ArrayList<>();
+            state.add(tuple);
+            return state;
+        }else {
+            DispatchWindow window = new DispatchWindow();
+            stateSize -= window.stateSize;
+            Values tuple = new Values();
+            tuple.add(window);
+            List<Values> state = new ArrayList<>();
+            state.add(tuple);
+            return state;
+        }
     }
 
     @Override
