@@ -10,7 +10,6 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.operators.relational.elastic.Dispatcher;
-import gr.katsip.synefo.storm.operators.relational.elastic.FullStateDispatcher;
 import gr.katsip.synefo.utils.SynefoConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -263,7 +262,7 @@ public class DispatchBolt extends BaseRichBolt {
                     .fieldIndex("SYNEFO_HEADER"));
             if (header != null && !header.equals("") && header.contains("/") &&
                     isScaleHeader(header)) {
-                manageScaleCommand(tuple);
+                manageScaleTuple(tuple);
                 collector.ack(tuple);
                 return;
             }
@@ -391,7 +390,7 @@ public class DispatchBolt extends BaseRichBolt {
         }
     }
 
-    public void manageScaleCommand(Tuple tuple) {
+    public void manageScaleTuple(Tuple tuple) {
         String[] tokens = ((String) tuple.getValues().get(0)).split("[/:]");
         String scaleAction = tokens[2];
         String taskName = tokens[4];

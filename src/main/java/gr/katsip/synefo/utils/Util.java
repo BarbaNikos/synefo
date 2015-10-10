@@ -362,6 +362,25 @@ public class Util {
         }
     }
 
+    public static void mergeDispatcherState(HashMap<String, List<Integer>> state, HashMap<String, List<Integer>> statePacket) {
+        Iterator<Map.Entry<String, List<Integer>>> packetIterator = statePacket.entrySet().iterator();
+        while (packetIterator.hasNext()) {
+            Map.Entry<String, List<Integer>> entry = packetIterator.next();
+            if (state.containsKey(entry.getKey())) {
+                //Merge two lists together
+                ArrayList<Integer> current = new ArrayList<>(state.get(entry.getKey()));
+                for (Integer task : entry.getValue()) {
+                    if (current.lastIndexOf(task) < 0) {
+                        current.add(task);
+                    }
+                }
+                state.put(entry.getKey(), current);
+            }else {
+                state.put(entry.getKey(), new ArrayList<Integer>(entry.getValue()));
+            }
+        }
+    }
+
     public static String serializeList(final List<String> list) {
         StringBuilder stringBuilder = new StringBuilder();
         for (String element : list) {

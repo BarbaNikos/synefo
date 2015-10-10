@@ -4,6 +4,7 @@ import backtype.storm.task.OutputCollector;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import gr.katsip.synefo.utils.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -235,9 +236,18 @@ public class WindowDispatcher implements Serializable, Dispatcher {
 
     @Override
     public void mergeState(List<Values> state) {
-        //TODO: Complete this one
+        long currentTimestamp = System.currentTimeMillis();
         DispatchWindow receivedWindow = (DispatchWindow) state.get(0).get(0);
-
+        if (circularCache.size() > 0) {
+            //Need to integrate current state with the received-window
+            //Caution: it will not work if there is a huge gap in CLOCK-DRIFTING
+            Util.mergeDispatcherState(circularCache.getFirst().innerRelationIndex, receivedWindow.innerRelationIndex);
+            Util.mergeDispatcherState(circularCache.getFirst().outerRelationIndex, receivedWindow.outerRelationIndex);
+        }else {
+            receivedWindow.start = currentTimestamp;
+            receivedWindow.end = currentTimestamp + slide;
+            circularCache.addFirst(receivedWindow);
+        }
     }
 
     @Override
