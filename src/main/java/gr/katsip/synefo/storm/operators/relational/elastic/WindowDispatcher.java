@@ -137,7 +137,7 @@ public class WindowDispatcher implements Serializable, Dispatcher {
         if (circularCache.getFirst().end < currentTimestamp) {
             DispatchWindow window = new DispatchWindow();
             if (circularCache.size() > 0)
-                window.start = circularCache.getFirst().start + slide;
+                window.start = circularCache.getFirst().start + slide + 1;
             else
                 window.start = currentTimestamp;
             window.end = window.start + slide;
@@ -208,9 +208,8 @@ public class WindowDispatcher implements Serializable, Dispatcher {
                             collector.emitDirect(victimTask, tuple);
                     }
                     circularCache.getFirst().outerRelationIndex.put(primaryKey, tasks);
-                    stateSize = stateSize + tasks.toString().length() + primaryKey.length() + 4;
-                    circularCache.getFirst().stateSize = circularCache.getFirst().stateSize +
-                            tasks.toString().length() + primaryKey.length() + 4;
+                    stateSize = stateSize + primaryKey.length() + 4 + 4;
+                    circularCache.getFirst().stateSize = circularCache.getFirst().stateSize + primaryKey.length() + 4 + 4;
                 }
             }
         }else if (Arrays.equals(attributeNames.toList().toArray(), innerRelationSchema.toList().toArray())) {
@@ -245,9 +244,8 @@ public class WindowDispatcher implements Serializable, Dispatcher {
                             collector.emitDirect(victimTask, tuple);
                     }
                     circularCache.getFirst().innerRelationIndex.put(primaryKey, tasks);
-                    stateSize = stateSize + tasks.toString().length() + primaryKey.length() + 4;
-                    circularCache.getFirst().stateSize = circularCache.getFirst().stateSize +
-                            tasks.toString().length() + primaryKey.length() + 4;
+                    stateSize = stateSize + primaryKey.length() + 4 + 4;
+                    circularCache.getFirst().stateSize = circularCache.getFirst().stateSize + primaryKey.length() + 4 + 4;
                 }
             }
         }
@@ -270,7 +268,7 @@ public class WindowDispatcher implements Serializable, Dispatcher {
             Util.mergeDispatcherState(circularCache.getFirst().innerRelationIndex, receivedWindow.innerRelationIndex);
             Util.mergeDispatcherState(circularCache.getFirst().outerRelationIndex, receivedWindow.outerRelationIndex);
             stateSize = stateSize + receivedWindow.stateSize;
-            circularCache.getFirst().stateSize += (receivedWindow.stateSize);
+            circularCache.getFirst().stateSize = circularCache.getFirst().stateSize + receivedWindow.stateSize;
         }else {
             receivedWindow.start = currentTimestamp;
             receivedWindow.end = currentTimestamp + slide;
@@ -292,7 +290,6 @@ public class WindowDispatcher implements Serializable, Dispatcher {
             return state;
         }else {
             DispatchWindow window = new DispatchWindow();
-            stateSize -= window.stateSize;
             Values tuple = new Values();
             tuple.add(window);
             List<Values> state = new ArrayList<>();
@@ -333,9 +330,9 @@ public class WindowDispatcher implements Serializable, Dispatcher {
                             List<Integer> newIndex = new ArrayList<>();
                             newIndex.add(1);
                             newIndex.add(identifier);
-                            additionalStateCounter = additionalStateCounter + key.length() + newIndex.toString().length();
+                            additionalStateCounter = additionalStateCounter + key.length() + 4 + 4;
                             circularCache.getFirst().innerRelationIndex.put(key, newIndex);
-                            circularCache.getFirst().stateSize += (key.length() + newIndex.toString().length());
+                            circularCache.getFirst().stateSize = circularCache.getFirst().stateSize + key.length() + 4 + 4;
                         }
                     }
                 }
@@ -356,12 +353,15 @@ public class WindowDispatcher implements Serializable, Dispatcher {
                                 currentIndex.set(0, 1);
                                 window.innerRelationIndex.put(key, currentIndex);
                                 additionalStateCounter += 4;
+                                window.stateSize += 4;
                             }
                         }else {
                             List<Integer> newIndex = new ArrayList<>();
                             newIndex.add(1);
                             newIndex.add(identifier);
                             window.innerRelationIndex.put(key, newIndex);
+                            additionalStateCounter += (4 + 4 + key.length());
+                            window.stateSize += (4 + 4 + key.length());
                         }
                     }else if (relation.equals(outerRelationName)) {
                         if (window.outerRelationIndex.containsKey(key)) {
@@ -370,15 +370,20 @@ public class WindowDispatcher implements Serializable, Dispatcher {
                                 currentIndex.add(identifier);
                                 currentIndex.set(0, 1);
                                 window.outerRelationIndex.put(key, currentIndex);
+                                additionalStateCounter += 4;
+                                window.stateSize += 4;
                             }
                         }else {
                             List<Integer> newIndex = new ArrayList<>();
                             newIndex.add(1);
                             newIndex.add(identifier);
                             window.outerRelationIndex.put(key, newIndex);
+                            additionalStateCounter += (4 + 4 + key.length());
+                            window.stateSize += (4 + 4 + key.length());
                         }
                     }
                 }
+                stateSize += additionalStateCounter;
             }
         }else if (scaleAction.equals("remove") || scaleAction.equals("deactivate")) {
             /**
