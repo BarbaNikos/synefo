@@ -330,6 +330,7 @@ public class JoinBolt extends BaseRichBolt {
     public void manageStateTuple(Tuple tuple) {
         if (SCALE_RECEIVE_STATE) {
             if (stateTaskIdentifier == taskIdentifier) {
+                //Case where state is received by a newly-added Joiner
                 HashMap<String, ArrayList<Values>> statePacket =
                         (HashMap<String, ArrayList<Values>>) tuple.getValue(1);
                 Util.mergeState(state, statePacket);
@@ -345,6 +346,7 @@ public class JoinBolt extends BaseRichBolt {
                     stateTaskIdentifier = -1;
                 }
             }else {
+                //Case where state is received by a remaining-task (Joiner)
                 HashMap<String, ArrayList<Values>> statePacket =
                         (HashMap<String, ArrayList<Values>>) tuple.getValue(1);
                 joiner.addToState(statePacket);
@@ -354,13 +356,17 @@ public class JoinBolt extends BaseRichBolt {
                 stateTaskIdentifier = -1;
             }
         }else if (SCALE_SEND_STATE) {
+            //Case where state is send by a about-to-be-removed Joiner
             numberOfConnections++;
             HashMap<String, ArrayList<Values>> statePacket = joiner.getStateToBeSent();
             String stateHeader = SynefoConstant.STATE_PREFIX + "/" + SynefoConstant.COMP_TAG + ":" +
                     taskIdentifier + "/";
+            Integer identifier = Integer.parseInt(((String) tuple.getValue(0)).split("[:/]")[2]);
             Values stateTuple = new Values();
             stateTuple.add(stateHeader);
             stateTuple.add(statePacket);
+            for (int i = 0; i < (joiner.getOutputSchema().size() - 1); i++)
+                stateTuple.add(null);
             Iterator<Map.Entry<String, ArrayList<Values>>> iterator = statePacket.entrySet().iterator();
             StringBuilder stringBuilder = new StringBuilder();
             while (iterator.hasNext()) {
@@ -369,6 +375,7 @@ public class JoinBolt extends BaseRichBolt {
             if (stringBuilder.length() > 0 && stringBuilder.charAt(stringBuilder.length() - 1) == ',') {
                 stringBuilder.setLength(stringBuilder.length() - 1);
             }
+            collector.emitDirect(identifier, stateTuple);
             keys.add(tuple.getSourceTask() + "=" + stringBuilder.toString());
             if (numberOfConnections >= stateTaskNumber) {
                 zookeeperClient.setJoinState(taskName, taskIdentifier, keys);
@@ -399,7 +406,8 @@ public class JoinBolt extends BaseRichBolt {
                 Values stateTuple = new Values();
                 stateTuple.add(stateHeader);
                 stateTuple.add(statePacket);
-                stateTuple.add(null);
+                for (int i = 0; i < (joiner.getOutputSchema().size() - 1); i++)
+                    stateTuple.add(null);
                 collector.emitDirect(stateTaskIdentifier, stateTuple);
                 activeDownstreamTaskIdentifiers = zookeeperClient.getActiveDownstreamTaskIdentifiers();
                 numberOfConnections = -1;
@@ -417,8 +425,8 @@ public class JoinBolt extends BaseRichBolt {
                         taskIdentifier + "/";
                 Values stateTuple = new Values();
                 stateTuple.add(stateHeader);
-                stateTuple.add(null);
-                stateTuple.add(null);
+                for (int i = 0; i < (joiner.getOutputSchema().size()); i++)
+                    stateTuple.add(null);
                 collector.emitDirect(stateTaskIdentifier, stateTuple);
             }
         }

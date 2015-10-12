@@ -450,7 +450,6 @@ public class DispatchBolt extends BaseRichBolt {
                 dispatcher.mergeState(statePacket);
                 numberOfConnections++;
                 if (numberOfConnections >= stateTaskNumber) {
-                    // shipment of state DONE
                     activeDownstreamTaskIdentifiers = zookeeperClient.getActiveDownstreamTaskIdentifiers();
                     zookeeperClient.notifyActionComplete();
                     SCALE_RECEIVE_STATE = false;
