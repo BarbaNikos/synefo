@@ -165,13 +165,26 @@ public class Util {
          * Add all drain operators (operators with no down-stream tasks) second
          */
         itr = topology.entrySet().iterator();
+        HashMap<String, List<Integer>> alreadyAddedTasks = new HashMap<>();
         while (itr.hasNext()) {
             Map.Entry<String, ArrayList<String>> pair = itr.next();
             String taskName = pair.getKey();
             Integer identifier = Integer.parseInt(taskName.split(":")[1]);
             ArrayList<String> childTasks = pair.getValue();
-            if (childTasks == null || childTasks.size() == 0 && !taskToJoinRelation.containsKey(identifier)) {
-                activeTasks.add(taskName);
+            if (childTasks == null || childTasks.size() == 0) {
+                if (taskToJoinRelation.containsKey(identifier)) {
+                    JoinOperator joinInfo = taskToJoinRelation.get(identifier);
+                    if (joinInfo.getStep().equals(JoinOperator.Step.JOIN)) {
+                        if (!alreadyAddedTasks.containsKey(joinInfo.getRelation())) {
+                            List<Integer> tasks = new ArrayList<>();
+                            tasks.add(identifier);
+                            alreadyAddedTasks.put(joinInfo.getRelation(), tasks);
+                            activeTasks.add(taskName);
+                        }
+                    }
+                }else {
+                    activeTasks.add(taskName);
+                }
             }
         }
         /**
