@@ -77,6 +77,10 @@ public class JoinBolt extends BaseRichBolt {
 
     private transient AssignableMetric inputRate;
 
+    private transient AssignableMetric stateTransferTime;
+
+    private long startTransferTimestamp;
+
     private int temporaryInputRate;
 
     private int temporaryThroughput;
@@ -219,10 +223,12 @@ public class JoinBolt extends BaseRichBolt {
         stateSize = new AssignableMetric(null);
         inputRate = new AssignableMetric(null);
         throughput = new AssignableMetric(null);
+        stateTransferTime = new AssignableMetric(null);
         context.registerMetric("execute-latency", executeLatency, JoinBolt.METRIC_REPORT_FREQ_SEC);
         context.registerMetric("state-size", stateSize, JoinBolt.METRIC_REPORT_FREQ_SEC);
         context.registerMetric("input-rate", inputRate, JoinBolt.METRIC_REPORT_FREQ_SEC);
         context.registerMetric("throughput", throughput, JoinBolt.METRIC_REPORT_FREQ_SEC);
+        context.registerMetric("state-transfer", stateTransferTime, JoinBolt.METRIC_REPORT_FREQ_SEC);
     }
 
     private boolean isScaleHeader(String header) {
@@ -345,6 +351,8 @@ public class JoinBolt extends BaseRichBolt {
                     numberOfConnections = -1;
                     stateTaskNumber = -1;
                     stateTaskIdentifier = -1;
+                    long currentTimestamp = System.currentTimeMillis();
+                    stateTransferTime.setValue((currentTimestamp - startTransferTimestamp));
                 }
             }else {
                 //Case where state is received by a remaining-task (Joiner)
@@ -387,6 +395,8 @@ public class JoinBolt extends BaseRichBolt {
                 numberOfConnections = -1;
                 stateTaskNumber = -1;
                 stateTaskIdentifier = -1;
+                long currentTimestamp = System.currentTimeMillis();
+                stateTransferTime.setValue((currentTimestamp - startTransferTimestamp));
             }
         }
     }
@@ -404,6 +414,7 @@ public class JoinBolt extends BaseRichBolt {
                 numberOfConnections = 0;
                 SCALE_RECEIVE_STATE = true;
                 state = new HashMap<>();
+                startTransferTimestamp = System.currentTimeMillis();
             }else {
                 HashMap<String, ArrayList<Values>> statePacket = joiner.getStateToBeSent();
                 String stateHeader = SynefoConstant.STATE_PREFIX + "/" + SynefoConstant.COMP_TAG + ":" +
@@ -424,6 +435,7 @@ public class JoinBolt extends BaseRichBolt {
                 numberOfConnections = 0;
                 SCALE_SEND_STATE = true;
                 keys = new ArrayList<>();
+                startTransferTimestamp = System.currentTimeMillis();
             }else {
                 SCALE_RECEIVE_STATE = true;
                 String stateHeader = SynefoConstant.STATE_PREFIX + "/" + SynefoConstant.COMP_TAG + ":" +

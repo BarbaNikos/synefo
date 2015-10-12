@@ -73,6 +73,10 @@ public class DispatchBolt extends BaseRichBolt {
 
     private transient AssignableMetric throughput;
 
+    private transient AssignableMetric stateTransferTime;
+
+    private long startTransferTimestamp;
+
     private int temporaryInputRate;
 
     private int temporaryThroughput;
@@ -260,10 +264,12 @@ public class DispatchBolt extends BaseRichBolt {
         stateSize = new AssignableMetric(null);
         inputRate = new AssignableMetric(null);
         throughput = new AssignableMetric(null);
+        stateTransferTime = new AssignableMetric(null);
         context.registerMetric("execute-latency", executeLatency, DispatchBolt.METRIC_REPORT_FREQ_SEC);
         context.registerMetric("state-size", stateSize, DispatchBolt.METRIC_REPORT_FREQ_SEC);
         context.registerMetric("input-rate", inputRate, DispatchBolt.METRIC_REPORT_FREQ_SEC);
         context.registerMetric("throughput", throughput, DispatchBolt.METRIC_REPORT_FREQ_SEC);
+        context.registerMetric("state-transfer", stateTransferTime, DispatchBolt.METRIC_REPORT_FREQ_SEC);
     }
 
     private boolean isScaleHeader(String header) {
@@ -457,6 +463,8 @@ public class DispatchBolt extends BaseRichBolt {
                     numberOfConnections = -1;
                     stateTaskNumber = -1;
                     stateTaskIdentifier = -1;
+                    long currentTimestamp = System.currentTimeMillis();
+                    stateTransferTime.setValue((currentTimestamp - startTransferTimestamp));
                 }
             }else {
                 //Case where state is received by a remaining-node
@@ -489,6 +497,8 @@ public class DispatchBolt extends BaseRichBolt {
                 numberOfConnections = -1;
                 stateTaskNumber = -1;
                 stateTaskIdentifier = -1;
+                long currentTimestamp = System.currentTimeMillis();
+                stateTransferTime.setValue((currentTimestamp - startTransferTimestamp));
             }
         }
     }
@@ -505,6 +515,7 @@ public class DispatchBolt extends BaseRichBolt {
             if ((this.taskName + ":" + this.taskIdentifier).equals(taskName + ":" + taskIdentifier)) {
                 numberOfConnections = 0;
                 SCALE_RECEIVE_STATE = true;
+                this.startTransferTimestamp = System.currentTimeMillis();
             }else {
                 List<Values> statePacket = dispatcher.getState();
                 String stateHeader = SynefoConstant.STATE_PREFIX + "/" + SynefoConstant.COMP_TAG + ":" + taskIdentifier + "/";
@@ -524,6 +535,7 @@ public class DispatchBolt extends BaseRichBolt {
             if ((this.taskName + ":" + this.taskIdentifier).equals(taskName + ":" + taskIdentifier)) {
                 numberOfConnections = 0;
                 SCALE_SEND_STATE = true;
+                this.startTransferTimestamp = System.currentTimeMillis();
             }else {
                 SCALE_RECEIVE_STATE = true;
                 String stateHeader = SynefoConstant.STATE_PREFIX + "/" + SynefoConstant.COMP_TAG + ":" + taskIdentifier + "/";
