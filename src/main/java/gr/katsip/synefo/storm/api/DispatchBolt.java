@@ -450,6 +450,7 @@ public class DispatchBolt extends BaseRichBolt {
                 dispatcher.mergeState(statePacket);
                 numberOfConnections++;
                 if (numberOfConnections >= stateTaskNumber) {
+                    logger.info(taskName + ":" + taskIdentifier + " completed the reception of state from (" + stateTaskNumber + ") tasks.");
                     activeDownstreamTaskIdentifiers = zookeeperClient.getActiveDownstreamTaskIdentifiers();
                     zookeeperClient.notifyActionComplete();
                     SCALE_RECEIVE_STATE = false;
@@ -459,6 +460,7 @@ public class DispatchBolt extends BaseRichBolt {
                 }
             }else {
                 //Case where state is received by a remaining-node
+                logger.info(taskName + ":" + taskIdentifier + " completed the reception of state from removed-task (" + tuple.getSourceTask() + ").");
                 List<Values> state = (List<Values>) tuple.getValue(1);
                 dispatcher.mergeState(state);
                 SCALE_RECEIVE_STATE = false;
@@ -480,6 +482,7 @@ public class DispatchBolt extends BaseRichBolt {
             }
             collector.emitDirect(identifier, stateTuple);
             if (numberOfConnections >= stateTaskNumber) {
+                logger.info(taskName + ":" + taskIdentifier + " completed the transmission of state to (" + stateTaskNumber + ") tasks.");
                 activeDownstreamTaskIdentifiers = zookeeperClient.getActiveDownstreamTaskIdentifiers();
                 zookeeperClient.notifyActionComplete();
                 SCALE_SEND_STATE = false;

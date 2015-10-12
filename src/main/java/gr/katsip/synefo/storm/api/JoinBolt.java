@@ -336,6 +336,7 @@ public class JoinBolt extends BaseRichBolt {
                 Util.mergeState(state, statePacket);
                 numberOfConnections++;
                 if (numberOfConnections >= stateTaskNumber) {
+                    logger.info(taskName + ":" + taskIdentifier + " completed the reception of state from (" + stateTaskNumber + ") tasks.");
                     keys = joiner.setState(state);
                     zookeeperClient.setJoinState(taskName, taskIdentifier, keys);
                     keys.clear();
@@ -347,6 +348,7 @@ public class JoinBolt extends BaseRichBolt {
                 }
             }else {
                 //Case where state is received by a remaining-task (Joiner)
+                logger.info(taskName + ":" + taskIdentifier + " completed the reception of state from removed-task (" + tuple.getSourceTask() + ").");
                 HashMap<String, ArrayList<Values>> statePacket =
                         (HashMap<String, ArrayList<Values>>) tuple.getValue(1);
                 joiner.addToState(statePacket);
@@ -378,6 +380,7 @@ public class JoinBolt extends BaseRichBolt {
             collector.emitDirect(identifier, stateTuple);
             keys.add(tuple.getSourceTask() + "=" + stringBuilder.toString());
             if (numberOfConnections >= stateTaskNumber) {
+                logger.info(taskName + ":" + taskIdentifier + " completed the transmission of state to (" + stateTaskNumber + ") tasks.");
                 zookeeperClient.setJoinState(taskName, taskIdentifier, keys);
                 keys.clear();
                 SCALE_SEND_STATE = false;
@@ -394,6 +397,8 @@ public class JoinBolt extends BaseRichBolt {
         String taskName = tokens[4];
         stateTaskIdentifier = Integer.parseInt(tokens[5]);
         stateTaskNumber = Integer.parseInt(tokens[7]);
+        logger.info("JOIN-BOLT-" + taskName + ":" + taskIdentifier + ": received scale-command: " +
+                scaleAction + "(" + System.currentTimeMillis() + ")");
         if (scaleAction.equals(SynefoConstant.ADD_ACTION)) {
             if ((this.taskName + ":" + this.taskIdentifier).equals(taskName + ":" + taskIdentifier)) {
                 numberOfConnections = 0;
