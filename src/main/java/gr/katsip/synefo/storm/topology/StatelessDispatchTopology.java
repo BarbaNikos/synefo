@@ -103,10 +103,10 @@ public class StatelessDispatchTopology {
                 new Fields(LineItem.query5Schema), "O_ORDERKEY", "L_ORDERKEY", windowSizeInMinutes, 1000);
         joiner.setOutputSchema(new Fields(dataSchema));
         builder.setBolt("joinorder", new JoinBolt("joinorder", synefoAddress, synefoPort,
-                joiner, zooIP), executorNumber)
-                .setNumTasks(scaleFactor)
+                joiner, zooIP), executorNumber * 3)
+                .setNumTasks(scaleFactor * 3)
                 .directGrouping("dispatch");
-        taskNumber += scaleFactor;
+        taskNumber += scaleFactor * 3;
         topology.put("joinorder", new ArrayList<String>());
 
         joiner = new NewJoinJoiner("lineitem", new Fields(LineItem.query5Schema),
