@@ -11,9 +11,9 @@ import gr.katsip.synefo.storm.api.DispatchBolt;
 import gr.katsip.synefo.storm.api.ElasticFileSpout;
 import gr.katsip.synefo.storm.api.JoinBolt;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
-import gr.katsip.synefo.storm.operators.relational.elastic.FullStateDispatcher;
 import gr.katsip.synefo.storm.operators.relational.elastic.NewJoinJoiner;
 import gr.katsip.synefo.storm.operators.relational.elastic.StatelessDispatcher;
+import gr.katsip.synefo.storm.operators.relational.elastic.WindowDispatcher;
 import gr.katsip.synefo.tpch.LineItem;
 import gr.katsip.synefo.tpch.LocalFileProducer;
 import gr.katsip.synefo.tpch.Order;
@@ -27,10 +27,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 /**
- * Created by katsip on 10/8/2015.
+ * Created by katsip on 10/12/2015.
  */
-public class StatelessDispatchTopology {
-
+public class WindowDispatchTopology {
     public static void main(String[] args) throws UnknownHostException, IOException, InterruptedException,
             ClassNotFoundException, AlreadyAliveException, InvalidTopologyException {
         String synefoAddress = "";
@@ -82,17 +81,17 @@ public class StatelessDispatchTopology {
         /**
          * Stage 1: join dispatchers
          */
-        StatelessDispatcher dispatcher = new StatelessDispatcher("order", new Fields(Order.query5Schema),
+        WindowDispatcher dispatcher = new WindowDispatcher("order", new Fields(Order.query5Schema),
                 Order.query5Schema[0], Order.query5Schema[0],
                 "lineitem", new Fields(LineItem.query5Schema),
-                LineItem.query5Schema[0], LineItem.query5Schema[0], new Fields(dataSchema));
+                LineItem.query5Schema[0], LineItem.query5Schema[0], new Fields(dataSchema), windowSizeInMinutes*2, 1000);
         builder.setBolt("dispatch", new DispatchBolt("dispatch", synefoAddress, synefoPort, dispatcher, zooIP),
-                executorNumber * 4)
-                .setNumTasks(scaleFactor * 4)
+                executorNumber)
+                .setNumTasks(scaleFactor)
                 .directGrouping("order")
                 .directGrouping("lineitem");
-        taskNumber += scaleFactor*4;
-        taskList = new ArrayList<String>();
+        taskNumber += scaleFactor;
+        taskList = new ArrayList<>();
         taskList.add("joinorder");
         taskList.add("joinline");
         topology.put("dispatch", taskList);
@@ -103,10 +102,10 @@ public class StatelessDispatchTopology {
                 new Fields(LineItem.query5Schema), "O_ORDERKEY", "L_ORDERKEY", windowSizeInMinutes, 1000);
         joiner.setOutputSchema(new Fields(dataSchema));
         builder.setBolt("joinorder", new JoinBolt("joinorder", synefoAddress, synefoPort,
-                joiner, zooIP), executorNumber * 3)
-                .setNumTasks(scaleFactor * 3)
+                joiner, zooIP), executorNumber)
+                .setNumTasks(scaleFactor)
                 .directGrouping("dispatch");
-        taskNumber += scaleFactor * 3;
+        taskNumber += scaleFactor;
         topology.put("joinorder", new ArrayList<String>());
 
         joiner = new NewJoinJoiner("lineitem", new Fields(LineItem.query5Schema),
@@ -156,6 +155,6 @@ public class StatelessDispatchTopology {
 //        conf.put(Config.TOPOLOGY_TRANSFER_BUFFER_SIZE, 32);
 //        conf.put(Config.TOPOLOGY_EXECUTOR_RECEIVE_BUFFER_SIZE, 16384);
 //        conf.put(Config.TOPOLOGY_EXECUTOR_SEND_BUFFER_SIZE, 16384);
-        StormSubmitter.submitTopology("join-oblivious-dispatch", conf, builder.createTopology());
+        StormSubmitter.submitTopology("join-window-dispatch", conf, builder.createTopology());
     }
 }
