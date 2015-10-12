@@ -19,4 +19,6 @@ public class SynefoConstant {
 	public static final String QUERY_LATENCY_METRIC = "QUERY_LATENCY_METRIC";
 	
 	public static final String OP_LATENCY_METRIC = "OP_LATENCY_METRIC";
+
+	public static final String STATE_PREFIX = "STATE";
 }

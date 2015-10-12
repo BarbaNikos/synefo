@@ -69,9 +69,7 @@ public class JoinBolt extends BaseRichBolt {
 
     private int tupleCounter;
 
-//    private transient AssignableMetric latency;
-
-//    private transient AssignableMetric throughput;
+    private transient AssignableMetric throughput;
 
     private transient AssignableMetric executeLatency;
 
@@ -81,6 +79,12 @@ public class JoinBolt extends BaseRichBolt {
 
     private int temporaryInputRate;
 
+    private int temporaryThroughput;
+
+    private long inputRateCurrentTimestamp;
+
+    private long inputRatePreviousTimestamp;
+
     private long throughputCurrentTimestamp;
 
     private long throughputPreviousTimestamp;
@@ -88,6 +92,20 @@ public class JoinBolt extends BaseRichBolt {
     private long lastExecuteLatencyMetric = 0L;
 
     private long lastStateSizeMetric = 0L;
+
+    private int numberOfConnections;
+
+    private int stateTaskNumber;
+
+    private int stateTaskIdentifier;
+
+    private boolean SCALE_RECEIVE_STATE;
+
+    private boolean SCALE_SEND_STATE;
+
+    private HashMap<String, ArrayList<Values>> state = null;
+
+    private List<String> keys = null;
 
     public JoinBolt(String taskName, String synefoAddress, Integer synefoPort,
                     NewJoinJoiner joiner, String zookeeperAddress) {
@@ -171,7 +189,7 @@ public class JoinBolt extends BaseRichBolt {
         logger.info(strBuild.toString());
         logger.info("JOIN-BOLT-" + taskName + ":" + taskIdentifier + " registered to load-balancer");
         downstreamIndex = 0;
-        throughputPreviousTimestamp = System.currentTimeMillis();
+        inputRatePreviousTimestamp = System.currentTimeMillis();
         temporaryInputRate = 0;
     }
 
@@ -192,15 +210,19 @@ public class JoinBolt extends BaseRichBolt {
         initMetrics(topologyContext);
         SYSTEM_WARM_FLAG = false;
         tupleCounter = 0;
+        SCALE_RECEIVE_STATE = false;
+        SCALE_SEND_STATE = false;
     }
 
     private void initMetrics(TopologyContext context) {
         executeLatency = new AssignableMetric(null);
         stateSize = new AssignableMetric(null);
         inputRate = new AssignableMetric(null);
+        throughput = new AssignableMetric(null);
         context.registerMetric("execute-latency", executeLatency, JoinBolt.METRIC_REPORT_FREQ_SEC);
         context.registerMetric("state-size", stateSize, JoinBolt.METRIC_REPORT_FREQ_SEC);
         context.registerMetric("input-rate", inputRate, JoinBolt.METRIC_REPORT_FREQ_SEC);
+        context.registerMetric("throughput", throughput, JoinBolt.METRIC_REPORT_FREQ_SEC);
     }
 
     private boolean isScaleHeader(String header) {
@@ -208,6 +230,11 @@ public class JoinBolt extends BaseRichBolt {
                 header.contains(SynefoConstant.ACTION_PREFIX) == true &&
                 header.contains(SynefoConstant.COMP_IP_TAG) == true &&
                 header.split("/")[0].equals(SynefoConstant.PUNCT_TUPLE_TAG));
+    }
+
+    private boolean isStateHeader(String header) {
+        return ( header.split("/")[0].equals(SynefoConstant.STATE_PREFIX) &&
+                header.split("[/:]")[1].equals(SynefoConstant.COMP_TAG));
     }
 
     @Override
@@ -224,14 +251,18 @@ public class JoinBolt extends BaseRichBolt {
                     .fieldIndex("SYNEFO_HEADER"));
             if (header != null && !header.equals("") && header.contains("/") &&
                     isScaleHeader(header)) {
-                manageScaleCommand(tuple);
+                altManageScaleTuple(tuple);
+                collector.ack(tuple);
+                return;
+            }else if ((SCALE_SEND_STATE || SCALE_RECEIVE_STATE) && isStateHeader(header)) {
+                manageStateTuple(tuple);
                 collector.ack(tuple);
                 return;
             }
         }
-        throughputCurrentTimestamp = System.currentTimeMillis();
-        if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
-            throughputPreviousTimestamp = throughputCurrentTimestamp;
+        inputRateCurrentTimestamp = System.currentTimeMillis();
+        if ((inputRateCurrentTimestamp - inputRatePreviousTimestamp) >= 1000L) {
+            inputRatePreviousTimestamp = inputRateCurrentTimestamp;
             inputRate.setValue(temporaryInputRate);
             executeLatency.setValue(lastExecuteLatencyMetric);
             stateSize.setValue(lastStateSizeMetric);
@@ -239,6 +270,16 @@ public class JoinBolt extends BaseRichBolt {
             temporaryInputRate = 0;
         }else {
             temporaryInputRate++;
+        }
+        throughputCurrentTimestamp = System.currentTimeMillis();
+        if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
+            throughputPreviousTimestamp = throughputCurrentTimestamp;
+            throughput.setValue(temporaryThroughput);
+            //TODO: Change the following
+//            zookeeperClient.addInputRateData((double) temporaryInputRate);
+            temporaryThroughput = 0;
+        }else {
+            temporaryThroughput++;
         }
         /**
          * Remove from both values and fields SYNEFO_HEADER (SYNEFO_TIMESTAMP)
@@ -261,7 +302,8 @@ public class JoinBolt extends BaseRichBolt {
         long endTime = System.currentTimeMillis();
         lastExecuteLatencyMetric = endTime - startTime;
         lastStateSizeMetric = joiner.getStateSize();
-
+        executeLatency.setValue(lastExecuteLatencyMetric);
+        stateSize.setValue(lastStateSizeMetric);
         tupleCounter++;
         if (tupleCounter >= WARM_UP_THRESHOLD && !SYSTEM_WARM_FLAG)
             SYSTEM_WARM_FLAG = true;
@@ -269,7 +311,6 @@ public class JoinBolt extends BaseRichBolt {
         String command = "";
         if (!zookeeperClient.commands.isEmpty()) {
             command = zookeeperClient.commands.poll();
-            //TODO: Populate the following (currently not supported)
             manageCommand(command);
         }
     }
@@ -286,14 +327,111 @@ public class JoinBolt extends BaseRichBolt {
         //TODO: Not supported yet!
     }
 
-    public void manageScaleCommand(Tuple tuple) {
+    public void manageStateTuple(Tuple tuple) {
+        if (SCALE_RECEIVE_STATE) {
+            if (stateTaskIdentifier == taskIdentifier) {
+                HashMap<String, ArrayList<Values>> statePacket =
+                        (HashMap<String, ArrayList<Values>>) tuple.getValue(1);
+                Util.mergeState(state, statePacket);
+                numberOfConnections++;
+                if (numberOfConnections >= stateTaskNumber) {
+                    keys = joiner.setState(state);
+                    zookeeperClient.setJoinState(taskName, taskIdentifier, keys);
+                    keys.clear();
+                    state.clear();
+                    SCALE_RECEIVE_STATE = false;
+                    numberOfConnections = -1;
+                    stateTaskNumber = -1;
+                    stateTaskIdentifier = -1;
+                }
+            }else {
+                HashMap<String, ArrayList<Values>> statePacket =
+                        (HashMap<String, ArrayList<Values>>) tuple.getValue(1);
+                joiner.addToState(statePacket);
+                SCALE_RECEIVE_STATE = false;
+                numberOfConnections = -1;
+                stateTaskNumber = -1;
+                stateTaskIdentifier = -1;
+            }
+        }else if (SCALE_SEND_STATE) {
+            numberOfConnections++;
+            HashMap<String, ArrayList<Values>> statePacket = joiner.getStateToBeSent();
+            String stateHeader = SynefoConstant.STATE_PREFIX + "/" + SynefoConstant.COMP_TAG + ":" +
+                    taskIdentifier + "/";
+            Values stateTuple = new Values();
+            stateTuple.add(stateHeader);
+            stateTuple.add(statePacket);
+            Iterator<Map.Entry<String, ArrayList<Values>>> iterator = statePacket.entrySet().iterator();
+            StringBuilder stringBuilder = new StringBuilder();
+            while (iterator.hasNext()) {
+                stringBuilder.append(iterator.next().getKey() + ",");
+            }
+            if (stringBuilder.length() > 0 && stringBuilder.charAt(stringBuilder.length() - 1) == ',') {
+                stringBuilder.setLength(stringBuilder.length() - 1);
+            }
+            keys.add(tuple.getSourceTask() + "=" + stringBuilder.toString());
+            if (numberOfConnections >= stateTaskNumber) {
+                zookeeperClient.setJoinState(taskName, taskIdentifier, keys);
+                keys.clear();
+                SCALE_SEND_STATE = false;
+                numberOfConnections = -1;
+                stateTaskNumber = -1;
+                stateTaskIdentifier = -1;
+            }
+        }
+    }
+
+    public void altManageScaleTuple(Tuple tuple) {
+        String[] tokens = ((String) tuple.getValues().get(0)).split("[/:]");
+        String scaleAction = tokens[2];
+        String taskName = tokens[4];
+        stateTaskIdentifier = Integer.parseInt(tokens[5]);
+        stateTaskNumber = Integer.parseInt(tokens[7]);
+        if (scaleAction.equals(SynefoConstant.ADD_ACTION)) {
+            if ((this.taskName + ":" + this.taskIdentifier).equals(taskName + ":" + taskIdentifier)) {
+                numberOfConnections = 0;
+                SCALE_RECEIVE_STATE = true;
+                state = new HashMap<>();
+            }else {
+                HashMap<String, ArrayList<Values>> statePacket = joiner.getStateToBeSent();
+                String stateHeader = SynefoConstant.STATE_PREFIX + "/" + SynefoConstant.COMP_TAG + ":" +
+                        taskIdentifier + "/";
+                Values stateTuple = new Values();
+                stateTuple.add(stateHeader);
+                stateTuple.add(statePacket);
+                stateTuple.add(null);
+                collector.emitDirect(stateTaskIdentifier, stateTuple);
+                activeDownstreamTaskIdentifiers = zookeeperClient.getActiveDownstreamTaskIdentifiers();
+                numberOfConnections = -1;
+                stateTaskNumber = -1;
+                stateTaskIdentifier = -1;
+            }
+        }else if (scaleAction.equals(SynefoConstant.REMOVE_ACTION)) {
+            if ((this.taskName + ":" + this.taskIdentifier).equals(taskName + ":" + taskIdentifier)) {
+                numberOfConnections = 0;
+                SCALE_SEND_STATE = true;
+                keys = new ArrayList<>();
+            }else {
+                SCALE_RECEIVE_STATE = true;
+                String stateHeader = SynefoConstant.STATE_PREFIX + "/" + SynefoConstant.COMP_TAG + ":" +
+                        taskIdentifier + "/";
+                Values stateTuple = new Values();
+                stateTuple.add(stateHeader);
+                stateTuple.add(null);
+                stateTuple.add(null);
+                collector.emitDirect(stateTaskIdentifier, stateTuple);
+            }
+        }
+    }
+
+    public void manageScaleTuple(Tuple tuple) {
         String[] tokens = ((String) tuple.getValues().get(0)).split("[/:]");
         String scaleAction = tokens[2];
         String taskName = tokens[4];
         String taskIdentifier = tokens[5];
         Integer taskNumber = Integer.parseInt(tokens[7]);
         String taskAddress = tokens[9];
-        List<String> keys = null;
+
         if (SYSTEM_WARM_FLAG)
             SYSTEM_WARM_FLAG = false;
         if (scaleAction != null && scaleAction.equals(SynefoConstant.ADD_ACTION)) {
