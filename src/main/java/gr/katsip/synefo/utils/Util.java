@@ -168,8 +168,9 @@ public class Util {
         while (itr.hasNext()) {
             Map.Entry<String, ArrayList<String>> pair = itr.next();
             String taskName = pair.getKey();
+            Integer identifier = Integer.parseInt(taskName.split(":")[1]);
             ArrayList<String> childTasks = pair.getValue();
-            if (childTasks == null || childTasks.size() == 0) {
+            if (childTasks == null || childTasks.size() == 0 && !taskToJoinRelation.containsKey(identifier)) {
                 activeTasks.add(taskName);
             }
         }
@@ -185,13 +186,13 @@ public class Util {
              * Check if this is a layer of Join operators (dispatchers)
              */
             Integer candidateTask = Integer.parseInt(layerTasks.get(0).split("[:]")[1]);
-            if(taskToJoinRelation.containsKey(candidateTask) &&
+            if (taskToJoinRelation.containsKey(candidateTask) &&
                     taskToJoinRelation.get(candidateTask).getStep().equals(JoinOperator.Step.JOIN)) {
                 String relation = taskToJoinRelation.get(candidateTask).getRelation();
                 activeTasks.add(layerTasks.get(0));
-                for(int i = 1; i < layerTasks.size(); i++) {
+                for (int i = 1; i < layerTasks.size(); i++) {
                     Integer otherCandidateTask = Integer.parseInt(layerTasks.get(i).split("[:]")[1]);
-                    if(taskToJoinRelation.containsKey(otherCandidateTask) &&
+                    if (taskToJoinRelation.containsKey(otherCandidateTask) &&
                             taskToJoinRelation.get(otherCandidateTask).getStep().equals(JoinOperator.Step.JOIN) &&
                             taskToJoinRelation.get(otherCandidateTask).getRelation().equals(relation) == false) {
                         activeTasks.add(layerTasks.get(i));
