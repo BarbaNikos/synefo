@@ -12,7 +12,11 @@ public class JoinSubmitter {
         }else {
             TopologyDriver driver = new TopologyDriver();
             driver.configure(args[0]);
-            driver.submit(500);
+            try {
+                driver.submit(500);
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
         }
     }
 }
