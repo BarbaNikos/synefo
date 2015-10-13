@@ -293,11 +293,9 @@ public class ZookeeperClient {
     }
 
     public void addInputRateData(Double value) {
-//        logger.info("adding a data point to the buffer");
         statisticCounter++;
         serializedStatistics.append("," + value);
         if (statisticCounter >= Util.BOLT_STAT_BATCH_SIZE) {
-//            logger.info("stat buffer is full. Time to push");
             try {
                 zookeeper.setData(MAIN_ZNODE + "/" + TASK_ZNODE + "/" + taskName + ":" + identifier,
                         serializedStatistics.toString().getBytes("UTF-8"), -1, statCallback,
@@ -308,9 +306,6 @@ public class ZookeeperClient {
             statisticCounter = 0;
             serializedStatistics = new StringBuilder();
         }
-//        byte[] b = new byte[8];
-//        ByteBuffer.wrap(b).putDouble(value);
-//        zookeeper.setData(MAIN_ZNODE + "/" + TASK_ZNODE + "/" + taskName + ":" + identifier, b, -1, statCallback, b);
     }
 
     private AsyncCallback.StatCallback statCallback = new AsyncCallback.StatCallback() {
