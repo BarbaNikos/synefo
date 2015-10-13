@@ -15,13 +15,10 @@ import gr.katsip.synefo.storm.operators.relational.elastic.*;
 import gr.katsip.synefo.tpch.LineItem;
 import gr.katsip.synefo.tpch.LocalFileProducer;
 import gr.katsip.synefo.tpch.Order;
-
-import javax.sound.sampled.Line;
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 /**
  * Created by nick on 10/13/15.
@@ -76,22 +73,22 @@ public class TopologyDriver {
     public void configure(String fileName) {
         try {
             BufferedReader reader = new BufferedReader(new FileReader(new File(fileName)));
-            scale = Integer.parseInt(reader.readLine().split(":")[1]);
-            inputFile = reader.readLine().split(":")[1].split(",");
-            String[] strOutputRate = reader.readLine().split(":")[1].split(",");
-            String[] strCheckpoint = reader.readLine().split(":")[1].split(",");
+            scale = Integer.parseInt(reader.readLine().split("=")[1]);
+            inputFile = reader.readLine().split("=")[1].split(",");
+            String[] strOutputRate = reader.readLine().split("=")[1].split(",");
+            String[] strCheckpoint = reader.readLine().split("=")[1].split(",");
             outputRate = new double[strOutputRate.length];
             checkpoint = new int[strCheckpoint.length];
             for (int i = 0; i < strOutputRate.length; i++) {
                 outputRate[i] = Double.parseDouble(strOutputRate[i]);
                 checkpoint[i] = Integer.parseInt(strCheckpoint[i]);
             }
-            windowInMinutes = Float.parseFloat(reader.readLine().split(":")[1]);
-            slideInMilliSeconds = Long.parseLong(reader.readLine().split(":")[1]);
-            numberOfWorkers = Integer.parseInt(reader.readLine().split(":")[1]);
-            synefoAddress = reader.readLine().split(":")[1];
+            windowInMinutes = Float.parseFloat(reader.readLine().split("=")[1]);
+            slideInMilliSeconds = Long.parseLong(reader.readLine().split("=")[1]);
+            numberOfWorkers = Integer.parseInt(reader.readLine().split("=")[1]);
+            synefoAddress = reader.readLine().split("=")[1];
             zookeeperAddress = reader.readLine().split(" ")[1];
-            String strType = reader.readLine().split(":")[1].toUpperCase();
+            String strType = reader.readLine().split("=")[1].toUpperCase();
             if (DispatcherType.valueOf(strType) == DispatcherType.OBLIVIOUS_DISPATCH) {
                 type = DispatcherType.OBLIVIOUS_DISPATCH;
             }else if (DispatcherType.valueOf(strType) == DispatcherType.WINDOW_DISPATCH) {
@@ -99,16 +96,14 @@ public class TopologyDriver {
             }else {
                 type = DispatcherType.HISTORY_DISPATCH;
             }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public void submit(int maxSpoutPending) {
+    public void submit(int maxSpoutPending) throws ClassNotFoundException {
         Integer numberOfTasks = 0;
-        ArrayList<String> tasks = null;
+        ArrayList<String> tasks;
         HashMap<String, ArrayList<String>> topology = new HashMap<>();
         int executorNumber = scale;
         Config conf = new Config();
@@ -195,7 +190,7 @@ public class TopologyDriver {
             Thread.sleep(100);
             out.writeObject(topology);
             out.flush();
-            String ack = null;
+            String ack = (String) in.readObject();
             if (!ack.equals("+EFO_ACK")) {
                 System.err.println("failed to submit topology information to load balancer");
                 System.exit(1);
