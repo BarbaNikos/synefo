@@ -5,6 +5,8 @@ import java.util.*;
 
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SlidingWindowJoin implements Serializable {
 
@@ -12,6 +14,8 @@ public class SlidingWindowJoin implements Serializable {
 	 * 
 	 */
 	private static final long serialVersionUID = -557386415760782256L;
+
+    private static Logger logger = LoggerFactory.getLogger(SlidingWindowJoin.class);
 
 	public class BasicWindow implements Serializable {
 		/**
@@ -72,6 +76,7 @@ public class SlidingWindowJoin implements Serializable {
 		this.windowSize = windowSize;
 		this.slide = slide;
 		this.circularCacheSize = (int) Math.ceil(this.windowSize / slide);
+        logger.info("circular-cache of size (" + circularCacheSize + ")");
 		this.tupleSchema = new Fields(tupleSchema.toList());
 		this.joinAttribute = joinAttribute;
 		this.stateByteSize = 0L;
@@ -109,7 +114,9 @@ public class SlidingWindowJoin implements Serializable {
 			 * Need to evict a basic-window (the last one), if we have used up all basic window slots 
 			 * and the last basic-window has expired.
 			 */
-			if (circularCache.size() >= circularCacheSize) {
+			if (circularCache.size() > circularCacheSize) {
+                logger.info("circular cache's current size (" + circularCache.size() + ") exceeds upper limit (" + circularCacheSize
+                        + ").");
                 if (circularCache.getLast().endingTimestamp <= currentTimestamp) {
                     BasicWindow basicWindow = circularCache.removeLast();
                     stateByteSize -= basicWindow.basicWindowStateSize;
