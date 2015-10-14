@@ -47,7 +47,9 @@ public class BalanceServer {
 	
 	private ConcurrentLinkedQueue<String> pendingAddressUpdates;
 
-	public BalanceServer(String zooHost, HashMap<String, Pair<Number, Number>> _resource_thresholds, CEStormDatabaseManager ceDb) {
+	private boolean INIT_MINIMAL_RESOURCES;
+
+	public BalanceServer(String zooHost, HashMap<String, Pair<Number, Number>> _resource_thresholds, boolean INIT_MINIMAL_RESOURCES) {
 		physicalTopology = new ConcurrentHashMap<String, ArrayList<String>>();
 		activeTopology = new ConcurrentHashMap<String, ArrayList<String>>();
 		taskIdentifierIndex = new ConcurrentHashMap<String, Integer>();
@@ -66,6 +68,7 @@ public class BalanceServer {
 		this.zooHost = zooHost;
 		operationFlag = new AtomicBoolean(false);
 		taskNumber = new AtomicInteger(-1);
+        this.INIT_MINIMAL_RESOURCES = INIT_MINIMAL_RESOURCES;
 	}
 
 	public void runServer() {
@@ -74,7 +77,7 @@ public class BalanceServer {
 		InputStream _in = null;
 		(new Thread(new NewLoadMaster(zooHost, resourceThresholds, physicalTopology,
 				activeTopology, taskIdentifierIndex, taskAddressIndex,
-				taskNumber, taskToJoinRelation))).start();
+				taskNumber, taskToJoinRelation, INIT_MINIMAL_RESOURCES))).start();
 		while(killCommand == false) {
 			try {
 				_stormComponent = serverSocket.accept();

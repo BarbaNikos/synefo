@@ -36,6 +36,8 @@ public class NewLoadMaster implements Runnable {
 
     private ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation = null;
 
+    private boolean INIT_MINIMAL_RESOURCES;
+
     public NewLoadMaster(String zookeeperAddress,
                          HashMap<String, Pair<Number, Number>> resourceThresholds,
                          ConcurrentHashMap<String, ArrayList<String>> topology,
@@ -43,7 +45,7 @@ public class NewLoadMaster implements Runnable {
                          ConcurrentHashMap<String, Integer> taskIdentifierIndex,
                          ConcurrentHashMap<String, String> taskAddressIndex,
                          AtomicInteger taskNumber,
-                         ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation) {
+                         ConcurrentHashMap<Integer, JoinOperator> taskToJoinRelation, boolean INIT_MINIMAL_RESOURCES) {
         this.topology = topology;
         this.activeTopology = activeTopology;
         this.taskIdentifierIndex = taskIdentifierIndex;
@@ -52,6 +54,7 @@ public class NewLoadMaster implements Runnable {
         this.taskNumber = taskNumber;
         this.taskToJoinRelation = taskToJoinRelation;
         this.resourceThresholds = resourceThresholds;
+        this.INIT_MINIMAL_RESOURCES = INIT_MINIMAL_RESOURCES;
     }
 
 
@@ -82,7 +85,7 @@ public class NewLoadMaster implements Runnable {
         topology.putAll(finalTopology);
         activeTopology.clear();
         activeTopology.putAll(Util.getInitialActiveTopologyWithJoinOperators(topology,
-                Util.getInverseTopology(topology), taskToJoinRelation, true));
+                Util.getInverseTopology(topology), taskToJoinRelation, INIT_MINIMAL_RESOURCES));
 //        System.out.println("NewLoadMaster topology: " + topology.toString());
         System.out.println("NewLoadMaster active-topology: " + activeTopology.toString());
         balancer.setTopology(topology);
