@@ -87,7 +87,7 @@ public class TopologyDriver {
             slideInMilliSeconds = Long.parseLong(reader.readLine().split("=")[1]);
             numberOfWorkers = Integer.parseInt(reader.readLine().split("=")[1]);
             synefoAddress = reader.readLine().split("=")[1];
-            zookeeperAddress = reader.readLine().split(" ")[1];
+            zookeeperAddress = reader.readLine().split("=")[1];
             String strType = reader.readLine().split("=")[1].toUpperCase();
             if (DispatcherType.valueOf(strType) == DispatcherType.OBLIVIOUS_DISPATCH) {
                 type = DispatcherType.OBLIVIOUS_DISPATCH;
