@@ -170,6 +170,7 @@ public class TopologyDriver {
 
         joiner = new NewJoinJoiner("lineitem", new Fields(LineItem.schema), "order", new Fields(Order.schema),
                 "L_ORDERKEY", "O_ORDERKEY", (int) windowInMinutes, (int) slideInMilliSeconds);
+        joiner.setOutputSchema(new Fields(schema));
         builder.setBolt("joinline", new JoinBolt("joinline", synefoAddress, synefoPort, joiner, zookeeperAddress),
                 scale)
                 .setNumTasks(scale)
