@@ -123,20 +123,23 @@ public class LocalFileProducer implements Serializable {
             }
             return -10;
         }
-        String[] attributes = line.split("\\|");
-        if(attributes.length < schema.size())
-            return -1;
-        for(int i = 0; i < schema.size(); i++) {
-            if(projectedSchema.toList().contains(schema.get(i))) {
-                values.add(attributes[i]);
+        if (line != null) {
+            String[] attributes = line.split("\\|");
+            if(attributes.length < schema.size())
+                return -1;
+            for(int i = 0; i < schema.size(); i++) {
+                if(projectedSchema.toList().contains(schema.get(i))) {
+                    values.add(attributes[i]);
+                }
             }
+            Values tuple = new Values();
+            tuple.add("0");
+            tuple.add(projectedSchema);
+            tuple.add(values);
+            tupleStatistics.put(tuple, System.currentTimeMillis());
+            spoutOutputCollector.emitDirect(taskIdentifier, tuple, tuple);
+            inputRate++;
         }
-        Values tuple = new Values();
-        tuple.add("0");
-        tuple.add(projectedSchema);
-        tuple.add(values);
-        tupleStatistics.put(tuple, System.currentTimeMillis());
-        spoutOutputCollector.emitDirect(taskIdentifier, tuple, tuple);
 
         if (startTimestamp < System.nanoTime() && index < (outputRate.length - 1))
             progressCheckpoint();
@@ -147,8 +150,6 @@ public class LocalFileProducer implements Serializable {
             throughput = inputRate;
             throughputPreviousTimestamp = throughputCurrentTimestamp;
             inputRate = 0;
-        }else {
-            inputRate++;
         }
         nextTimestamp += delay;
         return throughput;
