@@ -96,6 +96,7 @@ public class TopologyDriver {
             }else {
                 type = DispatcherType.HISTORY_DISPATCH;
             }
+            System.out.println("driver located dispatcher type: " + type);
         } catch (IOException e) {
             e.printStackTrace();
         }
