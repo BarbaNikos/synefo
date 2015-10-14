@@ -4,6 +4,7 @@ import backtype.storm.task.OutputCollector;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import gr.katsip.synefo.storm.api.Pair;
 import org.apache.commons.lang.ArrayUtils;
 
 import java.io.Serializable;
@@ -85,12 +86,13 @@ public class NewJoinJoiner implements Serializable {
         outputSchema = new Fields(output_schema.toList());
     }
 
-    public int execute(Tuple anchor, OutputCollector collector,
+    public Pair<Integer, Integer> execute(Tuple anchor, OutputCollector collector,
                        List<Integer> activeTasks, Integer taskIndex, Fields fields,
                        Values values, Long tupleTimestamp) {
         /**
          * Receive a tuple that: attribute[0] : fields, attribute[1] : values
          */
+        Integer numberOfTuplesProduced = 0;
         Long currentTimestamp = System.currentTimeMillis();
         Fields attributeNames = new Fields(((Fields) values.get(0)).toList());
         Values attributeValues = (Values) values.get(1);
@@ -115,12 +117,13 @@ public class NewJoinJoiner implements Serializable {
                 tuple.add(joinOutputSchema);
                 tuple.add(result);
                 collector.emitDirect(activeTasks.get(taskIndex), anchor, tuple);
+                numberOfTuplesProduced++;
                 taskIndex += 1;
                 if(taskIndex >= activeTasks.size())
                     taskIndex = 0;
             }
         }
-        return taskIndex;
+        return new Pair<>(taskIndex, numberOfTuplesProduced);
     }
 
     public List<Values> getStateValues() {

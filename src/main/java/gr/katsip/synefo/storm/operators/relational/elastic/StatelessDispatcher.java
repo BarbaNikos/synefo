@@ -73,12 +73,14 @@ public class StatelessDispatcher implements Serializable, Dispatcher {
         tuple.add("0");
         tuple.add(attributeNames);
         tuple.add(attributeValues);
+        int numberOfTuplesDispatched = 0;
         if (Arrays.equals(attributeNames.toList().toArray(), outerRelationSchema.toList().toArray())) {
             /**
              * STORE: Send tuple to one of the active tasks of the outer relation (also increment index)
              */
             List<Integer> activeTaskIdentifiers = taskToRelationIndex.get(outerRelationName);
             collector.emitDirect(activeTaskIdentifiers.get(outerRelationIndex), anchor, tuple);
+            numberOfTuplesDispatched++;
             if (outerRelationIndex >= (activeTaskIdentifiers.size() - 1))
                 outerRelationIndex = 0;
             else
@@ -89,6 +91,7 @@ public class StatelessDispatcher implements Serializable, Dispatcher {
             activeTaskIdentifiers = taskToRelationIndex.get(innerRelationName);
             for (Integer task : activeTaskIdentifiers) {
                 collector.emitDirect(task, anchor, tuple);
+                numberOfTuplesDispatched++;
             }
         }else if (Arrays.equals(attributeNames.toList().toArray(), innerRelationSchema.toList().toArray())) {
             /**
@@ -96,6 +99,7 @@ public class StatelessDispatcher implements Serializable, Dispatcher {
              */
             List<Integer> activeTaskIdentifiers = taskToRelationIndex.get(innerRelationName);
             collector.emitDirect(activeTaskIdentifiers.get(innerRelationIndex), anchor, tuple);
+            numberOfTuplesDispatched++;
             if (innerRelationIndex >= (activeTaskIdentifiers.size() - 1))
                 innerRelationIndex = 0;
             else
@@ -106,9 +110,10 @@ public class StatelessDispatcher implements Serializable, Dispatcher {
             activeTaskIdentifiers = taskToRelationIndex.get(outerRelationName);
             for (Integer task : activeTaskIdentifiers) {
                 collector.emitDirect(task, anchor, tuple);
+                numberOfTuplesDispatched++;
             }
         }
-        return 0;
+        return numberOfTuplesDispatched;
     }
 
     @Override

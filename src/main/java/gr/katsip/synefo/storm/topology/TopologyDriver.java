@@ -12,9 +12,8 @@ import gr.katsip.synefo.storm.api.ElasticFileSpout;
 import gr.katsip.synefo.storm.api.JoinBolt;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
 import gr.katsip.synefo.storm.operators.relational.elastic.*;
-import gr.katsip.synefo.tpch.LineItem;
-import gr.katsip.synefo.tpch.LocalFileProducer;
-import gr.katsip.synefo.tpch.Order;
+import gr.katsip.synefo.tpch.*;
+
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -49,10 +48,17 @@ public class TopologyDriver {
 
     private DispatcherType type;
 
+    private FileReaderType readerType;
+
     public enum DispatcherType {
         OBLIVIOUS_DISPATCH,
         WINDOW_DISPATCH,
         HISTORY_DISPATCH
+    }
+
+    public enum FileReaderType {
+        DEFAULT_FILE_READER,
+        CONTROLLED_FILE_READER
     }
 
     public TopologyDriver() {
@@ -96,6 +102,14 @@ public class TopologyDriver {
             }else {
                 type = DispatcherType.HISTORY_DISPATCH;
             }
+            String strReaderType = reader.readLine().split("=")[1].toUpperCase();
+            if (FileReaderType.valueOf(strReaderType) == FileReaderType.DEFAULT_FILE_READER) {
+                readerType = FileReaderType.DEFAULT_FILE_READER;
+            }else if (FileReaderType.valueOf(strReaderType) == FileReaderType.CONTROLLED_FILE_READER) {
+                readerType = FileReaderType.CONTROLLED_FILE_READER;
+            }else {
+                readerType = FileReaderType.DEFAULT_FILE_READER;
+            }
             System.out.println("driver located dispatcher type: " + type);
         } catch (IOException e) {
             e.printStackTrace();
@@ -109,14 +123,28 @@ public class TopologyDriver {
         int executorNumber = scale;
         Config conf = new Config();
         TopologyBuilder builder = new TopologyBuilder();
-
-        LocalFileProducer order = new LocalFileProducer(inputFile[0], Order.schema, Order.schema, outputRate,
-                checkpoint);
-        order.setSchema(new Fields(schema));
-        LocalFileProducer lineitem = new LocalFileProducer(inputFile[1], LineItem.schema, LineItem.schema, outputRate,
-                checkpoint);
-        lineitem.setSchema(new Fields(schema));
-
+        FileProducer order, lineitem;
+        switch (readerType) {
+            case DEFAULT_FILE_READER:
+                order = new LocalFileProducer(inputFile[0], Order.schema, Order.schema);
+                order.setSchema(new Fields(schema));
+                lineitem = new LocalFileProducer(inputFile[1], LineItem.schema, LineItem.schema);
+                lineitem.setSchema(new Fields(schema));
+                break;
+            case CONTROLLED_FILE_READER:
+                order = new LocalControlledFileProducer(inputFile[0], Order.schema, Order.schema, outputRate,
+                        checkpoint);
+                order.setSchema(new Fields(schema));
+                lineitem = new LocalControlledFileProducer(inputFile[1], LineItem.schema, LineItem.schema, outputRate,
+                        checkpoint);
+                lineitem.setSchema(new Fields(schema));
+                break;
+            default:
+                order = new LocalFileProducer(inputFile[0], Order.schema, Order.schema);
+                order.setSchema(new Fields(schema));
+                lineitem = new LocalFileProducer(inputFile[1], LineItem.schema, LineItem.schema);
+                lineitem.setSchema(new Fields(schema));
+        }
         builder.setSpout("order", new ElasticFileSpout("order", synefoAddress, synefoPort, order, zookeeperAddress), scale);
         builder.setSpout("lineitem", new ElasticFileSpout("lineitem", synefoAddress, synefoPort, lineitem, zookeeperAddress), scale);
         numberOfTasks += 2*scale;

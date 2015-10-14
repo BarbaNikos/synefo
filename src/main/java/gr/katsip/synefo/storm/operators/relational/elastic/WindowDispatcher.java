@@ -106,6 +106,7 @@ public class WindowDispatcher implements Serializable, Dispatcher {
         /**
          * JOIN part
          */
+        int numberOfTuplesDispatched = 0;
         if(secondaryRelationIndex.containsKey(foreignKey)) {
             List<Integer> dispatchInfo = new ArrayList<>(secondaryRelationIndex.get(foreignKey)
                     .subList(1, secondaryRelationIndex.get(foreignKey).size()));
@@ -119,10 +120,11 @@ public class WindowDispatcher implements Serializable, Dispatcher {
                         collector.emitDirect(task, anchor, tuple);
                     else
                         collector.emitDirect(task, tuple);
+                    numberOfTuplesDispatched++;
                 }
             }
         }
-        return 0;
+        return numberOfTuplesDispatched;
     }
 
     private void cleanup(long currentTimestamp) {
@@ -150,6 +152,7 @@ public class WindowDispatcher implements Serializable, Dispatcher {
         long currentTimestamp = System.currentTimeMillis();
         Fields attributeNames = new Fields(((Fields) values.get(0)).toList());
         Values attributeValues = (Values) values.get(1);
+        int numberOfTuplesDispatched = 0;
         for (DispatchWindow window : circularCache) {
             /**
              * JOIN (if key has came across on a previous-valid or the current-valid window)
@@ -158,12 +161,12 @@ public class WindowDispatcher implements Serializable, Dispatcher {
                 if (Arrays.equals(attributeNames.toList().toArray(), outerRelationSchema.toList().toArray())) {
                     String primaryKey = (String) attributeValues.get(outerRelationSchema.fieldIndex(outerRelationKey));
                     String foreignKey = (String) attributeValues.get(outerRelationSchema.fieldIndex(outerRelationForeignKey));
-                    dispatch(primaryKey, foreignKey, window.outerRelationIndex, outerRelationName, window.innerRelationIndex, innerRelationName,
+                    numberOfTuplesDispatched += dispatch(primaryKey, foreignKey, window.outerRelationIndex, outerRelationName, window.innerRelationIndex, innerRelationName,
                             attributeNames, attributeValues, collector, anchor);
                 }else if (Arrays.equals(attributeNames.toList().toArray(), innerRelationSchema.toList().toArray())) {
                     String primaryKey = (String) attributeValues.get(innerRelationSchema.fieldIndex(innerRelationKey));
                     String foreignKey = (String) attributeValues.get(innerRelationSchema.fieldIndex(innerRelationForeignKey));
-                    dispatch(primaryKey, foreignKey, window.innerRelationIndex, innerRelationName, window.outerRelationIndex, outerRelationName,
+                    numberOfTuplesDispatched += dispatch(primaryKey, foreignKey, window.innerRelationIndex, innerRelationName, window.outerRelationIndex, outerRelationName,
                             attributeNames, attributeValues, collector, anchor);
                 }
             }
@@ -186,6 +189,7 @@ public class WindowDispatcher implements Serializable, Dispatcher {
                             collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), anchor, tuple);
                         else
                             collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), tuple);
+                        numberOfTuplesDispatched++;
                     }
                     if (dispatchInfo.get(0) >= (dispatchInfo.size() - 1)) {
                         dispatchInfo.set(0, 1);
@@ -206,6 +210,7 @@ public class WindowDispatcher implements Serializable, Dispatcher {
                             collector.emitDirect(victimTask, anchor, tuple);
                         else
                             collector.emitDirect(victimTask, tuple);
+                        numberOfTuplesDispatched++;
                     }
                     circularCache.getFirst().outerRelationIndex.put(primaryKey, tasks);
                     stateSize = stateSize + primaryKey.length() + 4 + 4;
@@ -222,6 +227,7 @@ public class WindowDispatcher implements Serializable, Dispatcher {
                             collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), anchor, tuple);
                         else
                             collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), tuple);
+                        numberOfTuplesDispatched++;
                     }
                     if (dispatchInfo.get(0) >= (dispatchInfo.size() - 1)) {
                         dispatchInfo.set(0, 1);
@@ -242,6 +248,7 @@ public class WindowDispatcher implements Serializable, Dispatcher {
                             collector.emitDirect(victimTask, anchor, tuple);
                         else
                             collector.emitDirect(victimTask, tuple);
+                        numberOfTuplesDispatched++;
                     }
                     circularCache.getFirst().innerRelationIndex.put(primaryKey, tasks);
                     stateSize = stateSize + primaryKey.length() + 4 + 4;
@@ -250,7 +257,7 @@ public class WindowDispatcher implements Serializable, Dispatcher {
             }
         }
         cleanup(currentTimestamp);
-        return 0;
+        return numberOfTuplesDispatched;
     }
 
     @Override

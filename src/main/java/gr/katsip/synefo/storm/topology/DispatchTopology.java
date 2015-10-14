@@ -60,9 +60,9 @@ public class DispatchTopology {
         String[] dataSchema = { "attributes", "values" };
         double[] outputRate = { 300, 300, 300};
         int[] checkpoints = { 0, 30, 60 };
-        LocalFileProducer order = new LocalFileProducer(data[0], Order.schema, Order.query5Schema, outputRate, checkpoints);
+        LocalControlledFileProducer order = new LocalControlledFileProducer(data[0], Order.schema, Order.query5Schema, outputRate, checkpoints);
         order.setSchema(new Fields(dataSchema));
-        LocalFileProducer lineitem = new LocalFileProducer(data[1], LineItem.schema, LineItem.query5Schema, outputRate, checkpoints);
+        LocalControlledFileProducer lineitem = new LocalControlledFileProducer(data[1], LineItem.schema, LineItem.query5Schema, outputRate, checkpoints);
         lineitem.setSchema(new Fields(dataSchema));
         builder.setSpout("order",
                 new ElasticFileSpout("order", synefoAddress, synefoPort, order, zooIP), 2);

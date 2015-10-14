@@ -8,7 +8,8 @@ import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 import gr.katsip.synefo.storm.lib.SynefoMessage;
-import gr.katsip.synefo.tpch.LocalFileProducer;
+import gr.katsip.synefo.tpch.FileProducer;
+import gr.katsip.synefo.tpch.LocalControlledFileProducer;
 import gr.katsip.synefo.utils.SynefoConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +40,7 @@ public class ElasticFileSpout extends BaseRichSpout {
 
     private int synefoPort;
 
-    private LocalFileProducer producer;
+    private FileProducer producer;
 
     private String zooAddress;
 
@@ -67,8 +68,14 @@ public class ElasticFileSpout extends BaseRichSpout {
 
     private HashMap<Values, Long> tupleStatistics;
 
+    private long startTime = -1;
+
+    private long endTime = -1;
+
+    private AssignableMetric timeToScanInput;
+
     public ElasticFileSpout(String taskName, String synefoIpAddress, Integer synefoPort,
-                            LocalFileProducer producer, String zooAddress) {
+                            FileProducer producer, String zooAddress) {
         this.taskName = taskName;
         workerPort = -1;
         downstreamTaskNames = null;
@@ -162,6 +169,8 @@ public class ElasticFileSpout extends BaseRichSpout {
         tupleStatistics = new HashMap<Values, Long>();
         inputRate = new AssignableMetric(null);
         context.registerMetric("input-rate", inputRate, METRIC_FREQ_SEC);
+        timeToScanInput = new AssignableMetric(null);
+        context.registerMetric("time-to-scan", timeToScanInput, METRIC_FREQ_SEC);
     }
 
     public void ack(Object msgId) {
@@ -191,20 +200,23 @@ public class ElasticFileSpout extends BaseRichSpout {
         if (activeDownstreamTaskNames == null && downstreamTaskNames == null)
             register();
         initMetrics(topologyContext);
-        try {
-            producer.init();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
+        producer.init();
     }
 
     @Override
     public void nextTuple() {
+        if (startTime == -1)
+            startTime = System.currentTimeMillis();
         if (activeDownstreamTaskIdentifiers != null && activeDownstreamTaskNames.size() > 0) {
             int value = producer.nextTuple(spoutOutputCollector,
                     activeDownstreamTaskIdentifiers.get(index), tupleStatistics);
             if (value >= 0) {
                 inputRate.setValue(value);
+            }else {
+                logger.info("file completely scanned.");
+                endTime = System.currentTimeMillis();
+                timeToScanInput.setValue((endTime - startTime));
+                throw new RuntimeException("Input file scanned completely");
             }
             if (index >= (activeDownstreamTaskIdentifiers.size() - 1))
                 index = 0;

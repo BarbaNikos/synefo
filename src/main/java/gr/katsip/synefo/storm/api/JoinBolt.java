@@ -194,7 +194,9 @@ public class JoinBolt extends BaseRichBolt {
         logger.info("JOIN-BOLT-" + taskName + ":" + taskIdentifier + " registered to load-balancer");
         downstreamIndex = 0;
         inputRatePreviousTimestamp = System.currentTimeMillis();
+        throughputPreviousTimestamp = System.currentTimeMillis();
         temporaryInputRate = 0;
+        temporaryThroughput = 0;
     }
 
     @Override
@@ -277,16 +279,6 @@ public class JoinBolt extends BaseRichBolt {
         }else {
             temporaryInputRate++;
         }
-        throughputCurrentTimestamp = System.currentTimeMillis();
-        if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
-            throughputPreviousTimestamp = throughputCurrentTimestamp;
-            throughput.setValue(temporaryThroughput);
-            //TODO: Change the following
-//            zookeeperClient.addInputRateData((double) temporaryInputRate);
-            temporaryThroughput = 0;
-        }else {
-            temporaryThroughput++;
-        }
         /**
          * Remove from both values and fields SYNEFO_HEADER (SYNEFO_TIMESTAMP)
          */
@@ -297,12 +289,16 @@ public class JoinBolt extends BaseRichBolt {
         Fields fields = new Fields(fieldList);
         long startTime = System.currentTimeMillis();
         if (activeDownstreamTaskIdentifiers.size() > 0) {
-            joiner.execute(tuple, collector, activeDownstreamTaskIdentifiers,
+            Pair<Integer, Integer> pair = joiner.execute(tuple, collector, activeDownstreamTaskIdentifiers,
                     downstreamIndex, fields, values, null);
+            downstreamIndex = pair.lowerBound;
+            temporaryThroughput += pair.upperBound;
             collector.ack(tuple);
         }else {
-            joiner.execute(tuple, collector, activeDownstreamTaskIdentifiers,
+            Pair<Integer, Integer> pair = joiner.execute(tuple, collector, activeDownstreamTaskIdentifiers,
                     downstreamIndex, fields, values, null);
+            downstreamIndex = pair.lowerBound;
+            temporaryThroughput += pair.upperBound;
             collector.ack(tuple);
         }
         long endTime = System.currentTimeMillis();
@@ -310,6 +306,14 @@ public class JoinBolt extends BaseRichBolt {
         lastStateSizeMetric = joiner.getStateSize();
         executeLatency.setValue(lastExecuteLatencyMetric);
         stateSize.setValue(lastStateSizeMetric);
+        throughputCurrentTimestamp = System.currentTimeMillis();
+        if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
+            throughputPreviousTimestamp = throughputCurrentTimestamp;
+            throughput.setValue(temporaryThroughput);
+            //TODO: Change the following
+//            zookeeperClient.addInputRateData((double) temporaryInputRate);
+            temporaryThroughput = 0;
+        }
         tupleCounter++;
         if (tupleCounter >= WARM_UP_THRESHOLD && !SYSTEM_WARM_FLAG)
             SYSTEM_WARM_FLAG = true;

@@ -230,6 +230,7 @@ public class DispatchBolt extends BaseRichBolt {
         logger.info(strBuild.toString());
         logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + " registered to load-balancer");
         inputRatePreviousTimestamp = System.currentTimeMillis();
+        throughputPreviousTimestamp = System.currentTimeMillis();
         temporaryInputRate = 0;
         temporaryThroughput = 0;
     }
@@ -338,16 +339,6 @@ public class DispatchBolt extends BaseRichBolt {
                 }else {
                     temporaryInputRate++;
                 }
-                throughputCurrentTimestamp = System.currentTimeMillis();
-                if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
-                    throughputPreviousTimestamp = throughputCurrentTimestamp;
-                    throughput.setValue(temporaryThroughput);
-                    //TODO: change the following
-//                    zookeeperClient.addInputRateData((double) temporaryInputRate);
-                    temporaryThroughput = 0;
-                }else {
-                    temporaryThroughput++;
-                }
                 /**
                  * Remove from both values and fields SYNEFO_HEADER (SYNEFO_TIMESTAMP)
                  */
@@ -356,19 +347,29 @@ public class DispatchBolt extends BaseRichBolt {
                 List<String> fieldList = tuple.getFields().toList();
                 fieldList.remove(0);
                 Fields fields = new Fields(fieldList);
+                int numberOfTuplesDispatched = 0;
                 long startTime = System.currentTimeMillis();
                 if (activeDownstreamTaskIdentifiers.size() > 0) {
-                    dispatcher.execute(tuple, collector, fields, values);
+                    numberOfTuplesDispatched = dispatcher.execute(tuple, collector, fields, values);
                     collector.ack(tuple);
                 }else {
-                    dispatcher.execute(tuple, null, fields, values);
+                    numberOfTuplesDispatched = dispatcher.execute(tuple, null, fields, values);
                     collector.ack(tuple);
                 }
+                temporaryThroughput += numberOfTuplesDispatched;
                 long endTime = System.currentTimeMillis();
                 lastExecuteLatencyMetric = endTime - startTime;
                 lastStateSizeMetric = dispatcher.getStateSize();
                 executeLatency.setValue(lastExecuteLatencyMetric);
                 stateSize.setValue(lastStateSizeMetric);
+                throughputCurrentTimestamp = System.currentTimeMillis();
+                if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
+                    throughputPreviousTimestamp = throughputCurrentTimestamp;
+                    throughput.setValue(temporaryThroughput);
+                    //TODO: change the following
+//                    zookeeperClient.addInputRateData((double) temporaryInputRate);
+                    temporaryThroughput = 0;
+                }
                 tupleCounter++;
                 if (tupleCounter >= WARM_UP_THRESHOLD && !SYSTEM_WARM_FLAG)
                     SYSTEM_WARM_FLAG = true;

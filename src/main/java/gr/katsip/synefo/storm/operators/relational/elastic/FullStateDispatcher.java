@@ -80,6 +80,7 @@ public class FullStateDispatcher implements Serializable, Dispatcher {
     private int dispatch(String primaryKey, String foreignKey, HashMap<String, List<Integer>> primaryRelationIndex,
                          String primaryRelationName, HashMap<String, List<Integer>> secondaryRelationIndex,
                          Fields attributeNames, Values attributeValues, OutputCollector collector, Tuple anchor) {
+        int numberOfTuplesDispatched = 0;
 //        logger.info("dispatch() called primary-key: " + primaryKey + ", foreign-key: " + foreignKey +
 //        " primary-relation: " + primaryRelationName + ", attributes: " + attributeNames.toList().toString() +
 //        " values: " + attributeValues.toString());
@@ -104,6 +105,7 @@ public class FullStateDispatcher implements Serializable, Dispatcher {
                     collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), tuple);
                 logger.info("dispatch() primary key is maintained by task " + dispatchInfo.get(dispatchInfo.get(0)) + ".");
             }
+            numberOfTuplesDispatched++;
             if (dispatchInfo.get(0) >= (dispatchInfo.size() - 1)) {
                 dispatchInfo.set(0, 1);
             }else {
@@ -135,6 +137,7 @@ public class FullStateDispatcher implements Serializable, Dispatcher {
                 stateSize = stateSize + tasks.toString().length() + primaryKey.length() + 4;
                 primaryRelationIndex.put(primaryKey, tasks);
 //                logger.info("dispatch() shared keys with task " + victimTask + " are tasks: " + tasks.toString());
+                numberOfTuplesDispatched++;
             }
         }
         /**
@@ -154,28 +157,30 @@ public class FullStateDispatcher implements Serializable, Dispatcher {
                         collector.emitDirect(task, anchor, tuple);
                     else
                         collector.emitDirect(task, tuple);
+                    numberOfTuplesDispatched++;
                 }
             }
         }
-        return 0;
+        return numberOfTuplesDispatched;
     }
 
     @Override
     public int execute(Tuple anchor, OutputCollector collector, Fields fields, Values values) {
+        int numberOfTuplesDispatched = 0;
         Fields attributeNames = new Fields(((Fields) values.get(0)).toList());
         Values attributeValues = (Values) values.get(1);
         if (Arrays.equals(attributeNames.toList().toArray(), outerRelationSchema.toList().toArray())) {
             String primaryKey = (String) attributeValues.get(outerRelationSchema.fieldIndex(outerRelationKey));
             String foreignKey = (String) attributeValues.get(outerRelationSchema.fieldIndex(outerRelationForeignKey));
-            dispatch(primaryKey, foreignKey, outerRelationIndex, outerRelationName, innerRelationIndex,
+            numberOfTuplesDispatched = dispatch(primaryKey, foreignKey, outerRelationIndex, outerRelationName, innerRelationIndex,
                     attributeNames, attributeValues, collector, anchor);
         }else if (Arrays.equals(attributeNames.toList().toArray(), innerRelationSchema.toList().toArray())) {
             String primaryKey = (String) attributeValues.get(innerRelationSchema.fieldIndex(innerRelationKey));
             String foreignKey = (String) attributeValues.get(innerRelationSchema.fieldIndex(innerRelationForeignKey));
-            dispatch(primaryKey, foreignKey, innerRelationIndex, innerRelationName, outerRelationIndex,
+            numberOfTuplesDispatched = dispatch(primaryKey, foreignKey, innerRelationIndex, innerRelationName, outerRelationIndex,
                     attributeNames, attributeValues, collector, anchor);
         }
-        return 0;
+        return numberOfTuplesDispatched;
     }
 
     @Override
