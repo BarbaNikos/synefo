@@ -121,7 +121,7 @@ public class LocalControlledFileProducer implements Serializable, FileProducer {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            return -10;
+            return -1;
         }
         if (line != null) {
             String[] attributes = line.split("\\|");
@@ -145,7 +145,7 @@ public class LocalControlledFileProducer implements Serializable, FileProducer {
             progressCheckpoint();
 
         throughputCurrentTimestamp = System.currentTimeMillis();
-        int throughput = -1;
+        int throughput = -2;
         if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
             throughput = inputRate;
             throughputPreviousTimestamp = throughputCurrentTimestamp;

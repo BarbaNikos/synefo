@@ -83,7 +83,7 @@ public class LocalFileProducer implements Serializable, FileProducer {
             spoutOutputCollector.emitDirect(taskIdentifier, tuple, tuple);
             inputRate++;
             throughputCurrentTimestamp = System.currentTimeMillis();
-            int throughput = -1;
+            int throughput = -2;
             if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
                 throughput = inputRate;
                 throughputPreviousTimestamp = throughputCurrentTimestamp;
