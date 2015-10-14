@@ -24,6 +24,7 @@ public class FileChunkGenerator {
         BufferedReader reader = new BufferedReader(new FileReader(new File(fileName)));
         int fileCounter = 0;
         File outputFile = new File(outputDirectory + File.separator + fileCounter + ".tbl");
+        System.out.println("about to create new file: " + outputFile.getAbsolutePath());
         if (!outputFile.exists())
             outputFile.createNewFile();
         PrintWriter writer = new PrintWriter(new FileWriter(outputFile));
@@ -42,6 +43,7 @@ public class FileChunkGenerator {
                 writer.close();
                 fileCounter += 1;
                 outputFile = new File(outputDirectory + File.separator + fileCounter + ".tbl");
+                System.out.println("about to create new file: " + outputFile.getAbsolutePath());
                 if (!outputFile.exists())
                     outputFile.createNewFile();
                 writer = new PrintWriter(new FileWriter(outputFile));
