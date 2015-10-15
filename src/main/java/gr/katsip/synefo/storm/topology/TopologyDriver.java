@@ -234,9 +234,9 @@ public class TopologyDriver {
             e.printStackTrace();
         }
         conf.setDebug(false);
-        conf.registerMetricsConsumer(LoggingMetricsConsumer.class, scale);
+        conf.registerMetricsConsumer(LoggingMetricsConsumer.class, numberOfTasks);
         conf.setNumWorkers(numberOfWorkers);
-        conf.setNumAckers(numberOfTasks);
+        conf.setNumAckers(numberOfWorkers);
         conf.put(Config.TOPOLOGY_WORKER_CHILDOPTS,
                 "-Xmx4096m -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:NewSize=128m -XX:CMSInitiatingOccupancyFraction=70 -XX:-CMSConcurrentMTEnabled -Djava.net.preferIPv4Stack=true"
         );
