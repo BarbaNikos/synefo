@@ -1,6 +1,5 @@
 package gr.katsip.synefo.junit.test;
 
-import static org.junit.Assert.*;
 import gr.katsip.synefo.storm.operators.relational.elastic.SlidingWindowJoin;
 import gr.katsip.synefo.storm.operators.relational.elastic.SlidingWindowJoin.BasicWindow;
 import gr.katsip.synefo.tpch.Customer;
@@ -9,11 +8,9 @@ import gr.katsip.synefo.tpch.Order;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedList;
 
 import org.apache.commons.lang.ArrayUtils;
@@ -146,7 +143,7 @@ public class SlidingJoinCorrectnessTest {
 		System.out.println("Order mean: " + orderJoinStatistics.getMean());
 		System.out.println("Number of \"Order\" tuples stored: " + orderSlidingJoin.getNumberOfTuples());
 		System.out.println("State size of \"Order\" tuples: " + orderSlidingJoin.getStateSize());
-		LinkedList<BasicWindow> orderCache = orderSlidingJoin.getCircularCache();
+		LinkedList<BasicWindow> orderCache = orderSlidingJoin.getRingBuffer();
 		SummaryStatistics orderNumberOfTuples = new SummaryStatistics();
 		for(BasicWindow window : orderCache) {
 			long number = window.numberOfTuples;
@@ -161,7 +158,7 @@ public class SlidingJoinCorrectnessTest {
 		System.out.println("Lineitem mean: " + lineitemJoinStatistics.getMean());
 		System.out.println("Number of \"Lineitem\" tuples stored: " + lineitemSlidingJoin.getNumberOfTuples());
 		System.out.println("State size of \"Lineitem\" tuples: " + lineitemSlidingJoin.getStateSize());
-		LinkedList<BasicWindow> lineitemCache = lineitemSlidingJoin.getCircularCache();
+		LinkedList<BasicWindow> lineitemCache = lineitemSlidingJoin.getRingBuffer();
 		SummaryStatistics lineitemNumberOfTuples = new SummaryStatistics();
 		for(BasicWindow window : lineitemCache) {
 			long number = window.numberOfTuples;

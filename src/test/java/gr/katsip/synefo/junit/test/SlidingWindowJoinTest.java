@@ -1,7 +1,5 @@
 package gr.katsip.synefo.junit.test;
 
-import static org.junit.Assert.*;
-
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Random;
@@ -9,7 +7,6 @@ import java.util.Random;
 import gr.katsip.synefo.storm.operators.relational.elastic.SlidingWindowJoin;
 import gr.katsip.synefo.storm.operators.relational.elastic.SlidingWindowJoin.BasicWindow;
 import gr.katsip.synefo.tpch.LineItem;
-import gr.katsip.synefo.tpch.Order;
 
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.junit.Test;
@@ -58,7 +55,7 @@ public class SlidingWindowJoinTest {
 		System.out.println("State size: " + slidingJoin.getStateSize());
 		System.out.println("Total number of tuples: " + slidingJoin.getNumberOfTuples());
 		Long endTime = System.currentTimeMillis();
-		LinkedList<BasicWindow> circularCache = slidingJoin.getCircularCache();
+		LinkedList<BasicWindow> circularCache = slidingJoin.getRingBuffer();
 		System.out.println("Size of circular cache: " + circularCache.size() + " basic windows");
 		SummaryStatistics cacheStatistics = new SummaryStatistics();
 		double sum = 0.0;
