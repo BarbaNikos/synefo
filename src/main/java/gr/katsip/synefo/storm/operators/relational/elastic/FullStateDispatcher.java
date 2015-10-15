@@ -43,6 +43,8 @@ public class FullStateDispatcher implements Serializable, Dispatcher {
 
     private long stateSize = 0L;
 
+    private long numberOfDistinctKeys;
+
     public FullStateDispatcher(String outerRelationName, Fields outerRelationSchema,
                                String outerRelationKey, String outerRelationForeignKey,
                                String innerRelationName, Fields innerRelationSchema,
@@ -59,6 +61,7 @@ public class FullStateDispatcher implements Serializable, Dispatcher {
         innerRelationIndex = new HashMap<>();
         taskToRelationIndex = null;
         this.outputSchema = new Fields(outputSchema.toList());
+        numberOfDistinctKeys = 0;
     }
 
     /**
@@ -81,9 +84,7 @@ public class FullStateDispatcher implements Serializable, Dispatcher {
                          String primaryRelationName, HashMap<String, List<Integer>> secondaryRelationIndex,
                          Fields attributeNames, Values attributeValues, OutputCollector collector, Tuple anchor) {
         int numberOfTuplesDispatched = 0;
-//        logger.info("dispatch() called primary-key: " + primaryKey + ", foreign-key: " + foreignKey +
-//        " primary-relation: " + primaryRelationName + ", attributes: " + attributeNames.toList().toString() +
-//        " values: " + attributeValues.toString());
+        logger.info("\tattributes: {" + attributeNames.toList().toString() + "}, values: {" + attributeValues.toString() + "}");
         /**
          * STORE:
          * 2 cases: (a) primary-key has been encountered before (b) primary-key has not been encountered before
@@ -93,6 +94,8 @@ public class FullStateDispatcher implements Serializable, Dispatcher {
          *              that share common keys with the selected node, will receive same keys also
          */
         if (primaryRelationIndex.containsKey(primaryKey)) {
+            logger.info("\ttuple from relation " + primaryRelationName + " and primary-key " + primaryKey +
+                    " has been dispatched before.");
             List<Integer> dispatchInfo = primaryRelationIndex.get(primaryKey);
             Values tuple = new Values();
             tuple.add("0");
@@ -103,7 +106,7 @@ public class FullStateDispatcher implements Serializable, Dispatcher {
                     collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), anchor, tuple);
                 else
                     collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), tuple);
-                logger.info("dispatch() primary key is maintained by task " + dispatchInfo.get(dispatchInfo.get(0)) + ".");
+                logger.info("\ttuple was dispatched to task: " + dispatchInfo.get(dispatchInfo.get(0)) + ".");
             }
             numberOfTuplesDispatched++;
             if (dispatchInfo.get(0) >= (dispatchInfo.size() - 1)) {
@@ -112,12 +115,13 @@ public class FullStateDispatcher implements Serializable, Dispatcher {
                 int tmp = dispatchInfo.get(0);
                 dispatchInfo.set(0, ++tmp);
             }
-            logger.info("dispatch() incremented index to task " + dispatchInfo.get(dispatchInfo.get(0)) + ".");
+            logger.info("incremented index to task " + dispatchInfo.get(dispatchInfo.get(0)) + ".");
             primaryRelationIndex.put(primaryKey, dispatchInfo);
         }else {
             if (taskToRelationIndex.get(primaryRelationName).size() > 0) {
-//                logger.info("dispatch() primary key is not maintained, pick random task from " +
-//                        taskToRelationIndex.get(primaryRelationName).size() + " tasks.");
+                logger.info("\ttuple from relation " + primaryRelationName + " and primary-key " + primaryKey +
+                        "has not been encountered before");
+
                 Integer victimTask = taskToRelationIndex.get(primaryRelationName).get(0);
 //                logger.info("dispatch() picked task " + victimTask + " to send tuple to.");
                 ArrayList<Integer> tasks = new ArrayList<>();
@@ -172,11 +176,15 @@ public class FullStateDispatcher implements Serializable, Dispatcher {
         if (Arrays.equals(attributeNames.toList().toArray(), outerRelationSchema.toList().toArray())) {
             String primaryKey = (String) attributeValues.get(outerRelationSchema.fieldIndex(outerRelationKey));
             String foreignKey = (String) attributeValues.get(outerRelationSchema.fieldIndex(outerRelationForeignKey));
+            logger.info("received tuple from relation: " + outerRelationName + " with primary key: " + primaryKey +
+                    " and join-foreign key: " + foreignKey + ".");
             numberOfTuplesDispatched = dispatch(primaryKey, foreignKey, outerRelationIndex, outerRelationName, innerRelationIndex,
                     attributeNames, attributeValues, collector, anchor);
         }else if (Arrays.equals(attributeNames.toList().toArray(), innerRelationSchema.toList().toArray())) {
             String primaryKey = (String) attributeValues.get(innerRelationSchema.fieldIndex(innerRelationKey));
             String foreignKey = (String) attributeValues.get(innerRelationSchema.fieldIndex(innerRelationForeignKey));
+            logger.info("received tuple from relation: " + outerRelationName + " with primary key: " + primaryKey +
+                    " and join-foreign key: " + foreignKey + ".");
             numberOfTuplesDispatched = dispatch(primaryKey, foreignKey, innerRelationIndex, innerRelationName, outerRelationIndex,
                     attributeNames, attributeValues, collector, anchor);
         }
