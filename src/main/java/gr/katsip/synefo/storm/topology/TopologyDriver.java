@@ -164,7 +164,7 @@ public class TopologyDriver {
                 dispatcher = new WindowDispatcher("order", new Fields(Order.schema), Order.query5Schema[0],
                         Order.query5Schema[0], "lineitem", new Fields(LineItem.schema),
                         LineItem.query5Schema[0], LineItem.query5Schema[0], new Fields(schema),
-                        (long) windowInMinutes * 2, slideInMilliSeconds);
+                        (long) windowInMinutes * 2 * (60 * 1000), slideInMilliSeconds);
                 break;
             case HISTORY_DISPATCH:
                 dispatcher = new FullStateDispatcher("order", new Fields(Order.schema), Order.query5Schema[0],
@@ -188,7 +188,7 @@ public class TopologyDriver {
         topology.put("dispatch", tasks);
 
         NewJoinJoiner joiner = new NewJoinJoiner("order", new Fields(Order.schema), "lineitem", new Fields(LineItem.schema),
-                "O_ORDERKEY", "L_ORDERKEY", (int) windowInMinutes, (int) slideInMilliSeconds);
+                "O_ORDERKEY", "L_ORDERKEY", (int) windowInMinutes * (60 * 1000), (int) slideInMilliSeconds);
         joiner.setOutputSchema(new Fields(schema));
         builder.setBolt("joinorder", new JoinBolt("joinorder", synefoAddress, synefoPort, joiner, zookeeperAddress),
                 scale)
@@ -198,7 +198,7 @@ public class TopologyDriver {
         topology.put("joinorder", new ArrayList<String>());
 
         joiner = new NewJoinJoiner("lineitem", new Fields(LineItem.schema), "order", new Fields(Order.schema),
-                "L_ORDERKEY", "O_ORDERKEY", (int) windowInMinutes, (int) slideInMilliSeconds);
+                "L_ORDERKEY", "O_ORDERKEY", (int) windowInMinutes * (60 * 1000), (int) slideInMilliSeconds);
         joiner.setOutputSchema(new Fields(schema));
         builder.setBolt("joinline", new JoinBolt("joinline", synefoAddress, synefoPort, joiner, zookeeperAddress),
                 scale)

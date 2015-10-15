@@ -8,7 +8,8 @@ import backtype.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SlidingWindowJoin implements Serializable {
+public class
+		SlidingWindowJoin implements Serializable {
 
 	/**
 	 * 
