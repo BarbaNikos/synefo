@@ -37,22 +37,21 @@ public class StateScalabilityBenchmark {
 	
 	public void benchmark() throws IOException {
 		SlidingWindowJoin orderSlidingJoin = new SlidingWindowJoin(window, slide, 
-				new Fields(Order.query5Schema), Order.query5Schema[0], "order", "lineitem");
+				new Fields(Order.schema), Order.schema[0], "order", "lineitem");
 		SlidingWindowJoin lineitemSlidingJoin = new SlidingWindowJoin(window, slide, 
-				new Fields(LineItem.query5Schema), LineItem.query5Schema[0], "lineitem", "order");
+				new Fields(LineItem.schema), LineItem.schema[0], "lineitem", "order");
 		File orders = new File(orderFile);
 		BufferedReader reader = new BufferedReader(new FileReader(orders));
 		String line = null;
-		while((line = reader.readLine()) != null) {
-			String[] attributes = line.split("\\|");
-			Values order = new Values();
-			order.add(attributes[0]);
-			order.add(attributes[1]);
-			order.add(attributes[4]);
-			orderSlidingJoin.insertTuple(System.currentTimeMillis(), order);
-		}
+//		while((line = reader.readLine()) != null) {
+//			String[] attributes = line.split("\\|");
+//			Values order = new Values();
+//            for (String attribute : attributes) {
+//                order.add(attribute);
+//            }
+//			orderSlidingJoin.insertTuple(System.currentTimeMillis(), order);
+//		}
 		reader.close();
-		
 		DescriptiveStatistics lineitemInsertStatistics = new DescriptiveStatistics();
 		DescriptiveStatistics lineOrderJoinStatistics = new DescriptiveStatistics();
 		File lineitems = new File(lineitemFile);
@@ -60,39 +59,52 @@ public class StateScalabilityBenchmark {
 		while((line = reader.readLine()) != null) {
 			String[] attributes = line.split("\\|");
 			Values lineitem = new Values();
-			lineitem.add(attributes[0]);
-			lineitem.add(attributes[2]);
-			lineitem.add(attributes[5]);
-			lineitem.add(attributes[6]);
+			for (String attribute : attributes) {
+				lineitem.add(attribute);
+			}
 			long currentTimestamp = System.currentTimeMillis();
-			long insertStart = System.nanoTime();
+			long insertStart = System.currentTimeMillis();
 			lineitemSlidingJoin.insertTuple(currentTimestamp, lineitem);
-			long insertEnd = System.nanoTime();
-			long joinStart = System.nanoTime();
-			orderSlidingJoin.joinTuple(currentTimestamp, lineitem, new Fields(LineItem.query5Schema), "L_ORDERKEY");
-			long joinEnd = System.nanoTime();
+			long insertEnd = System.currentTimeMillis();
 			lineitemInsertStatistics.addValue((insertEnd - insertStart));
-			lineOrderJoinStatistics.addValue((joinEnd - joinStart));
 		}
 		reader.close();
+
+        reader = new BufferedReader(new FileReader(orders));
+        long numberOfProducedTuples = 0L;
+        while ((line = reader.readLine()) != null) {
+            Values order = new Values();
+            String[] attributes = line.split("\\|");
+            for (String attribute : attributes) {
+                order.add(attribute);
+            }
+            long currentTimestamp = System.currentTimeMillis();
+            long joinStart = System.currentTimeMillis();
+			numberOfProducedTuples += lineitemSlidingJoin.joinTuple(currentTimestamp, order, new Fields(Order.schema), "O_ORDERKEY").size();
+			long joinEnd = System.currentTimeMillis();
+            lineOrderJoinStatistics.addValue((joinEnd - joinStart));
+        }
+        reader.close();
+
 		System.out.println("+++ Insert Operation +++");
-		System.out.println("Average: " + (lineitemInsertStatistics.getSum() / lineitemInsertStatistics.getN()) + " nsec");
-		System.out.println("Mean: " + lineitemInsertStatistics.getMean() + " nsec");
-		System.out.println("Min: " + lineitemInsertStatistics.getMin() + " nsec");
-		System.out.println("Max: " + lineitemInsertStatistics.getMax() + " nsec");
-		System.out.println("25% Percentile: " + lineitemInsertStatistics.getPercentile(25) + " nsec");
-		System.out.println("50% Percentile: " + lineitemInsertStatistics.getPercentile(50) + " nsec");
-		System.out.println("75% Percentile: " + lineitemInsertStatistics.getPercentile(75) + " nsec");
-		System.out.println("99% Percentile: " + lineitemInsertStatistics.getPercentile(99) + " nsec");
+		System.out.println("Average: " + (lineitemInsertStatistics.getSum() / lineitemInsertStatistics.getN()) + " msec");
+		System.out.println("Mean: " + lineitemInsertStatistics.getMean() + " msec");
+		System.out.println("Min: " + lineitemInsertStatistics.getMin() + " msec");
+		System.out.println("Max: " + lineitemInsertStatistics.getMax() + " msec");
+		System.out.println("25% Percentile: " + lineitemInsertStatistics.getPercentile(25) + " msec");
+		System.out.println("50% Percentile: " + lineitemInsertStatistics.getPercentile(50) + " msec");
+		System.out.println("75% Percentile: " + lineitemInsertStatistics.getPercentile(75) + " msec");
+		System.out.println("99% Percentile: " + lineitemInsertStatistics.getPercentile(99) + " msec");
 		System.out.println("+++ Join Operation +++");
-		System.out.println("Average: " + (lineOrderJoinStatistics.getSum() / lineOrderJoinStatistics.getN()) + " nsec");
-		System.out.println("Mean: " + lineOrderJoinStatistics.getMean() + " nsec");
-		System.out.println("Min: " + lineOrderJoinStatistics.getMin() + " nsec");
-		System.out.println("Max: " + lineOrderJoinStatistics.getMax() + " nsec");
-		System.out.println("25% Percentile: " + lineOrderJoinStatistics.getPercentile(25) + " nsec");
-		System.out.println("50% Percentile: " + lineOrderJoinStatistics.getPercentile(50) + " nsec");
-		System.out.println("75% Percentile: " + lineOrderJoinStatistics.getPercentile(75) + " nsec");
-		System.out.println("99% Percentile: " + lineOrderJoinStatistics.getPercentile(99) + " nsec");
+        System.out.println("Number of joined tuples: " + numberOfProducedTuples);
+		System.out.println("Average: " + (lineOrderJoinStatistics.getSum() / lineOrderJoinStatistics.getN()) + " msec");
+		System.out.println("Mean: " + lineOrderJoinStatistics.getMean() + " msec");
+		System.out.println("Min: " + lineOrderJoinStatistics.getMin() + " msec");
+		System.out.println("Max: " + lineOrderJoinStatistics.getMax() + " msec");
+		System.out.println("25% Percentile: " + lineOrderJoinStatistics.getPercentile(25) + " msec");
+		System.out.println("50% Percentile: " + lineOrderJoinStatistics.getPercentile(50) + " msec");
+		System.out.println("75% Percentile: " + lineOrderJoinStatistics.getPercentile(75) + " msec");
+		System.out.println("99% Percentile: " + lineOrderJoinStatistics.getPercentile(99) + " msec");
 	}
 
 }

@@ -8,8 +8,7 @@ import backtype.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class
-		SlidingWindowJoin implements Serializable {
+public class SlidingWindowJoin implements Serializable {
 
 	/**
 	 * 
@@ -18,37 +17,11 @@ public class
 
     private static Logger logger = LoggerFactory.getLogger(SlidingWindowJoin.class);
 
-	public class BasicWindow implements Serializable {
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = 687583325823717593L;
-
-		public Long startingTimestamp;
-		
-		public Long endingTimestamp;
-		
-		public HashMap<String, ArrayList<Values>> tuples;
-		
-		public long basicWindowStateSize;
-		
-		public long numberOfTuples;
-
-        public BasicWindow() {
-            basicWindowStateSize = 0L;
-            numberOfTuples = 0L;
-            tuples = new HashMap<>();
-            startingTimestamp = 0L;
-            endingTimestamp = 0L;
-        }
-		
-	}
-	
-	private long windowSize;
+    private long windowSize;
 	
 	private long slide;
 	
-	private LinkedList<BasicWindow> ringBuffer;
+	private LinkedList<BasicEqualityWindow> ringBuffer;
 	
 	private int circularCacheSize;
 	
@@ -73,10 +46,10 @@ public class
 	 */
 	public SlidingWindowJoin(long windowSize, long slide, Fields tupleSchema, String joinAttribute, String storedRelation,
 							 String otherRelation) {
-		ringBuffer = new LinkedList<BasicWindow>();
+		ringBuffer = new LinkedList<BasicEqualityWindow>();
 		this.windowSize = windowSize;
 		this.slide = slide;
-		this.circularCacheSize = (int) Math.ceil(this.windowSize / slide);
+		this.circularCacheSize = (int) Math.ceil(this.windowSize / this.slide);
         logger.info("circular-cache of size (" + circularCacheSize + ")");
 		this.tupleSchema = new Fields(tupleSchema.toList());
 		this.joinAttribute = joinAttribute;
@@ -96,9 +69,9 @@ public class
 			/**
 			 * Creation of the new basic window
 			 */
-		logger.info("ring buffer is empty. Need to add the first window (start: " + currentTimestamp + ", end: " +
+			logger.info("ring buffer is empty. Need to add the first window (start: " + currentTimestamp + ", end: " +
 				(currentTimestamp + slide) + ") and add tuple with key: " + tuple.get(tupleSchema.fieldIndex(joinAttribute)) + ".");
-			BasicWindow basicWindow = new BasicWindow();
+			BasicEqualityWindow basicWindow = new BasicEqualityWindow();
 			basicWindow.startingTimestamp = currentTimestamp;
 			basicWindow.endingTimestamp = basicWindow.startingTimestamp + slide;
 			basicWindow.tuples = new HashMap<>();
@@ -109,7 +82,7 @@ public class
 			basicWindow.numberOfTuples = 1;
 			ringBuffer.addFirst(basicWindow);
 			stateByteSize += tuple.toArray().toString().length();
-			totalNumberOfTuples += 1;
+			totalNumberOfTuples = 1;
 		}else if (ringBuffer.size() > 0 && ringBuffer.getFirst().startingTimestamp <= currentTimestamp &&
 				(ringBuffer.getFirst().endingTimestamp) >= currentTimestamp) {
 			/**
@@ -142,14 +115,14 @@ public class
                 logger.info("ring buffer's size (" + ringBuffer.size() + ") exceeds upper limit (" + circularCacheSize
 						+ "). about to evict window with start: " + ringBuffer.getLast().startingTimestamp + " & end: " +
 						ringBuffer.getLast().endingTimestamp);
-				BasicWindow basicWindow = ringBuffer.removeLast();
+				BasicEqualityWindow basicWindow = ringBuffer.removeLast();
 				stateByteSize -= basicWindow.basicWindowStateSize;
 				totalNumberOfTuples -= basicWindow.numberOfTuples;
 			}
 			/**
 			 * Creation of the new basic window
 			 */
-			BasicWindow basicWindow = new BasicWindow();
+			BasicEqualityWindow basicWindow = new BasicEqualityWindow();
 			if (ringBuffer.size() > 0) {
 				basicWindow.startingTimestamp = ringBuffer.getFirst().endingTimestamp + 1;
 			}else {
@@ -186,8 +159,9 @@ public class
 		 */
 		logger.info("received tuple with key " + tupleJoinAttribute + " will attempt to join it (ct: " + currentTimestamp + ")");
 		int windowIndex = 0;
-		for(BasicWindow basicWindow : ringBuffer) {
-			if(basicWindow.endingTimestamp >= currentTimestamp) {
+		for(int i = 0; i < ringBuffer.size(); i++) {
+			BasicEqualityWindow basicWindow = ringBuffer.get(i);
+			if((basicWindow.startingTimestamp + windowSize) > currentTimestamp) {
 				logger.info("\tfound matching window with end timestamp: " + basicWindow.endingTimestamp + "(" + windowIndex + ")");
 				if(basicWindow.tuples.containsKey(tupleJoinAttribute)) {
 					logger.info("\t window-" + basicWindow.endingTimestamp + "(" + windowIndex + ") contains tuples with key: " + tupleJoinAttribute);
@@ -220,7 +194,7 @@ public class
 		return result;
 	}
 	
-	public LinkedList<BasicWindow> getRingBuffer() {
+	public LinkedList<BasicEqualityWindow> getRingBuffer() {
 		return ringBuffer;
 	}
 	
@@ -232,25 +206,24 @@ public class
 		return totalNumberOfTuples;
 	}
 
-	public BasicWindow getStatePart() {
+	public BasicEqualityWindow getStatePart() {
         if (ringBuffer.size() > 0) {
             Random rand = new Random();
             int index = rand.nextInt(ringBuffer.size());
-            BasicWindow window = ringBuffer.remove(index);
+            BasicEqualityWindow window = ringBuffer.remove(index);
             stateByteSize -= window.basicWindowStateSize;
             totalNumberOfTuples -= window.numberOfTuples;
             return window;
         }else {
-            return new BasicWindow();
+            return new BasicEqualityWindow();
         }
 	}
 
 	public void initializeState(HashMap<String, ArrayList<Values>> state) {
 		ringBuffer.clear();
-        circularCacheSize = 0;
         stateByteSize = 0L;
         totalNumberOfTuples = 0;
-        BasicWindow window = new BasicWindow();
+        BasicEqualityWindow window = new BasicEqualityWindow();
         window.startingTimestamp = System.currentTimeMillis();
         window.endingTimestamp = window.startingTimestamp + slide;
         window.tuples = state;
