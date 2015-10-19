@@ -23,9 +23,9 @@ public class SlidingWindowJoin implements Serializable {
 	
 	private LinkedList<BasicEqualityWindow> ringBuffer;
 	
-	private int circularCacheSize;
+	private int bufferSize;
 	
-	private Fields tupleSchema;
+	private Fields schema;
 	
 	private String joinAttribute;
 	
@@ -41,17 +41,17 @@ public class SlidingWindowJoin implements Serializable {
 	 * 
 	 * @param windowSize size of the window in milliseconds
 	 * @param slide size of slide in milliseconds
-	 * @param tupleSchema the schema of the tuples that will be stored
+	 * @param schema the schema of the tuples that will be stored
 	 * @param joinAttribute the name of the join attribute
 	 */
-	public SlidingWindowJoin(long windowSize, long slide, Fields tupleSchema, String joinAttribute, String storedRelation,
+	public SlidingWindowJoin(long windowSize, long slide, Fields schema, String joinAttribute, String storedRelation,
 							 String otherRelation) {
 		ringBuffer = new LinkedList<BasicEqualityWindow>();
 		this.windowSize = windowSize;
 		this.slide = slide;
-		this.circularCacheSize = (int) Math.ceil(this.windowSize / this.slide);
-        logger.info("circular-cache of size (" + circularCacheSize + ")");
-		this.tupleSchema = new Fields(tupleSchema.toList());
+		this.bufferSize = (int) Math.ceil(this.windowSize / this.slide);
+        logger.info("circular-cache of size (" + bufferSize + ")");
+		this.schema = new Fields(schema.toList());
 		this.joinAttribute = joinAttribute;
 		this.stateByteSize = 0L;
 		this.totalNumberOfTuples = 0L;
@@ -70,14 +70,14 @@ public class SlidingWindowJoin implements Serializable {
 			 * Creation of the new basic window
 			 */
 			logger.info("ring buffer is empty. Need to add the first window (start: " + currentTimestamp + ", end: " +
-				(currentTimestamp + slide) + ") and add tuple with key: " + tuple.get(tupleSchema.fieldIndex(joinAttribute)) + ".");
+				(currentTimestamp + slide) + ") and add tuple with key: " + tuple.get(schema.fieldIndex(joinAttribute)) + ".");
 			BasicEqualityWindow basicWindow = new BasicEqualityWindow();
 			basicWindow.startingTimestamp = currentTimestamp;
 			basicWindow.endingTimestamp = basicWindow.startingTimestamp + slide;
 			basicWindow.tuples = new HashMap<>();
 			ArrayList<Values> tupleList = new ArrayList<Values>();
 			tupleList.add(tuple);
-			basicWindow.tuples.put((String) tuple.get(tupleSchema.fieldIndex(joinAttribute)), tupleList);
+			basicWindow.tuples.put((String) tuple.get(schema.fieldIndex(joinAttribute)), tupleList);
 			basicWindow.basicWindowStateSize = tuple.toArray().toString().length();
 			basicWindow.numberOfTuples = 1;
 			ringBuffer.addFirst(basicWindow);
@@ -92,16 +92,16 @@ public class SlidingWindowJoin implements Serializable {
 					ringBuffer.getFirst().startingTimestamp + ", end: " + currentTimestamp + ")");
 			ArrayList<Values> tupleList = null;
 			int sizeBefore = 0;
-			if(ringBuffer.getFirst().tuples.containsKey(tuple.get(tupleSchema.fieldIndex(joinAttribute)))) {
-				tupleList = ringBuffer.getFirst().tuples.get(tuple.get(tupleSchema.fieldIndex(joinAttribute)));
-				sizeBefore = ringBuffer.getFirst().tuples.get(tuple.get(tupleSchema.fieldIndex(joinAttribute))).size();
+			if(ringBuffer.getFirst().tuples.containsKey(tuple.get(schema.fieldIndex(joinAttribute)))) {
+				tupleList = ringBuffer.getFirst().tuples.get(tuple.get(schema.fieldIndex(joinAttribute)));
+				sizeBefore = ringBuffer.getFirst().tuples.get(tuple.get(schema.fieldIndex(joinAttribute))).size();
 			}else {
 				tupleList = new ArrayList<>();
 			}
 			tupleList.add(tuple);
 			ringBuffer.getFirst().basicWindowStateSize += tuple.toArray().toString().length();
-			ringBuffer.getFirst().tuples.put((String) tuple.get(tupleSchema.fieldIndex(joinAttribute)), tupleList);
-			int sizeAfter = ringBuffer.getFirst().tuples.get(tuple.get(tupleSchema.fieldIndex(joinAttribute))).size();
+			ringBuffer.getFirst().tuples.put((String) tuple.get(schema.fieldIndex(joinAttribute)), tupleList);
+			int sizeAfter = ringBuffer.getFirst().tuples.get(tuple.get(schema.fieldIndex(joinAttribute))).size();
 			ringBuffer.getFirst().numberOfTuples += 1;
 			totalNumberOfTuples += 1;
 			stateByteSize += tuple.toArray().toString().length();
@@ -111,8 +111,8 @@ public class SlidingWindowJoin implements Serializable {
 			 * Need to evict a basic-window (the last one), if we have used up all basic window slots 
 			 * and the last basic-window has expired.
 			 */
-			if (ringBuffer.size() >= circularCacheSize) {
-                logger.info("ring buffer's size (" + ringBuffer.size() + ") exceeds upper limit (" + circularCacheSize
+			if (ringBuffer.size() >= bufferSize) {
+                logger.info("ring buffer's size (" + ringBuffer.size() + ") exceeds upper limit (" + bufferSize
 						+ "). about to evict window with start: " + ringBuffer.getLast().startingTimestamp + " & end: " +
 						ringBuffer.getLast().endingTimestamp);
 				BasicEqualityWindow basicWindow = ringBuffer.removeLast();
@@ -134,7 +134,7 @@ public class SlidingWindowJoin implements Serializable {
 			basicWindow.tuples = new HashMap<>();
 			ArrayList<Values> tupleList = new ArrayList<Values>();
 			tupleList.add(tuple);
-			basicWindow.tuples.put((String) tuple.get(tupleSchema.fieldIndex(joinAttribute)), tupleList);
+			basicWindow.tuples.put((String) tuple.get(schema.fieldIndex(joinAttribute)), tupleList);
 			basicWindow.basicWindowStateSize = tuple.toArray().toString().length();
 			basicWindow.numberOfTuples = 1;
 			ringBuffer.addFirst(basicWindow);

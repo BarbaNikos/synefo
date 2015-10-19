@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 
+import gr.katsip.synefo.storm.operators.relational.elastic.SlidingWindowThetaJoin;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
 import gr.katsip.synefo.storm.operators.relational.elastic.SlidingWindowJoin;
@@ -40,6 +41,9 @@ public class StateScalabilityBenchmark {
 				new Fields(Order.schema), Order.schema[0], "order", "lineitem");
 		SlidingWindowJoin lineitemSlidingJoin = new SlidingWindowJoin(window, slide, 
 				new Fields(LineItem.schema), LineItem.schema[0], "lineitem", "order");
+        SlidingWindowThetaJoin.ThetaCondition theta = SlidingWindowThetaJoin.ThetaCondition.LESS_THAN;
+        SlidingWindowThetaJoin thetaJoin = new SlidingWindowThetaJoin(window, slide,
+                new Fields(LineItem.schema), LineItem.schema[0], "lineitem", "order", theta);
 		File orders = new File(orderFile);
 		BufferedReader reader = new BufferedReader(new FileReader(orders));
 		String line = null;
@@ -64,7 +68,8 @@ public class StateScalabilityBenchmark {
 			}
 			long currentTimestamp = System.currentTimeMillis();
 			long insertStart = System.currentTimeMillis();
-			lineitemSlidingJoin.insertTuple(currentTimestamp, lineitem);
+//			lineitemSlidingJoin.insertTuple(currentTimestamp, lineitem);
+            thetaJoin.insertTuple(currentTimestamp, lineitem);
 			long insertEnd = System.currentTimeMillis();
 			lineitemInsertStatistics.addValue((insertEnd - insertStart));
 		}
@@ -80,7 +85,8 @@ public class StateScalabilityBenchmark {
             }
             long currentTimestamp = System.currentTimeMillis();
             long joinStart = System.currentTimeMillis();
-			numberOfProducedTuples += lineitemSlidingJoin.joinTuple(currentTimestamp, order, new Fields(Order.schema), "O_ORDERKEY").size();
+//			numberOfProducedTuples += lineitemSlidingJoin.joinTuple(currentTimestamp, order, new Fields(Order.schema), "O_ORDERKEY").size();
+            numberOfProducedTuples += thetaJoin.joinTuple(currentTimestamp, order, new Fields(Order.schema), "O_ORDERKEY").size();
 			long joinEnd = System.currentTimeMillis();
             lineOrderJoinStatistics.addValue((joinEnd - joinStart));
         }
