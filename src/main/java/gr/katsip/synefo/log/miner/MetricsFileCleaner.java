@@ -44,9 +44,9 @@ public class MetricsFileCleaner {
                             int taskInfoIndex = -1;
                             boolean supervisorTokenFound = false;
                             for(int i = 0; i < lineTokens.length; i++) {
-                                if(lineTokens[i].contains(":") && lineTokens[i].contains("supervisor"))
+                                if(lineTokens[i].contains(":") && (lineTokens[i].contains("supervisor") || lineTokens[i].contains("data")))
                                     supervisorTokenFound = true;
-                                if(lineTokens[i].contains(":") && !lineTokens[i].contains("supervisor") && supervisorTokenFound && lineTokens[i].contains("_") == false) {
+                                if(lineTokens[i].contains(":") && !(lineTokens[i].contains("supervisor") || lineTokens[i].contains("data")) && supervisorTokenFound && lineTokens[i].contains("_") == false) {
                                     taskName = lineTokens[i].split(":")[1].replaceAll("\\s", "");
                                     taskIdentifier = Integer.parseInt(lineTokens[i].split(":")[0].replaceAll("\\s", ""));
                                     taskInfoIndex = i;
