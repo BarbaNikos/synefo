@@ -6,6 +6,8 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import gr.katsip.synefo.storm.api.Pair;
 import org.apache.commons.lang.ArrayUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.*;
@@ -14,6 +16,8 @@ import java.util.*;
  * Created by katsip on 9/21/2015.
  */
 public class NewJoinJoiner implements Serializable {
+
+    Logger logger = LoggerFactory.getLogger(NewJoinJoiner.class);
 
     private String storedRelation;
 
@@ -124,6 +128,8 @@ public class NewJoinJoiner implements Serializable {
                         taskIndex = 0;
                 }
             }
+            if (numberOfTuplesProduced > 0)
+                logger.info("join produced " + numberOfTuplesProduced + " tuples.");
         }
         return new Pair<>(taskIndex, numberOfTuplesProduced);
     }
