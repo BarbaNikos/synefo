@@ -110,6 +110,7 @@ public class NewJoinJoiner implements Serializable {
             /**
              * Attempt to join with stored tuples
              */
+        logger.info("received tuple from the other relation. will attempt to join it.");
             List<Values> joinResult = slidingWindowJoin.joinTuple(currentTimestamp, attributeValues,
                     attributeNames, otherJoinAttribute);
             for(Values result : joinResult) {
