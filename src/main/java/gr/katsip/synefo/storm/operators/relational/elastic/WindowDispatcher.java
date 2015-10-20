@@ -65,9 +65,9 @@ public class WindowDispatcher implements Serializable, Dispatcher {
 
     private long slide;
 
-    private LinkedList<DispatchWindow> circularCache;
+    private LinkedList<DispatchWindow> ringBuffer;
 
-    private int cacheSize;
+    private int bufferSize;
 
     public WindowDispatcher(String outerRelationName, Fields outerRelationSchema,
                             String outerRelationKey, String outerRelationForeignKey,
@@ -84,10 +84,10 @@ public class WindowDispatcher implements Serializable, Dispatcher {
         this.innerRelationForeignKey = innerRelationForeignKey;
         taskToRelationIndex = null;
         this.outputSchema = new Fields(outputSchema.toList());
-        circularCache = new LinkedList<>();
+        ringBuffer = new LinkedList<>();
         this.window = window;
         this.slide = slide;
-        cacheSize = (int) Math.ceil(this.window / slide);
+        bufferSize = (int) Math.ceil(this.window / slide);
     }
 
     @Override
@@ -103,9 +103,6 @@ public class WindowDispatcher implements Serializable, Dispatcher {
     private int dispatch(String primaryKey, String foreignKey, HashMap<String, List<Integer>> primaryRelationIndex,
                          String primaryRelationName, HashMap<String, List<Integer>> secondaryRelationIndex, String secondaryRelationName,
                          Fields attributeNames, Values attributeValues, OutputCollector collector, Tuple anchor) {
-        /**
-         * JOIN part
-         */
         int numberOfTuplesDispatched = 0;
         if(secondaryRelationIndex.containsKey(foreignKey)) {
             List<Integer> dispatchInfo = new ArrayList<>(secondaryRelationIndex.get(foreignKey)
@@ -128,22 +125,22 @@ public class WindowDispatcher implements Serializable, Dispatcher {
     }
 
     private void cleanup(long currentTimestamp) {
-        if(circularCache.size() >= cacheSize && circularCache.getLast().end <= currentTimestamp) {
-            DispatchWindow window = circularCache.removeLast();
+        if(ringBuffer.size() >= bufferSize && (ringBuffer.getLast().start + this.window) <= currentTimestamp) {
+            DispatchWindow window = ringBuffer.removeLast();
             stateSize -= window.stateSize;
         }
     }
 
     private void checkWindow(long currentTimestamp) {
         //Case where the window has progressed by a slide (creation of new current window)
-        if (circularCache.getFirst().end < currentTimestamp) {
+        if (ringBuffer.getFirst().end < currentTimestamp && ringBuffer.size() < bufferSize) {
             DispatchWindow window = new DispatchWindow();
-            if (circularCache.size() > 0)
-                window.start = circularCache.getFirst().start + slide + 1;
+            if (ringBuffer.size() > 0)
+                window.start = ringBuffer.getFirst().end + 1;
             else
                 window.start = currentTimestamp;
             window.end = window.start + slide;
-            circularCache.addFirst(window);
+            ringBuffer.addFirst(window);
         }
     }
 
@@ -153,36 +150,21 @@ public class WindowDispatcher implements Serializable, Dispatcher {
         Fields attributeNames = new Fields(((Fields) values.get(0)).toList());
         Values attributeValues = (Values) values.get(1);
         int numberOfTuplesDispatched = 0;
-        for (DispatchWindow window : circularCache) {
-            /**
-             * JOIN (if key has came across on a previous-valid or the current-valid window)
-             */
-            if(window.end >= currentTimestamp) {
-                if (Arrays.equals(attributeNames.toList().toArray(), outerRelationSchema.toList().toArray())) {
-                    String primaryKey = (String) attributeValues.get(outerRelationSchema.fieldIndex(outerRelationKey));
-                    String foreignKey = (String) attributeValues.get(outerRelationSchema.fieldIndex(outerRelationForeignKey));
-                    numberOfTuplesDispatched += dispatch(primaryKey, foreignKey, window.outerRelationIndex, outerRelationName, window.innerRelationIndex, innerRelationName,
-                            attributeNames, attributeValues, collector, anchor);
-                }else if (Arrays.equals(attributeNames.toList().toArray(), innerRelationSchema.toList().toArray())) {
-                    String primaryKey = (String) attributeValues.get(innerRelationSchema.fieldIndex(innerRelationKey));
-                    String foreignKey = (String) attributeValues.get(innerRelationSchema.fieldIndex(innerRelationForeignKey));
-                    numberOfTuplesDispatched += dispatch(primaryKey, foreignKey, window.innerRelationIndex, innerRelationName, window.outerRelationIndex, outerRelationName,
-                            attributeNames, attributeValues, collector, anchor);
-                }
-            }
-        }
+        //First check if a window needs to be discarded and add a new window accordingly
+        cleanup(currentTimestamp);
         checkWindow(currentTimestamp);
+
         Values tuple = new Values();
         tuple.add("0");
         tuple.add(attributeNames);
         tuple.add(attributeValues);
         /**
-         * STORE also on the current dispatch window
+         * STORE-and-DISPATCH on the current dispatch window (the first one)
          */
         if (Arrays.equals(attributeNames.toList().toArray(), outerRelationSchema.toList().toArray())) {
             String primaryKey = (String) attributeValues.get(outerRelationSchema.fieldIndex(outerRelationKey));
-            if (circularCache.getFirst().outerRelationIndex.containsKey(primaryKey)) {
-                List<Integer> dispatchInfo = circularCache.getFirst().outerRelationIndex.get(primaryKey);
+            if (ringBuffer.getFirst().outerRelationIndex.containsKey(primaryKey)) {
+                List<Integer> dispatchInfo = ringBuffer.getFirst().outerRelationIndex.get(primaryKey);
                 if (taskToRelationIndex.get(outerRelationName).contains(dispatchInfo.get(dispatchInfo.get(0)))) {
                     if (collector != null) {
                         if (anchor != null)
@@ -197,7 +179,7 @@ public class WindowDispatcher implements Serializable, Dispatcher {
                         int tmp = dispatchInfo.get(0);
                         dispatchInfo.set(0, ++tmp);
                     }
-                    circularCache.getFirst().outerRelationIndex.put(primaryKey, dispatchInfo);
+                    ringBuffer.getFirst().outerRelationIndex.put(primaryKey, dispatchInfo);
                 }
             }else {
                 if (taskToRelationIndex.get(outerRelationName).size() > 0) {
@@ -212,15 +194,15 @@ public class WindowDispatcher implements Serializable, Dispatcher {
                             collector.emitDirect(victimTask, tuple);
                         numberOfTuplesDispatched++;
                     }
-                    circularCache.getFirst().outerRelationIndex.put(primaryKey, tasks);
+                    ringBuffer.getFirst().outerRelationIndex.put(primaryKey, tasks);
                     stateSize = stateSize + primaryKey.length() + 4 + 4;
-                    circularCache.getFirst().stateSize = circularCache.getFirst().stateSize + primaryKey.length() + 4 + 4;
+                    ringBuffer.getFirst().stateSize = ringBuffer.getFirst().stateSize + primaryKey.length() + 4 + 4;
                 }
             }
         }else if (Arrays.equals(attributeNames.toList().toArray(), innerRelationSchema.toList().toArray())) {
             String primaryKey = (String) attributeValues.get(innerRelationSchema.fieldIndex(innerRelationKey));
-            if (circularCache.getFirst().innerRelationIndex.containsKey(primaryKey)) {
-                List<Integer> dispatchInfo = circularCache.getFirst().innerRelationIndex.get(primaryKey);
+            if (ringBuffer.getFirst().innerRelationIndex.containsKey(primaryKey)) {
+                List<Integer> dispatchInfo = ringBuffer.getFirst().innerRelationIndex.get(primaryKey);
                 if (taskToRelationIndex.get(innerRelationName).contains(dispatchInfo.get(dispatchInfo.get(0)))) {
                     if (collector != null) {
                         if (anchor != null)
@@ -235,7 +217,7 @@ public class WindowDispatcher implements Serializable, Dispatcher {
                         int tmp = dispatchInfo.get(0);
                         dispatchInfo.set(0, ++tmp);
                     }
-                    circularCache.getFirst().innerRelationIndex.put(primaryKey, dispatchInfo);
+                    ringBuffer.getFirst().innerRelationIndex.put(primaryKey, dispatchInfo);
                 }
             }else {
                 if (taskToRelationIndex.get(innerRelationName).size() > 0) {
@@ -250,13 +232,31 @@ public class WindowDispatcher implements Serializable, Dispatcher {
                             collector.emitDirect(victimTask, tuple);
                         numberOfTuplesDispatched++;
                     }
-                    circularCache.getFirst().innerRelationIndex.put(primaryKey, tasks);
+                    ringBuffer.getFirst().innerRelationIndex.put(primaryKey, tasks);
                     stateSize = stateSize + primaryKey.length() + 4 + 4;
-                    circularCache.getFirst().stateSize = circularCache.getFirst().stateSize + primaryKey.length() + 4 + 4;
+                    ringBuffer.getFirst().stateSize = ringBuffer.getFirst().stateSize + primaryKey.length() + 4 + 4;
                 }
             }
         }
-        cleanup(currentTimestamp);
+        /**
+         * DISPATCH (if key has came across on a previously-valid windows)
+         */
+        for (int i = 1; i < ringBuffer.size(); i++) {
+            DispatchWindow window = ringBuffer.get(i);
+            if((window.start + this.window) > currentTimestamp) {
+                if (Arrays.equals(attributeNames.toList().toArray(), outerRelationSchema.toList().toArray())) {
+                    String primaryKey = (String) attributeValues.get(outerRelationSchema.fieldIndex(outerRelationKey));
+                    String foreignKey = (String) attributeValues.get(outerRelationSchema.fieldIndex(outerRelationForeignKey));
+                    numberOfTuplesDispatched += dispatch(primaryKey, foreignKey, window.outerRelationIndex, outerRelationName, window.innerRelationIndex, innerRelationName,
+                            attributeNames, attributeValues, collector, anchor);
+                }else if (Arrays.equals(attributeNames.toList().toArray(), innerRelationSchema.toList().toArray())) {
+                    String primaryKey = (String) attributeValues.get(innerRelationSchema.fieldIndex(innerRelationKey));
+                    String foreignKey = (String) attributeValues.get(innerRelationSchema.fieldIndex(innerRelationForeignKey));
+                    numberOfTuplesDispatched += dispatch(primaryKey, foreignKey, window.innerRelationIndex, innerRelationName, window.outerRelationIndex, outerRelationName,
+                            attributeNames, attributeValues, collector, anchor);
+                }
+            }
+        }
         return numberOfTuplesDispatched;
     }
 
@@ -269,26 +269,26 @@ public class WindowDispatcher implements Serializable, Dispatcher {
     public void mergeState(List<Values> state) {
         long currentTimestamp = System.currentTimeMillis();
         DispatchWindow receivedWindow = (DispatchWindow) state.get(0).get(0);
-        if (circularCache.size() > 0) {
+        if (ringBuffer.size() > 0) {
             //Need to integrate current state with the received-window
             //Caution: it will not work if there is a huge gap in CLOCK-DRIFTING
-            Util.mergeDispatcherState(circularCache.getFirst().innerRelationIndex, receivedWindow.innerRelationIndex);
-            Util.mergeDispatcherState(circularCache.getFirst().outerRelationIndex, receivedWindow.outerRelationIndex);
+            Util.mergeDispatcherState(ringBuffer.getFirst().innerRelationIndex, receivedWindow.innerRelationIndex);
+            Util.mergeDispatcherState(ringBuffer.getFirst().outerRelationIndex, receivedWindow.outerRelationIndex);
             stateSize = stateSize + receivedWindow.stateSize;
-            circularCache.getFirst().stateSize = circularCache.getFirst().stateSize + receivedWindow.stateSize;
+            ringBuffer.getFirst().stateSize = ringBuffer.getFirst().stateSize + receivedWindow.stateSize;
         }else {
             receivedWindow.start = currentTimestamp;
             receivedWindow.end = currentTimestamp + slide;
-            circularCache.addFirst(receivedWindow);
+            ringBuffer.addFirst(receivedWindow);
         }
     }
 
     @Override
     public List<Values> getState() {
-        if (circularCache.size() > 0) {
+        if (ringBuffer.size() > 0) {
             Random rand = new Random();
-            int index = rand.nextInt(circularCache.size());
-            DispatchWindow window = circularCache.remove(index);
+            int index = rand.nextInt(ringBuffer.size());
+            DispatchWindow window = ringBuffer.remove(index);
             stateSize -= window.stateSize;
             Values tuple = new Values();
             tuple.add(window);
@@ -319,18 +319,18 @@ public class WindowDispatcher implements Serializable, Dispatcher {
             tasks.add(identifier);
             taskToRelationIndex.put(relation, tasks);
             long additionalStateCounter = 0L;
-            if (circularCache.size() > 0) {
+            if (ringBuffer.size() > 0) {
                 /**
                  * Cache is not empty. Records are added to the latest window
                  */
                 for (String key : result) {
                     if (relation.equals(innerRelationName)) {
-                        if (circularCache.getFirst().innerRelationIndex.containsKey(key)) {
-                            List<Integer> currentIndex = circularCache.getFirst().innerRelationIndex.get(key);
+                        if (ringBuffer.getFirst().innerRelationIndex.containsKey(key)) {
+                            List<Integer> currentIndex = ringBuffer.getFirst().innerRelationIndex.get(key);
                             if (currentIndex.lastIndexOf(identifier) <= 0) {
                                 currentIndex.add(identifier);
                                 currentIndex.set(0, 1);
-                                circularCache.getFirst().innerRelationIndex.put(key, currentIndex);
+                                ringBuffer.getFirst().innerRelationIndex.put(key, currentIndex);
                                 additionalStateCounter += 4;
                             }
                         }else {
@@ -338,8 +338,8 @@ public class WindowDispatcher implements Serializable, Dispatcher {
                             newIndex.add(1);
                             newIndex.add(identifier);
                             additionalStateCounter = additionalStateCounter + key.length() + 4 + 4;
-                            circularCache.getFirst().innerRelationIndex.put(key, newIndex);
-                            circularCache.getFirst().stateSize = circularCache.getFirst().stateSize + key.length() + 4 + 4;
+                            ringBuffer.getFirst().innerRelationIndex.put(key, newIndex);
+                            ringBuffer.getFirst().stateSize = ringBuffer.getFirst().stateSize + key.length() + 4 + 4;
                         }
                     }
                 }
@@ -399,38 +399,38 @@ public class WindowDispatcher implements Serializable, Dispatcher {
             List<Integer> tasks = taskToRelationIndex.get(relation);
             tasks.remove(tasks.lastIndexOf(identifier));
             taskToRelationIndex.put(relation, tasks);
-            if (circularCache.size() > 0) {
+            if (ringBuffer.size() > 0) {
                 for (String addedKeysToTask : result) {
                     Integer task = Integer.parseInt(addedKeysToTask.split("=")[0]);
                     String[] newKeys = addedKeysToTask.split("=")[1].split(",");
                     for (String key : newKeys) {
                         if (relation.equals(innerRelationName)) {
-                            if (circularCache.getFirst().innerRelationIndex.containsKey(key)) {
-                                List<Integer> currentIndex = circularCache.getFirst().innerRelationIndex.get(key);
+                            if (ringBuffer.getFirst().innerRelationIndex.containsKey(key)) {
+                                List<Integer> currentIndex = ringBuffer.getFirst().innerRelationIndex.get(key);
                                 if (currentIndex.lastIndexOf(task) <= 0) {
                                     currentIndex.add(task);
                                     currentIndex.set(0, 1);
-                                    circularCache.getFirst().innerRelationIndex.put(key, currentIndex);
+                                    ringBuffer.getFirst().innerRelationIndex.put(key, currentIndex);
                                 }
                             }else {
                                 List<Integer> newIndex = new ArrayList<>();
                                 newIndex.add(1);
                                 newIndex.add(task);
-                                circularCache.getFirst().innerRelationIndex.put(key, newIndex);
+                                ringBuffer.getFirst().innerRelationIndex.put(key, newIndex);
                             }
                         }else if (relation.equals(outerRelationName)) {
-                            if (circularCache.getFirst().outerRelationIndex.containsKey(key)) {
-                                List<Integer> currentIndex = circularCache.getFirst().outerRelationIndex.get(key);
+                            if (ringBuffer.getFirst().outerRelationIndex.containsKey(key)) {
+                                List<Integer> currentIndex = ringBuffer.getFirst().outerRelationIndex.get(key);
                                 if (currentIndex.lastIndexOf(task) <= 0) {
                                     currentIndex.add(task);
                                     currentIndex.set(0, 1);
-                                    circularCache.getFirst().outerRelationIndex.put(key, currentIndex);
+                                    ringBuffer.getFirst().outerRelationIndex.put(key, currentIndex);
                                 }
                             }else {
                                 List<Integer> newIndex = new ArrayList<>();
                                 newIndex.add(1);
                                 newIndex.add(task);
-                                circularCache.getFirst().outerRelationIndex.put(key, newIndex);
+                                ringBuffer.getFirst().outerRelationIndex.put(key, newIndex);
                             }
                         }
                     }
@@ -474,7 +474,7 @@ public class WindowDispatcher implements Serializable, Dispatcher {
                         }
                     }
                 }
-                circularCache.addFirst(window);
+                ringBuffer.addFirst(window);
             }
         }
     }

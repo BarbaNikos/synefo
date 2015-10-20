@@ -2,6 +2,7 @@ package gr.katsip.experiment.state.scale;
 
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
+import com.intellij.psi.compiled.ClassFileDecompilers;
 import gr.katsip.synefo.storm.operators.relational.elastic.FullStateDispatcher;
 import gr.katsip.synefo.storm.operators.relational.elastic.SlidingWindowJoin;
 import gr.katsip.synefo.storm.operators.relational.elastic.SlidingWindowThetaJoin;
@@ -13,9 +14,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by katsip on 10/19/2015.
@@ -49,6 +48,10 @@ public class DispatcherStateScalabilityBenchmark {
                 LineItem.schema[0], LineItem.schema[0],
                 "order", new Fields(Order.schema),
                 Order.schema[0], Order.schema[0], new Fields(schema));
+        FullStateDispatcher orderDispatcher = new FullStateDispatcher("order", new Fields(Order.schema),
+                Order.schema[0], Order.schema[0],
+                "lineitem", new Fields(LineItem.schema),
+                LineItem.schema[0], LineItem.schema[0], new Fields(schema));
         HashMap<String, List<Integer>> activeRelationToTaskIndex = new HashMap<>();
         List<Integer> tasks = new ArrayList<>();
         tasks.add(1);
@@ -61,32 +64,57 @@ public class DispatcherStateScalabilityBenchmark {
         tasks.add(6);
         activeRelationToTaskIndex.put("order", tasks);
         dispatcher.setTaskToRelationIndex(activeRelationToTaskIndex);
-
+        orderDispatcher.setTaskToRelationIndex(activeRelationToTaskIndex);
+        DescriptiveStatistics dispatchStatistics = new DescriptiveStatistics();
         File orders = new File(orderFile);
         BufferedReader reader = new BufferedReader(new FileReader(orders));
         String line = null;
-        reader.close();
-
-        DescriptiveStatistics dispatchStatistics = new DescriptiveStatistics();
-        File lineitems = new File(lineitemFile);
-        reader = new BufferedReader(new FileReader(lineitems));
-        Fields lineitemSchema = new Fields(LineItem.schema);
+        Fields orderSchema = new Fields(Order.schema);
         while((line = reader.readLine()) != null) {
             String[] attributes = line.split("\\|");
-            Values lineitem = new Values();
+            Values order = new Values();
             for (String attribute : attributes) {
-                lineitem.add(attribute);
+                order.add(attribute);
             }
             Values tuple = new Values();
-            tuple.add(lineitemSchema);
-            tuple.add(lineitem);
+            tuple.add(orderSchema);
+            tuple.add(order);
             long currentTimestamp = System.currentTimeMillis();
             long dispatchStart = System.currentTimeMillis();
-            dispatcher.execute(null, null, lineitemSchema, tuple);
+            orderDispatcher.execute(null, null, orderSchema, tuple);
             long dispatchEnd = System.currentTimeMillis();
             dispatchStatistics.addValue((dispatchEnd - dispatchStart));
         }
         reader.close();
+
+
+        File lineitems = new File(lineitemFile);
+        reader = new BufferedReader(new FileReader(lineitems));
+        Fields lineitemSchema = new Fields(LineItem.schema);
+//        while((line = reader.readLine()) != null) {
+//            String[] attributes = line.split("\\|");
+//            Values lineitem = new Values();
+//            for (String attribute : attributes) {
+//                lineitem.add(attribute);
+//            }
+//            Values tuple = new Values();
+//            tuple.add(lineitemSchema);
+//            tuple.add(lineitem);
+//            long currentTimestamp = System.currentTimeMillis();
+//            long dispatchStart = System.currentTimeMillis();
+//            dispatcher.execute(null, null, lineitemSchema, tuple);
+//            long dispatchEnd = System.currentTimeMillis();
+//            dispatchStatistics.addValue((dispatchEnd - dispatchStart));
+//        }
+        reader.close();
+        HashMap<Integer, Long> statistics = orderDispatcher.taskStatistics();
+        Iterator<Map.Entry<Integer, Long>> iterator = statistics.entrySet().iterator();
+        System.out.println("Task to key allocation: ");
+        while (iterator.hasNext()) {
+            Map.Entry<Integer, Long> entry = iterator.next();
+            System.out.println("task-" + entry.getKey() + " number of keys: " + entry.getValue());
+        }
+        System.out.println("***** End of task to key allocation ****");
 
         System.out.println("+++ Dispatch Operation +++");
         System.out.println("State size: " + dispatcher.getStateSize());

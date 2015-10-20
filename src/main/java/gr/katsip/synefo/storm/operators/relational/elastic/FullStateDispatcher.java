@@ -45,6 +45,8 @@ public class FullStateDispatcher implements Serializable, Dispatcher {
 
     private long numberOfDistinctKeys;
 
+    private HashMap<Integer, Long> numberOfKeysPerTask;
+
     public FullStateDispatcher(String outerRelationName, Fields outerRelationSchema,
                                String outerRelationKey, String outerRelationForeignKey,
                                String innerRelationName, Fields innerRelationSchema,
@@ -62,6 +64,7 @@ public class FullStateDispatcher implements Serializable, Dispatcher {
         taskToRelationIndex = null;
         this.outputSchema = new Fields(outputSchema.toList());
         numberOfDistinctKeys = 0;
+        numberOfKeysPerTask = new HashMap<>();
     }
 
     /**
@@ -126,6 +129,12 @@ public class FullStateDispatcher implements Serializable, Dispatcher {
 //                logger.info("dispatch() picked task " + victimTask + " to send tuple to.");
                 ArrayList<Integer> tasks = new ArrayList<>();
                 tasks.add(victimTask);
+                if (numberOfKeysPerTask.containsKey(victimTask)) {
+                    Long count = numberOfKeysPerTask.get(victimTask);
+                    numberOfKeysPerTask.put(victimTask, ++count);
+                }else {
+                    numberOfKeysPerTask.put(victimTask, new Long(1));
+                }
                 tasks.add(0, 1);
                 Values tuple = new Values();
                 tuple.add("0");
@@ -166,6 +175,48 @@ public class FullStateDispatcher implements Serializable, Dispatcher {
             }
         }
         return numberOfTuplesDispatched;
+    }
+
+    public HashMap<Integer, Long> taskStatistics() {
+//        HashMap<Integer, ArrayList<String>> taskToKeyDistribution = new HashMap<>();
+//        Iterator<Map.Entry<String, List<Integer>>> iterator = innerRelationIndex.entrySet().iterator();
+//        while (iterator.hasNext()) {
+//            Map.Entry<String, List<Integer>> entry = iterator.next();
+//            List<Integer> value = entry.getValue();
+//            String key = entry.getKey();
+//            for (Integer t : value) {
+//                if (taskToKeyDistribution.containsKey(t)) {
+//                    ArrayList<String> keys = taskToKeyDistribution.get(t);
+//                    if (keys.indexOf(key) < 0)
+//                        keys.add(key);
+//                    taskToKeyDistribution.put(t, keys);
+//                }else {
+//                    ArrayList<String> keys = new ArrayList<>();
+//                    keys.add(key);
+//                    taskToKeyDistribution.put(t, keys);
+//                }
+//            }
+//        }
+//        iterator = outerRelationIndex.entrySet().iterator();
+//        while (iterator.hasNext()) {
+//            Map.Entry<String, List<Integer>> entry = iterator.next();
+//            List<Integer> value = entry.getValue();
+//            String key = entry.getKey();
+//            for (Integer t : value) {
+//                if (taskToKeyDistribution.containsKey(t)) {
+//                    ArrayList<String> keys = taskToKeyDistribution.get(t);
+//                    if (keys.indexOf(key) < 0)
+//                        keys.add(key);
+//                    taskToKeyDistribution.put(t, keys);
+//                }else {
+//                    ArrayList<String> keys = new ArrayList<>();
+//                    keys.add(key);
+//                    taskToKeyDistribution.put(t, keys);
+//                }
+//            }
+//        }
+//        return taskToKeyDistribution;
+        return numberOfKeysPerTask;
     }
 
     @Override
