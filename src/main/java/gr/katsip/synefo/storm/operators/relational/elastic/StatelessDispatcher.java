@@ -74,7 +74,7 @@ public class StatelessDispatcher implements Serializable, Dispatcher {
         tuple.add(attributeNames);
         tuple.add(attributeValues);
         int numberOfTuplesDispatched = 0;
-        if (Arrays.equals(attributeNames.toList().toArray(), outerRelationSchema.toList().toArray())) {
+        if (attributeNames.toList().toString().equals(outerRelationSchema.toList().toString())) {
             /**
              * STORE: Send tuple to one of the active tasks of the outer relation (also increment index)
              */
@@ -93,7 +93,7 @@ public class StatelessDispatcher implements Serializable, Dispatcher {
                 collector.emitDirect(task, anchor, tuple);
                 numberOfTuplesDispatched++;
             }
-        }else if (Arrays.equals(attributeNames.toList().toArray(), innerRelationSchema.toList().toArray())) {
+        }else if (attributeNames.toList().toString().equals(innerRelationSchema.toList().toString())) {
             /**
              * STORE: Send tuple to one of the active tasks of the outer relation (also increment index)
              */

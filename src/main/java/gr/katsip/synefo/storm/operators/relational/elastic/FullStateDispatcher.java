@@ -224,14 +224,14 @@ public class FullStateDispatcher implements Serializable, Dispatcher {
         int numberOfTuplesDispatched = 0;
         Fields attributeNames = new Fields(((Fields) values.get(0)).toList());
         Values attributeValues = (Values) values.get(1);
-        if (Arrays.equals(attributeNames.toList().toArray(), outerRelationSchema.toList().toArray())) {
+        if (attributeNames.toList().toString().equals(outerRelationSchema.toList().toString())) {
             String primaryKey = (String) attributeValues.get(outerRelationSchema.fieldIndex(outerRelationKey));
             String foreignKey = (String) attributeValues.get(outerRelationSchema.fieldIndex(outerRelationForeignKey));
             logger.info("received tuple from relation: " + outerRelationName + " with primary key: " + primaryKey +
                     " and join-foreign key: " + foreignKey + ".");
             numberOfTuplesDispatched = dispatch(primaryKey, foreignKey, outerRelationIndex, outerRelationName, innerRelationIndex,
                     attributeNames, attributeValues, collector, anchor);
-        }else if (Arrays.equals(attributeNames.toList().toArray(), innerRelationSchema.toList().toArray())) {
+        }else if (attributeNames.toList().toString().equals(innerRelationSchema.toList().toString())) {
             String primaryKey = (String) attributeValues.get(innerRelationSchema.fieldIndex(innerRelationKey));
             String foreignKey = (String) attributeValues.get(innerRelationSchema.fieldIndex(innerRelationForeignKey));
             logger.info("received tuple from relation: " + outerRelationName + " with primary key: " + primaryKey +
