@@ -101,13 +101,12 @@ public class NewJoinJoiner implements Serializable {
         Fields attributeNames = new Fields(((Fields) values.get(0)).toList());
         Values attributeValues = (Values) values.get(1);
         logger.info("received tuple's schema: " + attributeNames.toList().toArray().toString() + ", other relation schema: " + otherRelationSchema.toList().toArray().toString());
-        if(Arrays.equals(attributeNames.toList().toArray(), storedRelationSchema.toList().toArray())) {
+        if (attributeNames.toList().toString().equals(storedRelationSchema.toList().toString())) {
             /**
              * Store the new tuple
              */
             slidingWindowJoin.insertTuple(currentTimestamp, attributeValues);
-        }else if(Arrays.equals(attributeNames.toList().toArray(), otherRelationSchema.toList().toArray()) &&
-                activeTasks != null && activeTasks.size() > 0) {
+        }else if (attributeNames.toList().toString().equals(otherRelationSchema.toList().toString())) {
             /**
              * Attempt to join with stored tuples
              */
