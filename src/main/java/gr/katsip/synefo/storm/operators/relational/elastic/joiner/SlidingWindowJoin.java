@@ -10,11 +10,6 @@ import org.slf4j.LoggerFactory;
 
 public class SlidingWindowJoin implements Serializable {
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = -557386415760782256L;
-
     private static Logger logger = LoggerFactory.getLogger(SlidingWindowJoin.class);
 
     private long windowSize;
@@ -34,7 +29,7 @@ public class SlidingWindowJoin implements Serializable {
 	private long totalNumberOfTuples;
 	
 	private String storedRelation;
-	
+
 	private String otherRelation;
 	
 	/**
@@ -74,7 +69,6 @@ public class SlidingWindowJoin implements Serializable {
 			BasicEqualityWindow basicWindow = new BasicEqualityWindow();
 			basicWindow.start = currentTimestamp;
 			basicWindow.end = basicWindow.start + slide;
-			basicWindow.tuples = new HashMap<>();
 			ArrayList<Values> tupleList = new ArrayList<Values>();
 			tupleList.add(tuple);
 			basicWindow.tuples.put((String) tuple.get(schema.fieldIndex(joinAttribute)), tupleList);
@@ -84,7 +78,7 @@ public class SlidingWindowJoin implements Serializable {
 			stateByteSize += tuple.toArray().toString().length();
 			totalNumberOfTuples = 1;
 		}else if (ringBuffer.size() > 0 && ringBuffer.getFirst().start <= currentTimestamp &&
-				(ringBuffer.getFirst().end) >= currentTimestamp) {
+				ringBuffer.getFirst().end >= currentTimestamp) {
 			/**
 			 * Insert tuple in the first window, if the window is still valid
 			 */
@@ -123,15 +117,10 @@ public class SlidingWindowJoin implements Serializable {
 			 * Creation of the new basic window
 			 */
 			BasicEqualityWindow basicWindow = new BasicEqualityWindow();
-			if (ringBuffer.size() > 0) {
-				basicWindow.start = ringBuffer.getFirst().end + 1;
-			}else {
-				basicWindow.start = currentTimestamp;
-			}
+			basicWindow.start = ringBuffer.getFirst().end + 1;
 			basicWindow.end = basicWindow.start + slide;
 //			logger.info("ring buffer allocated a new window with start: " + basicWindow.start + " & end: " +
 //					basicWindow.end);
-			basicWindow.tuples = new HashMap<>();
 			ArrayList<Values> tupleList = new ArrayList<Values>();
 			tupleList.add(tuple);
 			basicWindow.tuples.put((String) tuple.get(schema.fieldIndex(joinAttribute)), tupleList);
