@@ -98,19 +98,19 @@ public class NewJoinJoiner implements Serializable {
          */
         Integer numberOfTuplesProduced = 0;
         Long currentTimestamp = System.currentTimeMillis();
-        Values attributeValues = (Values) values.get(1);
+//        Values attributeValues = (Values) values.get(1);
         if (fields.toList().toString().equals(storedRelationSchema.toList().toString())) {
             /**
              * Store the new tuple
              */
-            slidingWindowJoin.insertTuple(currentTimestamp, attributeValues);
+            slidingWindowJoin.insertTuple(currentTimestamp, values);
         }else if (fields.toList().toString().equals(otherRelationSchema.toList().toString())) {
             /**
              * Attempt to join with stored tuples
              */
             logger.info("received tuple's schema: " + fields.toList().toString() + ", other relation schema: " +
                     otherRelationSchema.toList().toString());
-            List<Values> joinResult = slidingWindowJoin.joinTuple(currentTimestamp, attributeValues,
+            List<Values> joinResult = slidingWindowJoin.joinTuple(currentTimestamp, values,
                     fields, otherJoinAttribute);
             for(Values result : joinResult) {
                 Values tuple = new Values();
