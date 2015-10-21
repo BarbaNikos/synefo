@@ -99,7 +99,6 @@ public class NewJoinJoiner implements Serializable {
         Integer numberOfTuplesProduced = 0;
         Long currentTimestamp = System.currentTimeMillis();
         Values attributeValues = (Values) values.get(1);
-        logger.info("received tuple's schema: " + fields.toList().toArray().toString() + ", other relation schema: " + otherRelationSchema.toList().toArray().toString());
         if (fields.toList().toString().equals(storedRelationSchema.toList().toString())) {
             /**
              * Store the new tuple
@@ -109,7 +108,8 @@ public class NewJoinJoiner implements Serializable {
             /**
              * Attempt to join with stored tuples
              */
-        logger.info("received tuple from the other relation. will attempt to join it.");
+            logger.info("received tuple's schema: " + fields.toList().toString() + ", other relation schema: " +
+                    otherRelationSchema.toList().toString());
             List<Values> joinResult = slidingWindowJoin.joinTuple(currentTimestamp, attributeValues,
                     fields, otherJoinAttribute);
             for(Values result : joinResult) {
