@@ -92,33 +92,32 @@ public class NewJoinJoiner implements Serializable {
 
     public Pair<Integer, Integer> execute(Tuple anchor, OutputCollector collector,
                        List<Integer> activeTasks, Integer taskIndex, Fields fields,
-                       Values values, Long tupleTimestamp) {
+                       Values values) {
         /**
          * Receive a tuple that: attribute[0] : fields, attribute[1] : values
          */
         Integer numberOfTuplesProduced = 0;
         Long currentTimestamp = System.currentTimeMillis();
-        Fields attributeNames = new Fields(((Fields) values.get(0)).toList());
         Values attributeValues = (Values) values.get(1);
-        logger.info("received tuple's schema: " + attributeNames.toList().toArray().toString() + ", other relation schema: " + otherRelationSchema.toList().toArray().toString());
-        if (attributeNames.toList().toString().equals(storedRelationSchema.toList().toString())) {
+        logger.info("received tuple's schema: " + fields.toList().toArray().toString() + ", other relation schema: " + otherRelationSchema.toList().toArray().toString());
+        if (fields.toList().toString().equals(storedRelationSchema.toList().toString())) {
             /**
              * Store the new tuple
              */
             slidingWindowJoin.insertTuple(currentTimestamp, attributeValues);
-        }else if (attributeNames.toList().toString().equals(otherRelationSchema.toList().toString())) {
+        }else if (fields.toList().toString().equals(otherRelationSchema.toList().toString())) {
             /**
              * Attempt to join with stored tuples
              */
         logger.info("received tuple from the other relation. will attempt to join it.");
             List<Values> joinResult = slidingWindowJoin.joinTuple(currentTimestamp, attributeValues,
-                    attributeNames, otherJoinAttribute);
+                    fields, otherJoinAttribute);
             for(Values result : joinResult) {
                 Values tuple = new Values();
                 /**
                  * Add timestamp for synefo
                  */
-                tuple.add(tupleTimestamp.toString());
+                tuple.add(currentTimestamp.toString());
                 tuple.add(joinOutputSchema);
                 tuple.add(result);
                 numberOfTuplesProduced++;

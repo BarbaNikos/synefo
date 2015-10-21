@@ -290,13 +290,13 @@ public class JoinBolt extends BaseRichBolt {
         long startTime = System.currentTimeMillis();
         if (activeDownstreamTaskIdentifiers.size() > 0) {
             Pair<Integer, Integer> pair = joiner.execute(tuple, collector, activeDownstreamTaskIdentifiers,
-                    downstreamIndex, fields, values, null);
+                    downstreamIndex, fields, values);
             downstreamIndex = pair.first;
             temporaryThroughput += pair.second;
             collector.ack(tuple);
         }else {
             Pair<Integer, Integer> pair = joiner.execute(tuple, collector, activeDownstreamTaskIdentifiers,
-                    downstreamIndex, fields, values, null);
+                    downstreamIndex, fields, values);
             downstreamIndex = pair.first;
             temporaryThroughput += pair.second;
             collector.ack(tuple);
