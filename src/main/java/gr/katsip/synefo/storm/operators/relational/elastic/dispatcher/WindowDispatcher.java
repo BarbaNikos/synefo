@@ -40,27 +40,6 @@ public class WindowDispatcher implements Serializable, Dispatcher {
 
     private HashMap<String, List<Integer>> taskToRelationIndex;
 
-    public class DispatchWindow implements Serializable {
-
-        public long start;
-
-        public long end;
-
-        public long stateSize = 0L;
-
-        private HashMap<String, List<Integer>> outerRelationIndex;
-
-        private HashMap<String, List<Integer>> innerRelationIndex;
-
-        public DispatchWindow() {
-            stateSize = 0L;
-            start = 0L;
-            end = 0L;
-            outerRelationIndex = new HashMap<>();
-            innerRelationIndex = new HashMap<>();
-        }
-    }
-
     private long window;
 
     private long slide;

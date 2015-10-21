@@ -87,7 +87,7 @@ public class HistoryDispatcher implements Serializable, Dispatcher {
                          String primaryRelationName, HashMap<String, List<Integer>> secondaryRelationIndex,
                          Fields attributeNames, Values attributeValues, OutputCollector collector, Tuple anchor) {
         int numberOfTuplesDispatched = 0;
-        logger.info("\tattributes: {" + attributeNames.toList().toString() + "}, values: {" + attributeValues.toString() + "}");
+//        logger.info("\tattributes: {" + attributeNames.toList().toString() + "}, values: {" + attributeValues.toString() + "}");
         /**
          * STORE:
          * 2 cases: (a) primary-key has been encountered before (b) primary-key has not been encountered before
@@ -97,8 +97,8 @@ public class HistoryDispatcher implements Serializable, Dispatcher {
          *              that share common keys with the selected node, will receive same keys also
          */
         if (primaryRelationIndex.containsKey(primaryKey)) {
-            logger.info("\ttuple from relation " + primaryRelationName + " and primary-key " + primaryKey +
-                    " has been dispatched before.");
+//            logger.info("\ttuple from relation " + primaryRelationName + " and primary-key " + primaryKey +
+//                    " has been dispatched before.");
             List<Integer> dispatchInfo = primaryRelationIndex.get(primaryKey);
             Values tuple = new Values();
             tuple.add("0");
@@ -109,7 +109,7 @@ public class HistoryDispatcher implements Serializable, Dispatcher {
                     collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), anchor, tuple);
                 else
                     collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), tuple);
-                logger.info("\ttuple was dispatched to task: " + dispatchInfo.get(dispatchInfo.get(0)) + ".");
+//                logger.info("\ttuple was dispatched to task: " + dispatchInfo.get(dispatchInfo.get(0)) + ".");
             }
             numberOfTuplesDispatched++;
             if (dispatchInfo.get(0) >= (dispatchInfo.size() - 1)) {
@@ -118,12 +118,12 @@ public class HistoryDispatcher implements Serializable, Dispatcher {
                 int tmp = dispatchInfo.get(0);
                 dispatchInfo.set(0, ++tmp);
             }
-            logger.info("incremented index to task " + dispatchInfo.get(dispatchInfo.get(0)) + ".");
+//            logger.info("incremented index to task " + dispatchInfo.get(dispatchInfo.get(0)) + ".");
             primaryRelationIndex.put(primaryKey, dispatchInfo);
         }else {
             if (taskToRelationIndex.get(primaryRelationName).size() > 0) {
-                logger.info("\ttuple from relation " + primaryRelationName + " and primary-key " + primaryKey +
-                        "has not been encountered before");
+//                logger.info("\ttuple from relation " + primaryRelationName + " and primary-key " + primaryKey +
+//                        "has not been encountered before");
 
                 Integer victimTask = taskToRelationIndex.get(primaryRelationName).get(0);
 //                logger.info("dispatch() picked task " + victimTask + " to send tuple to.");
@@ -187,15 +187,15 @@ public class HistoryDispatcher implements Serializable, Dispatcher {
         if (fields.toList().toString().equals(outerRelationSchema.toList().toString())) {
             String primaryKey = (String) values.get(outerRelationSchema.fieldIndex(outerRelationKey));
             String foreignKey = (String) values.get(outerRelationSchema.fieldIndex(outerRelationForeignKey));
-            logger.info("received tuple from relation: " + outerRelationName + " with primary key: " + primaryKey +
-                    " and join-foreign key: " + foreignKey + ".");
+//            logger.info("received tuple from relation: " + outerRelationName + " with primary key: " + primaryKey +
+//                    " and join-foreign key: " + foreignKey + ".");
             numberOfTuplesDispatched = dispatch(primaryKey, foreignKey, outerRelationIndex, outerRelationName, innerRelationIndex,
                     fields, values, collector, anchor);
         }else if (fields.toList().toString().equals(innerRelationSchema.toList().toString())) {
             String primaryKey = (String) values.get(innerRelationSchema.fieldIndex(innerRelationKey));
             String foreignKey = (String) values.get(innerRelationSchema.fieldIndex(innerRelationForeignKey));
-            logger.info("received tuple from relation: " + outerRelationName + " with primary key: " + primaryKey +
-                    " and join-foreign key: " + foreignKey + ".");
+//            logger.info("received tuple from relation: " + outerRelationName + " with primary key: " + primaryKey +
+//                    " and join-foreign key: " + foreignKey + ".");
             numberOfTuplesDispatched = dispatch(primaryKey, foreignKey, innerRelationIndex, innerRelationName, outerRelationIndex,
                     fields, values, collector, anchor);
         }

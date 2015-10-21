@@ -98,7 +98,6 @@ public class NewJoinJoiner implements Serializable {
          */
         Integer numberOfTuplesProduced = 0;
         Long currentTimestamp = System.currentTimeMillis();
-//        Values attributeValues = (Values) values.get(1);
         if (fields.toList().toString().equals(storedRelationSchema.toList().toString())) {
             /**
              * Store the new tuple
@@ -108,8 +107,8 @@ public class NewJoinJoiner implements Serializable {
             /**
              * Attempt to join with stored tuples
              */
-            logger.info("received tuple's schema: " + fields.toList().toString() + ", other relation schema: " +
-                    otherRelationSchema.toList().toString());
+//            logger.info("received tuple's schema: " + fields.toList().toString() + ", other relation schema: " +
+//                    otherRelationSchema.toList().toString());
             List<Values> joinResult = slidingWindowJoin.joinTuple(currentTimestamp, values,
                     fields, otherJoinAttribute);
             for(Values result : joinResult) {
@@ -128,8 +127,8 @@ public class NewJoinJoiner implements Serializable {
                         taskIndex = 0;
                 }
             }
-            if (numberOfTuplesProduced > 0)
-                logger.info("join produced " + numberOfTuplesProduced + " tuples.");
+//            if (numberOfTuplesProduced > 0)
+//                logger.info("join produced " + numberOfTuplesProduced + " tuples.");
         }
         return new Pair<>(taskIndex, numberOfTuplesProduced);
     }

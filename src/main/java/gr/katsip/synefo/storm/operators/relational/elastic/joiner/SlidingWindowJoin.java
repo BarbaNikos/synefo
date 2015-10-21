@@ -157,14 +157,14 @@ public class SlidingWindowJoin implements Serializable {
 		/**
 		 * Iterate over all valid windows according to the given timestamp
 		 */
-		logger.info("received tuple with key " + tupleJoinAttribute + " will attempt to join it (ct: " + currentTimestamp + ")");
+//		logger.info("received tuple with key " + tupleJoinAttribute + " will attempt to join it (ct: " + currentTimestamp + ")");
 		int windowIndex = 0;
 		for(int i = 0; i < ringBuffer.size(); i++) {
 			BasicEqualityWindow basicWindow = ringBuffer.get(i);
 			if((basicWindow.start + windowSize) > currentTimestamp) {
-				logger.info("\tfound matching window with end timestamp: " + basicWindow.end + "(" + windowIndex + ")");
+//				logger.info("\tfound matching window with end timestamp: " + basicWindow.end + "(" + windowIndex + ")");
 				if(basicWindow.tuples.containsKey(tupleJoinAttribute)) {
-					logger.info("\t window-" + basicWindow.end + "(" + windowIndex + ") contains tuples with key: " + tupleJoinAttribute);
+//					logger.info("\t window-" + basicWindow.end + "(" + windowIndex + ") contains tuples with key: " + tupleJoinAttribute);
 					ArrayList<Values> storedTuples = basicWindow.tuples.get(tupleJoinAttribute);
 					for(Values t : storedTuples) {
 						Values joinTuple;
