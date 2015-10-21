@@ -284,19 +284,18 @@ public class JoinBolt extends BaseRichBolt {
          */
         Values values = new Values(tuple.getValues().toArray());
         values.remove(0);
-        List<String> fieldList = tuple.getFields().toList();
-        fieldList.remove(0);
-        Fields fields = new Fields(fieldList);
+        Fields fields = new Fields(((Fields) values.get(0)).toList());
+        Values tupleValues = (Values) values.get(1);
         long startTime = System.currentTimeMillis();
         if (activeDownstreamTaskIdentifiers.size() > 0) {
             Pair<Integer, Integer> pair = joiner.execute(tuple, collector, activeDownstreamTaskIdentifiers,
-                    downstreamIndex, fields, values);
+                    downstreamIndex, fields, tupleValues);
             downstreamIndex = pair.first;
             temporaryThroughput += pair.second;
             collector.ack(tuple);
         }else {
             Pair<Integer, Integer> pair = joiner.execute(tuple, collector, activeDownstreamTaskIdentifiers,
-                    downstreamIndex, fields, values);
+                    downstreamIndex, fields, tupleValues);
             downstreamIndex = pair.first;
             temporaryThroughput += pair.second;
             collector.ack(tuple);

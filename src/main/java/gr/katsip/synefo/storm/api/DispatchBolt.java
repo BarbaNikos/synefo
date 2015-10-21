@@ -343,16 +343,15 @@ public class DispatchBolt extends BaseRichBolt {
                  */
                 Values values = new Values(tuple.getValues().toArray());
                 values.remove(0);
-                List<String> fieldList = tuple.getFields().toList();
-                fieldList.remove(0);
-                Fields fields = new Fields(fieldList);
+                Fields fields = new Fields(((Fields) values.get(0)).toList());
+                Values tupleValues = (Values) values.get(1);
                 int numberOfTuplesDispatched = 0;
                 long startTime = System.currentTimeMillis();
                 if (activeDownstreamTaskIdentifiers.size() > 0) {
-                    numberOfTuplesDispatched = dispatcher.execute(tuple, collector, fields, values);
+                    numberOfTuplesDispatched = dispatcher.execute(tuple, collector, fields, tupleValues);
                     collector.ack(tuple);
                 }else {
-                    numberOfTuplesDispatched = dispatcher.execute(tuple, null, fields, values);
+                    numberOfTuplesDispatched = dispatcher.execute(tuple, null, fields, tupleValues);
                     collector.ack(tuple);
                 }
                 temporaryThroughput += numberOfTuplesDispatched;
