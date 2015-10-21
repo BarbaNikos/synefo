@@ -1,6 +1,6 @@
 package gr.katsip.synefo.storm.operators.crypstream;
 
-import gr.katsip.synefo.storm.operators.AbstractOperator;
+import gr.katsip.deprecated.AbstractOperator;
 
 import java.io.Serializable;
 import java.math.BigInteger;

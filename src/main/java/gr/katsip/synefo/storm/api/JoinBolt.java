@@ -8,9 +8,10 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import gr.katsip.synefo.utils.Pair;
 import gr.katsip.synefo.utils.Util;
-import gr.katsip.synefo.storm.lib.SynefoMessage;
-import gr.katsip.synefo.storm.operators.relational.elastic.NewJoinJoiner;
+import gr.katsip.synefo.utils.SynefoMessage;
+import gr.katsip.synefo.storm.operators.relational.elastic.joiner.NewJoinJoiner;
 import gr.katsip.synefo.utils.SynefoConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +20,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.*;
@@ -291,14 +291,14 @@ public class JoinBolt extends BaseRichBolt {
         if (activeDownstreamTaskIdentifiers.size() > 0) {
             Pair<Integer, Integer> pair = joiner.execute(tuple, collector, activeDownstreamTaskIdentifiers,
                     downstreamIndex, fields, values, null);
-            downstreamIndex = pair.lowerBound;
-            temporaryThroughput += pair.upperBound;
+            downstreamIndex = pair.first;
+            temporaryThroughput += pair.second;
             collector.ack(tuple);
         }else {
             Pair<Integer, Integer> pair = joiner.execute(tuple, collector, activeDownstreamTaskIdentifiers,
                     downstreamIndex, fields, values, null);
-            downstreamIndex = pair.lowerBound;
-            temporaryThroughput += pair.upperBound;
+            downstreamIndex = pair.first;
+            temporaryThroughput += pair.second;
             collector.ack(tuple);
         }
         long endTime = System.currentTimeMillis();
@@ -453,169 +453,4 @@ public class JoinBolt extends BaseRichBolt {
         }
     }
 
-    public void manageScaleTuple(Tuple tuple) {
-        String[] tokens = ((String) tuple.getValues().get(0)).split("[/:]");
-        String scaleAction = tokens[2];
-        String taskName = tokens[4];
-        String taskIdentifier = tokens[5];
-        Integer taskNumber = Integer.parseInt(tokens[7]);
-        String taskAddress = tokens[9];
-
-        if (SYSTEM_WARM_FLAG)
-            SYSTEM_WARM_FLAG = false;
-        if (scaleAction != null && scaleAction.equals(SynefoConstant.ADD_ACTION)) {
-            if ((this.taskName + ":" + this.taskIdentifier).equals(taskName + ":" + taskIdentifier)) {
-                try {
-                    ServerSocket socket = new ServerSocket(6000 + this.taskIdentifier);
-                    int numberOfConnections = 0;
-                    HashMap<String, ArrayList<Values>> state = new HashMap<String, ArrayList<Values>>();
-                    while (numberOfConnections < (taskNumber)) {
-                        Socket client = socket.accept();
-                        ObjectOutputStream output = new ObjectOutputStream(client.getOutputStream());
-                        ObjectInputStream input = new ObjectInputStream(client.getInputStream());
-                        Object response = input.readObject();
-                        if (response instanceof HashMap) {
-                            HashMap<String, ArrayList<Values>> statePacket = (HashMap<String, ArrayList<Values>>) response;
-                            Util.mergeState(state, statePacket);
-                        }
-                        output.flush();
-                        input.close();
-                        output.close();
-                        client.close();
-                        numberOfConnections++;
-                    }
-                    /**
-                     * Set the state accordingly
-                     */
-                    keys = joiner.setState(state);
-                    socket.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
-                }
-                /**
-                 * Notify the keys that it currently maintains
-                 */
-                zookeeperClient.setJoinState(this.taskName, this.taskIdentifier, keys);
-            }else {
-                /**
-                 * Other node is added. Required Actions
-                 * CAUTION: This version ends up in false-positives for keys that are sent to the other nodes.
-                 */
-                HashMap<String, ArrayList<Values>> state = joiner.getStateToBeSent();
-                Iterator<Map.Entry<String, ArrayList<Values>>> iterator = state.entrySet().iterator();
-                while (iterator.hasNext()) {
-                    keys.add(iterator.next().getKey());
-                }
-                Socket client = null;
-                boolean ATTEMPT = true;
-                while (ATTEMPT) {
-                    try {
-                        client = new Socket(taskAddress, 6000 + Integer.parseInt(taskIdentifier));
-                        ATTEMPT = false;
-                    } catch (IOException e) {
-                        try {
-                            Thread.sleep(10);
-                        } catch (InterruptedException e1) {
-                            e1.printStackTrace();
-                        }
-                    }
-                }
-                try {
-                    ObjectOutputStream output = new ObjectOutputStream(client.getOutputStream());
-                    ObjectInputStream input = new ObjectInputStream(client.getInputStream());
-                    /**
-                     * Get part of state to be sent
-                     */
-                    HashMap<String, ArrayList<Values>> statePacket = joiner.getStateToBeSent();
-                    output.writeObject(statePacket);
-                    Object response = input.readObject();
-                    if (response instanceof String) {
-                        input.close();
-                        output.close();
-                        client.close();
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
-                }
-            }
-        }else if (scaleAction != null && scaleAction.equals(SynefoConstant.REMOVE_ACTION)) {
-            if ((this.taskName + ":" + this.taskIdentifier).equals(taskName + ":" + taskIdentifier)) {
-                /**
-                 * Keep track of keys that they are sent out to other people
-                 * create a list with elements of type: <task-x=key-l,key-m,...,key-z>
-                 */
-                keys = new ArrayList<>();
-                try {
-                    ServerSocket socket = new ServerSocket(6000 + this.taskIdentifier);
-                    int numberOfConnections = 0;
-                    while (numberOfConnections < (taskNumber)) {
-                        Socket client = socket.accept();
-                        ObjectOutputStream output = new ObjectOutputStream(client.getOutputStream());
-                        ObjectInputStream input = new ObjectInputStream(client.getInputStream());
-                        HashMap<String, ArrayList<Values>> statePacket = joiner.getStateToBeSent();
-                        output.writeObject(statePacket);
-                        Object response = input.readObject();
-                        if (response instanceof Integer) {
-                            Integer receiverTask = (Integer) response;
-                            Iterator<Map.Entry<String, ArrayList<Values>>> iterator = statePacket.entrySet().iterator();
-                            StringBuilder stringBuilder = new StringBuilder();
-                            while (iterator.hasNext()) {
-                                stringBuilder.append(iterator.next().getKey() + ",");
-                            }
-                            if (stringBuilder.length() > 0 && stringBuilder.charAt(stringBuilder.length() - 1) == ',') {
-                                stringBuilder.setLength(stringBuilder.length() - 1);
-                            }
-                            keys.add(receiverTask + "=" + stringBuilder.toString());
-                        }
-                        input.close();
-                        output.close();
-                        client.close();
-                        numberOfConnections++;
-                    }
-                    socket.close();
-                    zookeeperClient.setJoinState(this.taskName, this.taskIdentifier, keys);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
-                }
-            }else {
-                Socket client = null;
-                boolean ATTEMPT = true;
-                while (ATTEMPT) {
-                    try {
-                        client = new Socket(taskAddress, 6000 + Integer.parseInt(taskIdentifier));
-                        ATTEMPT = false;
-                    } catch (IOException e) {
-                        try {
-                            Thread.sleep(10);
-                        } catch (InterruptedException ei) {
-                            ei.printStackTrace();
-                        }
-                    }
-                }
-                try {
-                    ObjectOutputStream output = new ObjectOutputStream(client.getOutputStream());
-                    ObjectInputStream input = new ObjectInputStream(client.getInputStream());
-                    Object response = input.readObject();
-                    if (response instanceof HashMap) {
-                        HashMap<String, ArrayList<Values>> statePacket = (HashMap<String, ArrayList<Values>>) response;
-                        joiner.addToState(statePacket);
-                    }
-                    output.writeObject(this.taskIdentifier);
-                    input.close();
-                    output.close();
-                    client.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
 }

@@ -1,7 +1,7 @@
 package gr.katsip.synefo.storm.operators.crypstream;
 
 import gr.katsip.synefo.metric.TaskStatistics;
-import gr.katsip.synefo.storm.operators.AbstractStatOperator;
+import gr.katsip.deprecated.AbstractStatOperator;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -10,7 +10,6 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Pattern;

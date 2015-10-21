@@ -1,13 +1,12 @@
 package gr.katsip.synefo.balancer;
 
-import gr.katsip.synefo.server2.JoinOperator;
-import gr.katsip.synefo.storm.lib.SynefoMessage;
+import gr.katsip.synefo.utils.SynefoMessage;
+import gr.katsip.synefo.utils.JoinOperator;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**

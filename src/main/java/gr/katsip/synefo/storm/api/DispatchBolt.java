@@ -8,14 +8,13 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
-import gr.katsip.synefo.storm.lib.SynefoMessage;
-import gr.katsip.synefo.storm.operators.relational.elastic.Dispatcher;
+import gr.katsip.synefo.utils.SynefoMessage;
+import gr.katsip.synefo.storm.operators.relational.elastic.dispatcher.Dispatcher;
 import gr.katsip.synefo.utils.SynefoConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.net.InetAddress;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.*;
@@ -550,148 +549,4 @@ public class DispatchBolt extends BaseRichBolt {
         }
     }
 
-    public void manageScaleTuple(Tuple tuple) {
-        String[] tokens = ((String) tuple.getValues().get(0)).split("[/:]");
-        String scaleAction = tokens[2];
-        String taskName = tokens[4];
-        String taskIdentifier = tokens[5];
-        Integer taskNumber = Integer.parseInt(tokens[7]);
-        String taskAddress = tokens[9];
-        if (SYSTEM_WARM_FLAG)
-            SYSTEM_WARM_FLAG = false;
-        logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": received scale-command: " +
-                scaleAction + "(" + System.currentTimeMillis() + ")");
-        if (scaleAction.equals(SynefoConstant.ADD_ACTION)) {
-            if ((this.taskName + ":" + this.taskIdentifier).equals(taskName + ":" + taskIdentifier)) {
-                /**
-                 * Case where this node is added. Nothing needs to be done for
-                 * notifying the dispatchers.
-                 */
-                logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": about to receive " +
-                        (taskNumber - 1) + " pieces of state.");
-                try {
-                    ServerSocket socket = new ServerSocket(6000 + this.taskIdentifier);
-                    int numberOfConnections = 0;
-                    while (numberOfConnections < (taskNumber - 1)) {
-                        Socket client = socket.accept();
-                        ObjectOutputStream output = new ObjectOutputStream(client.getOutputStream());
-                        ObjectInputStream input = new ObjectInputStream(client.getInputStream());
-                        Object response = input.readObject();
-                        if (response instanceof List) {
-                            List<Values> receivedState = (List<Values>) response;
-                            dispatcher.mergeState(receivedState);
-                        }
-                        output.flush();
-                        input.close();
-                        output.close();
-                        client.close();
-                        numberOfConnections++;
-                    }
-                    socket.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
-                }
-                activeDownstreamTaskIdentifiers = zookeeperClient.getActiveDownstreamTaskIdentifiers();
-                logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": successfully received " +
-                        (taskNumber - 1) + " pieces of state.");
-                zookeeperClient.notifyActionComplete();
-            }else {
-                logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": about to send state");
-                Socket client = null;
-                boolean ATTEMPT = true;
-                while (ATTEMPT) {
-                    try {
-                        client = new Socket(taskAddress, 6000 + Integer.parseInt(taskIdentifier));
-                        ATTEMPT = false;
-                    } catch (IOException e) {
-                        logger.error("");
-                        try {
-                            Thread.sleep(10);
-                        } catch (InterruptedException e1) {
-                            e1.printStackTrace();
-                        }
-                    }
-                }
-                logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": connected to remote dispatcher.");
-                try {
-                    ObjectOutputStream output = new ObjectOutputStream(client.getOutputStream());
-                    ObjectInputStream input = new ObjectInputStream(client.getInputStream());
-                    activeDownstreamTaskIdentifiers = zookeeperClient.getActiveDownstreamTaskIdentifiers();
-                    output.writeObject(dispatcher.getState());
-                    input.close();
-                    output.close();
-                    client.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": properly sent state.");
-            }
-        }else if (scaleAction.equals(SynefoConstant.REMOVE_ACTION)) {
-            if ((this.taskName + ":" + this.taskIdentifier).equals(taskName + ":" + taskIdentifier)) {
-                logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": about to send " +
-                        taskNumber + " states.");
-                try {
-                    ServerSocket socket = new ServerSocket(6000 + this.taskIdentifier);
-                    int numberOfConnections = 0;
-                    while (numberOfConnections < (taskNumber - 1)) {
-                        Socket client = socket.accept();
-                        ObjectOutputStream output = new ObjectOutputStream(client.getOutputStream());
-                        ObjectInputStream input = new ObjectInputStream(client.getInputStream());
-                        output.writeObject(dispatcher.getState());
-                        Object response = input.readObject();
-                        input.close();
-                        output.close();
-                        client.close();
-                        numberOfConnections++;
-                    }
-                    socket.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
-                }
-                logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": properly sent states (" +
-                        taskNumber + ".");
-                zookeeperClient.notifyActionComplete();
-            }else {
-                logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": about to receive state.");
-                Socket client = null;
-                boolean ATTEMPT = true;
-                while (ATTEMPT) {
-                    try {
-                        client = new Socket(taskAddress, 6000 + Integer.parseInt(taskIdentifier));
-                        ATTEMPT = false;
-                    } catch (IOException e) {
-                        logger.error("");
-                        try {
-                            Thread.sleep(10);
-                        } catch (InterruptedException ei) {
-                            ei.printStackTrace();
-                        }
-                    }
-                }
-                try {
-                    ObjectOutputStream output = new ObjectOutputStream(client.getOutputStream());
-                    ObjectInputStream input = new ObjectInputStream(client.getInputStream());
-                    Object response = input.readObject();
-                    if (response instanceof List) {
-                        List<Values> state = (List<Values>) response;
-                        dispatcher.mergeState(state);
-                    }
-                    logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + ": successfully received state.");
-                    output.writeObject("OK");
-                    input.close();
-                    output.flush();
-                    output.close();
-                    client.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
 }

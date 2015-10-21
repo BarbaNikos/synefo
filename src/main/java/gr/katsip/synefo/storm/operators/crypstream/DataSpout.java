@@ -1,6 +1,6 @@
 package gr.katsip.synefo.storm.operators.crypstream;
 
-import gr.katsip.synefo.storm.producers.AbstractTupleProducer;
+import gr.katsip.deprecated.deprecated.AbstractTupleProducer;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;

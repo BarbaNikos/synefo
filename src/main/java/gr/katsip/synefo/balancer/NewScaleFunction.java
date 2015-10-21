@@ -1,8 +1,8 @@
 package gr.katsip.synefo.balancer;
 
-import gr.katsip.synefo.server2.JoinOperator;
-import gr.katsip.synefo.storm.api.GenericTriplet;
-import gr.katsip.synefo.storm.api.Pair;
+import gr.katsip.synefo.utils.GenericTriplet;
+import gr.katsip.synefo.utils.Pair;
+import gr.katsip.synefo.utils.JoinOperator;
 import gr.katsip.synefo.utils.Util;
 
 import java.util.*;
@@ -50,8 +50,8 @@ public class NewScaleFunction {
         //TODO: Change the following
         this.thresholds = new HashMap<String, Pair<Number, Number>>();
         Pair<Number, Number> pair = new Pair<>();
-        pair.lowerBound = 1000;
-        pair.upperBound = 1000;
+        pair.first = 1000;
+        pair.second = 1000;
         this.thresholds.put("input-rate", pair);
     }
 
@@ -136,7 +136,7 @@ public class NewScaleFunction {
                     average += pair.getValue().get(i);
                 }
                 average = average / 3.0;
-                if (average >= thresholds.get("input-rate").upperBound.doubleValue() &&
+                if (average >= thresholds.get("input-rate").second.doubleValue() &&
                         overloadedWorkers.indexOf(pair.getKey()) < 0) {
                     overloadedWorkers.add(pair.getKey());
                     if (average > bottleneck) {
@@ -175,7 +175,7 @@ public class NewScaleFunction {
         if (scaleAction == null) {
             List<String> underloadedWorkers = new ArrayList<>();
             String slacker = "";
-            Double opening = thresholds.get("input-rate").upperBound.doubleValue();
+            Double opening = thresholds.get("input-rate").second.doubleValue();
             iterator = inputRate.entrySet().iterator();
             while (iterator.hasNext()) {
                 Map.Entry<String, List<Double>> pair = iterator.next();
@@ -187,7 +187,7 @@ public class NewScaleFunction {
                         average += pair.getValue().get(i);
                     }
                     average = average / 3.0;
-                    if (average <= thresholds.get("input-rate").lowerBound.doubleValue() &&
+                    if (average <= thresholds.get("input-rate").first.doubleValue() &&
                             underloadedWorkers.indexOf(pair.getKey()) < 0) {
                         underloadedWorkers.add(pair.getKey());
                         if (average < opening) {
@@ -197,7 +197,7 @@ public class NewScaleFunction {
                     }
                 }
             }
-            if (slacker.equals("") == false && opening <= thresholds.get("input-rate").lowerBound.doubleValue()) {
+            if (slacker.equals("") == false && opening <= thresholds.get("input-rate").first.doubleValue()) {
                 String upstreamTask = null;
                 List<String> parentTasks = Util.getInverseTopology(new ConcurrentHashMap<>(topology))
                         .get(slacker);

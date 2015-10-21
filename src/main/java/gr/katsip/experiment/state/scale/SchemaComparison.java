@@ -1,8 +1,8 @@
 package gr.katsip.experiment.state.scale;
 
 import backtype.storm.tuple.Fields;
-import gr.katsip.synefo.tpch.LineItem;
-import gr.katsip.synefo.tpch.Order;
+import gr.katsip.tpch.LineItem;
+import gr.katsip.tpch.Order;
 
 import java.util.Arrays;
 

@@ -10,9 +10,16 @@ import backtype.storm.tuple.Fields;
 import gr.katsip.synefo.storm.api.DispatchBolt;
 import gr.katsip.synefo.storm.api.ElasticFileSpout;
 import gr.katsip.synefo.storm.api.JoinBolt;
-import gr.katsip.synefo.storm.lib.SynefoMessage;
-import gr.katsip.synefo.storm.operators.relational.elastic.*;
-import gr.katsip.synefo.tpch.*;
+import gr.katsip.synefo.storm.operators.relational.elastic.joiner.NewJoinJoiner;
+import gr.katsip.synefo.storm.producers.FileProducer;
+import gr.katsip.synefo.storm.producers.LocalControlledFileProducer;
+import gr.katsip.synefo.storm.producers.LocalFileProducer;
+import gr.katsip.synefo.utils.SynefoMessage;
+import gr.katsip.synefo.storm.operators.relational.elastic.dispatcher.Dispatcher;
+import gr.katsip.synefo.storm.operators.relational.elastic.dispatcher.HistoryDispatcher;
+import gr.katsip.synefo.storm.operators.relational.elastic.dispatcher.ObliviousDispatcher;
+import gr.katsip.synefo.storm.operators.relational.elastic.dispatcher.WindowDispatcher;
+import gr.katsip.tpch.*;
 
 import java.io.*;
 import java.net.Socket;
@@ -156,7 +163,7 @@ public class TopologyDriver {
         Dispatcher dispatcher;
         switch (type) {
             case OBLIVIOUS_DISPATCH:
-                dispatcher = new StatelessDispatcher("order", new Fields(Order.schema), Order.query5Schema[0],
+                dispatcher = new ObliviousDispatcher("order", new Fields(Order.schema), Order.query5Schema[0],
                         Order.query5Schema[0], "lineitem", new Fields(LineItem.schema),
                         LineItem.query5Schema[0], LineItem.query5Schema[0], new Fields(schema));
                 break;
@@ -167,12 +174,12 @@ public class TopologyDriver {
                         (long) windowInMinutes * 2 * (60 * 1000), slideInMilliSeconds);
                 break;
             case HISTORY_DISPATCH:
-                dispatcher = new FullStateDispatcher("order", new Fields(Order.schema), Order.query5Schema[0],
+                dispatcher = new HistoryDispatcher("order", new Fields(Order.schema), Order.query5Schema[0],
                         Order.query5Schema[0], "lineitem", new Fields(LineItem.schema),
                         LineItem.query5Schema[0], LineItem.query5Schema[0], new Fields(schema));
                 break;
             default:
-                dispatcher = new StatelessDispatcher("order", new Fields(Order.schema), Order.query5Schema[0],
+                dispatcher = new ObliviousDispatcher("order", new Fields(Order.schema), Order.query5Schema[0],
                         Order.query5Schema[0], "lineitem", new Fields(LineItem.schema),
                         LineItem.query5Schema[0], LineItem.query5Schema[0], new Fields(schema));
         }

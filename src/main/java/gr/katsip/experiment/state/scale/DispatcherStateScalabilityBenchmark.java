@@ -2,9 +2,9 @@ package gr.katsip.experiment.state.scale;
 
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
-import gr.katsip.synefo.storm.operators.relational.elastic.FullStateDispatcher;
-import gr.katsip.synefo.tpch.LineItem;
-import gr.katsip.synefo.tpch.Order;
+import gr.katsip.synefo.storm.operators.relational.elastic.dispatcher.HistoryDispatcher;
+import gr.katsip.tpch.LineItem;
+import gr.katsip.tpch.Order;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
 import java.io.BufferedReader;
@@ -41,11 +41,11 @@ public class DispatcherStateScalabilityBenchmark {
     }
 
     public void benchmark() throws IOException {
-        FullStateDispatcher dispatcher = new FullStateDispatcher("lineitem", new Fields(LineItem.schema),
+        HistoryDispatcher dispatcher = new HistoryDispatcher("lineitem", new Fields(LineItem.schema),
                 LineItem.schema[0], LineItem.schema[0],
                 "order", new Fields(Order.schema),
                 Order.schema[0], Order.schema[0], new Fields(schema));
-        FullStateDispatcher orderDispatcher = new FullStateDispatcher("order", new Fields(Order.schema),
+        HistoryDispatcher orderDispatcher = new HistoryDispatcher("order", new Fields(Order.schema),
                 Order.schema[0], Order.schema[0],
                 "lineitem", new Fields(LineItem.schema),
                 LineItem.schema[0], LineItem.schema[0], new Fields(schema));

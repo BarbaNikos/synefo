@@ -1,9 +1,7 @@
 package gr.katsip.synefo.balancer;
 
-import gr.katsip.cestorm.db.CEStormDatabaseManager;
-import gr.katsip.synefo.server2.JoinOperator;
-import gr.katsip.synefo.server2.SynefoSlave;
-import gr.katsip.synefo.storm.api.Pair;
+import gr.katsip.synefo.utils.Pair;
+import gr.katsip.synefo.utils.JoinOperator;
 
 import java.io.IOException;
 import java.io.InputStream;

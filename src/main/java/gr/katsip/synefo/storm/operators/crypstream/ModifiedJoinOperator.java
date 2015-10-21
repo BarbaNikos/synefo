@@ -1,7 +1,7 @@
 package gr.katsip.synefo.storm.operators.crypstream;
 
 import gr.katsip.synefo.metric.TaskStatistics;
-import gr.katsip.synefo.storm.operators.AbstractStatOperator;
+import gr.katsip.deprecated.AbstractStatOperator;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;

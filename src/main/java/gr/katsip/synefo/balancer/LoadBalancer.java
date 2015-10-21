@@ -1,8 +1,8 @@
 package gr.katsip.synefo.balancer;
 
-import gr.katsip.synefo.server2.JoinOperator;
-import gr.katsip.synefo.storm.api.GenericTriplet;
-import gr.katsip.synefo.storm.api.Pair;
+import gr.katsip.synefo.utils.GenericTriplet;
+import gr.katsip.synefo.utils.Pair;
+import gr.katsip.synefo.utils.JoinOperator;
 import gr.katsip.synefo.utils.Util;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;

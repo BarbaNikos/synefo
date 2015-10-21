@@ -1,6 +1,6 @@
 package gr.katsip.synefo.balancer;
 
-import gr.katsip.synefo.storm.api.Pair;
+import gr.katsip.synefo.utils.Pair;
 import java.util.HashMap;
 
 /**
@@ -18,8 +18,8 @@ public class App {
         boolean INIT_MINIMAL_RESOURCES = Boolean.parseBoolean(args[2]);
         HashMap<String, Pair<Number, Number>> inputRateThresholds = new HashMap<>();
         Pair<Number, Number> pair = new Pair<>();
-        pair.lowerBound = new Integer(500);
-        pair.upperBound = new Integer(500);
+        pair.first = new Integer(500);
+        pair.second = new Integer(500);
         inputRateThresholds.put("input-rate", pair);
 //        BalanceServer server = new BalanceServer(zookeeperAddress, parser.get_thresholds(), null);
         BalanceServer server = new BalanceServer(zookeeperAddress, inputRateThresholds, INIT_MINIMAL_RESOURCES);
