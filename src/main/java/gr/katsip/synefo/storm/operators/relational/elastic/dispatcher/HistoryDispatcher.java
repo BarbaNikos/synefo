@@ -178,66 +178,26 @@ public class HistoryDispatcher implements Serializable, Dispatcher {
     }
 
     public HashMap<Integer, Long> taskStatistics() {
-//        HashMap<Integer, ArrayList<String>> taskToKeyDistribution = new HashMap<>();
-//        Iterator<Map.Entry<String, List<Integer>>> iterator = innerRelationIndex.entrySet().iterator();
-//        while (iterator.hasNext()) {
-//            Map.Entry<String, List<Integer>> entry = iterator.next();
-//            List<Integer> value = entry.getValue();
-//            String key = entry.getKey();
-//            for (Integer t : value) {
-//                if (taskToKeyDistribution.containsKey(t)) {
-//                    ArrayList<String> keys = taskToKeyDistribution.get(t);
-//                    if (keys.indexOf(key) < 0)
-//                        keys.add(key);
-//                    taskToKeyDistribution.put(t, keys);
-//                }else {
-//                    ArrayList<String> keys = new ArrayList<>();
-//                    keys.add(key);
-//                    taskToKeyDistribution.put(t, keys);
-//                }
-//            }
-//        }
-//        iterator = outerRelationIndex.entrySet().iterator();
-//        while (iterator.hasNext()) {
-//            Map.Entry<String, List<Integer>> entry = iterator.next();
-//            List<Integer> value = entry.getValue();
-//            String key = entry.getKey();
-//            for (Integer t : value) {
-//                if (taskToKeyDistribution.containsKey(t)) {
-//                    ArrayList<String> keys = taskToKeyDistribution.get(t);
-//                    if (keys.indexOf(key) < 0)
-//                        keys.add(key);
-//                    taskToKeyDistribution.put(t, keys);
-//                }else {
-//                    ArrayList<String> keys = new ArrayList<>();
-//                    keys.add(key);
-//                    taskToKeyDistribution.put(t, keys);
-//                }
-//            }
-//        }
-//        return taskToKeyDistribution;
         return numberOfKeysPerTask;
     }
 
     @Override
     public int execute(Tuple anchor, OutputCollector collector, Fields fields, Values values) {
         int numberOfTuplesDispatched = 0;
-        Fields attributeNames = new Fields(((Fields) values.get(0)).toList());
-        Values attributeValues = (Values) values.get(1);
-        if (attributeNames.toList().toString().equals(outerRelationSchema.toList().toString())) {
-            String primaryKey = (String) attributeValues.get(outerRelationSchema.fieldIndex(outerRelationKey));
-            String foreignKey = (String) attributeValues.get(outerRelationSchema.fieldIndex(outerRelationForeignKey));
+        if (fields.toList().toString().equals(outerRelationSchema.toList().toString())) {
+            String primaryKey = (String) values.get(outerRelationSchema.fieldIndex(outerRelationKey));
+            String foreignKey = (String) values.get(outerRelationSchema.fieldIndex(outerRelationForeignKey));
             logger.info("received tuple from relation: " + outerRelationName + " with primary key: " + primaryKey +
                     " and join-foreign key: " + foreignKey + ".");
             numberOfTuplesDispatched = dispatch(primaryKey, foreignKey, outerRelationIndex, outerRelationName, innerRelationIndex,
-                    attributeNames, attributeValues, collector, anchor);
-        }else if (attributeNames.toList().toString().equals(innerRelationSchema.toList().toString())) {
-            String primaryKey = (String) attributeValues.get(innerRelationSchema.fieldIndex(innerRelationKey));
-            String foreignKey = (String) attributeValues.get(innerRelationSchema.fieldIndex(innerRelationForeignKey));
+                    fields, values, collector, anchor);
+        }else if (fields.toList().toString().equals(innerRelationSchema.toList().toString())) {
+            String primaryKey = (String) values.get(innerRelationSchema.fieldIndex(innerRelationKey));
+            String foreignKey = (String) values.get(innerRelationSchema.fieldIndex(innerRelationForeignKey));
             logger.info("received tuple from relation: " + outerRelationName + " with primary key: " + primaryKey +
                     " and join-foreign key: " + foreignKey + ".");
             numberOfTuplesDispatched = dispatch(primaryKey, foreignKey, innerRelationIndex, innerRelationName, outerRelationIndex,
-                    attributeNames, attributeValues, collector, anchor);
+                    fields, values, collector, anchor);
         }
         return numberOfTuplesDispatched;
     }

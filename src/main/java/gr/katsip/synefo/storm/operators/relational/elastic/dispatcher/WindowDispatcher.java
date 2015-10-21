@@ -147,8 +147,6 @@ public class WindowDispatcher implements Serializable, Dispatcher {
     @Override
     public int execute(Tuple anchor, OutputCollector collector, Fields fields, Values values) {
         long currentTimestamp = System.currentTimeMillis();
-        Fields attributeNames = new Fields(((Fields) values.get(0)).toList());
-        Values attributeValues = (Values) values.get(1);
         int numberOfTuplesDispatched = 0;
         //First check if a window needs to be discarded and add a new window accordingly
         cleanup(currentTimestamp);
@@ -156,13 +154,13 @@ public class WindowDispatcher implements Serializable, Dispatcher {
 
         Values tuple = new Values();
         tuple.add("0");
-        tuple.add(attributeNames);
-        tuple.add(attributeValues);
+        tuple.add(fields);
+        tuple.add(values);
         /**
          * STORE-and-DISPATCH on the current dispatch window (the first one)
          */
-        if (attributeNames.toList().toString().equals(outerRelationSchema.toList().toString())) {
-            String primaryKey = (String) attributeValues.get(outerRelationSchema.fieldIndex(outerRelationKey));
+        if (fields.toList().toString().equals(outerRelationSchema.toList().toString())) {
+            String primaryKey = (String) values.get(outerRelationSchema.fieldIndex(outerRelationKey));
             if (ringBuffer.getFirst().outerRelationIndex.containsKey(primaryKey)) {
                 List<Integer> dispatchInfo = ringBuffer.getFirst().outerRelationIndex.get(primaryKey);
                 if (taskToRelationIndex.get(outerRelationName).contains(dispatchInfo.get(dispatchInfo.get(0)))) {
@@ -199,8 +197,8 @@ public class WindowDispatcher implements Serializable, Dispatcher {
                     ringBuffer.getFirst().stateSize = ringBuffer.getFirst().stateSize + primaryKey.length() + 4 + 4;
                 }
             }
-        }else if (attributeNames.toList().toString().equals(innerRelationSchema.toList().toString())) {
-            String primaryKey = (String) attributeValues.get(innerRelationSchema.fieldIndex(innerRelationKey));
+        }else if (fields.toList().toString().equals(innerRelationSchema.toList().toString())) {
+            String primaryKey = (String) values.get(innerRelationSchema.fieldIndex(innerRelationKey));
             if (ringBuffer.getFirst().innerRelationIndex.containsKey(primaryKey)) {
                 List<Integer> dispatchInfo = ringBuffer.getFirst().innerRelationIndex.get(primaryKey);
                 if (taskToRelationIndex.get(innerRelationName).contains(dispatchInfo.get(dispatchInfo.get(0)))) {
@@ -244,16 +242,16 @@ public class WindowDispatcher implements Serializable, Dispatcher {
         for (int i = 1; i < ringBuffer.size(); i++) {
             DispatchWindow window = ringBuffer.get(i);
             if((window.start + this.window) > currentTimestamp) {
-                if (attributeNames.toList().toString().equals(outerRelationSchema.toList().toString())) {
-                    String primaryKey = (String) attributeValues.get(outerRelationSchema.fieldIndex(outerRelationKey));
-                    String foreignKey = (String) attributeValues.get(outerRelationSchema.fieldIndex(outerRelationForeignKey));
+                if (fields.toList().toString().equals(outerRelationSchema.toList().toString())) {
+                    String primaryKey = (String) values.get(outerRelationSchema.fieldIndex(outerRelationKey));
+                    String foreignKey = (String) values.get(outerRelationSchema.fieldIndex(outerRelationForeignKey));
                     numberOfTuplesDispatched += dispatch(primaryKey, foreignKey, window.outerRelationIndex, outerRelationName, window.innerRelationIndex, innerRelationName,
-                            attributeNames, attributeValues, collector, anchor);
-                }else if (attributeNames.toList().toString().equals(innerRelationSchema.toList().toString())) {
-                    String primaryKey = (String) attributeValues.get(innerRelationSchema.fieldIndex(innerRelationKey));
-                    String foreignKey = (String) attributeValues.get(innerRelationSchema.fieldIndex(innerRelationForeignKey));
+                            fields, values, collector, anchor);
+                }else if (fields.toList().toString().equals(innerRelationSchema.toList().toString())) {
+                    String primaryKey = (String) values.get(innerRelationSchema.fieldIndex(innerRelationKey));
+                    String foreignKey = (String) values.get(innerRelationSchema.fieldIndex(innerRelationForeignKey));
                     numberOfTuplesDispatched += dispatch(primaryKey, foreignKey, window.innerRelationIndex, innerRelationName, window.outerRelationIndex, outerRelationName,
-                            attributeNames, attributeValues, collector, anchor);
+                            fields, values, collector, anchor);
                 }
             }
         }

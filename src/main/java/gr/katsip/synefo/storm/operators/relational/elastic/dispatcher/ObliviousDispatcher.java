@@ -67,14 +67,12 @@ public class ObliviousDispatcher implements Serializable, Dispatcher {
 
     @Override
     public int execute(Tuple anchor, OutputCollector collector, Fields fields, Values values) {
-        Fields attributeNames = new Fields(((Fields) values.get(0)).toList());
-        Values attributeValues = (Values) values.get(1);
         Values tuple = new Values();
         tuple.add("0");
-        tuple.add(attributeNames);
-        tuple.add(attributeValues);
+        tuple.add(fields);
+        tuple.add(values);
         int numberOfTuplesDispatched = 0;
-        if (attributeNames.toList().toString().equals(outerRelationSchema.toList().toString())) {
+        if (fields.toList().toString().equals(outerRelationSchema.toList().toString())) {
             /**
              * STORE: Send tuple to one of the active tasks of the outer relation (also increment index)
              */
@@ -93,7 +91,7 @@ public class ObliviousDispatcher implements Serializable, Dispatcher {
                 collector.emitDirect(task, anchor, tuple);
                 numberOfTuplesDispatched++;
             }
-        }else if (attributeNames.toList().toString().equals(innerRelationSchema.toList().toString())) {
+        }else if (fields.toList().toString().equals(innerRelationSchema.toList().toString())) {
             /**
              * STORE: Send tuple to one of the active tasks of the outer relation (also increment index)
              */
