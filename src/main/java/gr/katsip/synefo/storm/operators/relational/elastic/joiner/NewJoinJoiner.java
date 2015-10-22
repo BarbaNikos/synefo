@@ -78,13 +78,13 @@ public class NewJoinJoiner implements Serializable {
                 storedJoinAttribute, storedRelation, otherRelation);
     }
 
-    public void init(List<Values> stateValues) {
-        this.stateValues = stateValues;
-    }
+//    public void init(List<Values> stateValues) {
+//        this.stateValues = stateValues;
+//    }
 
-    public void setStateSchema(Fields stateSchema) {
-        //Do nothing
-    }
+//    public void setStateSchema(Fields stateSchema) {
+//        //Do nothing
+//    }
 
     public void setOutputSchema(Fields output_schema) {
         outputSchema = new Fields(output_schema.toList());
@@ -133,17 +133,17 @@ public class NewJoinJoiner implements Serializable {
         return new Pair<>(taskIndex, numberOfTuplesProduced);
     }
 
-    public List<Values> getStateValues() {
-        stateValues.clear();
-        Values state = new Values();
-        state.add(slidingWindowJoin);
-        stateValues.add(state);
-        return stateValues;
-    }
+//    public List<Values> getStateValues() {
+//        stateValues.clear();
+//        Values state = new Values();
+//        state.add(slidingWindowJoin);
+//        stateValues.add(state);
+//        return stateValues;
+//    }
 
-    public Fields getStateSchema() {
-        return null;
-    }
+//    public Fields getStateSchema() {
+//        return null;
+//    }
 
     public Fields getOutputSchema() {
         return outputSchema;
@@ -188,8 +188,8 @@ public class NewJoinJoiner implements Serializable {
         return slidingWindowJoin.getStateSize();
     }
 
-    public Fields getJoinOutputSchema() {
-        return new Fields(joinOutputSchema.toList());
-    }
+//    public Fields getJoinOutputSchema() {
+//        return new Fields(joinOutputSchema.toList());
+//    }
 
 }

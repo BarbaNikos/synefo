@@ -6,7 +6,9 @@ public class JoinOperator {
 	
 	public enum Step {
 		DISPATCH, 
-		JOIN
+		JOIN,
+		COL_DISPATCH,
+		COL_JOIN
 	}
 	
 	private Step step;

@@ -1,4 +1,4 @@
-package gr.katsip.synefo.storm.operators.relational.elastic.joiner.colocated;
+package gr.katsip.synefo.storm.operators.relational.elastic.joiner.collocated;
 
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
@@ -12,9 +12,9 @@ import java.util.LinkedList;
 /**
  * Created by katsip on 10/21/2015.
  */
-public class CollocatedWindowEquiJoiner implements Serializable {
+public class CollocatedWindowEquiJoin implements Serializable {
 
-    private static Logger logger = LoggerFactory.getLogger(CollocatedWindowEquiJoiner.class);
+    private static Logger logger = LoggerFactory.getLogger(CollocatedWindowEquiJoin.class);
 
     private long windowSize;
 
@@ -42,12 +42,12 @@ public class CollocatedWindowEquiJoiner implements Serializable {
 
     private String outerRelation;
 
-    public CollocatedWindowEquiJoiner(long windowSize, long slide, Fields innerRelationSchema,
-                                      Fields outerRelationSchema,
-                                      String innerRelationJoinAttribute,
-                                      String outerRelationJoinAttribute,
-                                      String innerRelation,
-                                      String outerRelation) {
+    public CollocatedWindowEquiJoin(long windowSize, long slide, Fields innerRelationSchema,
+                                    Fields outerRelationSchema,
+                                    String innerRelationJoinAttribute,
+                                    String outerRelationJoinAttribute,
+                                    String innerRelation,
+                                    String outerRelation) {
         this.windowSize = windowSize;
         this.slide = slide;
         this.bufferSize = (int) Math.ceil(this.windowSize / this.slide);
@@ -218,5 +218,9 @@ public class CollocatedWindowEquiJoiner implements Serializable {
             }
         }
         return result;
+    }
+
+    public long getStateSize() {
+        return byteStateSize;
     }
 }

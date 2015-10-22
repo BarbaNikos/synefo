@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -16,7 +17,7 @@ import java.util.List;
 /**
  * Created by katsip on 10/21/2015.
  */
-public class CollocatedWindowDispatcher implements Serializable, Dispatcher {
+public class CollocatedWindowDispatcher implements Serializable {
 
     Logger logger = LoggerFactory.getLogger(CollocatedWindowDispatcher.class);
 
@@ -66,17 +67,16 @@ public class CollocatedWindowDispatcher implements Serializable, Dispatcher {
         outerRelationCardinality = 0;
     }
 
-    @Override
-    public void setTaskToRelationIndex(HashMap<String, List<Integer>> taskToRelationIndex) {
-        this.taskToRelationIndex = new HashMap<>(taskToRelationIndex);
+    public void setTaskToRelationIndex(List<Integer> activeDownstreamTaskIdentifiers) {
+        this.taskToRelationIndex = new HashMap<>();
+        this.taskToRelationIndex.put(innerRelationName, new ArrayList<>(activeDownstreamTaskIdentifiers));
+        this.taskToRelationIndex.put(outerRelationName, new ArrayList<>(activeDownstreamTaskIdentifiers));
     }
 
-    @Override
     public void setOutputSchema(Fields outputSchema) {
         this.outputSchema = new Fields(outputSchema.toList());
     }
 
-    @Override
     public int execute(Tuple anchor, OutputCollector collector, Fields fields, Values values) {
         long currentTimestamp = System.currentTimeMillis();
         int numberOfDispatchedTuples = 0;
@@ -88,7 +88,8 @@ public class CollocatedWindowDispatcher implements Serializable, Dispatcher {
             String key = (String) values.get(innerRelationSchema.fieldIndex(innerRelationKey));
             int victimTaskIndex = key.hashCode() % taskToRelationIndex.get(innerRelationName).size();
             Integer victimTask = taskToRelationIndex.get(innerRelationName).get(victimTaskIndex);
-            collector.emitDirect(victimTask, anchor, tuple);
+            if (collector != null)
+                collector.emitDirect(victimTask, anchor, tuple);
             updateStatistic(currentTimestamp, innerRelationName, victimTask, key);
             numberOfDispatchedTuples++;
             return numberOfDispatchedTuples;
@@ -96,7 +97,8 @@ public class CollocatedWindowDispatcher implements Serializable, Dispatcher {
             String key = (String) values.get(outerRelationSchema.fieldIndex(outerRelationKey));
             int victimTaskIndex = key.hashCode() % taskToRelationIndex.get(outerRelationName).size();
             Integer victimTask = taskToRelationIndex.get(outerRelationName).get(victimTaskIndex);
-            collector.emitDirect(victimTask, anchor, tuple);
+            if (collector != null)
+                collector.emitDirect(victimTask, anchor, tuple);
             updateStatistic(currentTimestamp, outerRelationName, victimTask, key);
             numberOfDispatchedTuples++;
             return numberOfDispatchedTuples;
@@ -144,28 +146,23 @@ public class CollocatedWindowDispatcher implements Serializable, Dispatcher {
         }
     }
 
-    @Override
     public Fields getOutputSchema() {
         return outputSchema;
     }
 
-    @Override
     public void mergeState(List<Values> state) {
         //TODO: Leave blank for now. One dispatcher example
     }
 
-    @Override
     public List<Values> getState() {
         //TODO: Leave blank for now. One dispatcher example
         return null;
     }
 
-    @Override
     public long getStateSize() {
         return 0;
     }
 
-    @Override
     public void updateIndex(String scaleAction, String taskWithIdentifier, String relation, List<String> result) {
         //TODO: Leave blank for now. One dispatcher and state is only the statistics of dispatched tuples
     }

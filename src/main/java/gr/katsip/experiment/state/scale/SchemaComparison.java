@@ -1,11 +1,7 @@
 package gr.katsip.experiment.state.scale;
 
-import backtype.storm.tuple.Fields;
-import gr.katsip.synefo.storm.operators.relational.elastic.joiner.colocated.BasicCollocatedEquiWindow;
-import gr.katsip.tpch.LineItem;
-import gr.katsip.tpch.Order;
+import gr.katsip.synefo.storm.operators.relational.elastic.joiner.collocated.BasicCollocatedEquiWindow;
 
-import java.util.Arrays;
 import java.util.LinkedList;
 
 /**

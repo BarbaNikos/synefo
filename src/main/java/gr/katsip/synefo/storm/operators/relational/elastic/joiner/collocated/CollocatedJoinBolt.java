@@ -1,4 +1,4 @@
-package gr.katsip.synefo.storm.api;
+package gr.katsip.synefo.storm.operators.relational.elastic.joiner.collocated;
 
 import backtype.storm.metric.api.AssignableMetric;
 import backtype.storm.task.OutputCollector;
@@ -8,11 +8,11 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import gr.katsip.synefo.storm.api.ZookeeperClient;
 import gr.katsip.synefo.utils.Pair;
-import gr.katsip.synefo.utils.Util;
-import gr.katsip.synefo.utils.SynefoMessage;
-import gr.katsip.synefo.storm.operators.relational.elastic.joiner.NewJoinJoiner;
 import gr.katsip.synefo.utils.SynefoConstant;
+import gr.katsip.synefo.utils.SynefoMessage;
+import gr.katsip.synefo.utils.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,11 +25,11 @@ import java.net.UnknownHostException;
 import java.util.*;
 
 /**
- * Created by katsip on 9/21/2015.
+ * Created by katsip on 10/22/2015.
  */
-public class JoinBolt extends BaseRichBolt {
+public class CollocatedJoinBolt extends BaseRichBolt {
 
-    Logger logger = LoggerFactory.getLogger(JoinBolt.class);
+    Logger logger = LoggerFactory.getLogger(CollocatedJoinBolt.class);
 
     private static final int METRIC_REPORT_FREQ_SEC = 5;
 
@@ -63,7 +63,7 @@ public class JoinBolt extends BaseRichBolt {
 
     private Integer downstreamIndex;
 
-    private NewJoinJoiner joiner;
+    private CollocatedEquiJoiner joiner;
 
     private boolean SYSTEM_WARM_FLAG;
 
@@ -111,8 +111,8 @@ public class JoinBolt extends BaseRichBolt {
 
     private List<String> keys = null;
 
-    public JoinBolt(String taskName, String synefoAddress, Integer synefoPort,
-                    NewJoinJoiner joiner, String zookeeperAddress) {
+    public CollocatedJoinBolt(String taskName, String synefoAddress, Integer synefoPort,
+                              CollocatedEquiJoiner joiner, String zookeeperAddress) {
         this.taskName = taskName;
         this.workerPort = -1;
         this.synefoAddress = synefoAddress;
@@ -135,8 +135,7 @@ public class JoinBolt extends BaseRichBolt {
         message._type = SynefoMessage.Type.REG;
         message._values.put("TASK_IP", taskAddress);
         message._values.put("TASK_TYPE", "JOIN_BOLT");
-        message._values.put("JOIN_STEP", joiner.operatorStep());
-        message._values.put("JOIN_RELATION", joiner.relationStorage());
+        message._values.put("JOIN_STEP", "COL_JOIN");
         message._values.put("TASK_NAME", taskName);
         message._values.put("TASK_ID", Integer.toString(taskIdentifier));
         message._values.put("WORKER_PORT", Integer.toString(workerPort));
@@ -148,7 +147,7 @@ public class JoinBolt extends BaseRichBolt {
             output.flush();
             logger.info("JOIN-BOLT-" + taskName + ":" + taskIdentifier + ": connected to synefo");
             ArrayList<String> downstream = (ArrayList<String>) input.readObject();
-            if(downstream.size() > 0) {
+            if (downstream.size() > 0) {
                 downstreamTaskNames = new ArrayList<>(downstream);
                 downstreamTaskIdentifiers = new ArrayList<>();
                 Iterator<String> itr = downstreamTaskNames.iterator();
@@ -186,12 +185,12 @@ public class JoinBolt extends BaseRichBolt {
         zookeeperClient.init();
         zookeeperClient.getScaleCommand();
         StringBuilder strBuild = new StringBuilder();
-        strBuild.append("JOIN-BOLT-" + taskName + ":" + taskIdentifier + ": active tasks: ");
+        strBuild.append("COL-JOIN-BOLT-" + taskName + ":" + taskIdentifier + ": active tasks: ");
         for(String activeTask : activeDownstreamTaskNames) {
             strBuild.append(activeTask + " ");
         }
         logger.info(strBuild.toString());
-        logger.info("JOIN-BOLT-" + taskName + ":" + taskIdentifier + " registered to load-balancer");
+        logger.info("COL-JOIN-BOLT-" + taskName + ":" + taskIdentifier + " registered to load-balancer");
         downstreamIndex = 0;
         inputRatePreviousTimestamp = System.currentTimeMillis();
         throughputPreviousTimestamp = System.currentTimeMillis();
@@ -226,11 +225,11 @@ public class JoinBolt extends BaseRichBolt {
         inputRate = new AssignableMetric(null);
         throughput = new AssignableMetric(null);
         stateTransferTime = new AssignableMetric(null);
-        context.registerMetric("execute-latency", executeLatency, JoinBolt.METRIC_REPORT_FREQ_SEC);
-        context.registerMetric("state-size", stateSize, JoinBolt.METRIC_REPORT_FREQ_SEC);
-        context.registerMetric("input-rate", inputRate, JoinBolt.METRIC_REPORT_FREQ_SEC);
-        context.registerMetric("throughput", throughput, JoinBolt.METRIC_REPORT_FREQ_SEC);
-        context.registerMetric("state-transfer", stateTransferTime, JoinBolt.METRIC_REPORT_FREQ_SEC);
+        context.registerMetric("execute-latency", executeLatency, METRIC_REPORT_FREQ_SEC);
+        context.registerMetric("state-size", stateSize, METRIC_REPORT_FREQ_SEC);
+        context.registerMetric("input-rate", inputRate, METRIC_REPORT_FREQ_SEC);
+        context.registerMetric("throughput", throughput, METRIC_REPORT_FREQ_SEC);
+        context.registerMetric("state-transfer", stateTransferTime, METRIC_REPORT_FREQ_SEC);
     }
 
     private boolean isScaleHeader(String header) {
@@ -316,133 +315,134 @@ public class JoinBolt extends BaseRichBolt {
         }
     }
 
+    public void manageCommand(String command) {
+        //TODO: Not supported yet!
+    }
+
+    public void manageStateTuple(Tuple tuple) {
+//        if (SCALE_RECEIVE_STATE) {
+//            if (stateTaskIdentifier == taskIdentifier) {
+//                //Case where state is received by a newly-added Joiner
+//                HashMap<String, ArrayList<Values>> statePacket =
+//                        (HashMap<String, ArrayList<Values>>) tuple.getValue(1);
+//                Util.mergeState(state, statePacket);
+//                numberOfConnections++;
+//                if (numberOfConnections >= stateTaskNumber) {
+//                    logger.info(taskName + ":" + taskIdentifier + " completed the reception of state from (" + stateTaskNumber + ") tasks.");
+//                    keys = joiner.setState(state);
+//                    zookeeperClient.setJoinState(taskName, taskIdentifier, keys);
+//                    keys.clear();
+//                    state.clear();
+//                    SCALE_RECEIVE_STATE = false;
+//                    numberOfConnections = -1;
+//                    stateTaskNumber = -1;
+//                    stateTaskIdentifier = -1;
+//                    long currentTimestamp = System.currentTimeMillis();
+//                    stateTransferTime.setValue((currentTimestamp - startTransferTimestamp));
+//                }
+//            }else {
+//                //Case where state is received by a remaining-task (Joiner)
+//                logger.info(taskName + ":" + taskIdentifier + " completed the reception of state from removed-task (" + tuple.getSourceTask() + ").");
+//                HashMap<String, ArrayList<Values>> statePacket =
+//                        (HashMap<String, ArrayList<Values>>) tuple.getValue(1);
+//                joiner.addToState(statePacket);
+//                SCALE_RECEIVE_STATE = false;
+//                numberOfConnections = -1;
+//                stateTaskNumber = -1;
+//                stateTaskIdentifier = -1;
+//            }
+//        }else if (SCALE_SEND_STATE) {
+//            //Case where state is send by a about-to-be-removed Joiner
+//            numberOfConnections++;
+//            HashMap<String, ArrayList<Values>> statePacket = joiner.getStateToBeSent();
+//            String stateHeader = SynefoConstant.STATE_PREFIX + "/" + SynefoConstant.COMP_TAG + ":" +
+//                    taskIdentifier + "/";
+//            Integer identifier = Integer.parseInt(((String) tuple.getValue(0)).split("[:/]")[2]);
+//            Values stateTuple = new Values();
+//            stateTuple.add(stateHeader);
+//            stateTuple.add(statePacket);
+//            for (int i = 0; i < (joiner.getOutputSchema().size() - 1); i++)
+//                stateTuple.add(null);
+//            Iterator<Map.Entry<String, ArrayList<Values>>> iterator = statePacket.entrySet().iterator();
+//            StringBuilder stringBuilder = new StringBuilder();
+//            while (iterator.hasNext()) {
+//                stringBuilder.append(iterator.next().getKey() + ",");
+//            }
+//            if (stringBuilder.length() > 0 && stringBuilder.charAt(stringBuilder.length() - 1) == ',') {
+//                stringBuilder.setLength(stringBuilder.length() - 1);
+//            }
+//            collector.emitDirect(identifier, stateTuple);
+//            keys.add(tuple.getSourceTask() + "=" + stringBuilder.toString());
+//            if (numberOfConnections >= stateTaskNumber) {
+//                logger.info(taskName + ":" + taskIdentifier + " completed the transmission of state to (" + stateTaskNumber + ") tasks.");
+//                zookeeperClient.setJoinState(taskName, taskIdentifier, keys);
+//                keys.clear();
+//                SCALE_SEND_STATE = false;
+//                numberOfConnections = -1;
+//                stateTaskNumber = -1;
+//                stateTaskIdentifier = -1;
+//                long currentTimestamp = System.currentTimeMillis();
+//                stateTransferTime.setValue((currentTimestamp - startTransferTimestamp));
+//            }
+//        }
+    }
+
+    public void altManageScaleTuple(Tuple tuple) {
+//        String[] tokens = ((String) tuple.getValues().get(0)).split("[/:]");
+//        String scaleAction = tokens[2];
+//        String taskName = tokens[4];
+//        stateTaskIdentifier = Integer.parseInt(tokens[5]);
+//        stateTaskNumber = Integer.parseInt(tokens[7]);
+//        logger.info("JOIN-BOLT-" + taskName + ":" + taskIdentifier + ": received scale-command: " +
+//                scaleAction + "(" + System.currentTimeMillis() + ")");
+//        if (scaleAction.equals(SynefoConstant.ADD_ACTION)) {
+//            if ((this.taskName + ":" + this.taskIdentifier).equals(taskName + ":" + taskIdentifier)) {
+//                numberOfConnections = 0;
+//                SCALE_RECEIVE_STATE = true;
+//                state = new HashMap<>();
+//                startTransferTimestamp = System.currentTimeMillis();
+//            }else {
+//                HashMap<String, ArrayList<Values>> statePacket = joiner.getStateToBeSent();
+//                String stateHeader = SynefoConstant.STATE_PREFIX + "/" + SynefoConstant.COMP_TAG + ":" +
+//                        taskIdentifier + "/";
+//                Values stateTuple = new Values();
+//                stateTuple.add(stateHeader);
+//                stateTuple.add(statePacket);
+//                for (int i = 0; i < (joiner.getOutputSchema().size() - 1); i++)
+//                    stateTuple.add(null);
+//                collector.emitDirect(stateTaskIdentifier, stateTuple);
+//                activeDownstreamTaskIdentifiers = zookeeperClient.getActiveDownstreamTaskIdentifiers();
+//                numberOfConnections = -1;
+//                stateTaskNumber = -1;
+//                stateTaskIdentifier = -1;
+//            }
+//        }else if (scaleAction.equals(SynefoConstant.REMOVE_ACTION)) {
+//            if ((this.taskName + ":" + this.taskIdentifier).equals(taskName + ":" + taskIdentifier)) {
+//                numberOfConnections = 0;
+//                SCALE_SEND_STATE = true;
+//                keys = new ArrayList<>();
+//                startTransferTimestamp = System.currentTimeMillis();
+//            }else {
+//                SCALE_RECEIVE_STATE = true;
+//                String stateHeader = SynefoConstant.STATE_PREFIX + "/" + SynefoConstant.COMP_TAG + ":" +
+//                        taskIdentifier + "/";
+//                Values stateTuple = new Values();
+//                stateTuple.add(stateHeader);
+//                for (int i = 0; i < (joiner.getOutputSchema().size()); i++)
+//                    stateTuple.add(null);
+//                collector.emitDirect(stateTaskIdentifier, stateTuple);
+//            }
+//        }
+    }
+
     @Override
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
-        List<String> schema = new ArrayList<>();
+        List<String> schema = new ArrayList<String>();
         schema.add("SYNEFO_HEADER");
         schema.add("attributes");
         schema.add("values");
         outputFieldsDeclarer.declare(new Fields(schema));
     }
 
-    public void manageCommand(String command) {
-        //TODO: Not supported yet!
-    }
-
-    public void manageStateTuple(Tuple tuple) {
-        if (SCALE_RECEIVE_STATE) {
-            if (stateTaskIdentifier == taskIdentifier) {
-                //Case where state is received by a newly-added Joiner
-                HashMap<String, ArrayList<Values>> statePacket =
-                        (HashMap<String, ArrayList<Values>>) tuple.getValue(1);
-                Util.mergeState(state, statePacket);
-                numberOfConnections++;
-                if (numberOfConnections >= stateTaskNumber) {
-                    logger.info(taskName + ":" + taskIdentifier + " completed the reception of state from (" + stateTaskNumber + ") tasks.");
-                    keys = joiner.setState(state);
-                    zookeeperClient.setJoinState(taskName, taskIdentifier, keys);
-                    keys.clear();
-                    state.clear();
-                    SCALE_RECEIVE_STATE = false;
-                    numberOfConnections = -1;
-                    stateTaskNumber = -1;
-                    stateTaskIdentifier = -1;
-                    long currentTimestamp = System.currentTimeMillis();
-                    stateTransferTime.setValue((currentTimestamp - startTransferTimestamp));
-                }
-            }else {
-                //Case where state is received by a remaining-task (Joiner)
-                logger.info(taskName + ":" + taskIdentifier + " completed the reception of state from removed-task (" + tuple.getSourceTask() + ").");
-                HashMap<String, ArrayList<Values>> statePacket =
-                        (HashMap<String, ArrayList<Values>>) tuple.getValue(1);
-                joiner.addToState(statePacket);
-                SCALE_RECEIVE_STATE = false;
-                numberOfConnections = -1;
-                stateTaskNumber = -1;
-                stateTaskIdentifier = -1;
-            }
-        }else if (SCALE_SEND_STATE) {
-            //Case where state is send by a about-to-be-removed Joiner
-            numberOfConnections++;
-            HashMap<String, ArrayList<Values>> statePacket = joiner.getStateToBeSent();
-            String stateHeader = SynefoConstant.STATE_PREFIX + "/" + SynefoConstant.COMP_TAG + ":" +
-                    taskIdentifier + "/";
-            Integer identifier = Integer.parseInt(((String) tuple.getValue(0)).split("[:/]")[2]);
-            Values stateTuple = new Values();
-            stateTuple.add(stateHeader);
-            stateTuple.add(statePacket);
-            for (int i = 0; i < (joiner.getOutputSchema().size() - 1); i++)
-                stateTuple.add(null);
-            Iterator<Map.Entry<String, ArrayList<Values>>> iterator = statePacket.entrySet().iterator();
-            StringBuilder stringBuilder = new StringBuilder();
-            while (iterator.hasNext()) {
-                stringBuilder.append(iterator.next().getKey() + ",");
-            }
-            if (stringBuilder.length() > 0 && stringBuilder.charAt(stringBuilder.length() - 1) == ',') {
-                stringBuilder.setLength(stringBuilder.length() - 1);
-            }
-            collector.emitDirect(identifier, stateTuple);
-            keys.add(tuple.getSourceTask() + "=" + stringBuilder.toString());
-            if (numberOfConnections >= stateTaskNumber) {
-                logger.info(taskName + ":" + taskIdentifier + " completed the transmission of state to (" + stateTaskNumber + ") tasks.");
-                zookeeperClient.setJoinState(taskName, taskIdentifier, keys);
-                keys.clear();
-                SCALE_SEND_STATE = false;
-                numberOfConnections = -1;
-                stateTaskNumber = -1;
-                stateTaskIdentifier = -1;
-                long currentTimestamp = System.currentTimeMillis();
-                stateTransferTime.setValue((currentTimestamp - startTransferTimestamp));
-            }
-        }
-    }
-
-    public void altManageScaleTuple(Tuple tuple) {
-        String[] tokens = ((String) tuple.getValues().get(0)).split("[/:]");
-        String scaleAction = tokens[2];
-        String taskName = tokens[4];
-        stateTaskIdentifier = Integer.parseInt(tokens[5]);
-        stateTaskNumber = Integer.parseInt(tokens[7]);
-        logger.info("JOIN-BOLT-" + taskName + ":" + taskIdentifier + ": received scale-command: " +
-                scaleAction + "(" + System.currentTimeMillis() + ")");
-        if (scaleAction.equals(SynefoConstant.ADD_ACTION)) {
-            if ((this.taskName + ":" + this.taskIdentifier).equals(taskName + ":" + taskIdentifier)) {
-                numberOfConnections = 0;
-                SCALE_RECEIVE_STATE = true;
-                state = new HashMap<>();
-                startTransferTimestamp = System.currentTimeMillis();
-            }else {
-                HashMap<String, ArrayList<Values>> statePacket = joiner.getStateToBeSent();
-                String stateHeader = SynefoConstant.STATE_PREFIX + "/" + SynefoConstant.COMP_TAG + ":" +
-                        taskIdentifier + "/";
-                Values stateTuple = new Values();
-                stateTuple.add(stateHeader);
-                stateTuple.add(statePacket);
-                for (int i = 0; i < (joiner.getOutputSchema().size() - 1); i++)
-                    stateTuple.add(null);
-                collector.emitDirect(stateTaskIdentifier, stateTuple);
-                activeDownstreamTaskIdentifiers = zookeeperClient.getActiveDownstreamTaskIdentifiers();
-                numberOfConnections = -1;
-                stateTaskNumber = -1;
-                stateTaskIdentifier = -1;
-            }
-        }else if (scaleAction.equals(SynefoConstant.REMOVE_ACTION)) {
-            if ((this.taskName + ":" + this.taskIdentifier).equals(taskName + ":" + taskIdentifier)) {
-                numberOfConnections = 0;
-                SCALE_SEND_STATE = true;
-                keys = new ArrayList<>();
-                startTransferTimestamp = System.currentTimeMillis();
-            }else {
-                SCALE_RECEIVE_STATE = true;
-                String stateHeader = SynefoConstant.STATE_PREFIX + "/" + SynefoConstant.COMP_TAG + ":" +
-                        taskIdentifier + "/";
-                Values stateTuple = new Values();
-                stateTuple.add(stateHeader);
-                for (int i = 0; i < (joiner.getOutputSchema().size()); i++)
-                    stateTuple.add(null);
-                collector.emitDirect(stateTaskIdentifier, stateTuple);
-            }
-        }
-    }
 
 }

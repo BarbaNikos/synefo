@@ -10,7 +10,11 @@ import backtype.storm.tuple.Fields;
 import gr.katsip.synefo.storm.api.DispatchBolt;
 import gr.katsip.synefo.storm.api.ElasticFileSpout;
 import gr.katsip.synefo.storm.api.JoinBolt;
+import gr.katsip.synefo.storm.operators.relational.elastic.dispatcher.collocated.CollocatedDispatchBolt;
+import gr.katsip.synefo.storm.operators.relational.elastic.dispatcher.collocated.CollocatedWindowDispatcher;
 import gr.katsip.synefo.storm.operators.relational.elastic.joiner.NewJoinJoiner;
+import gr.katsip.synefo.storm.operators.relational.elastic.joiner.collocated.CollocatedEquiJoiner;
+import gr.katsip.synefo.storm.operators.relational.elastic.joiner.collocated.CollocatedJoinBolt;
 import gr.katsip.synefo.storm.producers.FileProducer;
 import gr.katsip.synefo.storm.producers.LocalControlledFileProducer;
 import gr.katsip.synefo.storm.producers.LocalFileProducer;
@@ -60,7 +64,8 @@ public class TopologyDriver {
     public enum DispatcherType {
         OBLIVIOUS_DISPATCH,
         WINDOW_DISPATCH,
-        HISTORY_DISPATCH
+        HISTORY_DISPATCH,
+        COLLOCATED_WINDOW_DISPATCH
     }
 
     public enum FileReaderType {
@@ -104,9 +109,11 @@ public class TopologyDriver {
             String strType = reader.readLine().split("=")[1].toUpperCase();
             if (DispatcherType.valueOf(strType) == DispatcherType.OBLIVIOUS_DISPATCH) {
                 type = DispatcherType.OBLIVIOUS_DISPATCH;
-            }else if (DispatcherType.valueOf(strType) == DispatcherType.WINDOW_DISPATCH) {
+            } else if (DispatcherType.valueOf(strType) == DispatcherType.WINDOW_DISPATCH) {
                 type = DispatcherType.WINDOW_DISPATCH;
-            }else {
+            } else if (DispatcherType.valueOf(strType) == DispatcherType.COLLOCATED_WINDOW_DISPATCH) {
+                type = DispatcherType.COLLOCATED_WINDOW_DISPATCH;
+            } else {
                 type = DispatcherType.HISTORY_DISPATCH;
             }
             String strReaderType = reader.readLine().split("=")[1].toUpperCase();
@@ -160,60 +167,89 @@ public class TopologyDriver {
         topology.put("order", tasks);
         topology.put("lineitem", new ArrayList<>(tasks));
 
-        Dispatcher dispatcher;
+        Dispatcher dispatcher = null;
+        CollocatedWindowDispatcher collocatedWindowDispatcher = null;
         switch (type) {
             case OBLIVIOUS_DISPATCH:
-                dispatcher = new ObliviousDispatcher("order", new Fields(Order.schema), Order.query5Schema[0],
-                        Order.query5Schema[0], "lineitem", new Fields(LineItem.schema),
+                dispatcher = new ObliviousDispatcher("order", new Fields(Order.schema), Order.schema[0],
+                        Order.schema[0], "lineitem", new Fields(LineItem.schema),
                         LineItem.query5Schema[0], LineItem.query5Schema[0], new Fields(schema));
                 break;
             case WINDOW_DISPATCH:
-                dispatcher = new WindowDispatcher("order", new Fields(Order.schema), Order.query5Schema[0],
-                        Order.query5Schema[0], "lineitem", new Fields(LineItem.schema),
+                dispatcher = new WindowDispatcher("order", new Fields(Order.schema), Order.schema[0],
+                        Order.schema[0], "lineitem", new Fields(LineItem.schema),
                         LineItem.query5Schema[0], LineItem.query5Schema[0], new Fields(schema),
                         (long) windowInMinutes * 2 * (60 * 1000), slideInMilliSeconds);
                 break;
             case HISTORY_DISPATCH:
-                dispatcher = new HistoryDispatcher("order", new Fields(Order.schema), Order.query5Schema[0],
-                        Order.query5Schema[0], "lineitem", new Fields(LineItem.schema),
+                dispatcher = new HistoryDispatcher("order", new Fields(Order.schema), Order.schema[0],
+                        Order.schema[0], "lineitem", new Fields(LineItem.schema),
                         LineItem.query5Schema[0], LineItem.query5Schema[0], new Fields(schema));
+                break;
+            case COLLOCATED_WINDOW_DISPATCH:
+                collocatedWindowDispatcher = new CollocatedWindowDispatcher("order", new Fields(Order.schema), Order.schema[0],
+                        "lineitem", new Fields(LineItem.schema), LineItem.schema[0],
+                        new Fields(schema), (long) windowInMinutes * 2 * (60 * 1000), slideInMilliSeconds);
                 break;
             default:
                 dispatcher = new ObliviousDispatcher("order", new Fields(Order.schema), Order.query5Schema[0],
                         Order.query5Schema[0], "lineitem", new Fields(LineItem.schema),
                         LineItem.query5Schema[0], LineItem.query5Schema[0], new Fields(schema));
         }
-        builder.setBolt("dispatch", new DispatchBolt("dispatch", synefoAddress, synefoPort, dispatcher, zookeeperAddress),
-                scale)
-                .setNumTasks(scale)
-                .directGrouping("order")
-                .directGrouping("lineitem");
-        numberOfTasks += scale;
-        tasks = new ArrayList<>();
-        tasks.add("joinorder");
-        tasks.add("joinline");
-        topology.put("dispatch", tasks);
+        if (collocatedWindowDispatcher == null) {
+            builder.setBolt("dispatch", new DispatchBolt("dispatch", synefoAddress, synefoPort, dispatcher, zookeeperAddress),
+                    scale)
+                    .setNumTasks(scale)
+                    .directGrouping("order")
+                    .directGrouping("lineitem");
+            numberOfTasks += scale;
+            tasks = new ArrayList<>();
+            tasks.add("joinorder");
+            tasks.add("joinline");
+            topology.put("dispatch", tasks);
+            NewJoinJoiner joiner = new NewJoinJoiner("order", new Fields(Order.schema), "lineitem", new Fields(LineItem.schema),
+                    "O_ORDERKEY", "L_ORDERKEY", (int) windowInMinutes * (60 * 1000), (int) slideInMilliSeconds);
+            joiner.setOutputSchema(new Fields(schema));
+            builder.setBolt("joinorder", new JoinBolt("joinorder", synefoAddress, synefoPort, joiner, zookeeperAddress),
+                    scale)
+                    .setNumTasks(scale)
+                    .directGrouping("dispatch");
+            numberOfTasks += scale;
+            topology.put("joinorder", new ArrayList<String>());
 
-        NewJoinJoiner joiner = new NewJoinJoiner("order", new Fields(Order.schema), "lineitem", new Fields(LineItem.schema),
-                "O_ORDERKEY", "L_ORDERKEY", (int) windowInMinutes * (60 * 1000), (int) slideInMilliSeconds);
-        joiner.setOutputSchema(new Fields(schema));
-        builder.setBolt("joinorder", new JoinBolt("joinorder", synefoAddress, synefoPort, joiner, zookeeperAddress),
-                scale)
-                .setNumTasks(scale)
-                .directGrouping("dispatch");
-        numberOfTasks += scale;
-        topology.put("joinorder", new ArrayList<String>());
-
-        joiner = new NewJoinJoiner("lineitem", new Fields(LineItem.schema), "order", new Fields(Order.schema),
-                "L_ORDERKEY", "O_ORDERKEY", (int) windowInMinutes * (60 * 1000), (int) slideInMilliSeconds);
-        joiner.setOutputSchema(new Fields(schema));
-        builder.setBolt("joinline", new JoinBolt("joinline", synefoAddress, synefoPort, joiner, zookeeperAddress),
-                scale)
-                .setNumTasks(scale)
-                .directGrouping("dispatch");
-        numberOfTasks += scale;
-        topology.put("joinline", new ArrayList<String>());
-
+            joiner = new NewJoinJoiner("lineitem", new Fields(LineItem.schema), "order", new Fields(Order.schema),
+                    "L_ORDERKEY", "O_ORDERKEY", (int) windowInMinutes * (60 * 1000), (int) slideInMilliSeconds);
+            joiner.setOutputSchema(new Fields(schema));
+            builder.setBolt("joinline", new JoinBolt("joinline", synefoAddress, synefoPort, joiner, zookeeperAddress),
+                    scale)
+                    .setNumTasks(scale)
+                    .directGrouping("dispatch");
+            numberOfTasks += scale;
+            topology.put("joinline", new ArrayList<String>());
+        }else {
+            /**
+             * Dispatcher's scale is only 1
+             */
+            builder.setBolt("dispatch", new CollocatedDispatchBolt("dispatch", synefoAddress, synefoPort,
+                            collocatedWindowDispatcher, zookeeperAddress), 1)
+                    .setNumTasks(1)
+                    .directGrouping("order")
+                    .directGrouping("lineitem");
+            numberOfTasks += 1;
+            tasks = new ArrayList<>();
+            tasks.add("joiner");
+            topology.put("dispatch", tasks);
+            CollocatedEquiJoiner joiner = new CollocatedEquiJoiner("lineitem", new Fields(LineItem.schema), "order",
+                    new Fields(Order.schema), LineItem.schema[0], Order.schema[0], (int) windowInMinutes * (60 * 1000),
+                    (int) slideInMilliSeconds);
+            joiner.setOutputSchema(new Fields(schema));
+            builder.setBolt("joiner", new CollocatedJoinBolt("joiner", synefoAddress, synefoPort, joiner, zookeeperAddress),
+                    scale)
+                    .setNumTasks(scale)
+                    .directGrouping("dispatch");
+            numberOfTasks += scale;
+            topology.put("joiner", new ArrayList<String>());
+        }
         try {
             Socket socket = new Socket(synefoAddress, synefoPort);
             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());

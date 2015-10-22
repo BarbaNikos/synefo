@@ -383,10 +383,11 @@ public class DispatchBolt extends BaseRichBolt {
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
-        List<String> producerSchema = new ArrayList<String>();
-        producerSchema.add("SYNEFO_HEADER");
-        producerSchema.addAll(dispatcher.getOutputSchema().toList());
-        outputFieldsDeclarer.declare(new Fields(producerSchema));
+        List<String> schema = new ArrayList<>();
+        schema.add("SYNEFO_HEADER");
+        schema.add("attributes");
+        schema.add("values");
+        outputFieldsDeclarer.declare(new Fields(schema));
     }
 
     public void manageCommand(String command) {

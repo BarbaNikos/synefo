@@ -148,14 +148,23 @@ public class LoadSlave implements Runnable {
 
     public void bolt(HashMap<String, String> values) {
         String joinStep = values.get("JOIN_STEP");
-        String relation = values.get("JOIN_RELATION");
+        String relation = "";
+        if (joinStep.equals("COL_DISPATCH") == false && joinStep.equals("COL_JOIN") == false) {
+            relation = values.get("JOIN_RELATION");
+        }
         identifier = Integer.parseInt(values.get("TASK_ID"));
         taskName = values.get("TASK_NAME");
         taskAddress = values.get("TASK_IP");
         workerPort = Integer.parseInt(values.get("WORKER_PORT"));
-        JoinOperator operator = new JoinOperator(identifier,
+        JoinOperator operator = null;
+        if (!relation.equals(""))
+            operator = new JoinOperator(identifier,
                 (joinStep.equals("DISPATCH") ? JoinOperator.Step.DISPATCH : JoinOperator.Step.JOIN),
                 relation);
+        else
+            operator = new JoinOperator(identifier,
+                    (joinStep.equals("COL_DISPATCH") ? JoinOperator.Step.COL_DISPATCH : JoinOperator.Step.COL_JOIN),
+                    relation);
         System.out.println("LoadSlave: bolt connected with name=" + taskName + ", id=" + identifier + ", address=" +
                 taskAddress + ", join=" + joinStep);
         this.taskToJoinRelation.putIfAbsent(identifier, operator);
