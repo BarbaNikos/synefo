@@ -19,9 +19,13 @@ public class CollocatedDispatchWindow implements Serializable {
 
     public HashMap<String, List<Integer>> innerRelationIndex;
 
-    public long innerRelationCardinality;
+    public HashMap<Integer, Integer> numberOfTuplesPerTask;
 
-    public long outerRelationCardinality;
+    public HashMap<String, Integer> keyToTaskMapping;
+
+    public Long innerRelationCardinality;
+
+    public Long outerRelationCardinality;
 
     public CollocatedDispatchWindow() {
         start = 0L;
@@ -31,6 +35,8 @@ public class CollocatedDispatchWindow implements Serializable {
         innerRelationIndex = new HashMap<>();
         innerRelationCardinality = 0L;
         outerRelationCardinality = 0L;
+        numberOfTuplesPerTask = new HashMap<>();
+        keyToTaskMapping = new HashMap<>();
     }
 
 }

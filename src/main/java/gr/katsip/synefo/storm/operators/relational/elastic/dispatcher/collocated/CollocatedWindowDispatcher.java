@@ -44,6 +44,10 @@ public class CollocatedWindowDispatcher implements Serializable, Dispatcher {
 
     private HashMap<String, List<Integer>> taskToRelationIndex;
 
+    private int innerRelationCardinality;
+
+    private int outerRelationCardinality;
+
     public CollocatedWindowDispatcher(String outerRelationName, Fields outerRelationSchema, String outerRelationKey,
                                       String innerRelationName, Fields innerRelationSchema, String innerRelationKey,
                                       Fields outputSchema, long window, long slide) {
@@ -58,6 +62,8 @@ public class CollocatedWindowDispatcher implements Serializable, Dispatcher {
         this.innerRelationKey = innerRelationKey;
         this.outerRelationKey = outerRelationKey;
         this.outputSchema = new Fields(outputSchema.toList());
+        innerRelationCardinality = 0;
+        outerRelationCardinality = 0;
     }
 
     @Override
@@ -72,7 +78,70 @@ public class CollocatedWindowDispatcher implements Serializable, Dispatcher {
 
     @Override
     public int execute(Tuple anchor, OutputCollector collector, Fields fields, Values values) {
+        long currentTimestamp = System.currentTimeMillis();
+        int numberOfDispatchedTuples = 0;
+        Values tuple = new Values();
+        tuple.add("0");
+        tuple.add(fields);
+        tuple.add(values);
+        if (fields.toList().toString().equals(innerRelationSchema.toList().toString())) {
+            String key = (String) values.get(innerRelationSchema.fieldIndex(innerRelationKey));
+            int victimTaskIndex = key.hashCode() % taskToRelationIndex.get(innerRelationName).size();
+            Integer victimTask = taskToRelationIndex.get(innerRelationName).get(victimTaskIndex);
+            collector.emitDirect(victimTask, anchor, tuple);
+            updateStatistic(currentTimestamp, innerRelationName, victimTask, key);
+            numberOfDispatchedTuples++;
+            return numberOfDispatchedTuples;
+        }else if (fields.toList().toString().equals(outerRelationSchema.toList().toString())) {
+            String key = (String) values.get(outerRelationSchema.fieldIndex(outerRelationKey));
+            int victimTaskIndex = key.hashCode() % taskToRelationIndex.get(outerRelationName).size();
+            Integer victimTask = taskToRelationIndex.get(outerRelationName).get(victimTaskIndex);
+            collector.emitDirect(victimTask, anchor, tuple);
+            updateStatistic(currentTimestamp, outerRelationName, victimTask, key);
+            numberOfDispatchedTuples++;
+            return numberOfDispatchedTuples;
+        }
         return 0;
+    }
+
+    public void updateStatistic(Long timestamp, String relation, Integer victimTask, String key) {
+        if (ringBuffer.size() >= bufferSize && (ringBuffer.getLast().start + this.window) <= timestamp) {
+            CollocatedDispatchWindow window = ringBuffer.removeLast();
+            innerRelationCardinality -= (window.innerRelationCardinality);
+            outerRelationCardinality -= (window.outerRelationCardinality);
+        }
+        if (ringBuffer.size() == 0) {
+            CollocatedDispatchWindow window = new CollocatedDispatchWindow();
+            window.start = timestamp;
+            window.end = window.start + slide;
+            ringBuffer.addFirst(window);
+        }else if (ringBuffer.getFirst().end < timestamp && ringBuffer.size() < bufferSize) {
+            CollocatedDispatchWindow window = new CollocatedDispatchWindow();
+            window.start = ringBuffer.getFirst().end + 1;
+            window.end = window.start + slide;
+            ringBuffer.addFirst(window);
+        }
+        if (relation.equals(innerRelationName)) {
+            if (ringBuffer.getFirst().numberOfTuplesPerTask.containsKey(victimTask)) {
+                Integer counter = ringBuffer.getFirst().numberOfTuplesPerTask.get(victimTask);
+                ringBuffer.getFirst().numberOfTuplesPerTask.put(victimTask, ++counter);
+            }else {
+                ringBuffer.getFirst().numberOfTuplesPerTask.put(victimTask, new Integer(1));
+            }
+            if (!ringBuffer.getFirst().keyToTaskMapping.containsKey(key))
+                ringBuffer.getFirst().keyToTaskMapping.put(key, new Integer(victimTask));
+            ringBuffer.getFirst().innerRelationCardinality += 1L;
+        }else if (relation.equals(outerRelationName)) {
+            if (ringBuffer.getFirst().numberOfTuplesPerTask.containsKey(victimTask)) {
+                Integer counter = ringBuffer.getFirst().numberOfTuplesPerTask.get(victimTask);
+                ringBuffer.getFirst().numberOfTuplesPerTask.put(victimTask, ++counter);
+            }else {
+                ringBuffer.getFirst().numberOfTuplesPerTask.put(victimTask, new Integer(1));
+            }
+            if (!ringBuffer.getFirst().keyToTaskMapping.containsKey(key))
+                ringBuffer.getFirst().keyToTaskMapping.put(key, new Integer(victimTask));
+            ringBuffer.getFirst().outerRelationCardinality += 1L;
+        }
     }
 
     @Override
@@ -82,11 +151,12 @@ public class CollocatedWindowDispatcher implements Serializable, Dispatcher {
 
     @Override
     public void mergeState(List<Values> state) {
-
+        //TODO: Leave blank for now. One dispatcher example
     }
 
     @Override
     public List<Values> getState() {
+        //TODO: Leave blank for now. One dispatcher example
         return null;
     }
 
@@ -97,6 +167,6 @@ public class CollocatedWindowDispatcher implements Serializable, Dispatcher {
 
     @Override
     public void updateIndex(String scaleAction, String taskWithIdentifier, String relation, List<String> result) {
-
+        //TODO: Leave blank for now. One dispatcher and state is only the statistics of dispatched tuples
     }
 }

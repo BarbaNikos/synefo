@@ -112,12 +112,14 @@ public class WindowDispatcher implements Serializable, Dispatcher {
 
     private void checkWindow(long currentTimestamp) {
         //Case where the window has progressed by a slide (creation of new current window)
-        if (ringBuffer.getFirst().end < currentTimestamp && ringBuffer.size() < bufferSize) {
+        if (ringBuffer.size() == 0) {
             DispatchWindow window = new DispatchWindow();
-            if (ringBuffer.size() > 0)
-                window.start = ringBuffer.getFirst().end + 1;
-            else
-                window.start = currentTimestamp;
+            window.start = currentTimestamp;
+            window.end = window.start + slide;
+            ringBuffer.addFirst(window);
+        }else if (ringBuffer.getFirst().end < currentTimestamp && ringBuffer.size() < bufferSize) {
+            DispatchWindow window = new DispatchWindow();
+            window.start = ringBuffer.getFirst().end + 1;
             window.end = window.start + slide;
             ringBuffer.addFirst(window);
         }
