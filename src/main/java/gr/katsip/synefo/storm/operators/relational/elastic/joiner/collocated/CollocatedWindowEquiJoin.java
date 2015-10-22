@@ -50,6 +50,7 @@ public class CollocatedWindowEquiJoin implements Serializable {
                                     String outerRelation) {
         this.windowSize = windowSize;
         this.slide = slide;
+        this.ringBuffer = new LinkedList<>();
         this.bufferSize = (int) Math.ceil(this.windowSize / this.slide);
         this.innerRelationSchema = new Fields(innerRelationSchema.toList());
         this.outerRelationSchema = new Fields(outerRelationSchema.toList());
