@@ -208,7 +208,7 @@ public class CollocatedWindowDispatcher implements Serializable {
                 ringBuffer.getFirst().outerRelationCardinality += 1;
                 outerRelationCardinality += 1;
             }
-            Integer count = null;
+            Integer count;
             if (ringBuffer.getFirst().numberOfTuplesPerTask.containsKey(victimTask))
                 count = ringBuffer.getFirst().numberOfTuplesPerTask.get(victimTask);
             else
