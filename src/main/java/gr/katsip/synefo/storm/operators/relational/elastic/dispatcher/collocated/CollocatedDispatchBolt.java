@@ -352,11 +352,11 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
     }
 
     public void manageStateTuple(Tuple tuple) {
-        //TODO: Not yet!
+        //Single dispatcher version - Not supported
     }
 
     public void altManageScaleTuple(Tuple tuple) {
-        //TODO: Not yet!
+        //Single dispatcher version - Not supported
     }
 
     public void manageCommand(String command) {

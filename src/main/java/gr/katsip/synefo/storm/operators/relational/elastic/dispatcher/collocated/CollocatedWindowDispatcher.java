@@ -102,6 +102,15 @@ public class CollocatedWindowDispatcher implements Serializable {
         return task;
     }
 
+    public int pickTaskForNewKey() {
+        int victim = taskToRelationIndex.get(innerRelationName).get(index);
+        if (index == taskToRelationIndex.get(innerRelationName).size() - 1)
+            index = 0;
+        else
+            index++;
+        return victim;
+    }
+
     public int execute(Tuple anchor, OutputCollector collector, Fields fields, Values values) {
         long currentTimestamp = System.currentTimeMillis();
         int numberOfDispatchedTuples = 0;
@@ -114,23 +123,13 @@ public class CollocatedWindowDispatcher implements Serializable {
         if (fields.toList().toString().equals(innerRelationSchema.toList().toString())) {
             key = (String) values.get(innerRelationSchema.fieldIndex(innerRelationKey));
             victimTask = locateTask(currentTimestamp, innerRelationName, key);
-            if (victimTask < 0) {
-                victimTask = taskToRelationIndex.get(innerRelationName).get(index);
-                if (index == taskToRelationIndex.get(innerRelationName).size() - 1)
-                    index = 0;
-                else
-                    index++;
-            }
+            if (victimTask < 0)
+                victimTask = pickTaskForNewKey();
         }else if (fields.toList().toString().equals(outerRelationSchema.toList().toString())) {
             key = (String) values.get(outerRelationSchema.fieldIndex(outerRelationKey));
             victimTask = locateTask(currentTimestamp, outerRelationName, key);
-            if (victimTask < 0) {
-                victimTask = taskToRelationIndex.get(outerRelationName).get(index);
-                if (index == taskToRelationIndex.get(outerRelationName).size() - 1)
-                    index = 0;
-                else
-                    index++;
-            }
+            if (victimTask < 0)
+                victimTask = pickTaskForNewKey();
         }
         updateCurrentWindow(currentTimestamp, outerRelationName, key, victimTask);
         if (collector != null && victimTask >= 0) {
@@ -223,11 +222,11 @@ public class CollocatedWindowDispatcher implements Serializable {
     }
 
     public void mergeState(List<Values> state) {
-        //TODO: Leave blank for now. One dispatcher example
+        //Single Dispatcher version - Not supported
     }
 
     public List<Values> getState() {
-        //TODO: Leave blank for now. One dispatcher example
+        //Single Dispatcher version - Not supported
         return null;
     }
 
@@ -236,6 +235,6 @@ public class CollocatedWindowDispatcher implements Serializable {
     }
 
     public void updateIndex(String scaleAction, String taskWithIdentifier, String relation, List<String> result) {
-        //TODO: Leave blank for now. One dispatcher and state is only the statistics of dispatched tuples
+        //Single Dispatcher version - Not supported
     }
 }
