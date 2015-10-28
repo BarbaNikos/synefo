@@ -69,12 +69,14 @@ public class CollocatedWindowEquiJoin implements Serializable {
         outerRelationCardinality = 0L;
         this.innerRelation = innerRelation;
         this.outerRelation = outerRelation;
+        migratedKeys = null;
+        candidateTask = -1;
     }
 
     public void store(Long currentTimestamp, Fields schema, Values tuple) {
         if (schema.toList().toString().equals(innerRelationSchema.toList().toString())) {
             String key = (String) tuple.get(innerRelationSchema.fieldIndex(innerRelationJoinAttribute));
-            if (migratedKeys.size() > 0 && migratedKeys.indexOf(key) >= 0)
+            if (migratedKeys != null && migratedKeys.size() > 0 && migratedKeys.indexOf(key) >= 0)
                 return;
             if (ringBuffer.size() == 0) {
                 BasicCollocatedEquiWindow window = new BasicCollocatedEquiWindow();
@@ -127,7 +129,7 @@ public class CollocatedWindowEquiJoin implements Serializable {
             }
         }else if (schema.toList().toString().equals(outerRelationSchema.toList().toString())) {
             String key = (String) tuple.get(outerRelationSchema.fieldIndex(outerRelationJoinAttribute));
-            if (migratedKeys.size() > 0 && migratedKeys.indexOf(key) >= 0)
+            if (migratedKeys != null && migratedKeys.size() > 0 && migratedKeys.indexOf(key) >= 0)
                 return;
             if (ringBuffer.size() == 0) {
                 BasicCollocatedEquiWindow window = new BasicCollocatedEquiWindow();
