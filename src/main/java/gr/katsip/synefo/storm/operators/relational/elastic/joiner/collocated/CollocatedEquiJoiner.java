@@ -72,6 +72,8 @@ public class CollocatedEquiJoiner implements Serializable {
         this.slide = slide;
         collocatedWindowEquiJoin = new CollocatedWindowEquiJoin(this.windowSize, this.slide, this.innerRelationSchema,
                 this.outerRelationSchema, this.innerRelationKey, this.outerRelationKey, this.innerRelation, this.outerRelation);
+        migratedKeys = null;
+        candidateTask = -1;
     }
 
     public void setOutputSchema(Fields output_schema) {
@@ -84,7 +86,7 @@ public class CollocatedEquiJoiner implements Serializable {
         Long timestamp = System.currentTimeMillis();
         collocatedWindowEquiJoin.store(timestamp, fields, values);
         List<Values> tuples = collocatedWindowEquiJoin.join(timestamp, fields, values);
-        if (this.migratedKeys.size() > 0) {
+        if (migratedKeys != null && migratedKeys.size() > 0) {
             List<Values> mirrorTuples = collocatedWindowEquiJoin.mirrorJoin(timestamp, fields, values);
             mirrorTuples.removeAll(tuples);
             tuples.addAll(mirrorTuples);
