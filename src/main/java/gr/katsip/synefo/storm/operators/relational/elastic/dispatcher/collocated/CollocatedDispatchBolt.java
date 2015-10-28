@@ -34,6 +34,10 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
 
     private static final int WARM_UP_THRESHOLD = 10000;
 
+    private static final int LOAD_CHECK_PERIOD = 2000;
+
+    private static final int LOAD_RELUCTANCY = 3;
+
     private OutputCollector collector;
 
     private String taskName;
@@ -94,25 +98,19 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
 
     private long throughputPreviousTimestamp;
 
+    /**
+     * Scale action information
+     */
+
+    private List<Integer> overloadedTaskLog;
+
     private boolean SCALE_ACTION_FLAG = false;
 
-    private String scaleAction = "";
+    private List<String> migratedKeys;
 
-    private String elasticTask = "";
+    private int scaledTask;
 
-    private LinkedList<Tuple> scaleTupleBuffer;
-
-    private int numberOfConnections;
-
-    private int stateTaskNumber;
-
-    private int stateTaskIdentifier;
-
-    private boolean SCALE_RECEIVE_STATE;
-
-    private boolean SCALE_SEND_STATE;
-
-    private HashMap<String, List<Integer>> relationTaskIndex;
+    private int candidateTask;
 
     public CollocatedDispatchBolt(String taskName, String synefoAddress, Integer synefoPort,
                                   CollocatedWindowDispatcher dispatcher, String zookeeperAddress) {
@@ -127,7 +125,6 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
         this.dispatcher = dispatcher;
         this.zookeeperAddress = zookeeperAddress;
         SYSTEM_WARM_FLAG = false;
-        tupleCounter = 0;
     }
 
     public void register() {
@@ -222,11 +219,11 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
         SYSTEM_WARM_FLAG = false;
         tupleCounter = 0;
         SCALE_ACTION_FLAG = false;
-        elasticTask = "";
-        scaleAction = "";
+        migratedKeys = null;
+        overloadedTaskLog = new ArrayList<>();
+        scaledTask = -1;
+        candidateTask = -1;
         zookeeperClient.clearActionData();
-        SCALE_RECEIVE_STATE = false;
-        SCALE_SEND_STATE = false;
     }
 
     private void initMetrics(TopologyContext context) {
@@ -243,15 +240,9 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
     }
 
     private boolean isScaleHeader(String header) {
-        return (header.contains(SynefoConstant.PUNCT_TUPLE_TAG) == true &&
-                header.contains(SynefoConstant.ACTION_PREFIX) == true &&
-                header.contains(SynefoConstant.COMP_IP_TAG) == true &&
-                header.split("/")[0].equals(SynefoConstant.PUNCT_TUPLE_TAG));
-    }
-
-    private boolean isStateHeader(String header) {
-        return ( header.split("/")[0].equals(SynefoConstant.STATE_PREFIX) &&
-                header.split("[/:]")[1].equals(SynefoConstant.COMP_TAG));
+        return (header.contains(SynefoConstant.COL_SCALE_ACTION_PREFIX) == true &&
+                header.contains(SynefoConstant.COL_COMPLETE_ACTION) == true &&
+                header.contains(SynefoConstant.COL_PEER) == true);
     }
 
     @Override
@@ -264,103 +255,122 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
             collector.fail(tuple);
             return;
         }else {
-            if (SCALE_ACTION_FLAG) {
-                scaleTupleBuffer.addFirst(tuple);
-                List<String> result = zookeeperClient.getScaleResult();
-                if (result != null) {
-                    String relation = "";
-                    Iterator<Map.Entry<String, List<Integer>>> iterator = relationTaskIndex.entrySet().iterator();
-                    while (iterator.hasNext()) {
-                        Map.Entry<String, List<Integer>> entry = iterator.next();
-                        if (entry.getValue().lastIndexOf(Integer.parseInt(elasticTask.split(":")[1])) >= 0) {
-                            relation = entry.getKey();
-                            break;
+            header = tuple.getString(tuple.getFields()
+                    .fieldIndex("SYNEFO_HEADER"));
+            if (header != null && !header.equals("") && header.contains("/") &&
+                    isScaleHeader(header)) {
+                manageScaleTuple(header);
+                collector.ack(tuple);
+                return;
+            }
+            inputRateCurrentTimestamp = System.currentTimeMillis();
+            if ((inputRateCurrentTimestamp - inputRatePreviousTimestamp) >= 1000L) {
+                inputRatePreviousTimestamp = inputRateCurrentTimestamp;
+                inputRate.setValue(temporaryInputRate);
+                zookeeperClient.addInputRateData((double) temporaryInputRate);
+                temporaryInputRate = 0;
+            }else {
+                temporaryInputRate++;
+            }
+            /**
+             * Remove from both values and fields SYNEFO_HEADER (SYNEFO_TIMESTAMP)
+             */
+            Values values = new Values(tuple.getValues().toArray());
+            values.remove(0);
+            Fields fields = new Fields(((Fields) values.get(0)).toList());
+            Values tupleValues = (Values) values.get(1);
+
+            int numberOfTuplesDispatched = 0;
+            long startTime = System.currentTimeMillis();
+            if (activeDownstreamTaskIdentifiers.size() > 0) {
+                if (SCALE_ACTION_FLAG)
+                    numberOfTuplesDispatched = dispatcher.execute(tuple, collector, fields, tupleValues, migratedKeys,
+                            scaledTask, candidateTask);
+                else
+                    numberOfTuplesDispatched = dispatcher.execute(tuple, collector, fields, tupleValues, null, -1, -1);
+            }else {
+                if (SCALE_ACTION_FLAG)
+                    numberOfTuplesDispatched = dispatcher.execute(tuple, null, fields, tupleValues, migratedKeys,
+                            scaledTask, candidateTask);
+                else
+                    numberOfTuplesDispatched = dispatcher.execute(tuple, null, fields, tupleValues, null, -1, -1);
+            }
+            collector.ack(tuple);
+
+            temporaryThroughput += numberOfTuplesDispatched;
+            long endTime = System.currentTimeMillis();
+            lastExecuteLatencyMetric = endTime - startTime;
+            lastStateSizeMetric = dispatcher.getStateSize();
+            executeLatency.setValue(lastExecuteLatencyMetric);
+            stateSize.setValue(lastStateSizeMetric);
+            throughputCurrentTimestamp = System.currentTimeMillis();
+            if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
+                throughputPreviousTimestamp = throughputCurrentTimestamp;
+                throughput.setValue(temporaryThroughput);
+                temporaryThroughput = 0;
+            }
+            tupleCounter++;
+            if (tupleCounter >= WARM_UP_THRESHOLD && !SYSTEM_WARM_FLAG)
+                SYSTEM_WARM_FLAG = true;
+            if (tupleCounter >= LOAD_CHECK_PERIOD && !SCALE_ACTION_FLAG) {
+                /**
+                 * Check if one of the nodes is overloaded
+                 */
+                if (activeDownstreamTaskIdentifiers.size() < downstreamTaskIdentifiers.size()) {
+                    HashMap<Integer, Long> numberOfTuplesPerTask = dispatcher.getNumberOfTuplesPerTask();
+                    int overloadedTask = -1;
+                    long maxNumberOfTuples = 0;
+                    for (Integer task : numberOfTuplesPerTask.keySet()) {
+                        if (maxNumberOfTuples < numberOfTuplesPerTask.get(task)) {
+                            overloadedTask = task;
+                            maxNumberOfTuples = numberOfTuplesPerTask.get(task);
                         }
                     }
-                    //TODO: Not yet supported!
-                    dispatcher.updateIndex(scaleAction, elasticTask, relation, result);
-                    zookeeperClient.clearActionData();
-                    elasticTask = "";
-                    scaleAction = "";
-                    SCALE_ACTION_FLAG = false;
-                    while (!scaleTupleBuffer.isEmpty()) {
-                        execute(scaleTupleBuffer.removeFirst());
+                    if (overloadedTask != -1) {
+                        overloadedTaskLog.add(overloadedTask);
+                        if (overloadedTaskLog.size() >= LOAD_RELUCTANCY) {
+                            scaledTask = overloadedTask;
+                            boolean scaleNeeded = true;
+                            for (int i = overloadedTaskLog.size() - 1; i >= (overloadedTaskLog.size() - LOAD_RELUCTANCY); i--) {
+                                if (overloadedTaskLog.get(i) != scaledTask)
+                                    scaleNeeded = false;
+                            }
+                            if (scaleNeeded) {
+                                //Overloaded task id is overloadedTask
+                                //Divide tasks keys into two sets (migratedKeys are going to be handled by new task
+                                List<String> keys = dispatcher.getKeysForATask(scaledTask);
+                                migratedKeys = keys.subList(0, (keys.size() / 2));
+                                SCALE_ACTION_FLAG = true;
+                                //Pick random in-active task (candidate)
+                                List<Integer> candidates = new ArrayList<>(downstreamTaskIdentifiers);
+                                candidates.removeAll(activeDownstreamTaskIdentifiers);
+                                Random random = new Random();
+                                candidateTask = candidates.get(random.nextInt(candidates.size()));
+                                //Set value for the candidate? or No?
+                                StringBuilder stringBuilder = new StringBuilder();
+                                stringBuilder.append(SynefoConstant.COL_SCALE_ACTION_PREFIX + ":" + SynefoConstant.COL_ADD_ACTION);
+                                stringBuilder.append("|" + SynefoConstant.COL_KEYS + ":");
+                                for (String key : migratedKeys) {
+                                    stringBuilder.append(key + ",");
+                                }
+                                if (stringBuilder.length() > 0)
+                                    stringBuilder.setLength(stringBuilder.length() - 1);
+                                stringBuilder.append("|" + SynefoConstant.COL_PEER + ":" + candidateTask);
+                                Values scaleTuple = new Values();
+                                scaleTuple.add(stringBuilder.toString());
+                                scaleTuple.add("");
+                                scaleTuple.add("");
+                                collector.emitDirect(scaledTask, scaleTuple);
+                                collector.emitDirect(candidateTask, scaleTuple);
+                                startTransferTimestamp = System.currentTimeMillis();
+                            }
+                        }
                     }
-                }
-            }else {
-                header = tuple.getString(tuple.getFields()
-                        .fieldIndex("SYNEFO_HEADER"));
-                if (header != null && !header.equals("") && header.contains("/") &&
-                        isScaleHeader(header)) {
-                    altManageScaleTuple(tuple);
-                    collector.ack(tuple);
-                    return;
-                }else if ((SCALE_SEND_STATE || SCALE_RECEIVE_STATE) && isStateHeader(header)) {
-                    manageStateTuple(tuple);
-                    collector.ack(tuple);
-                    return;
-                }
-                inputRateCurrentTimestamp = System.currentTimeMillis();
-                if ((inputRateCurrentTimestamp - inputRatePreviousTimestamp) >= 1000L) {
-                    inputRatePreviousTimestamp = inputRateCurrentTimestamp;
-                    inputRate.setValue(temporaryInputRate);
-                    zookeeperClient.addInputRateData((double) temporaryInputRate);
-                    temporaryInputRate = 0;
-                }else {
-                    temporaryInputRate++;
-                }
-                /**
-                 * Remove from both values and fields SYNEFO_HEADER (SYNEFO_TIMESTAMP)
-                 */
-                Values values = new Values(tuple.getValues().toArray());
-                values.remove(0);
-                Fields fields = new Fields(((Fields) values.get(0)).toList());
-                Values tupleValues = (Values) values.get(1);
-                int numberOfTuplesDispatched = 0;
-                long startTime = System.currentTimeMillis();
-                if (activeDownstreamTaskIdentifiers.size() > 0)
-                    numberOfTuplesDispatched = dispatcher.execute(tuple, collector, fields, tupleValues);
-                else
-                    numberOfTuplesDispatched = dispatcher.execute(tuple, null, fields, tupleValues);
-                collector.ack(tuple);
-                temporaryThroughput += numberOfTuplesDispatched;
-                long endTime = System.currentTimeMillis();
-                lastExecuteLatencyMetric = endTime - startTime;
-                lastStateSizeMetric = dispatcher.getStateSize();
-                executeLatency.setValue(lastExecuteLatencyMetric);
-                stateSize.setValue(lastStateSizeMetric);
-                throughputCurrentTimestamp = System.currentTimeMillis();
-                if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
-                    throughputPreviousTimestamp = throughputCurrentTimestamp;
-                    throughput.setValue(temporaryThroughput);
-                    //TODO: change the following
-//                    zookeeperClient.addInputRateData((double) temporaryInputRate);
-                    temporaryThroughput = 0;
-                }
-                tupleCounter++;
-                if (tupleCounter >= WARM_UP_THRESHOLD && !SYSTEM_WARM_FLAG)
-                    SYSTEM_WARM_FLAG = true;
-
-                String command = "";
-                if (!zookeeperClient.commands.isEmpty() && SCALE_ACTION_FLAG == false) {
-                    command = zookeeperClient.commands.poll();
-                    //TODO: Not yet!
-                    manageCommand(command);
+                    //Check for scale-in action
+                    //TODO: Finish that
                 }
             }
         }
-    }
-
-    public void manageStateTuple(Tuple tuple) {
-        //Single dispatcher version - Not supported
-    }
-
-    public void altManageScaleTuple(Tuple tuple) {
-        //Single dispatcher version - Not supported
-    }
-
-    public void manageCommand(String command) {
-        //TODO: Not supported yet!
     }
 
     @Override
@@ -371,4 +381,28 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
         schema.add("values");
         outputFieldsDeclarer.declare(new Fields(schema));
     }
+
+    public void manageScaleTuple(String header) {
+        String actionWithStatus = header.split("|")[0];
+        String peerInformation = header.split("|")[2];
+        if (SCALE_ACTION_FLAG && migratedKeys.size() > 0 && candidateTask != -1 && scaledTask != -1) {
+            if (actionWithStatus.split(":")[1].equals(SynefoConstant.COL_COMPLETE_ACTION)) {
+                if (peerInformation.split(":")[0].equals(SynefoConstant.COL_PEER) &&
+                        peerInformation.split(":")[1].equals(Integer.toString(scaledTask))) {
+                    /**
+                     * SCALE-ACTION is complete
+                     * Re-initialize
+                     */
+                    SCALE_ACTION_FLAG = false;
+                    migratedKeys.clear();
+                    candidateTask = -1;
+                    scaledTask = -1;
+                    tupleCounter = 0;
+                    long timestamp = System.currentTimeMillis();
+                    stateTransferTime.setValue((timestamp - startTransferTimestamp));
+                }
+            }
+        }
+    }
+
 }

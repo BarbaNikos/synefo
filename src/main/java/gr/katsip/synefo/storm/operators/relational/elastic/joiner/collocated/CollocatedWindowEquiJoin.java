@@ -7,7 +7,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Created by katsip on 10/21/2015.
@@ -41,6 +43,12 @@ public class CollocatedWindowEquiJoin implements Serializable {
     private String innerRelation;
 
     private String outerRelation;
+
+    private LinkedList<BasicCollocatedEquiWindow> mirrorBuffer;
+
+    private List<String> migratedKeys;
+
+    private int candidateTask;
 
     public CollocatedWindowEquiJoin(long windowSize, long slide, Fields innerRelationSchema,
                                     Fields outerRelationSchema,
@@ -221,7 +229,126 @@ public class CollocatedWindowEquiJoin implements Serializable {
         return result;
     }
 
+    public void mirrorBufferGarbageCollect(long timestamp) {
+        while(mirrorBuffer.size() > 0) {
+            BasicCollocatedEquiWindow window = mirrorBuffer.get(0);
+            if ((window.start + windowSize) < timestamp) {
+                mirrorBuffer.removeFirst();
+                continue;
+            }else {
+                break;
+            }
+        }
+        if (mirrorBuffer.size() == 0) {
+            migratedKeys.clear();
+            candidateTask = -1;
+        }
+    }
+
+    public ArrayList<Values> mirrorJoin(Long currentTimestamp, Fields schema, Values tuple) {
+        mirrorBufferGarbageCollect(currentTimestamp);
+        ArrayList<Values> result = new ArrayList<>();
+        if (schema.toList().toString().equals(innerRelationSchema.toList().toString())) {
+            String value = (String) tuple.get(innerRelationSchema.fieldIndex(innerRelationJoinAttribute));
+            for (int i = 0; i < mirrorBuffer.size(); i++) {
+                BasicCollocatedEquiWindow window = mirrorBuffer.get(i);
+                if ((window.start + windowSize) > currentTimestamp) {
+                    if (window.outerRelation.containsKey(value)) {
+                        ArrayList<Values> outerTuples = window.outerRelation.get(value);
+                        for (Values t : outerTuples) {
+                            Values joinResult;
+                            if (innerRelation.compareTo(outerRelation) <= 0) {
+                                joinResult = new Values(tuple.toArray());
+                                joinResult.addAll(t);
+                            }else {
+                                joinResult = new Values(t.toArray());
+                                joinResult.addAll(tuple);
+                            }
+                            if (result.indexOf(joinResult) < 0)
+                                result.add(joinResult);
+                        }
+                    }
+                }else {
+                    break;
+                }
+            }
+        }else if (schema.toList().toString().equals(outerRelationSchema.toList().toString())) {
+            String value = (String) tuple.get(outerRelationSchema.fieldIndex(outerRelationJoinAttribute));
+            for (int i = 0; i < mirrorBuffer.size(); i++) {
+                BasicCollocatedEquiWindow window = mirrorBuffer.get(i);
+                if ((window.start + windowSize) > currentTimestamp) {
+                    if (window.innerRelation.containsKey(value)) {
+                        ArrayList<Values> innerTuples = window.innerRelation.get(value);
+                        for (Values t : innerTuples) {
+                            Values joinResult;
+                            if (innerRelation.compareTo(outerRelation) <= 0) {
+                                joinResult = new Values(t.toArray());
+                                joinResult.addAll(tuple);
+                            }else {
+                                joinResult = new Values(tuple.toArray());
+                                joinResult.addAll(t);
+                            }
+                            if (result.indexOf(joinResult) < 0)
+                                result.add(joinResult);
+                        }
+                    }
+                }else {
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
     public long getStateSize() {
         return byteStateSize;
     }
+
+    public void initializeScaleOut(List<String> migratedKeys, int candidateTask) {
+        long timestamp = System.currentTimeMillis();
+        this.candidateTask = candidateTask;
+        this.migratedKeys = migratedKeys;
+        mirrorBuffer = new LinkedList<>();
+        for (int i = 0; i < ringBuffer.size(); i++) {
+            BasicCollocatedEquiWindow window = ringBuffer.get(i);
+            if ((window.start + this.windowSize) > timestamp) {
+                BasicCollocatedEquiWindow mirrorWindow = new BasicCollocatedEquiWindow();
+                mirrorWindow.start = window.start;
+                mirrorWindow.end = window.end;
+                HashMap<String, ArrayList<Values>> temporaryMap = new HashMap<>();
+                for (String key : window.innerRelation.keySet()) {
+                    if (migratedKeys.indexOf(key) >= 0) {
+                        ArrayList<Values> migratedTuples = window.innerRelation.get(key);
+                        mirrorWindow.innerRelation.put(key, migratedTuples);
+                    }else {
+                        temporaryMap.put(key, new ArrayList<Values>(window.innerRelation.get(key)));
+                    }
+                }
+                //remove migratedTuples from inner relation
+                if (mirrorWindow.innerRelation.size() > 0) {
+                    window.innerRelation.clear();
+                    window.innerRelation.putAll(temporaryMap);
+                }
+                temporaryMap = new HashMap<>();
+                for (String key : window.outerRelation.keySet()) {
+                    if (migratedKeys.indexOf(key) >= 0) {
+                        ArrayList<Values> migratedTuples = window.outerRelation.get(key);
+                        mirrorWindow.outerRelation.put(key, migratedTuples);
+                    }else {
+                        temporaryMap.put(key, new ArrayList<Values>(window.outerRelation.get(key)));
+                    }
+                }
+                //remove migratedTuples from outer relation
+                if (mirrorWindow.outerRelation.size() > 0) {
+                    window.outerRelation.clear();
+                    window.outerRelation.putAll(temporaryMap);
+                }
+                //Add mirrorWindow to mirror-buffer
+                mirrorBuffer.addLast(mirrorWindow);
+            }else {
+                break;
+            }
+        }
+    }
+
 }

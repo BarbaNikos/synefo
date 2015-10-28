@@ -41,6 +41,10 @@ public class CollocatedEquiJoiner implements Serializable {
 
     private int slide;
 
+    private List<String> migratedKeys;
+
+    private int candidateTask;
+
     public CollocatedEquiJoiner(String innerRelation, Fields innerRelationSchema, String outerRelation,
                                 Fields outerRelationSchema, String innerRelationKey, String outerRelationKey,
                                 int window, int slide) {
@@ -80,6 +84,11 @@ public class CollocatedEquiJoiner implements Serializable {
         Long timestamp = System.currentTimeMillis();
         collocatedWindowEquiJoin.store(timestamp, fields, values);
         List<Values> tuples = collocatedWindowEquiJoin.join(timestamp, fields, values);
+        if (this.migratedKeys.size() > 0) {
+            List<Values> mirrorTuples = collocatedWindowEquiJoin.mirrorJoin(timestamp, fields, values);
+            mirrorTuples.removeAll(tuples);
+            tuples.addAll(mirrorTuples);
+        }
         for (Values tuple : tuples) {
             Values output = new Values();
             output.add(timestamp.toString());
@@ -100,12 +109,14 @@ public class CollocatedEquiJoiner implements Serializable {
         return outputSchema;
     }
 
-    public String operatorStep() {
-        return "JOIN";
-    }
-
     public long getStateSize() {
         return collocatedWindowEquiJoin.getStateSize();
+    }
+
+    public void initializeScaleOut(List<String> migratedKeys, int candidateTask) {
+        this.migratedKeys = migratedKeys;
+        this.candidateTask = candidateTask;
+        collocatedWindowEquiJoin.initializeScaleOut(migratedKeys, candidateTask);
     }
 
 }

@@ -21,4 +21,16 @@ public class SynefoConstant {
 	public static final String OP_LATENCY_METRIC = "OP_LATENCY_METRIC";
 
 	public static final String STATE_PREFIX = "STATE";
+
+	public static final String COL_SCALE_ACTION_PREFIX = "COL_ACTION";
+
+	public static final String COL_ADD_ACTION = "C_ADD";
+
+	public static final String COL_REMOVE_ACTION = "C_REMOVE";
+
+    public static final String COL_COMPLETE_ACTION = "C_COMPLETE";
+
+	public static final String COL_KEYS = "C_KEYS";
+
+	public static final String COL_PEER = "C_PEER";
 }
