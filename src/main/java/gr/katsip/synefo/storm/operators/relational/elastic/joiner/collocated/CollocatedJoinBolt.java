@@ -254,7 +254,6 @@ public class CollocatedJoinBolt extends BaseRichBolt {
             inputRate.setValue(temporaryInputRate);
             executeLatency.setValue(lastExecuteLatencyMetric);
             stateSize.setValue(lastStateSizeMetric);
-            zookeeperClient.addInputRateData((double) temporaryInputRate);
             temporaryInputRate = 0;
         }else {
             temporaryInputRate++;

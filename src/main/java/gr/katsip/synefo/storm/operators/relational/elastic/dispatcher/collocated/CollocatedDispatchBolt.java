@@ -267,7 +267,6 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
             if ((inputRateCurrentTimestamp - inputRatePreviousTimestamp) >= 1000L) {
                 inputRatePreviousTimestamp = inputRateCurrentTimestamp;
                 inputRate.setValue(temporaryInputRate);
-                zookeeperClient.addInputRateData((double) temporaryInputRate);
                 temporaryInputRate = 0;
             }else {
                 temporaryInputRate++;
