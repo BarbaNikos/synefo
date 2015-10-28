@@ -219,7 +219,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
         SYSTEM_WARM_FLAG = false;
         tupleCounter = 0;
         SCALE_ACTION_FLAG = false;
-        migratedKeys = null;
+        migratedKeys = new ArrayList<>();
         overloadedTaskLog = new ArrayList<>();
         scaledTask = -1;
         candidateTask = -1;
@@ -283,17 +283,11 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
             int numberOfTuplesDispatched = 0;
             long startTime = System.currentTimeMillis();
             if (activeDownstreamTaskIdentifiers.size() > 0) {
-                if (SCALE_ACTION_FLAG)
-                    numberOfTuplesDispatched = dispatcher.execute(tuple, collector, fields, tupleValues, migratedKeys,
-                            scaledTask, candidateTask);
-                else
-                    numberOfTuplesDispatched = dispatcher.execute(tuple, collector, fields, tupleValues, null, -1, -1);
+                numberOfTuplesDispatched = dispatcher.execute(tuple, collector, fields, tupleValues, migratedKeys,
+                        scaledTask, candidateTask);
             }else {
-                if (SCALE_ACTION_FLAG)
-                    numberOfTuplesDispatched = dispatcher.execute(tuple, null, fields, tupleValues, migratedKeys,
-                            scaledTask, candidateTask);
-                else
-                    numberOfTuplesDispatched = dispatcher.execute(tuple, null, fields, tupleValues, null, -1, -1);
+                numberOfTuplesDispatched = dispatcher.execute(tuple, null, fields, tupleValues, migratedKeys,
+                        scaledTask, candidateTask);
             }
             collector.ack(tuple);
 
@@ -329,10 +323,9 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                     if (overloadedTask != -1) {
                         overloadedTaskLog.add(overloadedTask);
                         if (overloadedTaskLog.size() >= LOAD_RELUCTANCY) {
-                            scaledTask = overloadedTask;
                             boolean scaleNeeded = true;
                             for (int i = overloadedTaskLog.size() - 1; i >= (overloadedTaskLog.size() - LOAD_RELUCTANCY); i--) {
-                                if (overloadedTaskLog.get(i) != scaledTask)
+                                if (overloadedTaskLog.get(i) != overloadedTask)
                                     scaleNeeded = false;
                             }
                             if (scaleNeeded) {
@@ -341,6 +334,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                                 List<String> keys = dispatcher.getKeysForATask(scaledTask);
                                 migratedKeys = keys.subList(0, (keys.size() / 2));
                                 SCALE_ACTION_FLAG = true;
+                                scaledTask = overloadedTask;
                                 //Pick random in-active task (candidate)
                                 List<Integer> candidates = new ArrayList<>(downstreamTaskIdentifiers);
                                 candidates.removeAll(activeDownstreamTaskIdentifiers);

@@ -126,7 +126,7 @@ public class CollocatedWindowDispatcher implements Serializable {
             victimTask = locateTask(currentTimestamp, innerRelationName, key);
             if (victimTask < 0)
                 victimTask = pickTaskForNewKey();
-            if (migratedKeys.indexOf(key) >= 0 && scaledTask != -1 && candidateTask != -1) {
+            if (migratedKeys != null && migratedKeys.indexOf(key) >= 0 && scaledTask != -1 && candidateTask != -1) {
                 updateCurrentWindow(currentTimestamp, innerRelationName, key, candidateTask);
                 if (collector != null) {
                     collector.emitDirect(candidateTask, anchor, tuple);
@@ -145,7 +145,7 @@ public class CollocatedWindowDispatcher implements Serializable {
             victimTask = locateTask(currentTimestamp, outerRelationName, key);
             if (victimTask < 0)
                 victimTask = pickTaskForNewKey();
-            if (migratedKeys.indexOf(key) >= 0 && scaledTask != -1 && candidateTask != -1) {
+            if (migratedKeys != null && migratedKeys.indexOf(key) >= 0 && scaledTask != -1 && candidateTask != -1) {
                 updateCurrentWindow(currentTimestamp, outerRelationName, key, candidateTask);
                 if (collector != null) {
                     collector.emitDirect(candidateTask, anchor, tuple);
