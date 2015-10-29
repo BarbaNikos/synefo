@@ -323,7 +323,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                         overloadedTaskLog.add(overloadedTask);
                         if (overloadedTaskLog.size() >= LOAD_RELUCTANCY) {
                             boolean scaleNeeded = true;
-                            for (int i = overloadedTaskLog.size() - 1; i >= (overloadedTaskLog.size() - LOAD_RELUCTANCY); i--) {
+                            for (int i = overloadedTaskLog.size() - 1; i >= (overloadedTaskLog.size() - LOAD_RELUCTANCY) && i >= 0; i--) {
                                 if (overloadedTaskLog.get(i) != overloadedTask)
                                     scaleNeeded = false;
                             }
@@ -346,7 +346,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                                 for (String key : migratedKeys) {
                                     stringBuilder.append(key + ",");
                                 }
-                                if (stringBuilder.length() > 0)
+                                if (stringBuilder.length() > 0 && stringBuilder.charAt(stringBuilder.length() - 1) == ',')
                                     stringBuilder.setLength(stringBuilder.length() - 1);
                                 stringBuilder.append("|" + SynefoConstant.COL_PEER + ":" + candidateTask);
                                 Values scaleTuple = new Values();
