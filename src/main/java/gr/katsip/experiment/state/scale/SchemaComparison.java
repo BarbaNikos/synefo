@@ -15,6 +15,11 @@ public class SchemaComparison {
         stringBuilder.append(SynefoConstant.COL_SCALE_ACTION_PREFIX + ":" + SynefoConstant.COL_ADD_ACTION);
         stringBuilder.append("|" + SynefoConstant.COL_KEYS + ":");
         stringBuilder.append("|" + SynefoConstant.COL_PEER + ":1");
-        System.out.println(CollocatedJoinBolt.isScaleHeader("COL_ACTION:C_ADD|C_KEYS:|C_PEER:11"));
+        String header = "COL_ACTION:C_ADD|C_KEYS:123,421|C_PEER:11";
+        System.out.println(CollocatedJoinBolt.isScaleHeader(header));
+        String action = header.split("[|]")[0];
+        action = header.split("[|]")[0].split(":")[1];
+        String serializedMigratedKeys = header.split("[|]")[1].split(":")[1];
+        String candidateTask = header.split("[|]")[2].split(":")[1];
     }
 }

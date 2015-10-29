@@ -312,9 +312,9 @@ public class CollocatedJoinBolt extends BaseRichBolt {
     }
 
     public void manageScaleTuple(String header) {
-        String action = header.split("|")[0].split(":")[1];
-        String serializedMigratedKeys = header.split("|")[1].split(":")[1];
-        String candidateTask = header.split("|")[2].split(":")[1];
+        String action = header.split("[|]")[0].split(":")[1];
+        String serializedMigratedKeys = header.split("[|]")[1].split(":")[1];
+        String candidateTask = header.split("[|]")[2].split(":")[1];
         if (Integer.parseInt(candidateTask) != taskIdentifier) {
             migratedKeys.clear();
             for (String key : serializedMigratedKeys.split(",")) {

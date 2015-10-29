@@ -380,8 +380,8 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
     }
 
     public void manageScaleTuple(String header) {
-        String actionWithStatus = header.split("|")[0];
-        String peerInformation = header.split("|")[2];
+        String actionWithStatus = header.split("[|]")[0];
+        String peerInformation = header.split("[|]")[2];
         if (SCALE_ACTION_FLAG && migratedKeys.size() > 0 && candidateTask != -1 && scaledTask != -1) {
             if (actionWithStatus.split(":")[1].equals(SynefoConstant.COL_COMPLETE_ACTION)) {
                 if (peerInformation.split(":")[0].equals(SynefoConstant.COL_PEER) &&
