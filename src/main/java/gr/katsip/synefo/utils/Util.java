@@ -165,6 +165,7 @@ public class Util {
          */
         itr = topology.entrySet().iterator();
         HashMap<String, List<Integer>> alreadyAddedTasks = new HashMap<>();
+        String collocatedJoinSintTask = "";
         while (itr.hasNext()) {
             Map.Entry<String, ArrayList<String>> pair = itr.next();
             String taskName = pair.getKey();
@@ -178,6 +179,11 @@ public class Util {
                             List<Integer> tasks = new ArrayList<>();
                             tasks.add(identifier);
                             alreadyAddedTasks.put(joinInfo.getRelation(), tasks);
+                            activeTasks.add(taskName);
+                        }
+                    }else if (joinInfo.getStep().equals(JoinOperator.Step.COL_JOIN)) {
+                        if (collocatedJoinSintTask.equals("")) {
+                            collocatedJoinSintTask = taskName;
                             activeTasks.add(taskName);
                         }
                     }
