@@ -361,6 +361,10 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                     }
                     //Check for scale-in action
                     //TODO: Finish that
+                    /**
+                     * Dispatcher makes a histogram of tuples per node
+                     * and scales-in the one that has the least tuples (global minimum)
+                     */
                 }
             }
         }
