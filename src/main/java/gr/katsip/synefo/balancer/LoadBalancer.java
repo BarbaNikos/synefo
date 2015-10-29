@@ -421,6 +421,7 @@ public class LoadBalancer {
 
     private void nodeInitiatialize() {
         try {
+            zooKeeper.create(MAIN_ZNODE, ("").getBytes("UTF-8"), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             zooKeeper.create(MAIN_ZNODE + "/" + TOPOLOGY_ZNODE,
                     ("").getBytes("UTF-8"), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             zooKeeper.create(MAIN_ZNODE + "/" + ACTIVE_TOPOLOGY_ZNODE,
@@ -446,6 +447,7 @@ public class LoadBalancer {
         recursiveDelete(MAIN_ZNODE + "/" + TASK_ZNODE);
         recursiveDelete(MAIN_ZNODE + "/" + JOIN_STATE_ZNODE);
         recursiveDelete(MAIN_ZNODE + "/" + SCALE_ACTION);
+        recursiveDelete(MAIN_ZNODE);
     }
 
     private void recursiveDelete(String znode) {
