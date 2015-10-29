@@ -356,6 +356,11 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                                 collector.emitDirect(scaledTask, scaleTuple);
                                 collector.emitDirect(candidateTask, scaleTuple);
                                 startTransferTimestamp = System.currentTimeMillis();
+                                /**
+                                 * Add the candidate-task to the active task list
+                                 */
+                                activeDownstreamTaskIdentifiers.add(candidateTask);
+                                dispatcher.setTaskToRelationIndex(activeDownstreamTaskIdentifiers);
                             }
                         }
                     }
