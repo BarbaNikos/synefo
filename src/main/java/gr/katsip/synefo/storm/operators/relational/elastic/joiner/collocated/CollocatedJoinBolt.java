@@ -223,10 +223,11 @@ public class CollocatedJoinBolt extends BaseRichBolt {
         context.registerMetric("state-transfer", stateTransferTime, METRIC_REPORT_FREQ_SEC);
     }
 
-    private boolean isScaleHeader(String header) {
+    public static boolean isScaleHeader(String header) {
         return (header.contains(SynefoConstant.COL_SCALE_ACTION_PREFIX) == true &&
-        header.contains(SynefoConstant.COL_KEYS) == true &&
-        header.contains(SynefoConstant.COL_PEER) == true);
+                (header.contains(SynefoConstant.COL_ADD_ACTION) == true || header.contains(SynefoConstant.COL_REMOVE_ACTION) == true) &&
+                header.contains(SynefoConstant.COL_KEYS) == true &&
+                header.contains(SynefoConstant.COL_PEER) == true);
     }
 
     @Override
@@ -246,60 +247,61 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                 manageScaleTuple(header);
                 collector.ack(tuple);
                 return;
+            }else {
+                inputRateCurrentTimestamp = System.currentTimeMillis();
+                if ((inputRateCurrentTimestamp - inputRatePreviousTimestamp) >= 1000L) {
+                    inputRatePreviousTimestamp = inputRateCurrentTimestamp;
+                    inputRate.setValue(temporaryInputRate);
+                    executeLatency.setValue(lastExecuteLatencyMetric);
+                    stateSize.setValue(lastStateSizeMetric);
+                    temporaryInputRate = 0;
+                }else {
+                    temporaryInputRate++;
+                }
+                /**
+                 * Remove from both values and fields SYNEFO_HEADER (SYNEFO_TIMESTAMP)
+                 */
+                Values values = new Values(tuple.getValues().toArray());
+                values.remove(0);
+                Fields fields = new Fields(((Fields) values.get(0)).toList());
+                Values tupleValues = (Values) values.get(1);
+                long startTime = System.currentTimeMillis();
+                Pair<Integer, Integer> pair = joiner.execute(tuple, collector, activeDownstreamTaskIdentifiers,
+                        downstreamIndex, fields, tupleValues);
+                downstreamIndex = pair.first;
+                temporaryThroughput += pair.second;
+                collector.ack(tuple);
+                long endTime = System.currentTimeMillis();
+                lastExecuteLatencyMetric = endTime - startTime;
+                lastStateSizeMetric = joiner.getStateSize();
+                executeLatency.setValue(lastExecuteLatencyMetric);
+                stateSize.setValue(lastStateSizeMetric);
+                throughputCurrentTimestamp = System.currentTimeMillis();
+                if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
+                    throughputPreviousTimestamp = throughputCurrentTimestamp;
+                    throughput.setValue(temporaryThroughput);
+                    temporaryThroughput = 0;
+                }
+                tupleCounter++;
+                if (tupleCounter >= WARM_UP_THRESHOLD && !SYSTEM_WARM_FLAG)
+                    SYSTEM_WARM_FLAG = true;
+                /**
+                 * Check if SCALE-ACTION concluded (previous state expired)
+                 */
+                if (candidateTask != -1 && migratedKeys.size() == 0) {
+                    StringBuilder stringBuilder = new StringBuilder();
+                    stringBuilder.append(SynefoConstant.COL_SCALE_ACTION_PREFIX + ":" + SynefoConstant.COL_COMPLETE_ACTION +
+                            "|" + SynefoConstant.COL_KEYS + ":|" + SynefoConstant.COL_PEER + ":" + taskIdentifier);
+                    Values scaleCompleteTuple = new Values();
+                    scaleCompleteTuple.add(stringBuilder.toString());
+                    scaleCompleteTuple.add("");
+                    scaleCompleteTuple.add("");
+                    collector.emitDirect(tuple.getSourceTask(), scaleCompleteTuple);
+                    candidateTask = -1;
+                    long currentTimestamp = System.currentTimeMillis();
+                    stateTransferTime.setValue((currentTimestamp - startTransferTimestamp));
+                }
             }
-        }
-        inputRateCurrentTimestamp = System.currentTimeMillis();
-        if ((inputRateCurrentTimestamp - inputRatePreviousTimestamp) >= 1000L) {
-            inputRatePreviousTimestamp = inputRateCurrentTimestamp;
-            inputRate.setValue(temporaryInputRate);
-            executeLatency.setValue(lastExecuteLatencyMetric);
-            stateSize.setValue(lastStateSizeMetric);
-            temporaryInputRate = 0;
-        }else {
-            temporaryInputRate++;
-        }
-        /**
-         * Remove from both values and fields SYNEFO_HEADER (SYNEFO_TIMESTAMP)
-         */
-        Values values = new Values(tuple.getValues().toArray());
-        values.remove(0);
-        Fields fields = new Fields(((Fields) values.get(0)).toList());
-        Values tupleValues = (Values) values.get(1);
-        long startTime = System.currentTimeMillis();
-        Pair<Integer, Integer> pair = joiner.execute(tuple, collector, activeDownstreamTaskIdentifiers,
-                downstreamIndex, fields, tupleValues);
-        downstreamIndex = pair.first;
-        temporaryThroughput += pair.second;
-        collector.ack(tuple);
-        long endTime = System.currentTimeMillis();
-        lastExecuteLatencyMetric = endTime - startTime;
-        lastStateSizeMetric = joiner.getStateSize();
-        executeLatency.setValue(lastExecuteLatencyMetric);
-        stateSize.setValue(lastStateSizeMetric);
-        throughputCurrentTimestamp = System.currentTimeMillis();
-        if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
-            throughputPreviousTimestamp = throughputCurrentTimestamp;
-            throughput.setValue(temporaryThroughput);
-            temporaryThroughput = 0;
-        }
-        tupleCounter++;
-        if (tupleCounter >= WARM_UP_THRESHOLD && !SYSTEM_WARM_FLAG)
-            SYSTEM_WARM_FLAG = true;
-        /**
-         * Check if SCALE-ACTION concluded (previous state expired)
-         */
-        if (candidateTask != -1 && migratedKeys.size() == 0) {
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.append(SynefoConstant.COL_SCALE_ACTION_PREFIX + ":" + SynefoConstant.COL_COMPLETE_ACTION +
-            "|" + SynefoConstant.COL_KEYS + ":|" + SynefoConstant.COL_PEER + ":" + taskIdentifier);
-            Values scaleCompleteTuple = new Values();
-            scaleCompleteTuple.add(stringBuilder.toString());
-            scaleCompleteTuple.add("");
-            scaleCompleteTuple.add("");
-            collector.emitDirect(tuple.getSourceTask(), scaleCompleteTuple);
-            candidateTask = -1;
-            long currentTimestamp = System.currentTimeMillis();
-            stateTransferTime.setValue((currentTimestamp - startTransferTimestamp));
         }
     }
 

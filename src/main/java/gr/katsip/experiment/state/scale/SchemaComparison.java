@@ -1,6 +1,8 @@
 package gr.katsip.experiment.state.scale;
 
 import gr.katsip.synefo.storm.operators.relational.elastic.joiner.collocated.BasicCollocatedEquiWindow;
+import gr.katsip.synefo.storm.operators.relational.elastic.joiner.collocated.CollocatedJoinBolt;
+import gr.katsip.synefo.utils.SynefoConstant;
 
 import java.util.LinkedList;
 
@@ -9,12 +11,10 @@ import java.util.LinkedList;
  */
 public class SchemaComparison {
     public static void main(String args[]) {
-        LinkedList<BasicCollocatedEquiWindow> ring = new LinkedList<>();
-        BasicCollocatedEquiWindow window = new BasicCollocatedEquiWindow();
-        window.byteStateSize = 12345;
-        ring.addFirst(window);
-        System.out.println(ring.getFirst().byteStateSize);
-        ring.getFirst().byteStateSize += (234);
-        System.out.println(ring.getFirst().byteStateSize);
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(SynefoConstant.COL_SCALE_ACTION_PREFIX + ":" + SynefoConstant.COL_ADD_ACTION);
+        stringBuilder.append("|" + SynefoConstant.COL_KEYS + ":");
+        stringBuilder.append("|" + SynefoConstant.COL_PEER + ":1");
+        System.out.println(CollocatedJoinBolt.isScaleHeader(stringBuilder.toString()));
     }
 }
