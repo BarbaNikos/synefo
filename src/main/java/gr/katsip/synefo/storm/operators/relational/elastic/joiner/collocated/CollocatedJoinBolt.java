@@ -242,8 +242,7 @@ public class CollocatedJoinBolt extends BaseRichBolt {
         }else {
             header = tuple.getString(tuple.getFields()
                     .fieldIndex("SYNEFO_HEADER"));
-            if (header != null && !header.equals("") && header.contains("/") &&
-                    isScaleHeader(header)) {
+            if (header != null && !header.equals("") && isScaleHeader(header)) {
                 manageScaleTuple(header);
                 collector.ack(tuple);
                 return;

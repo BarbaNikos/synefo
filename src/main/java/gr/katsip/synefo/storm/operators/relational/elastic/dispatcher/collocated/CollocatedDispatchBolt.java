@@ -239,9 +239,10 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
         context.registerMetric("state-transfer", stateTransferTime, METRIC_REPORT_FREQ_SEC);
     }
 
-    private boolean isScaleHeader(String header) {
+    public static boolean isScaleHeader(String header) {
         return (header.contains(SynefoConstant.COL_SCALE_ACTION_PREFIX) == true &&
                 header.contains(SynefoConstant.COL_COMPLETE_ACTION) == true &&
+                header.contains(SynefoConstant.COL_KEYS) == true &&
                 header.contains(SynefoConstant.COL_PEER) == true);
     }
 
@@ -257,8 +258,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
         }else {
             header = tuple.getString(tuple.getFields()
                     .fieldIndex("SYNEFO_HEADER"));
-            if (header != null && !header.equals("") && header.contains("/") &&
-                    isScaleHeader(header)) {
+            if (header != null && !header.equals("") && isScaleHeader(header)) {
                 manageScaleTuple(header);
                 collector.ack(tuple);
                 return;
@@ -331,7 +331,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                                 //Overloaded task id is overloadedTask
                                 //Divide tasks keys into two sets (migratedKeys are going to be handled by new task
                                 List<String> keys = dispatcher.getKeysForATask(scaledTask);
-                                migratedKeys = keys.subList(0, (keys.size() / 2));
+                                migratedKeys = keys.subList(0, (int) Math.ceil((double) (keys.size() / 2)));
                                 SCALE_ACTION_FLAG = true;
                                 scaledTask = overloadedTask;
                                 //Pick random in-active task (candidate)
