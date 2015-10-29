@@ -37,10 +37,6 @@ public class BalanceServer {
 
 	private String zooHost;
 	
-	private AtomicBoolean operationFlag;
-	
-	private AtomicInteger queryId;
-	
 	private AtomicInteger taskNumber;
 	
 	private ConcurrentLinkedQueue<String> pendingAddressUpdates;
@@ -64,7 +60,6 @@ public class BalanceServer {
 		killCommand = false;
 		resourceThresholds = _resource_thresholds;
 		this.zooHost = zooHost;
-		operationFlag = new AtomicBoolean(false);
 		taskNumber = new AtomicInteger(-1);
         this.INIT_MINIMAL_RESOURCES = INIT_MINIMAL_RESOURCES;
 	}
