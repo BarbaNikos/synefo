@@ -328,12 +328,12 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                                     scaleNeeded = false;
                             }
                             if (scaleNeeded) {
+                                scaledTask = overloadedTask;
                                 //Overloaded task id is overloadedTask
                                 //Divide tasks keys into two sets (migratedKeys are going to be handled by new task
                                 List<String> keys = dispatcher.getKeysForATask(scaledTask);
                                 migratedKeys = keys.subList(0, (int) Math.ceil((double) (keys.size() / 2)));
                                 SCALE_ACTION_FLAG = true;
-                                scaledTask = overloadedTask;
                                 //Pick random in-active task (candidate)
                                 List<Integer> candidates = new ArrayList<>(downstreamTaskIdentifiers);
                                 candidates.removeAll(activeDownstreamTaskIdentifiers);

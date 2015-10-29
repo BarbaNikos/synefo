@@ -261,6 +261,8 @@ public class CollocatedWindowDispatcher implements Serializable {
     }
 
     public List<String> getKeysForATask(Integer task) {
+        if (task < 0)
+            return null;
         List<String> keys = new ArrayList<>();
         Long timestamp = System.currentTimeMillis();
         for (int i = 0; i < ringBuffer.size(); i++) {
