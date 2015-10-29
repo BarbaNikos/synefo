@@ -263,7 +263,13 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                  */
                 Values values = new Values(tuple.getValues().toArray());
                 values.remove(0);
-                Fields fields = new Fields(((Fields) values.get(0)).toList());
+                Fields fields = null;
+                try {
+                    fields = new Fields(((Fields) values.get(0)).toList());
+                }catch (ClassCastException e) {
+                    logger.error("tried to get fields but instead got: " + values.get(0));
+                    e.printStackTrace();
+                }
                 Values tupleValues = (Values) values.get(1);
                 long startTime = System.currentTimeMillis();
                 Pair<Integer, Integer> pair = joiner.execute(tuple, collector, activeDownstreamTaskIdentifiers,
