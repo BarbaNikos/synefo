@@ -267,6 +267,7 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                 try {
                     fields = new Fields(((Fields) values.get(0)).toList());
                 }catch (ClassCastException e) {
+                    logger.error("received tuple with values: " + tuple.getValues());
                     logger.error("tried to get fields but instead got: " + values.get(0));
                     e.printStackTrace();
                 }
