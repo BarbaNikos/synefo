@@ -137,13 +137,17 @@ public class TopologyDriver {
         int executorNumber = scale;
         Config conf = new Config();
         TopologyBuilder builder = new TopologyBuilder();
-        FileProducer order, lineitem;
+        FileProducer order, lineitem, supplier, customer;
         switch (readerType) {
             case DEFAULT_FILE_READER:
                 order = new LocalFileProducer(inputFile[0], Order.schema, Order.schema);
                 order.setSchema(new Fields(schema));
                 lineitem = new LocalFileProducer(inputFile[1], LineItem.schema, LineItem.schema);
                 lineitem.setSchema(new Fields(schema));
+//                supplier = new LocalFileProducer(inputFile[2], Supplier.schema, Supplier.schema);
+//                supplier.setSchema(new Fields(schema));
+//                customer = new LocalFileProducer(inputFile[3], Customer.schema, Customer.schema);
+//                customer.setSchema(new Fields(schema));
                 break;
             case CONTROLLED_FILE_READER:
                 order = new LocalControlledFileProducer(inputFile[0], Order.schema, Order.schema, outputRate,
@@ -152,23 +156,35 @@ public class TopologyDriver {
                 lineitem = new LocalControlledFileProducer(inputFile[1], LineItem.schema, LineItem.schema, outputRate,
                         checkpoint);
                 lineitem.setSchema(new Fields(schema));
+//                supplier = new LocalControlledFileProducer(inputFile[2], Supplier.schema, Supplier.schema, outputRate,
+//                        checkpoint);
+//                supplier.setSchema(new Fields(schema));
+//                customer = new LocalControlledFileProducer(inputFile[3], Customer.schema, Customer.schema, outputRate,
+//                        checkpoint);
+//                customer.setSchema(new Fields(schema));
                 break;
             default:
                 order = new LocalFileProducer(inputFile[0], Order.schema, Order.schema);
                 order.setSchema(new Fields(schema));
                 lineitem = new LocalFileProducer(inputFile[1], LineItem.schema, LineItem.schema);
                 lineitem.setSchema(new Fields(schema));
+//                supplier = new LocalFileProducer(inputFile[2], Supplier.schema, Supplier.schema);
+//                supplier.setSchema(new Fields(schema));
+//                customer = new LocalFileProducer(inputFile[3], Customer.schema, Customer.schema);
+//                customer.setSchema(new Fields(schema));
         }
         builder.setSpout("order", new ElasticFileSpout("order", synefoAddress, synefoPort, order, zookeeperAddress), scale);
         builder.setSpout("lineitem", new ElasticFileSpout("lineitem", synefoAddress, synefoPort, lineitem, zookeeperAddress), scale);
-        numberOfTasks += 2*scale;
+//        builder.setSpout("customer", new ElasticFileSpout("customer", synefoAddress, synefoPort, customer, zookeeperAddress), scale);
+//        builder.setSpout("supplier", new ElasticFileSpout("supplier", synefoAddress, synefoPort, supplier, zookeeperAddress), scale);
+        numberOfTasks += 2 * scale;
         tasks = new ArrayList<>();
         tasks.add("dispatch");
         topology.put("order", tasks);
         topology.put("lineitem", new ArrayList<>(tasks));
 
-        Dispatcher dispatcher = null;
-        CollocatedWindowDispatcher collocatedWindowDispatcher = null;
+        Dispatcher dispatcher = null, dispatcher1 = null;
+        CollocatedWindowDispatcher collocatedWindowDispatcher = null, collocatedWindowDispatcher1 = null;
         switch (type) {
             case OBLIVIOUS_DISPATCH:
                 dispatcher = new ObliviousDispatcher("order", new Fields(Order.schema), Order.schema[0],

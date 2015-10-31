@@ -11,6 +11,7 @@ import backtype.storm.tuple.Values;
 import gr.katsip.synefo.storm.api.ZookeeperClient;
 import gr.katsip.synefo.utils.SynefoConstant;
 import gr.katsip.synefo.utils.SynefoMessage;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -305,72 +306,84 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
             tupleCounter++;
             if (tupleCounter >= WARM_UP_THRESHOLD && !SYSTEM_WARM_FLAG)
                 SYSTEM_WARM_FLAG = true;
-            if (tupleCounter >= LOAD_CHECK_PERIOD && !SCALE_ACTION_FLAG) {
-                /**
-                 * Check if one of the nodes is overloaded
-                 */
-                if (activeDownstreamTaskIdentifiers.size() < downstreamTaskIdentifiers.size()) {
-                    HashMap<Integer, Long> numberOfTuplesPerTask = dispatcher.getNumberOfTuplesPerTask();
-                    int overloadedTask = -1;
-                    long maxNumberOfTuples = 0;
-                    for (Integer task : numberOfTuplesPerTask.keySet()) {
-                        if (maxNumberOfTuples < numberOfTuplesPerTask.get(task)) {
-                            overloadedTask = task;
-                            maxNumberOfTuples = numberOfTuplesPerTask.get(task);
-                        }
-                    }
-                    if (overloadedTask != -1) {
-                        overloadedTaskLog.add(overloadedTask);
-                        if (overloadedTaskLog.size() >= LOAD_RELUCTANCY) {
-                            boolean scaleNeeded = true;
-                            for (int i = overloadedTaskLog.size() - 1; i >= (overloadedTaskLog.size() - LOAD_RELUCTANCY) && i >= 0; i--) {
-                                if (overloadedTaskLog.get(i) != overloadedTask)
-                                    scaleNeeded = false;
-                            }
-                            if (scaleNeeded) {
-                                scaledTask = overloadedTask;
-                                //Overloaded task id is overloadedTask
-                                //Divide tasks keys into two sets (migratedKeys are going to be handled by new task
-                                List<String> keys = dispatcher.getKeysForATask(scaledTask);
-                                migratedKeys = keys.subList(0, (int) Math.ceil((double) (keys.size() / 2)));
-                                SCALE_ACTION_FLAG = true;
-                                //Pick random in-active task (candidate)
-                                List<Integer> candidates = new ArrayList<>(downstreamTaskIdentifiers);
-                                candidates.removeAll(activeDownstreamTaskIdentifiers);
-                                Random random = new Random();
-                                candidateTask = candidates.get(random.nextInt(candidates.size()));
-                                //Set value for the candidate? or No?
-                                StringBuilder stringBuilder = new StringBuilder();
-                                stringBuilder.append(SynefoConstant.COL_SCALE_ACTION_PREFIX + ":" + SynefoConstant.COL_ADD_ACTION);
-                                stringBuilder.append("|" + SynefoConstant.COL_KEYS + ":");
-                                for (String key : migratedKeys) {
-                                    stringBuilder.append(key + ",");
-                                }
-                                if (stringBuilder.length() > 0 && stringBuilder.charAt(stringBuilder.length() - 1) == ',')
-                                    stringBuilder.setLength(stringBuilder.length() - 1);
-                                stringBuilder.append("|" + SynefoConstant.COL_PEER + ":" + candidateTask);
-                                Values scaleTuple = new Values();
-                                scaleTuple.add(stringBuilder.toString());
-                                scaleTuple.add("");
-                                scaleTuple.add("");
-                                collector.emitDirect(scaledTask, scaleTuple);
-                                collector.emitDirect(candidateTask, scaleTuple);
-                                startTransferTimestamp = System.currentTimeMillis();
-                                /**
-                                 * Add the candidate-task to the active task list
-                                 */
-                                activeDownstreamTaskIdentifiers.add(candidateTask);
-                                dispatcher.setTaskToRelationIndex(activeDownstreamTaskIdentifiers);
-                            }
-                        }
-                    }
-                    //Check for scale-in action
-                    //TODO: Finish that
-                    /**
-                     * Dispatcher makes a histogram of tuples per node
-                     * and scales-in the one that has the least tuples (global minimum)
-                     */
+            if (tupleCounter >= LOAD_CHECK_PERIOD && !SCALE_ACTION_FLAG)
+                scale();
+        }
+    }
+
+    public void scale() {
+        /**
+         * Check if one of the nodes is overloaded
+         */
+        DescriptiveStatistics statistics = new DescriptiveStatistics();
+        int overloadedTask = -1, slackerTask = -1;
+        long maxNumberOfTuples = 0, minNumberOfTuples = Long.MAX_VALUE;
+        if (activeDownstreamTaskIdentifiers.size() < downstreamTaskIdentifiers.size()) {
+            HashMap<Integer, Long> numberOfTuplesPerTask = dispatcher.getNumberOfTuplesPerTask();
+            for (Integer task : numberOfTuplesPerTask.keySet()) {
+                if (maxNumberOfTuples < numberOfTuplesPerTask.get(task)) {
+                    overloadedTask = task;
+                    maxNumberOfTuples = numberOfTuplesPerTask.get(task);
                 }
+                if (minNumberOfTuples > numberOfTuplesPerTask.get(task)) {
+                    minNumberOfTuples = numberOfTuplesPerTask.get(task);
+                    slackerTask = task;
+                }
+                statistics.addValue((double) numberOfTuplesPerTask.get(task));
+            }
+            if (overloadedTask != -1) {
+                overloadedTaskLog.add(overloadedTask);
+                if (overloadedTaskLog.size() >= LOAD_RELUCTANCY) {
+                    boolean scaleNeeded = true;
+                    for (int i = overloadedTaskLog.size() - 1; i >= (overloadedTaskLog.size() - LOAD_RELUCTANCY) && i >= 0; i--) {
+                        if (overloadedTaskLog.get(i) != overloadedTask)
+                            scaleNeeded = false;
+                    }
+                    if (scaleNeeded) {
+                        scaledTask = overloadedTask;
+                        //Overloaded task id is overloadedTask
+                        //Divide tasks keys into two sets (migratedKeys are going to be handled by new task
+                        List<String> keys = dispatcher.getKeysForATask(scaledTask);
+                        migratedKeys = keys.subList(0, (int) Math.ceil((double) (keys.size() / 2)));
+                        SCALE_ACTION_FLAG = true;
+                        //Pick random in-active task (candidate)
+                        List<Integer> candidates = new ArrayList<>(downstreamTaskIdentifiers);
+                        candidates.removeAll(activeDownstreamTaskIdentifiers);
+                        Random random = new Random();
+                        candidateTask = candidates.get(random.nextInt(candidates.size()));
+                        //Set value for the candidate? or No?
+                        StringBuilder stringBuilder = new StringBuilder();
+                        stringBuilder.append(SynefoConstant.COL_SCALE_ACTION_PREFIX + ":" + SynefoConstant.COL_ADD_ACTION);
+                        stringBuilder.append("|" + SynefoConstant.COL_KEYS + ":");
+                        for (String key : migratedKeys) {
+                            stringBuilder.append(key + ",");
+                        }
+                        if (stringBuilder.length() > 0 && stringBuilder.charAt(stringBuilder.length() - 1) == ',')
+                            stringBuilder.setLength(stringBuilder.length() - 1);
+                        stringBuilder.append("|" + SynefoConstant.COL_PEER + ":" + candidateTask);
+                        Values scaleTuple = new Values();
+                        scaleTuple.add(stringBuilder.toString());
+                        scaleTuple.add("");
+                        scaleTuple.add("");
+                        collector.emitDirect(scaledTask, scaleTuple);
+                        collector.emitDirect(candidateTask, scaleTuple);
+                        startTransferTimestamp = System.currentTimeMillis();
+                        /**
+                         * Add the candidate-task to the active task list
+                         */
+                        activeDownstreamTaskIdentifiers.add(candidateTask);
+                        dispatcher.setTaskToRelationIndex(activeDownstreamTaskIdentifiers);
+                    }
+                }
+            }
+            //Check for scale-in action
+            //TODO: Finish that
+            /**
+             * Dispatcher makes a histogram of tuples per node
+             * and scales-in the one that has the least tuples (global minimum)
+             */
+            if (slackerTask != -1) {
+
             }
         }
     }
