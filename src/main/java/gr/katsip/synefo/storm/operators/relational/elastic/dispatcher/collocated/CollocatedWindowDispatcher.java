@@ -112,7 +112,7 @@ public class CollocatedWindowDispatcher implements Serializable {
     }
 
     public int execute(Tuple anchor, OutputCollector collector, Fields fields, Values values, List<String> migratedKeys,
-                       int scaledTask, int candidateTask, String action) {
+                       int scaledTask, int candidateTask) {
         long currentTimestamp = System.currentTimeMillis();
         int numberOfDispatchedTuples = 0;
         int victimTask;

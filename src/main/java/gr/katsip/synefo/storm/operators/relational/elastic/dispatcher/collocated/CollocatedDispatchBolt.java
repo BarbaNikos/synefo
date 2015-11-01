@@ -290,10 +290,10 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
             long startTime = System.currentTimeMillis();
             if (activeDownstreamTaskIdentifiers.size() > 0) {
                 numberOfTuplesDispatched = dispatcher.execute(tuple, collector, fields, tupleValues, migratedKeys,
-                        scaledTask, candidateTask, action);
+                        scaledTask, candidateTask);
             }else {
                 numberOfTuplesDispatched = dispatcher.execute(tuple, null, fields, tupleValues, migratedKeys,
-                        scaledTask, candidateTask, action);
+                        scaledTask, candidateTask);
             }
             collector.ack(tuple);
 
