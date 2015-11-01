@@ -31,9 +31,9 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
 
     Logger logger = LoggerFactory.getLogger(CollocatedDispatchBolt.class);
 
-    private static final int METRIC_REPORT_FREQ_SEC = 5;
+    private static final int METRIC_REPORT_FREQ_SEC = 1;
 
-    private static final int WARM_UP_THRESHOLD = 10000;
+    private static final int WARM_UP_THRESHOLD = 1000;
 
     private static final int LOAD_CHECK_PERIOD = 2000;
 
@@ -103,7 +103,11 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
      * Scale action information
      */
 
-    private List<Integer> overloadedTaskLog;
+    private String action;
+
+    private List<Integer> strugglersHistory;
+
+    private List<Integer> slackersHistory;
 
     private boolean SCALE_ACTION_FLAG = false;
 
@@ -221,9 +225,11 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
         tupleCounter = 0;
         SCALE_ACTION_FLAG = false;
         migratedKeys = new ArrayList<>();
-        overloadedTaskLog = new ArrayList<>();
+        strugglersHistory = new ArrayList<>();
+        slackersHistory = new ArrayList<>();
         scaledTask = -1;
         candidateTask = -1;
+        action = "";
         zookeeperClient.clearActionData();
     }
 
@@ -284,10 +290,10 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
             long startTime = System.currentTimeMillis();
             if (activeDownstreamTaskIdentifiers.size() > 0) {
                 numberOfTuplesDispatched = dispatcher.execute(tuple, collector, fields, tupleValues, migratedKeys,
-                        scaledTask, candidateTask);
+                        scaledTask, candidateTask, action);
             }else {
                 numberOfTuplesDispatched = dispatcher.execute(tuple, null, fields, tupleValues, migratedKeys,
-                        scaledTask, candidateTask);
+                        scaledTask, candidateTask, action);
             }
             collector.ack(tuple);
 
@@ -318,26 +324,28 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
         DescriptiveStatistics statistics = new DescriptiveStatistics();
         int overloadedTask = -1, slackerTask = -1;
         long maxNumberOfTuples = 0, minNumberOfTuples = Long.MAX_VALUE;
-        if (activeDownstreamTaskIdentifiers.size() < downstreamTaskIdentifiers.size()) {
-            HashMap<Integer, Long> numberOfTuplesPerTask = dispatcher.getNumberOfTuplesPerTask();
-            for (Integer task : numberOfTuplesPerTask.keySet()) {
-                if (maxNumberOfTuples < numberOfTuplesPerTask.get(task)) {
-                    overloadedTask = task;
-                    maxNumberOfTuples = numberOfTuplesPerTask.get(task);
-                }
-                if (minNumberOfTuples > numberOfTuplesPerTask.get(task)) {
-                    minNumberOfTuples = numberOfTuplesPerTask.get(task);
-                    slackerTask = task;
-                }
-                statistics.addValue((double) numberOfTuplesPerTask.get(task));
+        HashMap<Integer, Long> numberOfTuplesPerTask = dispatcher.getNumberOfTuplesPerTask();
+        for (Integer task : numberOfTuplesPerTask.keySet()) {
+            if (maxNumberOfTuples < numberOfTuplesPerTask.get(task)) {
+                overloadedTask = task;
+                maxNumberOfTuples = numberOfTuplesPerTask.get(task);
             }
+            if (minNumberOfTuples > numberOfTuplesPerTask.get(task)) {
+                minNumberOfTuples = numberOfTuplesPerTask.get(task);
+                slackerTask = task;
+            }
+            statistics.addValue((double) numberOfTuplesPerTask.get(task));
+        }
+        if (activeDownstreamTaskIdentifiers.size() < downstreamTaskIdentifiers.size()) {
             if (overloadedTask != -1) {
-                overloadedTaskLog.add(overloadedTask);
-                if (overloadedTaskLog.size() >= LOAD_RELUCTANCY) {
+                strugglersHistory.add(overloadedTask);
+                if (strugglersHistory.size() >= LOAD_RELUCTANCY) {
                     boolean scaleNeeded = true;
-                    for (int i = overloadedTaskLog.size() - 1; i >= (overloadedTaskLog.size() - LOAD_RELUCTANCY) && i >= 0; i--) {
-                        if (overloadedTaskLog.get(i) != overloadedTask)
+                    for (int i = strugglersHistory.size() - 1; i >= (strugglersHistory.size() - LOAD_RELUCTANCY) && i >= 0; i--) {
+                        if (strugglersHistory.get(i) != overloadedTask) {
                             scaleNeeded = false;
+                            break;
+                        }
                     }
                     if (scaleNeeded) {
                         scaledTask = overloadedTask;
@@ -346,6 +354,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                         List<String> keys = dispatcher.getKeysForATask(scaledTask);
                         migratedKeys = keys.subList(0, (int) Math.ceil((double) (keys.size() / 2)));
                         SCALE_ACTION_FLAG = true;
+                        action = SynefoConstant.COL_ADD_ACTION;
                         //Pick random in-active task (candidate)
                         List<Integer> candidates = new ArrayList<>(downstreamTaskIdentifiers);
                         candidates.removeAll(activeDownstreamTaskIdentifiers);
@@ -373,17 +382,55 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                          */
                         activeDownstreamTaskIdentifiers.add(candidateTask);
                         dispatcher.setTaskToRelationIndex(activeDownstreamTaskIdentifiers);
+                        return;
                     }
                 }
             }
-            //Check for scale-in action
-            //TODO: Finish that
-            /**
-             * Dispatcher makes a histogram of tuples per node
-             * and scales-in the one that has the least tuples (global minimum)
-             */
-            if (slackerTask != -1) {
-
+        }
+        //Check for scale-in action
+        /**
+         * Dispatcher makes a histogram of tuples per node
+         * and scales-in the one that has the least tuples (global minimum)
+         */
+        if (activeDownstreamTaskIdentifiers.size() > 1 && slackerTask != -1 && SCALE_ACTION_FLAG != true) {
+            slackersHistory.add(slackerTask);
+            if (slackersHistory.size() >= LOAD_RELUCTANCY) {
+                boolean scaleNeeded = true;
+                for (int i = slackersHistory.size() - 1; i >= (slackersHistory.size() - LOAD_RELUCTANCY) && i >= 0; i--) {
+                    if (slackersHistory.get(i) != slackerTask) {
+                        scaleNeeded = false;
+                        break;
+                    }
+                }
+                if (scaleNeeded) {
+                    scaledTask = slackerTask;
+                    List<String> keys = dispatcher.getKeysForATask(scaledTask);
+                    migratedKeys = keys.subList(0, (int) Math.ceil((double) (keys.size() / 2)));
+                    SCALE_ACTION_FLAG = true;
+                    action = SynefoConstant.COL_REMOVE_ACTION;
+                    List<Integer> candidates = new ArrayList<>(activeDownstreamTaskIdentifiers);
+                    candidates.remove(scaledTask);
+                    Random random = new Random();
+                    candidateTask = candidates.get(random.nextInt(candidates.size()));
+                    StringBuilder stringBuilder = new StringBuilder();
+                    stringBuilder.append(SynefoConstant.COL_SCALE_ACTION_PREFIX + ":" + SynefoConstant.COL_REMOVE_ACTION);
+                    stringBuilder.append("|" + SynefoConstant.COL_KEYS + ":");
+                    for (String key : migratedKeys) {
+                        stringBuilder.append(key + ",");
+                    }
+                    if (stringBuilder.length() > 0 && stringBuilder.charAt(stringBuilder.length() - 1) == ',')
+                        stringBuilder.setLength(stringBuilder.length() - 1);
+                    stringBuilder.append("|" + SynefoConstant.COL_PEER + ":" + scaledTask);
+                    Values scaleTuple = new Values();
+                    scaleTuple.add(stringBuilder.toString());
+                    scaleTuple.add("");
+                    scaleTuple.add("");
+                    collector.emitDirect(scaledTask, scaleTuple);
+                    collector.emitDirect(candidateTask, scaleTuple);
+                    startTransferTimestamp = System.currentTimeMillis();
+                    activeDownstreamTaskIdentifiers.remove(scaledTask);
+                    dispatcher.setTaskToRelationIndex(activeDownstreamTaskIdentifiers);
+                }
             }
         }
     }
@@ -409,9 +456,12 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                      * Re-initialize
                      */
                     SCALE_ACTION_FLAG = false;
+                    action = "";
                     migratedKeys.clear();
                     candidateTask = -1;
                     scaledTask = -1;
+                    strugglersHistory.clear();
+                    slackersHistory.clear();
                     tupleCounter = 0;
                     long timestamp = System.currentTimeMillis();
                     stateTransferTime.setValue((timestamp - startTransferTimestamp));

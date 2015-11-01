@@ -32,9 +32,9 @@ public class CollocatedJoinBolt extends BaseRichBolt {
 
     Logger logger = LoggerFactory.getLogger(CollocatedJoinBolt.class);
 
-    private static final int METRIC_REPORT_FREQ_SEC = 5;
+    private static final int METRIC_REPORT_FREQ_SEC = 1;
 
-    private static final int WARM_UP_THRESHOLD = 10000;
+    private static final int WARM_UP_THRESHOLD = 1000;
 
     private OutputCollector collector;
 
@@ -315,14 +315,26 @@ public class CollocatedJoinBolt extends BaseRichBolt {
         String action = header.split("[|]")[0].split(":")[1];
         String serializedMigratedKeys = header.split("[|]")[1].split(":")[1];
         String candidateTask = header.split("[|]")[2].split(":")[1];
-        if (Integer.parseInt(candidateTask) != taskIdentifier) {
-            migratedKeys.clear();
-            for (String key : serializedMigratedKeys.split(",")) {
-                migratedKeys.add(key);
+        if (action.equals(SynefoConstant.COL_ADD_ACTION)) {
+            if (Integer.parseInt(candidateTask) != taskIdentifier) {
+                migratedKeys.clear();
+                for (String key : serializedMigratedKeys.split(",")) {
+                    migratedKeys.add(key);
+                }
+                this.candidateTask = Integer.parseInt(candidateTask);
+                joiner.initializeScaleOut(migratedKeys);
+                startTransferTimestamp = System.currentTimeMillis();
             }
-            this.candidateTask = Integer.parseInt(candidateTask);
-            joiner.initializeScaleOut(migratedKeys, this.candidateTask);
-            startTransferTimestamp = System.currentTimeMillis();
+        } else if (action.equals(SynefoConstant.COL_REMOVE_ACTION)) {
+            if (Integer.parseInt(candidateTask) == taskIdentifier) {
+                migratedKeys.clear();
+                for (String key : serializedMigratedKeys.split(",")) {
+                    migratedKeys.add(key);
+                }
+                this.candidateTask = Integer.parseInt(candidateTask);
+                joiner.initializeScaleIn(migratedKeys);
+                startTransferTimestamp = System.currentTimeMillis();
+            }
         }
     }
 

@@ -48,8 +48,6 @@ public class CollocatedWindowEquiJoin implements Serializable {
 
     private List<String> migratedKeys;
 
-    private int candidateTask;
-
     public CollocatedWindowEquiJoin(long windowSize, long slide, Fields innerRelationSchema,
                                     Fields outerRelationSchema,
                                     String innerRelationJoinAttribute,
@@ -70,7 +68,6 @@ public class CollocatedWindowEquiJoin implements Serializable {
         this.innerRelation = innerRelation;
         this.outerRelation = outerRelation;
         migratedKeys = null;
-        candidateTask = -1;
     }
 
     public void store(Long currentTimestamp, Fields schema, Values tuple) {
@@ -247,10 +244,8 @@ public class CollocatedWindowEquiJoin implements Serializable {
                 break;
             }
         }
-        if (mirrorBuffer.size() == 0) {
+        if (mirrorBuffer.size() == 0)
             migratedKeys.clear();
-            candidateTask = -1;
-        }
     }
 
     public ArrayList<Values> mirrorJoin(Long currentTimestamp, Fields schema, Values tuple) {
@@ -312,14 +307,59 @@ public class CollocatedWindowEquiJoin implements Serializable {
         return byteStateSize;
     }
 
-    public void initializeScaleOut(List<String> migratedKeys, int candidateTask) {
+    public void initializeScaleOut(List<String> migratedKeys) {
         long timestamp = System.currentTimeMillis();
-        this.candidateTask = candidateTask;
         this.migratedKeys = migratedKeys;
         mirrorBuffer = new LinkedList<>();
         for (int i = 0; i < ringBuffer.size(); i++) {
             BasicCollocatedEquiWindow window = ringBuffer.get(i);
             if ((window.start + this.windowSize) > timestamp) {
+                BasicCollocatedEquiWindow mirrorWindow = new BasicCollocatedEquiWindow();
+                mirrorWindow.start = window.start;
+                mirrorWindow.end = window.end;
+                HashMap<String, ArrayList<Values>> temporaryMap = new HashMap<>();
+                for (String key : window.innerRelation.keySet()) {
+                    if (migratedKeys.indexOf(key) >= 0) {
+                        ArrayList<Values> migratedTuples = window.innerRelation.get(key);
+                        mirrorWindow.innerRelation.put(key, migratedTuples);
+                    }else {
+                        temporaryMap.put(key, new ArrayList<Values>(window.innerRelation.get(key)));
+                    }
+                }
+                //remove migratedTuples from inner relation
+                if (mirrorWindow.innerRelation.size() > 0) {
+                    window.innerRelation.clear();
+                    window.innerRelation.putAll(temporaryMap);
+                }
+                temporaryMap = new HashMap<>();
+                for (String key : window.outerRelation.keySet()) {
+                    if (migratedKeys.indexOf(key) >= 0) {
+                        ArrayList<Values> migratedTuples = window.outerRelation.get(key);
+                        mirrorWindow.outerRelation.put(key, migratedTuples);
+                    }else {
+                        temporaryMap.put(key, new ArrayList<Values>(window.outerRelation.get(key)));
+                    }
+                }
+                //remove migratedTuples from outer relation
+                if (mirrorWindow.outerRelation.size() > 0) {
+                    window.outerRelation.clear();
+                    window.outerRelation.putAll(temporaryMap);
+                }
+                //Add mirrorWindow to mirror-buffer
+                mirrorBuffer.addLast(mirrorWindow);
+            }else {
+                break;
+            }
+        }
+    }
+
+    public void initializeScaleIn(List<String> migratedKeys) {
+        long timestamp = System.currentTimeMillis();
+        this.migratedKeys = migratedKeys;
+        mirrorBuffer = new LinkedList<>();
+        for (int i = 0; i < ringBuffer.size(); i++) {
+            BasicCollocatedEquiWindow window = ringBuffer.get(i);
+            if ((window.start + windowSize) > timestamp) {
                 BasicCollocatedEquiWindow mirrorWindow = new BasicCollocatedEquiWindow();
                 mirrorWindow.start = window.start;
                 mirrorWindow.end = window.end;

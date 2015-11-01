@@ -43,8 +43,6 @@ public class CollocatedEquiJoiner implements Serializable {
 
     private List<String> migratedKeys;
 
-    private int candidateTask;
-
     public CollocatedEquiJoiner(String innerRelation, Fields innerRelationSchema, String outerRelation,
                                 Fields outerRelationSchema, String innerRelationKey, String outerRelationKey,
                                 int window, int slide) {
@@ -73,7 +71,6 @@ public class CollocatedEquiJoiner implements Serializable {
         collocatedWindowEquiJoin = new CollocatedWindowEquiJoin(this.windowSize, this.slide, this.innerRelationSchema,
                 this.outerRelationSchema, this.innerRelationKey, this.outerRelationKey, this.innerRelation, this.outerRelation);
         migratedKeys = null;
-        candidateTask = -1;
     }
 
     public void setOutputSchema(Fields output_schema) {
@@ -115,10 +112,14 @@ public class CollocatedEquiJoiner implements Serializable {
         return collocatedWindowEquiJoin.getStateSize();
     }
 
-    public void initializeScaleOut(List<String> migratedKeys, int candidateTask) {
+    public void initializeScaleOut(List<String> migratedKeys) {
         this.migratedKeys = migratedKeys;
-        this.candidateTask = candidateTask;
-        collocatedWindowEquiJoin.initializeScaleOut(migratedKeys, candidateTask);
+        collocatedWindowEquiJoin.initializeScaleOut(migratedKeys);
+    }
+
+    public void initializeScaleIn(List<String> migratedKeys) {
+        this.migratedKeys = migratedKeys;
+        collocatedWindowEquiJoin.initializeScaleIn(migratedKeys);
     }
 
 }
