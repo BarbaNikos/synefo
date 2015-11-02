@@ -125,6 +125,7 @@ public class TopologyDriver {
                 readerType = FileReaderType.DEFAULT_FILE_READER;
             }
             System.out.println("driver located dispatcher type: " + type);
+            reader.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

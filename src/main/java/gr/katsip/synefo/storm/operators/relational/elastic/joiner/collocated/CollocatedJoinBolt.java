@@ -34,8 +34,6 @@ public class CollocatedJoinBolt extends BaseRichBolt {
 
     private static final int METRIC_REPORT_FREQ_SEC = 1;
 
-    private static final int WARM_UP_THRESHOLD = 1000;
-
     private OutputCollector collector;
 
     private String taskName;
@@ -65,10 +63,6 @@ public class CollocatedJoinBolt extends BaseRichBolt {
     private Integer downstreamIndex;
 
     private CollocatedEquiJoiner joiner;
-
-    private boolean SYSTEM_WARM_FLAG;
-
-    private int tupleCounter;
 
     private transient AssignableMetric throughput;
 
@@ -114,8 +108,6 @@ public class CollocatedJoinBolt extends BaseRichBolt {
         activeDownstreamTaskIdentifiers = null;
         this.joiner = joiner;
         this.zookeeperAddress = zookeeperAddress;
-        SYSTEM_WARM_FLAG = false;
-        tupleCounter = 0;
     }
 
     public void register() {
@@ -204,8 +196,6 @@ public class CollocatedJoinBolt extends BaseRichBolt {
         if(downstreamTaskNames == null && activeDownstreamTaskNames == null)
             register();
         initMetrics(topologyContext);
-        SYSTEM_WARM_FLAG = false;
-        tupleCounter = 0;
         migratedKeys = new ArrayList<>();
         candidateTask = -1;
     }
@@ -288,9 +278,6 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                     throughput.setValue(temporaryThroughput);
                     temporaryThroughput = 0;
                 }
-                tupleCounter++;
-                if (tupleCounter >= WARM_UP_THRESHOLD && !SYSTEM_WARM_FLAG)
-                    SYSTEM_WARM_FLAG = true;
                 /**
                  * Check if SCALE-ACTION concluded (previous state expired)
                  */

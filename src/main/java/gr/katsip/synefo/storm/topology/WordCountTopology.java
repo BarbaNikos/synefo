@@ -241,16 +241,16 @@ public class WordCountTopology {
 
 	public static void main(String[] args) throws Exception {
 		TopologyBuilder builder = new TopologyBuilder();
-		builder.setSpout("word", new TestWordSpout(true), 4);
-		builder.setBolt("step1", new IntermediateBolt(), 4).setNumTasks(4).shuffleGrouping("word");
+		builder.setSpout("word", new TestWordSpout(true), 8);
+		builder.setBolt("step1", new IntermediateBolt(), 8).setNumTasks(8).shuffleGrouping("word");
 //		builder.setBolt("step2", new IntermediateBolt(), 4).setNumTasks(4).shuffleGrouping("step1");
 //		builder.setBolt("step3", new IntermediateBolt(), 4).setNumTasks(4).shuffleGrouping("step2");
 //		builder.setBolt("step4", new IntermediateBolt(), 4).setNumTasks(4).shuffleGrouping("step3");
-		builder.setBolt("sink", new SinkBolt(), 4).setNumTasks(4).shuffleGrouping("step1");
+		builder.setBolt("sink", new SinkBolt(), 8).setNumTasks(8).shuffleGrouping("step1");
 
 		Config conf = new Config();
 		conf.setDebug(false);
-		conf.registerMetricsConsumer(LoggingMetricsConsumer.class, 2);
+		conf.registerMetricsConsumer(LoggingMetricsConsumer.class, 4);
 		conf.setNumWorkers(16);
 		conf.put(Config.TOPOLOGY_WORKER_CHILDOPTS,
 				"-Xmx4096m -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:NewSize=128m -XX:CMSInitiatingOccupancyFraction=70 -XX:-CMSConcurrentMTEnabled -Djava.net.preferIPv4Stack=true");

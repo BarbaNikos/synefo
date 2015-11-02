@@ -33,9 +33,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
 
     private static final int METRIC_REPORT_FREQ_SEC = 1;
 
-    private static final int WARM_UP_THRESHOLD = 1000;
-
-    private static final int LOAD_CHECK_PERIOD = 2000;
+    private static final int LOAD_CHECK_PERIOD = 1000;
 
     private static final int LOAD_RELUCTANCY = 3;
 
@@ -66,8 +64,6 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
     private List<Integer> activeDownstreamTaskIdentifiers;
 
     private CollocatedWindowDispatcher dispatcher;
-
-    private boolean SYSTEM_WARM_FLAG;
 
     private int tupleCounter;
 
@@ -129,7 +125,6 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
         activeDownstreamTaskIdentifiers = null;
         this.dispatcher = dispatcher;
         this.zookeeperAddress = zookeeperAddress;
-        SYSTEM_WARM_FLAG = false;
     }
 
     public void register() {
@@ -221,7 +216,6 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
         if(downstreamTaskNames == null && activeDownstreamTaskNames == null)
             register();
         initMetrics(topologyContext);
-        SYSTEM_WARM_FLAG = false;
         tupleCounter = 0;
         SCALE_ACTION_FLAG = false;
         migratedKeys = new ArrayList<>();
@@ -309,9 +303,8 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                 throughput.setValue(temporaryThroughput);
                 temporaryThroughput = 0;
             }
-            tupleCounter++;
-            if (tupleCounter >= WARM_UP_THRESHOLD && !SYSTEM_WARM_FLAG)
-                SYSTEM_WARM_FLAG = true;
+            if (!SCALE_ACTION_FLAG)
+                tupleCounter++;
             if (tupleCounter >= LOAD_CHECK_PERIOD && !SCALE_ACTION_FLAG)
                 scale();
         }
