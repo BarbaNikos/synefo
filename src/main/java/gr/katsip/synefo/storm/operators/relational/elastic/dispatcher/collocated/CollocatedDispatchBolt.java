@@ -33,7 +33,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
 
     private static final int METRIC_REPORT_FREQ_SEC = 1;
 
-    private static final int LOAD_CHECK_PERIOD = 1000;
+    private static final int LOAD_CHECK_PERIOD = 200;
 
     private static final int LOAD_RELUCTANCY = 3;
 
