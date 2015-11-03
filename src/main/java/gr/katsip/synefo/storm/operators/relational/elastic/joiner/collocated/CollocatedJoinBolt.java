@@ -269,6 +269,7 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                 /**
                  * Remove from both values and fields SYNEFO_HEADER (SYNEFO_TIMESTAMP)
                  */
+                logger.info("received tuple: " + tuple.getValues().toString());
                 Values values = new Values(tuple.getValues().toArray());
                 values.remove(0);
                 Fields fields = null;
