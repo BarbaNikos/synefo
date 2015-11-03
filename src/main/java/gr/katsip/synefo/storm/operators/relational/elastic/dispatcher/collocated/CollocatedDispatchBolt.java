@@ -426,7 +426,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                     collector.emitDirect(scaledTask, scaleTuple);
                     collector.emitDirect(candidateTask, scaleTuple);
                     startTransferTimestamp = System.currentTimeMillis();
-                    activeDownstreamTaskIdentifiers.remove(scaledTask);
+                    activeDownstreamTaskIdentifiers.remove(activeDownstreamTaskIdentifiers.indexOf(scaledTask));
                     this.action = SynefoConstant.COL_REMOVE_ACTION;
                     dispatcher.setTaskToRelationIndex(activeDownstreamTaskIdentifiers);
                 }
