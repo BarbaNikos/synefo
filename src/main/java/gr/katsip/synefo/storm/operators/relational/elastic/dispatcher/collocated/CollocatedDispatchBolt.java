@@ -405,7 +405,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                     SCALE_ACTION_FLAG = true;
                     action = SynefoConstant.COL_REMOVE_ACTION;
                     List<Integer> candidates = new ArrayList<>(activeDownstreamTaskIdentifiers);
-                    candidates.remove(scaledTask);
+                    candidates.remove(candidates.indexOf(scaledTask));
                     Random random = new Random();
                     candidateTask = candidates.get(random.nextInt(candidates.size()));
                     logger.info("decided to scale-in " + scaledTask + " and transfer keys " + migratedKeys.toString() +
