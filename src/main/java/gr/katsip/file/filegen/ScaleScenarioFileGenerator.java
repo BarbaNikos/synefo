@@ -11,8 +11,14 @@ import java.io.PrintWriter;
 public class ScaleScenarioFileGenerator {
 
     public static void main(String[] args) throws IOException {
-        File inner = new File("inner.tbl");
-        File outer = new File("outer.tbl");
+        if (args.length < 3) {
+            System.out.println("arguments: output-directory scale-period reluctancy");
+            System.exit(1);
+        }
+        int scalePeriod = Integer.parseInt(args[1]);
+        int reluctancy = Integer.parseInt(args[2]);
+        File inner = new File(args[0] + File.separator + "inner.tbl");
+        File outer = new File(args[0] + File.separator + "outer.tbl");
         if (inner.exists())
             inner.delete();
         if (outer.exists())
@@ -24,8 +30,8 @@ public class ScaleScenarioFileGenerator {
         /**
          * First Period: Key "1" is dominating
          */
-        long oneCounter = (long) Math.ceil(0.95 * 600);
-        long twoCounter = (long) Math.ceil(0.05 * 600);
+        long oneCounter = (long) Math.ceil(0.95 * (reluctancy * scalePeriod / 2));
+        long twoCounter = (long) Math.ceil(0.05 * (reluctancy * scalePeriod / 2));
         while (oneCounter > 0 && twoCounter > 0) {
             if (oneCounter > 0) {
                 innerWriter.println("1");
@@ -41,8 +47,8 @@ public class ScaleScenarioFileGenerator {
         /**
          * Second Period: Equal number of keys
          */
-        oneCounter = (long) Math.ceil(0.5 * 600);
-        twoCounter = (long) Math.ceil(0.5 * 600);
+        oneCounter = (long) Math.ceil(0.5 * (reluctancy * scalePeriod / 2));
+        twoCounter = (long) Math.ceil(0.5 * (reluctancy * scalePeriod / 2));
         while (oneCounter > 0 && twoCounter > 0) {
             if (oneCounter > 0) {
                 innerWriter.println("1");
@@ -58,8 +64,8 @@ public class ScaleScenarioFileGenerator {
         /**
          * Third Period: Key "2" is dominating
          */
-        oneCounter = (long) Math.ceil(0.05 * 600);
-        twoCounter = (long) Math.ceil(0.95 * 600);
+        oneCounter = (long) Math.ceil(0.05 * (reluctancy * scalePeriod / 2));
+        twoCounter = (long) Math.ceil(0.95 * (reluctancy * scalePeriod / 2));
         while (oneCounter > 0 && twoCounter > 0) {
             if (oneCounter > 0) {
                 innerWriter.println("1");
@@ -75,11 +81,8 @@ public class ScaleScenarioFileGenerator {
         /**
          * Fourth Period: Equal number of keys
          */
-        /**
-         * Second Period: Equal number of keys
-         */
-        oneCounter = (long) Math.ceil(0.5 * 600);
-        twoCounter = (long) Math.ceil(0.5 * 600);
+        oneCounter = (long) Math.ceil(0.5 * (reluctancy * scalePeriod / 2));
+        twoCounter = (long) Math.ceil(0.5 * (reluctancy * scalePeriod / 2));
         while (oneCounter > 0 && twoCounter > 0) {
             if (oneCounter > 0) {
                 innerWriter.println("1");

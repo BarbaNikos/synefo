@@ -8,6 +8,7 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import gr.katsip.deprecated.server.Synefo;
 import gr.katsip.synefo.storm.api.ZookeeperClient;
 import gr.katsip.synefo.utils.SynefoConstant;
 import gr.katsip.synefo.utils.SynefoMessage;
@@ -284,10 +285,10 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
             long startTime = System.currentTimeMillis();
             if (activeDownstreamTaskIdentifiers.size() > 0) {
                 numberOfTuplesDispatched = dispatcher.execute(tuple, collector, fields, tupleValues, migratedKeys,
-                        scaledTask, candidateTask);
+                        scaledTask, candidateTask, this.action);
             }else {
                 numberOfTuplesDispatched = dispatcher.execute(tuple, null, fields, tupleValues, migratedKeys,
-                        scaledTask, candidateTask);
+                        scaledTask, candidateTask, this.action);
             }
             collector.ack(tuple);
 
@@ -353,7 +354,8 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                         candidates.removeAll(activeDownstreamTaskIdentifiers);
                         Random random = new Random();
                         candidateTask = candidates.get(random.nextInt(candidates.size()));
-                        //Set value for the candidate? or No?
+                        logger.info("decided to scale-out " + scaledTask + " and transfer keys " + migratedKeys.toString() +
+                                " to task " + candidateTask);
                         StringBuilder stringBuilder = new StringBuilder();
                         stringBuilder.append(SynefoConstant.COL_SCALE_ACTION_PREFIX + ":" + SynefoConstant.COL_ADD_ACTION);
                         stringBuilder.append("|" + SynefoConstant.COL_KEYS + ":");
@@ -398,13 +400,16 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                 if (scaleNeeded) {
                     scaledTask = slackerTask;
                     List<String> keys = dispatcher.getKeysForATask(scaledTask);
-                    migratedKeys = keys.subList(0, (int) Math.ceil((double) (keys.size() / 2)));
+//                    migratedKeys = keys.subList(0, (int) Math.ceil((double) (keys.size() / 2)));
+                    migratedKeys = keys;
                     SCALE_ACTION_FLAG = true;
                     action = SynefoConstant.COL_REMOVE_ACTION;
                     List<Integer> candidates = new ArrayList<>(activeDownstreamTaskIdentifiers);
                     candidates.remove(scaledTask);
                     Random random = new Random();
                     candidateTask = candidates.get(random.nextInt(candidates.size()));
+                    logger.info("decided to scale-in " + scaledTask + " and transfer keys " + migratedKeys.toString() +
+                            " to task " + candidateTask);
                     StringBuilder stringBuilder = new StringBuilder();
                     stringBuilder.append(SynefoConstant.COL_SCALE_ACTION_PREFIX + ":" + SynefoConstant.COL_REMOVE_ACTION);
                     stringBuilder.append("|" + SynefoConstant.COL_KEYS + ":");
@@ -422,6 +427,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                     collector.emitDirect(candidateTask, scaleTuple);
                     startTransferTimestamp = System.currentTimeMillis();
                     activeDownstreamTaskIdentifiers.remove(scaledTask);
+                    this.action = SynefoConstant.COL_REMOVE_ACTION;
                     dispatcher.setTaskToRelationIndex(activeDownstreamTaskIdentifiers);
                 }
             }
@@ -448,7 +454,12 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                      * SCALE-ACTION is complete
                      * Re-initialize
                      */
+                    logger.info("completed scale-action " + action + " between scaled-task " + scaledTask + " and" +
+                            candidateTask + " for keys " + migratedKeys.toString());
                     SCALE_ACTION_FLAG = false;
+//                    if (this.action.equals(SynefoConstant.COL_REMOVE_ACTION)) {
+//                        activeDownstreamTaskIdentifiers.remove(scaledTask);
+//                    }
                     action = "";
                     migratedKeys.clear();
                     candidateTask = -1;
