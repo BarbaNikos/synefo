@@ -146,10 +146,9 @@ public class ScaleDebugTopologyDriver {
         tasks.add("dispatch");
         topology.put("inner", tasks);
         topology.put("outer", new ArrayList<String>(tasks));
-
         CollocatedWindowDispatcher collocatedWindowDispatcher = new CollocatedWindowDispatcher("inner",
                 new Fields(Inner.schema), Inner.schema[0], "outer", new Fields(Outer.schema), Outer.schema[0],
-                new Fields(schema), (long) windowInMinutes * (60 * 1000), slideInMilliSeconds);
+                new Fields(schema), (long) (windowInMinutes * (60 * 1000)), slideInMilliSeconds);
         builder.setBolt("dispatch", new CollocatedDispatchBolt("dispatch", synefoAddress, synefoPort,
                 collocatedWindowDispatcher, zookeeperAddress), 1)
                 .setNumTasks(1)
@@ -160,7 +159,7 @@ public class ScaleDebugTopologyDriver {
         tasks.add("joiner");
         topology.put("dispatch", tasks);
         CollocatedEquiJoiner joiner = new CollocatedEquiJoiner("inner", new Fields(Inner.schema), "outer",
-                new Fields(Outer.schema), Inner.schema[0], Outer.schema[0], (int) windowInMinutes * (60 * 1000),
+                new Fields(Outer.schema), Inner.schema[0], Outer.schema[0], (int) (windowInMinutes * (60 * 1000)),
                 (int) slideInMilliSeconds);
         joiner.setOutputSchema(new Fields(schema));
         builder.setBolt("joiner", new CollocatedJoinBolt("joiner", synefoAddress, synefoPort, joiner, zookeeperAddress),
