@@ -82,6 +82,7 @@ public class ScaleDebugTopologyDriver {
             }
             windowInMinutes = Float.parseFloat(reader.readLine().split("=")[1]);
             slideInMilliSeconds = Long.parseLong(reader.readLine().split("=")[1]);
+            System.out.println("window-in-minutes: " + windowInMinutes + ", slide-in-msec: " + slideInMilliSeconds);
             numberOfWorkers = Integer.parseInt(reader.readLine().split("=")[1]);
             synefoAddress = reader.readLine().split("=")[1];
             zookeeperAddress = reader.readLine().split("=")[1];
@@ -112,7 +113,6 @@ public class ScaleDebugTopologyDriver {
         Integer numberOfTasks = 0;
         ArrayList<String> tasks;
         HashMap<String, ArrayList<String>> topology = new HashMap<>();
-        int executorNumber = scale;
         Config conf = new Config();
         TopologyBuilder builder = new TopologyBuilder();
         FileProducer inner, outer;
@@ -147,10 +147,9 @@ public class ScaleDebugTopologyDriver {
         topology.put("inner", tasks);
         topology.put("outer", new ArrayList<String>(tasks));
 
-        CollocatedWindowDispatcher collocatedWindowDispatcher = null;
-        collocatedWindowDispatcher = new CollocatedWindowDispatcher("inner", new Fields(Inner.schema), Inner.schema[0],
-                "outer", new Fields(Outer.schema), Outer.schema[0], new Fields(schema),
-                (long) windowInMinutes * 2 * (60 * 1000), slideInMilliSeconds);
+        CollocatedWindowDispatcher collocatedWindowDispatcher = new CollocatedWindowDispatcher("inner",
+                new Fields(Inner.schema), Inner.schema[0], "outer", new Fields(Outer.schema), Outer.schema[0],
+                new Fields(schema), (long) windowInMinutes * (60 * 1000), slideInMilliSeconds);
         builder.setBolt("dispatch", new CollocatedDispatchBolt("dispatch", synefoAddress, synefoPort,
                 collocatedWindowDispatcher, zookeeperAddress), 1)
                 .setNumTasks(1)
