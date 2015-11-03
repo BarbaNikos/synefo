@@ -55,7 +55,8 @@ public class CollocatedWindowDispatcher implements Serializable {
         this.window = window;
         this.slide = slide;
         bufferSize = (int) Math.ceil(this.window / this.slide);
-        System.out.println("window-dispatcher ring-buffer size: " + bufferSize);
+        System.out.println("window-dispatcher ring-buffer size: " + bufferSize + ", provided-window: " + window +
+                " slide: " + slide);
         ringBuffer = new LinkedList<>();
         this.outerRelationName = outerRelationName;
         this.innerRelationName = innerRelationName;
