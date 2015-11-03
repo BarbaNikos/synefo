@@ -1,5 +1,7 @@
 package gr.katsip.synefo.storm.operators.relational.elastic.dispatcher.collocated;
 
+import backtype.storm.Config;
+import backtype.storm.Constants;
 import backtype.storm.metric.api.AssignableMetric;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -8,7 +10,6 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
-import gr.katsip.deprecated.server.Synefo;
 import gr.katsip.synefo.storm.api.ZookeeperClient;
 import gr.katsip.synefo.utils.SynefoConstant;
 import gr.katsip.synefo.utils.SynefoMessage;
@@ -101,6 +102,8 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
      */
 
     private String action;
+
+    private HashMap<Integer, List<Long>> capacityHistory;
 
     private List<Integer> strugglersHistory;
 
@@ -222,6 +225,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
         migratedKeys = new ArrayList<>();
         strugglersHistory = new ArrayList<>();
         slackersHistory = new ArrayList<>();
+        capacityHistory = new HashMap<>();
         scaledTask = -1;
         candidateTask = -1;
         action = "";
@@ -248,9 +252,44 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                 header.contains(SynefoConstant.COL_PEER) == true);
     }
 
+    public static boolean isControlTuple(String header) {
+        return (header.contains(SynefoConstant.COL_TICK_HEADER + ":") && header.contains(","));
+    }
+
+    @Override
+    public Map<String, Object> getComponentConfiguration() {
+        Config conf = new Config();
+        conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 1);
+        return conf;
+    }
+
+    private boolean isTickTuple(Tuple tuple) {
+        String sourceComponent = tuple.getSourceComponent();
+        String sourceStreamIdentifier = tuple.getSourceStreamId();
+        return sourceComponent.equals(Constants.SYSTEM_COMPONENT_ID) &&
+                sourceStreamIdentifier.equals(Constants.SYSTEM_TICK_STREAM_ID);
+    }
+
     @Override
     public void execute(Tuple tuple) {
         String header = "";
+        if (isTickTuple(tuple) && SCALE_ACTION_FLAG == false) {
+            /**
+             * Send out CTRL tuples
+             */
+            Values controlTuple = new Values();
+            StringBuilder stringBuilder = new StringBuilder();
+            long timestamp = System.nanoTime();
+            stringBuilder.append(SynefoConstant.COL_TICK_HEADER + ":" + timestamp);
+            controlTuple.add(stringBuilder.toString());
+            controlTuple.add(null);
+            controlTuple.add(null);
+            for (Integer task : activeDownstreamTaskIdentifiers) {
+                collector.emitDirect(task, controlTuple);
+            }
+            collector.ack(tuple);
+            return;
+        }
         if (!tuple.getFields().contains("SYNEFO_HEADER")) {
             logger.error("COL-DISPATCH-BOLT-" + taskName + ":" + taskIdentifier +
                     " missing synefo header (source: " +
@@ -264,7 +303,22 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                 manageScaleTuple(header);
                 collector.ack(tuple);
                 return;
+            }else if (header != null && !header.equals("") && isControlTuple(header)) {
+                String[] timestamps = header.split(":")[1].split(",");
+                int task = tuple.getSourceTask();
+                long start = Long.parseLong(timestamps[0]);
+                long end = Long.parseLong(timestamps[1]);
+                List<Long> intervals = null;
+                if (capacityHistory.containsKey(task))
+                    intervals = capacityHistory.get(intervals);
+                else
+                    intervals = new ArrayList<>();
+                intervals.add(end - start);
+                capacityHistory.put(task, intervals);
+                collector.ack(tuple);
+                return;
             }
+
             inputRateCurrentTimestamp = System.currentTimeMillis();
             if ((inputRateCurrentTimestamp - inputRatePreviousTimestamp) >= 1000L) {
                 inputRatePreviousTimestamp = inputRateCurrentTimestamp;

@@ -33,4 +33,7 @@ public class SynefoConstant {
 	public static final String COL_KEYS = "C_KEYS";
 
 	public static final String COL_PEER = "C_PEER";
+
+	public static final String COL_TICK_HEADER = "C_TICK_HDR";
+
 }
