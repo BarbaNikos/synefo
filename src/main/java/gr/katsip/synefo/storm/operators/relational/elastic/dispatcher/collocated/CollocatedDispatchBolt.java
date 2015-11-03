@@ -273,19 +273,21 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
     @Override
     public void execute(Tuple tuple) {
         String header = "";
-        if (isTickTuple(tuple) && SCALE_ACTION_FLAG == false) {
-            /**
-             * Send out CTRL tuples
-             */
-            Values controlTuple = new Values();
-            StringBuilder stringBuilder = new StringBuilder();
-            long timestamp = System.nanoTime();
-            stringBuilder.append(SynefoConstant.COL_TICK_HEADER + ":" + timestamp);
-            controlTuple.add(stringBuilder.toString());
-            controlTuple.add(null);
-            controlTuple.add(null);
-            for (Integer task : activeDownstreamTaskIdentifiers) {
-                collector.emitDirect(task, controlTuple);
+        if (isTickTuple(tuple)) {
+            if (SCALE_ACTION_FLAG == false) {
+                /**
+                 * Send out CTRL tuples if no scale-action is in progress
+                 */
+                Values controlTuple = new Values();
+                StringBuilder stringBuilder = new StringBuilder();
+                long timestamp = System.nanoTime();
+                stringBuilder.append(SynefoConstant.COL_TICK_HEADER + ":" + timestamp);
+                controlTuple.add(stringBuilder.toString());
+                controlTuple.add(null);
+                controlTuple.add(null);
+                for (Integer task : activeDownstreamTaskIdentifiers) {
+                    collector.emitDirect(task, controlTuple);
+                }
             }
             collector.ack(tuple);
             return;
