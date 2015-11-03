@@ -140,7 +140,8 @@ public class ScaleDebugTopologyDriver {
         }
         builder.setSpout("inner", new ElasticFileSpout("inner", synefoAddress, synefoPort, inner, zookeeperAddress), scale);
         builder.setSpout("outer", new ElasticFileSpout("outer", synefoAddress, synefoPort, outer, zookeeperAddress), scale);
-        numberOfTasks += 2 * scale;
+//        numberOfTasks += 2 * scale;
+        numberOfTasks += 2;
         tasks = new ArrayList<>();
         tasks.add("dispatch");
         topology.put("inner", tasks);
