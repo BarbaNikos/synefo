@@ -196,7 +196,7 @@ public class TopologyDriver {
                 dispatcher = new WindowDispatcher("order", new Fields(Order.schema), Order.schema[0],
                         Order.schema[0], "lineitem", new Fields(LineItem.schema),
                         LineItem.query5Schema[0], LineItem.query5Schema[0], new Fields(schema),
-                        (long) windowInMinutes * 2 * (60 * 1000), slideInMilliSeconds);
+                        (long) (windowInMinutes * 2 * (60 * 1000)), slideInMilliSeconds);
                 break;
             case HISTORY_DISPATCH:
                 dispatcher = new HistoryDispatcher("order", new Fields(Order.schema), Order.schema[0],
@@ -206,7 +206,7 @@ public class TopologyDriver {
             case COLLOCATED_WINDOW_DISPATCH:
                 collocatedWindowDispatcher = new CollocatedWindowDispatcher("order", new Fields(Order.schema), Order.schema[0],
                         "lineitem", new Fields(LineItem.schema), LineItem.schema[0],
-                        new Fields(schema), (long) windowInMinutes * 2 * (60 * 1000), slideInMilliSeconds);
+                        new Fields(schema), (long) (windowInMinutes * (60 * 1000)), slideInMilliSeconds);
                 break;
             default:
                 dispatcher = new ObliviousDispatcher("order", new Fields(Order.schema), Order.query5Schema[0],
@@ -225,7 +225,7 @@ public class TopologyDriver {
             tasks.add("joinline");
             topology.put("dispatch", tasks);
             NewJoinJoiner joiner = new NewJoinJoiner("order", new Fields(Order.schema), "lineitem", new Fields(LineItem.schema),
-                    "O_ORDERKEY", "L_ORDERKEY", (int) windowInMinutes * (60 * 1000), (int) slideInMilliSeconds);
+                    "O_ORDERKEY", "L_ORDERKEY", (int) (windowInMinutes * (60 * 1000)), (int) slideInMilliSeconds);
             joiner.setOutputSchema(new Fields(schema));
             builder.setBolt("joinorder", new JoinBolt("joinorder", synefoAddress, synefoPort, joiner, zookeeperAddress),
                     scale)
@@ -235,7 +235,7 @@ public class TopologyDriver {
             topology.put("joinorder", new ArrayList<String>());
 
             joiner = new NewJoinJoiner("lineitem", new Fields(LineItem.schema), "order", new Fields(Order.schema),
-                    "L_ORDERKEY", "O_ORDERKEY", (int) windowInMinutes * (60 * 1000), (int) slideInMilliSeconds);
+                    "L_ORDERKEY", "O_ORDERKEY", (int) (windowInMinutes * (60 * 1000)), (int) slideInMilliSeconds);
             joiner.setOutputSchema(new Fields(schema));
             builder.setBolt("joinline", new JoinBolt("joinline", synefoAddress, synefoPort, joiner, zookeeperAddress),
                     scale)
@@ -257,7 +257,7 @@ public class TopologyDriver {
             tasks.add("joiner");
             topology.put("dispatch", tasks);
             CollocatedEquiJoiner joiner = new CollocatedEquiJoiner("lineitem", new Fields(LineItem.schema), "order",
-                    new Fields(Order.schema), LineItem.schema[0], Order.schema[0], (int) windowInMinutes * (60 * 1000),
+                    new Fields(Order.schema), LineItem.schema[0], Order.schema[0], (int) (windowInMinutes * (60 * 1000)),
                     (int) slideInMilliSeconds);
             joiner.setOutputSchema(new Fields(schema));
             builder.setBolt("joiner", new CollocatedJoinBolt("joiner", synefoAddress, synefoPort, joiner, zookeeperAddress),
