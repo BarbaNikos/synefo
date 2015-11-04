@@ -33,10 +33,13 @@ public class LocalFileProducer implements Serializable, FileProducer {
 
     private long throughputPreviousTimestamp;
 
+    private boolean finished;
+
     public LocalFileProducer(String pathToFile, String[] schema, String[] projectedSchema) {
         this.schema = new Fields(schema);
         this.projectedSchema = new Fields(projectedSchema);
         this.pathToFile = pathToFile;
+        finished = false;
     }
 
     public void init() {
@@ -53,12 +56,15 @@ public class LocalFileProducer implements Serializable, FileProducer {
         inputRate = 0;
         throughputPreviousTimestamp = -1;
         throughputCurrentTimestamp = -1;
+        finished = false;
     }
 
     public int nextTuple(SpoutOutputCollector spoutOutputCollector, Integer taskIdentifier,
                          HashMap<Values, Long> tupleStatistics) {
         if (throughputPreviousTimestamp == -1)
             throughputPreviousTimestamp = System.currentTimeMillis();
+        if (finished)
+            return -1;
         Values values = new Values();
         String line = null;
         try {
@@ -91,6 +97,12 @@ public class LocalFileProducer implements Serializable, FileProducer {
             }
             return throughput;
         }else {
+            try {
+                reader.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            finished = true;
             return -1;
         }
     }

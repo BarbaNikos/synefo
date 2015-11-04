@@ -51,6 +51,8 @@ public class LocalControlledFileProducer implements Serializable, FileProducer {
 
     private static final int SIZE = 10000;
 
+    private boolean finished;
+
     public LocalControlledFileProducer(String pathToFile, String[] schema, String[] projectedSchema, double[] outputRate,
                                        int[] checkpoints) {
         this.schema = new Fields(schema);
@@ -59,13 +61,13 @@ public class LocalControlledFileProducer implements Serializable, FileProducer {
         this.checkpoints = checkpoints;
         this.outputRate = outputRate;
         buffer = new ArrayBlockingQueue<>(SIZE, true);
+        finished = false;
     }
 
     public void init() {
         logger.info("initializing input for file: " + pathToFile);
         File input = new File(pathToFile);
         if (input.exists() && input.isFile()) {
-            logger.info("file found.");
             fileScanner = new Thread(new SourceFileProducer(buffer, EOF, pathToFile));
             fileScanner.start();
             /**
@@ -87,6 +89,7 @@ public class LocalControlledFileProducer implements Serializable, FileProducer {
         progressCheckpoint();
         inputRate = 0;
         throughputPreviousTimestamp = System.currentTimeMillis();
+        finished = false;
     }
 
     private void progressCheckpoint() {
@@ -97,6 +100,8 @@ public class LocalControlledFileProducer implements Serializable, FileProducer {
 
     public int nextTuple(SpoutOutputCollector spoutOutputCollector, Integer taskIdentifier,
                          HashMap<Values, Long> tupleStatistics) {
+        if (finished)
+            return -1;
         while (System.nanoTime() <= nextTimestamp) {
             try {
                 Thread.sleep(1);
@@ -120,6 +125,7 @@ public class LocalControlledFileProducer implements Serializable, FileProducer {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+            finished = true;
             return -1;
         }
         if (line != null) {

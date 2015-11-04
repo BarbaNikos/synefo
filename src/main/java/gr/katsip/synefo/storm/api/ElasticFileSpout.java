@@ -212,11 +212,11 @@ public class ElasticFileSpout extends BaseRichSpout {
             if (value >= 0) {
                 inputRate.setValue(value);
             }else {
-                if (value == -1) {
-                    logger.info("file completely scanned.");
+                if (value == -1 && tupleStatistics.isEmpty()) {
+                    logger.info("file completely scanned and all tuples acknowledged.");
                     endTime = System.currentTimeMillis();
                     timeToScanInput.setValue((endTime - startTime));
-                    throw new RuntimeException("Input file scanned completely");
+                    throw new RuntimeException("Input file scanned and processed completely");
                 }
             }
             if (index >= (activeDownstreamTaskIdentifiers.size() - 1))
