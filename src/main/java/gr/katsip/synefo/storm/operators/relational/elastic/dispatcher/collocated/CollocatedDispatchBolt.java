@@ -345,9 +345,8 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
             }else {
                 numberOfTuplesDispatched = dispatcher.execute(tuple, null, fields, tupleValues, migratedKeys,
                         scaledTask, candidateTask, this.action);
-                collector.ack(tuple);
             }
-
+            collector.ack(tuple);
             temporaryThroughput += numberOfTuplesDispatched;
             long endTime = System.currentTimeMillis();
             lastExecuteLatencyMetric = endTime - startTime;
