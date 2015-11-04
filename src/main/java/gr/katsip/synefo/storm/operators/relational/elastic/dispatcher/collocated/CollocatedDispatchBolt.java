@@ -278,7 +278,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
     public void execute(Tuple tuple) {
         String header = "";
         if (isTickTuple(tuple)) {
-            if (!SCALE_ACTION_FLAG) {
+//            if (!SCALE_ACTION_FLAG) {
                 /**
                  * Send out CTRL tuples if no scale-action is in progress
                  */
@@ -292,7 +292,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                 for (Integer task : activeDownstreamTaskIdentifiers) {
                     collector.emitDirect(task, controlTuple);
                 }
-            }
+//            }
             collector.ack(tuple);
             return;
         }
