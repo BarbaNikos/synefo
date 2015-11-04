@@ -278,7 +278,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
     public void execute(Tuple tuple) {
         String header = "";
         if (isTickTuple(tuple)) {
-            if (SCALE_ACTION_FLAG == false) {
+            if (!SCALE_ACTION_FLAG) {
                 /**
                  * Send out CTRL tuples if no scale-action is in progress
                  */
@@ -321,7 +321,8 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                 intervals.add(end - start);
                 capacityHistory.put(task, intervals);
                 collector.ack(tuple);
-                controlTupleInterval.setValue(new String(task + "-" + (end - start)));
+                logger.info("received control interval tuple (" + (end - start) + ")");
+                controlTupleInterval.setValue((end - start));
                 return;
             }
 
