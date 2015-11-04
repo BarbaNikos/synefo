@@ -293,6 +293,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                     collector.emitDirect(task, controlTuple);
                 }
 //            }
+            logger.info("received a tick-tuple");
             collector.ack(tuple);
             return;
         }
