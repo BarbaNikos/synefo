@@ -29,7 +29,7 @@ public class ElasticFileSpout extends BaseRichSpout {
 
     Logger logger = LoggerFactory.getLogger(ElasticFileSpout.class);
 
-    private static int METRIC_FREQ_SEC = 2;
+    private static int METRIC_FREQ_SEC = 1;
 
     private SpoutOutputCollector spoutOutputCollector;
 
