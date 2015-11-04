@@ -269,10 +269,12 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                 /**
                  * Remove from both values and fields SYNEFO_HEADER (SYNEFO_TIMESTAMP)
                  */
-                logger.info("received tuple: " + tuple.getValues().toString());
+//                logger.info("received tuple: " + tuple.getValues().toString());
                 Values values = new Values(tuple.getValues().toArray());
                 values.remove(0);
                 Fields fields = null;
+                if (values.size() <= 0 && !(values.get(0) instanceof Fields))
+                    logger.error("something is wrong, received a tuple without a schema." + values.toString());
                 try {
                     fields = new Fields(((Fields) values.get(0)).toList());
                 }catch (ClassCastException e) {

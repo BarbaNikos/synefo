@@ -288,7 +288,7 @@ public class CollocatedWindowDispatcher implements Serializable {
             CollocatedDispatchWindow window = ringBuffer.get(i);
             if ((window.start + this.window) > timestamp) {
                 for (String key : window.keyToTaskMapping.keySet()) {
-                    if (window.keyToTaskMapping.get(key) == task) {
+                    if (window.keyToTaskMapping.get(key) == task && !keys.contains(key)) {
                         keys.add(key);
                     }
                 }
