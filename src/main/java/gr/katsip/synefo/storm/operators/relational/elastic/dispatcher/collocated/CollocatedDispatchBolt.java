@@ -293,7 +293,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                     collector.emitDirect(task, controlTuple);
                 }
 //            }
-            logger.info("received a tick-tuple");
+//            logger.info("received a tick-tuple");
             collector.ack(tuple);
             return;
         }
@@ -312,7 +312,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                 return;
             }
             if (header != null && !header.equals("") && isControlTuple(header)) {
-                logger.info("dispatcher received control tuple.");
+//                logger.info("dispatcher received control tuple.");
                 int task = tuple.getSourceTask();
                 long start = Long.parseLong(header.split(":")[1]);
                 long end = System.nanoTime();
@@ -324,7 +324,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
 //                intervals.add(end - start);
 //                capacityHistory.put(task, intervals);
                 collector.ack(tuple);
-                logger.info("received control interval tuple (" + (end - start) + ")");
+//                logger.info("received control interval tuple (" + (end - start) + ")");
                 controlTupleInterval.setValue((end - start));
                 return;
             }

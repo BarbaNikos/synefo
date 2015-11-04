@@ -251,7 +251,7 @@ public class CollocatedJoinBolt extends BaseRichBolt {
 //                controlTuple.add(SynefoConstant.COL_TICK_HEADER + ":" + receivedTimestamp + "," + timestamp);
 //                controlTuple.add(null);
 //                controlTuple.add(null);
-                logger.info("received control-interval tuple. sending it back.");
+//                logger.info("received control-interval tuple. sending it back.");
                 Values controlTuple = new Values();
                 controlTuple.add(header);
                 controlTuple.add(null);
