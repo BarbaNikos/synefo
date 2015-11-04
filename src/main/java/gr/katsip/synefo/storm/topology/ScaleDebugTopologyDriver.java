@@ -153,7 +153,8 @@ public class ScaleDebugTopologyDriver {
                 collocatedWindowDispatcher, zookeeperAddress), 1)
                 .setNumTasks(1)
                 .directGrouping("inner")
-                .directGrouping("outer");
+                .directGrouping("outer")
+                .directGrouping("joiner");
         numberOfTasks += 1;
         tasks = new ArrayList<>();
         tasks.add("joiner");
