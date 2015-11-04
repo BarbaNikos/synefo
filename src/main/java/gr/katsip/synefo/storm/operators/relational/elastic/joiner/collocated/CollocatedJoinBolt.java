@@ -225,7 +225,7 @@ public class CollocatedJoinBolt extends BaseRichBolt {
     }
 
     public static boolean isControlTuple(String header) {
-        return (header.contains(SynefoConstant.COL_TICK_HEADER + ":") && header.contains(","));
+        return (header.contains(SynefoConstant.COL_TICK_HEADER + ":"));
     }
 
     @Override
@@ -273,8 +273,8 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                 Values values = new Values(tuple.getValues().toArray());
                 values.remove(0);
                 Fields fields = null;
-                if (values.size() <= 0 && !(values.get(0) instanceof Fields))
-                    logger.error("something is wrong, received a tuple without a schema." + values.toString());
+                if (values.size() <= 0)
+                    logger.error("something is wrong, received a tuple without a schema: " + values.toString());
                 try {
                     fields = new Fields(((Fields) values.get(0)).toList());
                 }catch (ClassCastException e) {
