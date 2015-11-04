@@ -310,7 +310,9 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                 manageScaleTuple(header);
                 collector.ack(tuple);
                 return;
-            }else if (header != null && !header.equals("") && isControlTuple(header)) {
+            }
+            if (header != null && !header.equals("") && isControlTuple(header)) {
+                logger.info("dispatcher received control tuple.");
                 int task = tuple.getSourceTask();
                 long start = Long.parseLong(header.split(":")[1]);
                 long end = System.nanoTime();
