@@ -79,6 +79,8 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
 
     private transient AssignableMetric stateTransferTime;
 
+    private transient AssignableMetric controlTupleInterval;
+
     private long startTransferTimestamp;
 
     private int temporaryInputRate;
@@ -238,11 +240,13 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
         inputRate = new AssignableMetric(null);
         throughput = new AssignableMetric(null);
         stateTransferTime = new AssignableMetric(null);
+        controlTupleInterval = new AssignableMetric(null);
         context.registerMetric("execute-latency", executeLatency, METRIC_REPORT_FREQ_SEC);
         context.registerMetric("state-size", stateSize, METRIC_REPORT_FREQ_SEC);
         context.registerMetric("input-rate", inputRate, METRIC_REPORT_FREQ_SEC);
         context.registerMetric("throughput", throughput, METRIC_REPORT_FREQ_SEC);
         context.registerMetric("state-transfer", stateTransferTime, METRIC_REPORT_FREQ_SEC);
+        context.registerMetric("control-interval", controlTupleInterval, METRIC_REPORT_FREQ_SEC);
     }
 
     public static boolean isScaleHeader(String header) {
@@ -253,7 +257,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
     }
 
     public static boolean isControlTuple(String header) {
-        return (header.contains(SynefoConstant.COL_TICK_HEADER + ":") && header.contains(","));
+        return (header.contains(SynefoConstant.COL_TICK_HEADER + ":"));
     }
 
     @Override
@@ -306,10 +310,9 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                 collector.ack(tuple);
                 return;
             }else if (header != null && !header.equals("") && isControlTuple(header)) {
-                String[] timestamps = header.split(":")[1].split(",");
                 int task = tuple.getSourceTask();
-                long start = Long.parseLong(timestamps[0]);
-                long end = Long.parseLong(timestamps[1]);
+                long start = Long.parseLong(header.split(":")[1]);
+                long end = System.nanoTime();
                 List<Long> intervals = null;
                 if (capacityHistory.containsKey(task))
                     intervals = capacityHistory.get(intervals);
@@ -318,6 +321,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                 intervals.add(end - start);
                 capacityHistory.put(task, intervals);
                 collector.ack(tuple);
+                controlTupleInterval.setValue(new String(task + "-" + (end - start)));
                 return;
             }
 

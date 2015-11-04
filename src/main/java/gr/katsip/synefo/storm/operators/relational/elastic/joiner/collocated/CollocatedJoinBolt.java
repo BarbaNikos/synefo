@@ -74,7 +74,7 @@ public class CollocatedJoinBolt extends BaseRichBolt {
 
     private transient AssignableMetric stateTransferTime;
 
-    private transient AssignableMetric controlTupleInterval;
+//    private transient AssignableMetric controlTupleInterval;
 
     private long startTransferTimestamp;
 
@@ -208,13 +208,13 @@ public class CollocatedJoinBolt extends BaseRichBolt {
         inputRate = new AssignableMetric(null);
         throughput = new AssignableMetric(null);
         stateTransferTime = new AssignableMetric(null);
-        controlTupleInterval = new AssignableMetric(null);
+//        controlTupleInterval = new AssignableMetric(null);
         context.registerMetric("execute-latency", executeLatency, METRIC_REPORT_FREQ_SEC);
         context.registerMetric("state-size", stateSize, METRIC_REPORT_FREQ_SEC);
         context.registerMetric("input-rate", inputRate, METRIC_REPORT_FREQ_SEC);
         context.registerMetric("throughput", throughput, METRIC_REPORT_FREQ_SEC);
         context.registerMetric("state-transfer", stateTransferTime, METRIC_REPORT_FREQ_SEC);
-        context.registerMetric("control-interval", controlTupleInterval, METRIC_REPORT_FREQ_SEC);
+//        context.registerMetric("control-interval", controlTupleInterval, METRIC_REPORT_FREQ_SEC);
     }
 
     public static boolean isScaleHeader(String header) {
@@ -245,15 +245,14 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                 collector.ack(tuple);
                 return;
             }else if (header != null && !header.equals("") && isControlTuple(header)) {
-                long timestamp = System.nanoTime();
-                long receivedTimestamp = Long.parseLong(header.split(":")[1]);
-                Values controlTuple = new Values();
-                controlTuple.add(SynefoConstant.COL_TICK_HEADER + ":" + receivedTimestamp + "," + timestamp);
-                controlTuple.add(null);
-                controlTuple.add(null);
-                collector.emitDirect(tuple.getSourceTask(), controlTuple);
+//                long timestamp = System.nanoTime();
+//                long receivedTimestamp = Long.parseLong(header.split(":")[1]);
+//                Values controlTuple = new Values();
+//                controlTuple.add(SynefoConstant.COL_TICK_HEADER + ":" + receivedTimestamp + "," + timestamp);
+//                controlTuple.add(null);
+//                controlTuple.add(null);
+                collector.emitDirect(tuple.getSourceTask(), tuple.getValues());
                 collector.ack(tuple);
-                controlTupleInterval.setValue(new Long(receivedTimestamp - timestamp));
                 return;
             }else {
                 inputRateCurrentTimestamp = System.currentTimeMillis();
