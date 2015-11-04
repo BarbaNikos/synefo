@@ -251,7 +251,11 @@ public class CollocatedJoinBolt extends BaseRichBolt {
 //                controlTuple.add(SynefoConstant.COL_TICK_HEADER + ":" + receivedTimestamp + "," + timestamp);
 //                controlTuple.add(null);
 //                controlTuple.add(null);
-                collector.emitDirect(tuple.getSourceTask(), tuple.getValues());
+                Values controlTuple = new Values();
+                controlTuple.add(header);
+                controlTuple.add(null);
+                controlTuple.add(null);
+                collector.emitDirect(tuple.getSourceTask(), controlTuple);
                 collector.ack(tuple);
                 return;
             }else {
