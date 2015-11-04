@@ -63,19 +63,20 @@ public class LocalFileProducer implements Serializable, FileProducer {
                          HashMap<Values, Long> tupleStatistics) {
         if (throughputPreviousTimestamp == -1)
             throughputPreviousTimestamp = System.currentTimeMillis();
-        if (finished)
-            return -1;
         Values values = new Values();
         String line = null;
         try {
-            line = reader.readLine();
+            if (!finished)
+                line = reader.readLine();
+            else
+                return -1;
         } catch (IOException e) {
             e.printStackTrace();
         }
         if (line != null) {
             String[] attributes = line.split("\\|");
             if(attributes.length < schema.size())
-                return -1;
+                return -2;
             for(int i = 0; i < schema.size(); i++) {
                 if(projectedSchema.toList().contains(schema.get(i))) {
                     values.add(attributes[i]);
