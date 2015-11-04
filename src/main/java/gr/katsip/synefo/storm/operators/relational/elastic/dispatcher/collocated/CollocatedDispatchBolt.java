@@ -317,12 +317,12 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                 long start = Long.parseLong(header.split(":")[1]);
                 long end = System.nanoTime();
                 List<Long> intervals = null;
-                if (capacityHistory.containsKey(task))
-                    intervals = capacityHistory.get(intervals);
-                else
-                    intervals = new ArrayList<>();
-                intervals.add(end - start);
-                capacityHistory.put(task, intervals);
+//                if (capacityHistory.containsKey(task))
+//                    intervals = capacityHistory.get(intervals);
+//                else
+//                    intervals = new ArrayList<>();
+//                intervals.add(end - start);
+//                capacityHistory.put(task, intervals);
                 collector.ack(tuple);
                 logger.info("received control interval tuple (" + (end - start) + ")");
                 controlTupleInterval.setValue((end - start));
