@@ -325,7 +325,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
 //                capacityHistory.put(task, intervals);
                 collector.ack(tuple);
 //                logger.info("received control interval tuple (" + (end - start) + ")");
-                controlTupleInterval.setValue((end - start));
+                controlTupleInterval.setValue(tuple.getSourceTask() + "-" + (end - start));
                 return;
             }
 
