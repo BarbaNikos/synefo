@@ -106,7 +106,7 @@ public class ScaleDebugTopologyDriver {
             }else {
                 readerType = FileReaderType.DEFAULT_FILE_READER;
             }
-            String autoScale = reader.readLine().split(":")[1];
+            String autoScale = reader.readLine().split("=")[1];
             if (autoScale.toLowerCase().equals("true"))
                 AUTO_SCALE = true;
             else
@@ -206,11 +206,11 @@ public class ScaleDebugTopologyDriver {
             e.printStackTrace();
         }
         conf.setDebug(false);
-        conf.registerMetricsConsumer(LoggingMetricsConsumer.class, numberOfTasks);
+        conf.registerMetricsConsumer(LoggingMetricsConsumer.class, numberOfWorkers);
         conf.setNumWorkers(numberOfWorkers);
         conf.setNumAckers(numberOfWorkers);
         conf.put(Config.TOPOLOGY_WORKER_CHILDOPTS,
-                "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000 -Xmx8192m -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:NewSize=128m -XX:CMSInitiatingOccupancyFraction=70 -XX:-CMSConcurrentMTEnabled -Djava.net.preferIPv4Stack=true"
+                "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000 -Xmx256m -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:NewSize=128m -XX:CMSInitiatingOccupancyFraction=70 -XX:-CMSConcurrentMTEnabled -Djava.net.preferIPv4Stack=true"
         );
         conf.put(Config.TOPOLOGY_RECEIVER_BUFFER_SIZE, 8);
         conf.put(Config.TOPOLOGY_MAX_SPOUT_PENDING, maxSpoutPending);
