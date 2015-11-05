@@ -16,8 +16,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class NewLoadMaster implements Runnable {
 
-    Logger logger = LoggerFactory.getLogger(NewLoadMaster.class);
-
     private ConcurrentHashMap<String, ArrayList<String>> topology;
 
     private ConcurrentHashMap<String, ArrayList<String>> activeTopology;
