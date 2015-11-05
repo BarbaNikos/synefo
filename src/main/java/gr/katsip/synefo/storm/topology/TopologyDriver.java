@@ -37,6 +37,8 @@ public class TopologyDriver {
 
     private int scale;
 
+    private boolean AUTO_SCALE;
+
     private String[] inputFile;
 
     private double[] outputRate;
@@ -125,6 +127,11 @@ public class TopologyDriver {
                 readerType = FileReaderType.DEFAULT_FILE_READER;
             }
             System.out.println("driver located dispatcher type: " + type);
+            String autoScale = reader.readLine().split(":")[1];
+            if (autoScale.toLowerCase().equals("true"))
+                AUTO_SCALE = true;
+            else
+                AUTO_SCALE = false;
             reader.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -248,7 +255,7 @@ public class TopologyDriver {
              * Dispatcher's scale is only 1
              */
             builder.setBolt("dispatch", new CollocatedDispatchBolt("dispatch", synefoAddress, synefoPort,
-                            collocatedWindowDispatcher, zookeeperAddress), 1)
+                            collocatedWindowDispatcher, zookeeperAddress, AUTO_SCALE), 1)
                     .setNumTasks(1)
                     .directGrouping("order")
                     .directGrouping("lineitem");

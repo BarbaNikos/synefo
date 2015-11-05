@@ -120,7 +120,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
     private int candidateTask;
 
     public CollocatedDispatchBolt(String taskName, String synefoAddress, Integer synefoPort,
-                                  CollocatedWindowDispatcher dispatcher, String zookeeperAddress) {
+                                  CollocatedWindowDispatcher dispatcher, String zookeeperAddress, boolean AUTO_SCALE) {
         this.taskName = taskName;
         this.workerPort = -1;
         this.synefoAddress = synefoAddress;
@@ -131,6 +131,8 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
         activeDownstreamTaskIdentifiers = null;
         this.dispatcher = dispatcher;
         this.zookeeperAddress = zookeeperAddress;
+        if (!AUTO_SCALE)
+            SCALE_ACTION_FLAG = true;
     }
 
     public void register() {
@@ -378,22 +380,22 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
         /**
          * Check if one of the nodes is overloaded
          */
-        DescriptiveStatistics statistics = new DescriptiveStatistics();
         int overloadedTask = -1, slackerTask = -1;
         long maxNumberOfTuples = 0, minNumberOfTuples = Long.MAX_VALUE;
-        HashMap<Integer, Long> numberOfTuplesPerTask = dispatcher.getNumberOfTuplesPerTask();
-        for (Integer task : numberOfTuplesPerTask.keySet()) {
-            if (maxNumberOfTuples < numberOfTuplesPerTask.get(task)) {
-                overloadedTask = task;
-                maxNumberOfTuples = numberOfTuplesPerTask.get(task);
+        if (!SCALE_ACTION_FLAG && activeDownstreamTaskIdentifiers.size() < downstreamTaskIdentifiers.size()) {
+            DescriptiveStatistics statistics = new DescriptiveStatistics();
+            HashMap<Integer, Long> numberOfTuplesPerTask = dispatcher.getNumberOfTuplesPerTask();
+            for (Integer task : numberOfTuplesPerTask.keySet()) {
+                if (maxNumberOfTuples < numberOfTuplesPerTask.get(task)) {
+                    overloadedTask = task;
+                    maxNumberOfTuples = numberOfTuplesPerTask.get(task);
+                }
+                if (minNumberOfTuples > numberOfTuplesPerTask.get(task)) {
+                    minNumberOfTuples = numberOfTuplesPerTask.get(task);
+                    slackerTask = task;
+                }
+                statistics.addValue((double) numberOfTuplesPerTask.get(task));
             }
-            if (minNumberOfTuples > numberOfTuplesPerTask.get(task)) {
-                minNumberOfTuples = numberOfTuplesPerTask.get(task);
-                slackerTask = task;
-            }
-            statistics.addValue((double) numberOfTuplesPerTask.get(task));
-        }
-        if (activeDownstreamTaskIdentifiers.size() < downstreamTaskIdentifiers.size()) {
             if (overloadedTask != -1) {
                 strugglersHistory.add(overloadedTask);
                 if (strugglersHistory.size() >= LOAD_RELUCTANCY) {
@@ -450,7 +452,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
          * Dispatcher makes a histogram of tuples per node
          * and scales-in the one that has the least tuples (global minimum)
          */
-        if (activeDownstreamTaskIdentifiers.size() > 1 && slackerTask != -1 && SCALE_ACTION_FLAG != true) {
+        if (activeDownstreamTaskIdentifiers.size() > 1 && slackerTask != -1 && !SCALE_ACTION_FLAG) {
             slackersHistory.add(slackerTask);
             if (slackersHistory.size() >= LOAD_RELUCTANCY) {
                 boolean scaleNeeded = true;

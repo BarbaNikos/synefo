@@ -31,6 +31,8 @@ public class ScaleDebugTopologyDriver {
 
     private int scale;
 
+    private boolean AUTO_SCALE;
+
     private String[] inputFile;
 
     private double[] outputRate;
@@ -104,6 +106,12 @@ public class ScaleDebugTopologyDriver {
             }else {
                 readerType = FileReaderType.DEFAULT_FILE_READER;
             }
+            String autoScale = reader.readLine().split(":")[1];
+            if (autoScale.toLowerCase().equals("true"))
+                AUTO_SCALE = true;
+            else
+                AUTO_SCALE = false;
+            reader.close();
         }catch (IOException e) {
             e.printStackTrace();
         }
@@ -150,7 +158,7 @@ public class ScaleDebugTopologyDriver {
                 new Fields(Inner.schema), Inner.schema[0], "outer", new Fields(Outer.schema), Outer.schema[0],
                 new Fields(schema), (long) (windowInMinutes * (60 * 1000)), slideInMilliSeconds);
         builder.setBolt("dispatch", new CollocatedDispatchBolt("dispatch", synefoAddress, synefoPort,
-                collocatedWindowDispatcher, zookeeperAddress), 1)
+                collocatedWindowDispatcher, zookeeperAddress, AUTO_SCALE), 1)
                 .setNumTasks(1)
                 .directGrouping("inner")
                 .directGrouping("outer")
