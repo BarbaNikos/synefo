@@ -15,6 +15,7 @@ import gr.katsip.synefo.storm.operators.relational.elastic.joiner.collocated.Col
 import gr.katsip.synefo.storm.producers.FileProducer;
 import gr.katsip.synefo.storm.producers.LocalControlledFileProducer;
 import gr.katsip.synefo.storm.producers.LocalFileProducer;
+import gr.katsip.synefo.storm.producers.SingleThreadControlledFileProducer;
 import gr.katsip.synefo.utils.SynefoMessage;
 import gr.katsip.tpch.Inner;
 import gr.katsip.tpch.Outer;
@@ -64,7 +65,8 @@ public class ScaleDebugTopologyDriver {
 
     public enum FileReaderType {
         DEFAULT_FILE_READER,
-        CONTROLLED_FILE_READER
+        CONTROLLED_FILE_READER,
+        SERIAL_CONTROLLED_FILE_READER
     }
 
     private DispatcherType type;
@@ -103,9 +105,11 @@ public class ScaleDebugTopologyDriver {
             String strReaderType = reader.readLine().split("=")[1].toUpperCase();
             if (FileReaderType.valueOf(strReaderType) == FileReaderType.DEFAULT_FILE_READER) {
                 readerType = FileReaderType.DEFAULT_FILE_READER;
-            }else if (FileReaderType.valueOf(strReaderType) == FileReaderType.CONTROLLED_FILE_READER) {
+            } else if (FileReaderType.valueOf(strReaderType) == FileReaderType.CONTROLLED_FILE_READER) {
                 readerType = FileReaderType.CONTROLLED_FILE_READER;
-            }else {
+            } else if (FileReaderType.valueOf(strReaderType) == FileReaderType.SERIAL_CONTROLLED_FILE_READER) {
+                readerType = FileReaderType.SERIAL_CONTROLLED_FILE_READER;
+            } else {
                 readerType = FileReaderType.DEFAULT_FILE_READER;
             }
             String autoScale = reader.readLine().split("=")[1];
@@ -132,6 +136,14 @@ public class ScaleDebugTopologyDriver {
                 inner = new LocalFileProducer(inputFile[0], Inner.schema, Inner.schema);
                 inner.setSchema(new Fields(schema));
                 outer = new LocalFileProducer(inputFile[1], Outer.schema, Outer.schema);
+                outer.setSchema(new Fields(schema));
+                break;
+            case SERIAL_CONTROLLED_FILE_READER:
+                inner = new SingleThreadControlledFileProducer(inputFile[0], Inner.schema, Inner.schema, outputRate,
+                        checkpoint);
+                inner.setSchema(new Fields(schema));
+                outer = new SingleThreadControlledFileProducer(inputFile[1], Outer.schema, Outer.schema, outputRate,
+                        checkpoint);
                 outer.setSchema(new Fields(schema));
                 break;
             case CONTROLLED_FILE_READER:
@@ -165,7 +177,7 @@ public class ScaleDebugTopologyDriver {
                 .setNumTasks(1)
                 .directGrouping("inner")
                 .directGrouping("outer")
-                .directGrouping("joiner");
+                .directGrouping("joiner-control");
         numberOfTasks += 1;
         tasks = new ArrayList<>();
         tasks.add("joiner");
@@ -177,7 +189,8 @@ public class ScaleDebugTopologyDriver {
         builder.setBolt("joiner", new CollocatedJoinBolt("joiner", synefoAddress, synefoPort, joiner, zookeeperAddress),
                 scale)
                 .setNumTasks(scale)
-                .directGrouping("dispatch");
+                .directGrouping("dispatch-control")
+                .directGrouping("dispatch-data");
         numberOfTasks += scale;
         topology.put("joiner", new ArrayList<String>());
         try {

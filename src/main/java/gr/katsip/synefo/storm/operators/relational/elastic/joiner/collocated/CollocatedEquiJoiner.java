@@ -77,7 +77,7 @@ public class CollocatedEquiJoiner implements Serializable {
         outputSchema = new Fields(output_schema.toList());
     }
 
-    public Pair<Integer, Integer> execute(Tuple anchor, OutputCollector collector, List<Integer> activeTasks,
+    public Pair<Integer, Integer> execute(String streamId, Tuple anchor, OutputCollector collector, List<Integer> activeTasks,
                                           Integer taskIndex, Fields fields, Values values) {
         Integer numberOfTuplesProduced = 0;
         Long timestamp = System.currentTimeMillis();
@@ -95,7 +95,7 @@ public class CollocatedEquiJoiner implements Serializable {
             output.add(tuple);
             numberOfTuplesProduced++;
             if (activeTasks.size() > 0) {
-                collector.emitDirect(activeTasks.get(taskIndex), anchor, output);
+                collector.emitDirect(activeTasks.get(taskIndex), streamId, anchor, output);
                 taskIndex++;
                 if (taskIndex >= activeTasks.size())
                     taskIndex = 0;

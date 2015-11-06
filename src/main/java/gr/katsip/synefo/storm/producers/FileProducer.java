@@ -14,7 +14,7 @@ public interface FileProducer {
 
     public Fields getSchema();
 
-    public int nextTuple(SpoutOutputCollector spoutOutputCollector, Integer taskIdentifier,
+    public int nextTuple(SpoutOutputCollector spoutOutputCollector, String streamId, Integer taskIdentifier,
                          HashMap<Values, Long> tupleStatistics);
 
     public void init();

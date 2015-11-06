@@ -159,7 +159,8 @@ public class ElasticFileSpout extends BaseRichSpout {
         List<String> producerSchema = new ArrayList<String>();
         producerSchema.add("SYNEFO_HEADER");
         producerSchema.addAll(producer.getSchema().toList());
-        outputFieldsDeclarer.declare(new Fields(producerSchema));
+//        outputFieldsDeclarer.declare(new Fields(producerSchema));
+        outputFieldsDeclarer.declareStream(taskName, true, new Fields(producerSchema));
     }
 
     private void initMetrics(TopologyContext context) {
@@ -207,7 +208,7 @@ public class ElasticFileSpout extends BaseRichSpout {
         if (startTime == -1)
             startTime = System.currentTimeMillis();
         if (activeDownstreamTaskIdentifiers != null && activeDownstreamTaskNames.size() > 0) {
-            int value = producer.nextTuple(spoutOutputCollector,
+            int value = producer.nextTuple(spoutOutputCollector, taskName,
                     activeDownstreamTaskIdentifiers.get(index), tupleStatistics);
             if (value >= 0) {
                 inputRate.setValue(value);

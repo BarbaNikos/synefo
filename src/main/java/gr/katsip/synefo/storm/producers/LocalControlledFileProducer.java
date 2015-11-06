@@ -49,7 +49,7 @@ public class LocalControlledFileProducer implements Serializable, FileProducer {
 
     private static final String EOF = new String("end of file");
 
-    private static final int SIZE = 10000;
+    private static final int SIZE = 100;
 
     private boolean finished;
 
@@ -70,16 +70,16 @@ public class LocalControlledFileProducer implements Serializable, FileProducer {
         if (input.exists() && input.isFile()) {
             fileScanner = new Thread(new SourceFileProducer(buffer, EOF, pathToFile));
             fileScanner.start();
-            /**
-             * Wait until buffer is full before starting execution
-             */
-            while (buffer.remainingCapacity() > 0) {
-                try {
-                    Thread.sleep(10);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
+//            /**
+//             * Wait until buffer is full before starting execution
+//             */
+//            while (buffer.remainingCapacity() > 0) {
+//                try {
+//                    Thread.sleep(10);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+//            }
         }else {
             logger.error("file not found.");
         }
@@ -95,10 +95,10 @@ public class LocalControlledFileProducer implements Serializable, FileProducer {
     private void progressCheckpoint() {
         index++;
         startTimestamp += (checkpoints[index] * 1000 * 1000 * 1000);
-        delay = (long)((1000 * 1000 * 1000) / outputRate[index]);
+        delay = (long) ((1000 * 1000 * 1000) / outputRate[index]);
     }
 
-    public int nextTuple(SpoutOutputCollector spoutOutputCollector, Integer taskIdentifier,
+    public int nextTuple(SpoutOutputCollector spoutOutputCollector, String streamId, Integer taskIdentifier,
                          HashMap<Values, Long> tupleStatistics) {
         if (finished)
             return -1;
@@ -142,7 +142,7 @@ public class LocalControlledFileProducer implements Serializable, FileProducer {
             tuple.add(projectedSchema);
             tuple.add(values);
             tupleStatistics.put(tuple, System.currentTimeMillis());
-            spoutOutputCollector.emitDirect(taskIdentifier, tuple, tuple);
+            spoutOutputCollector.emitDirect(taskIdentifier, streamId, tuple, tuple);
             inputRate++;
         }
 

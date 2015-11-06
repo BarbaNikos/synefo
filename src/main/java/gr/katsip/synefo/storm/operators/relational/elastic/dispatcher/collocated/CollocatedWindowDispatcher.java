@@ -114,7 +114,7 @@ public class CollocatedWindowDispatcher implements Serializable {
         return victim;
     }
 
-    public int execute(Tuple anchor, OutputCollector collector, Fields fields, Values values, List<String> migratedKeys,
+    public int execute(String streamId, Tuple anchor, OutputCollector collector, Fields fields, Values values, List<String> migratedKeys,
                        int scaledTask, int candidateTask, String action) {
         long currentTimestamp = System.currentTimeMillis();
         int numberOfDispatchedTuples = 0;
@@ -133,21 +133,21 @@ public class CollocatedWindowDispatcher implements Serializable {
                 updateCurrentWindow(currentTimestamp, innerRelationName, key, candidateTask);
                 if (action.equals(SynefoConstant.COL_ADD_ACTION)) {
                     if (collector != null) {
-                        collector.emitDirect(candidateTask, anchor, tuple);
-                        collector.emitDirect(scaledTask, anchor, tuple);
+                        collector.emitDirect(candidateTask, streamId, anchor, tuple);
+                        collector.emitDirect(scaledTask, streamId, anchor, tuple);
                         numberOfDispatchedTuples += 2;
                     }
                 }else if (action.equals(SynefoConstant.COL_REMOVE_ACTION)) {
                     if (collector != null) {
-                        collector.emitDirect(candidateTask, anchor, tuple);
-                        collector.emitDirect(scaledTask, anchor, tuple);
+                        collector.emitDirect(candidateTask, streamId, anchor, tuple);
+                        collector.emitDirect(scaledTask, streamId, anchor, tuple);
                         numberOfDispatchedTuples += 2;
                     }
                 }
             }else {
                 updateCurrentWindow(currentTimestamp, outerRelationName, key, victimTask);
                 if (collector != null && victimTask >= 0) {
-                    collector.emitDirect(victimTask, anchor, tuple);
+                    collector.emitDirect(victimTask, streamId, anchor, tuple);
                     numberOfDispatchedTuples++;
                 }
             }
@@ -160,21 +160,21 @@ public class CollocatedWindowDispatcher implements Serializable {
                 updateCurrentWindow(currentTimestamp, outerRelationName, key, candidateTask);
                 if (action.equals(SynefoConstant.COL_ADD_ACTION)) {
                     if (collector != null) {
-                        collector.emitDirect(candidateTask, anchor, tuple);
-                        collector.emitDirect(scaledTask, anchor, tuple);
+                        collector.emitDirect(candidateTask, streamId, anchor, tuple);
+                        collector.emitDirect(scaledTask, streamId, anchor, tuple);
                         numberOfDispatchedTuples += 2;
                     }
                 }else if (action.equals(SynefoConstant.COL_REMOVE_ACTION)) {
                     if (collector != null) {
-                        collector.emitDirect(candidateTask, anchor, tuple);
-                        collector.emitDirect(scaledTask, anchor, tuple);
+                        collector.emitDirect(candidateTask, streamId, anchor, tuple);
+                        collector.emitDirect(scaledTask, streamId, anchor, tuple);
                         numberOfDispatchedTuples += 2;
                     }
                 }
             }else {
                 updateCurrentWindow(currentTimestamp, outerRelationName, key, victimTask);
                 if (collector != null && victimTask >= 0) {
-                    collector.emitDirect(victimTask, anchor, tuple);
+                    collector.emitDirect(victimTask, streamId, anchor, tuple);
                     numberOfDispatchedTuples++;
                 }
             }

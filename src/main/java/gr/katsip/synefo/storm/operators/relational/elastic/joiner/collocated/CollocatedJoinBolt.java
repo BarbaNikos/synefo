@@ -256,7 +256,7 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                 controlTuple.add(header);
                 controlTuple.add(null);
                 controlTuple.add(null);
-                collector.emitDirect(tuple.getSourceTask(), controlTuple);
+                collector.emitDirect(tuple.getSourceTask(), taskName + "-control", controlTuple);
                 collector.ack(tuple);
                 return;
             }else {
@@ -288,7 +288,7 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                 }
                 Values tupleValues = (Values) values.get(1);
                 long startTime = System.currentTimeMillis();
-                Pair<Integer, Integer> pair = joiner.execute(tuple, collector, activeDownstreamTaskIdentifiers,
+                Pair<Integer, Integer> pair = joiner.execute(taskName + "-data", tuple, collector, activeDownstreamTaskIdentifiers,
                         downstreamIndex, fields, tupleValues);
                 downstreamIndex = pair.first;
                 temporaryThroughput += pair.second;
@@ -315,7 +315,7 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                     scaleCompleteTuple.add(stringBuilder.toString());
                     scaleCompleteTuple.add("");
                     scaleCompleteTuple.add("");
-                    collector.emitDirect(tuple.getSourceTask(), scaleCompleteTuple);
+                    collector.emitDirect(tuple.getSourceTask(), taskName + "-control", scaleCompleteTuple);
                     candidateTask = -1;
                     long currentTimestamp = System.currentTimeMillis();
                     stateTransferTime.setValue((currentTimestamp - startTransferTimestamp));
@@ -357,7 +357,9 @@ public class CollocatedJoinBolt extends BaseRichBolt {
         schema.add("SYNEFO_HEADER");
         schema.add("attributes");
         schema.add("values");
-        outputFieldsDeclarer.declare(new Fields(schema));
+//        outputFieldsDeclarer.declare(new Fields(schema));
+        outputFieldsDeclarer.declareStream(taskName + "-data", true, new Fields(schema));
+        outputFieldsDeclarer.declareStream(taskName + "-control", true, new Fields(schema));
     }
 
 

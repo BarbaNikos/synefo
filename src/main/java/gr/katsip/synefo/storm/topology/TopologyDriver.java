@@ -18,6 +18,7 @@ import gr.katsip.synefo.storm.operators.relational.elastic.joiner.collocated.Col
 import gr.katsip.synefo.storm.producers.FileProducer;
 import gr.katsip.synefo.storm.producers.LocalControlledFileProducer;
 import gr.katsip.synefo.storm.producers.LocalFileProducer;
+import gr.katsip.synefo.storm.producers.SingleThreadControlledFileProducer;
 import gr.katsip.synefo.utils.SynefoMessage;
 import gr.katsip.synefo.storm.operators.relational.elastic.dispatcher.Dispatcher;
 import gr.katsip.synefo.storm.operators.relational.elastic.dispatcher.HistoryDispatcher;
@@ -72,7 +73,8 @@ public class TopologyDriver {
 
     public enum FileReaderType {
         DEFAULT_FILE_READER,
-        CONTROLLED_FILE_READER
+        CONTROLLED_FILE_READER,
+        SERIAL_CONTROLLED_FILE_READER
     }
 
     public TopologyDriver() {
@@ -121,9 +123,11 @@ public class TopologyDriver {
             String strReaderType = reader.readLine().split("=")[1].toUpperCase();
             if (FileReaderType.valueOf(strReaderType) == FileReaderType.DEFAULT_FILE_READER) {
                 readerType = FileReaderType.DEFAULT_FILE_READER;
-            }else if (FileReaderType.valueOf(strReaderType) == FileReaderType.CONTROLLED_FILE_READER) {
+            } else if (FileReaderType.valueOf(strReaderType) == FileReaderType.CONTROLLED_FILE_READER) {
                 readerType = FileReaderType.CONTROLLED_FILE_READER;
-            }else {
+            } else if (FileReaderType.valueOf(strReaderType) == FileReaderType.SERIAL_CONTROLLED_FILE_READER) {
+                readerType = FileReaderType.SERIAL_CONTROLLED_FILE_READER;
+            } else {
                 readerType = FileReaderType.DEFAULT_FILE_READER;
             }
             System.out.println("driver located dispatcher type: " + type);
@@ -145,17 +149,13 @@ public class TopologyDriver {
         int executorNumber = scale;
         Config conf = new Config();
         TopologyBuilder builder = new TopologyBuilder();
-        FileProducer order, lineitem, supplier, customer;
+        FileProducer order, lineitem;
         switch (readerType) {
             case DEFAULT_FILE_READER:
                 order = new LocalFileProducer(inputFile[0], Order.schema, Order.schema);
                 order.setSchema(new Fields(schema));
                 lineitem = new LocalFileProducer(inputFile[1], LineItem.schema, LineItem.schema);
                 lineitem.setSchema(new Fields(schema));
-//                supplier = new LocalFileProducer(inputFile[2], Supplier.schema, Supplier.schema);
-//                supplier.setSchema(new Fields(schema));
-//                customer = new LocalFileProducer(inputFile[3], Customer.schema, Customer.schema);
-//                customer.setSchema(new Fields(schema));
                 break;
             case CONTROLLED_FILE_READER:
                 order = new LocalControlledFileProducer(inputFile[0], Order.schema, Order.schema, outputRate,
@@ -164,35 +164,31 @@ public class TopologyDriver {
                 lineitem = new LocalControlledFileProducer(inputFile[1], LineItem.schema, LineItem.schema, outputRate,
                         checkpoint);
                 lineitem.setSchema(new Fields(schema));
-//                supplier = new LocalControlledFileProducer(inputFile[2], Supplier.schema, Supplier.schema, outputRate,
-//                        checkpoint);
-//                supplier.setSchema(new Fields(schema));
-//                customer = new LocalControlledFileProducer(inputFile[3], Customer.schema, Customer.schema, outputRate,
-//                        checkpoint);
-//                customer.setSchema(new Fields(schema));
+                break;
+            case SERIAL_CONTROLLED_FILE_READER:
+                order = new SingleThreadControlledFileProducer(inputFile[0], Order.schema, Order.schema, outputRate,
+                        checkpoint);
+                order.setSchema(new Fields(schema));
+                lineitem = new SingleThreadControlledFileProducer(inputFile[1], LineItem.schema, LineItem.schema, outputRate,
+                        checkpoint);
+                lineitem.setSchema(new Fields(schema));
                 break;
             default:
                 order = new LocalFileProducer(inputFile[0], Order.schema, Order.schema);
                 order.setSchema(new Fields(schema));
                 lineitem = new LocalFileProducer(inputFile[1], LineItem.schema, LineItem.schema);
                 lineitem.setSchema(new Fields(schema));
-//                supplier = new LocalFileProducer(inputFile[2], Supplier.schema, Supplier.schema);
-//                supplier.setSchema(new Fields(schema));
-//                customer = new LocalFileProducer(inputFile[3], Customer.schema, Customer.schema);
-//                customer.setSchema(new Fields(schema));
         }
         builder.setSpout("order", new ElasticFileSpout("order", synefoAddress, synefoPort, order, zookeeperAddress), scale);
         builder.setSpout("lineitem", new ElasticFileSpout("lineitem", synefoAddress, synefoPort, lineitem, zookeeperAddress), scale);
-//        builder.setSpout("customer", new ElasticFileSpout("customer", synefoAddress, synefoPort, customer, zookeeperAddress), scale);
-//        builder.setSpout("supplier", new ElasticFileSpout("supplier", synefoAddress, synefoPort, supplier, zookeeperAddress), scale);
         numberOfTasks += 2 * scale;
         tasks = new ArrayList<>();
         tasks.add("dispatch");
         topology.put("order", tasks);
         topology.put("lineitem", new ArrayList<>(tasks));
 
-        Dispatcher dispatcher = null, dispatcher1 = null;
-        CollocatedWindowDispatcher collocatedWindowDispatcher = null, collocatedWindowDispatcher1 = null;
+        Dispatcher dispatcher = null;
+        CollocatedWindowDispatcher collocatedWindowDispatcher = null;
         switch (type) {
             case OBLIVIOUS_DISPATCH:
                 dispatcher = new ObliviousDispatcher("order", new Fields(Order.schema), Order.schema[0],
@@ -258,7 +254,8 @@ public class TopologyDriver {
                             collocatedWindowDispatcher, zookeeperAddress, AUTO_SCALE), 1)
                     .setNumTasks(1)
                     .directGrouping("order")
-                    .directGrouping("lineitem");
+                    .directGrouping("lineitem")
+                    .directGrouping("joiner-control");
             numberOfTasks += 1;
             tasks = new ArrayList<>();
             tasks.add("joiner");
@@ -270,7 +267,8 @@ public class TopologyDriver {
             builder.setBolt("joiner", new CollocatedJoinBolt("joiner", synefoAddress, synefoPort, joiner, zookeeperAddress),
                     scale)
                     .setNumTasks(scale)
-                    .directGrouping("dispatch");
+                    .directGrouping("dispatch-control")
+                    .directGrouping("dispatch-data");
             numberOfTasks += scale;
             topology.put("joiner", new ArrayList<String>());
         }
