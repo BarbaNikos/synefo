@@ -12,7 +12,7 @@ public class ScaleDebugJoinSubmitter {
         }else {
             ScaleDebugTopologyDriver driver = new ScaleDebugTopologyDriver();
             driver.configure(args[0]);
-            driver.submit(500);
+            driver.submit();
         }
     }
 
