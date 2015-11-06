@@ -53,6 +53,8 @@ public class ScaleDebugTopologyDriver {
 
     private String zookeeperAddress;
 
+    private int maxSpoutPending;
+
     public enum DispatcherType {
         OBLIVIOUS_DISPATCH,
         WINDOW_DISPATCH,
@@ -111,13 +113,14 @@ public class ScaleDebugTopologyDriver {
                 AUTO_SCALE = true;
             else
                 AUTO_SCALE = false;
+            maxSpoutPending = Integer.parseInt(reader.readLine().split("=")[1]);
             reader.close();
         }catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public void submit(int maxSpoutPending) {
+    public void submit() {
         Integer numberOfTasks = 0;
         ArrayList<String> tasks;
         HashMap<String, ArrayList<String>> topology = new HashMap<>();
