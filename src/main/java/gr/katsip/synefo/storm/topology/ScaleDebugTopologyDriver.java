@@ -175,8 +175,8 @@ public class ScaleDebugTopologyDriver {
         builder.setBolt("dispatch", new CollocatedDispatchBolt("dispatch", synefoAddress, synefoPort,
                 collocatedWindowDispatcher, zookeeperAddress, AUTO_SCALE), 1)
                 .setNumTasks(1)
-                .directGrouping("inner")
-                .directGrouping("outer")
+                .directGrouping("inner", "inner")
+                .directGrouping("outer", "outer")
                 .directGrouping("joiner", "joiner-control");
         numberOfTasks += 1;
         tasks = new ArrayList<>();
