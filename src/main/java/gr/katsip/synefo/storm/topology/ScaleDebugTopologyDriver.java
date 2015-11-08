@@ -177,7 +177,7 @@ public class ScaleDebugTopologyDriver {
                 .setNumTasks(1)
                 .directGrouping("inner")
                 .directGrouping("outer")
-                .directGrouping("joiner-control");
+                .directGrouping("joiner", "joiner-control");
         numberOfTasks += 1;
         tasks = new ArrayList<>();
         tasks.add("joiner");
@@ -189,8 +189,8 @@ public class ScaleDebugTopologyDriver {
         builder.setBolt("joiner", new CollocatedJoinBolt("joiner", synefoAddress, synefoPort, joiner, zookeeperAddress),
                 scale)
                 .setNumTasks(scale)
-                .directGrouping("dispatch-control")
-                .directGrouping("dispatch-data");
+                .directGrouping("dispatch", "dispatch-control")
+                .directGrouping("dispatch", "dispatch-data");
         numberOfTasks += scale;
         topology.put("joiner", new ArrayList<String>());
         try {
