@@ -103,6 +103,7 @@ public class CollocatedJoinBolt extends BaseRichBolt {
     public CollocatedJoinBolt(String taskName, String synefoAddress, Integer synefoPort,
                               CollocatedEquiJoiner joiner, String zookeeperAddress) {
         this.taskName = taskName;
+        streamIdentifier = taskName;
         this.workerPort = -1;
         this.synefoAddress = synefoAddress;
         this.synefoPort = synefoPort;

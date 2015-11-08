@@ -77,6 +77,7 @@ public class ElasticFileSpout extends BaseRichSpout {
 
     public ElasticFileSpout(String taskName, String synefoIpAddress, Integer synefoPort,
                             FileProducer producer, String zooAddress) {
+        streamIdentifier = taskName;
         this.taskName = taskName;
         workerPort = -1;
         downstreamTaskNames = null;

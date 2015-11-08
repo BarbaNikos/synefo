@@ -124,6 +124,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
     public CollocatedDispatchBolt(String taskName, String synefoAddress, Integer synefoPort,
                                   CollocatedWindowDispatcher dispatcher, String zookeeperAddress, boolean AUTO_SCALE) {
         this.taskName = taskName;
+        streamIdentifier = taskName;
         this.workerPort = -1;
         this.synefoAddress = synefoAddress;
         this.synefoPort = synefoPort;
