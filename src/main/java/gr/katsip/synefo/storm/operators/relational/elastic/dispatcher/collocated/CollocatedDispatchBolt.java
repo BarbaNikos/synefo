@@ -43,6 +43,8 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
 
     private String taskName;
 
+    private String streamIdentifier;
+
     private int taskIdentifier;
 
     private String taskAddress;
@@ -214,6 +216,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
         this.collector = outputCollector;
         taskIdentifier = topologyContext.getThisTaskId();
         workerPort = topologyContext.getThisWorkerPort();
+        streamIdentifier = taskName;
         taskName = taskName + "_" + taskIdentifier;
         try {
             taskAddress = InetAddress.getLocalHost().getHostAddress();
@@ -292,7 +295,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                 controlTuple.add(null);
                 controlTuple.add(null);
                 for (Integer task : activeDownstreamTaskIdentifiers) {
-                    collector.emitDirect(task, taskName + "-control", controlTuple);
+                    collector.emitDirect(task, streamIdentifier + "-control", controlTuple);
                 }
 //            }
 //            logger.info("received a tick-tuple");
@@ -350,10 +353,10 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
             int numberOfTuplesDispatched = 0;
             long startTime = System.currentTimeMillis();
             if (activeDownstreamTaskIdentifiers.size() > 0) {
-                numberOfTuplesDispatched = dispatcher.execute(taskName + "-data", tuple, collector, fields, tupleValues, migratedKeys,
+                numberOfTuplesDispatched = dispatcher.execute(streamIdentifier + "-data", tuple, collector, fields, tupleValues, migratedKeys,
                         scaledTask, candidateTask, this.action);
             }else {
-                numberOfTuplesDispatched = dispatcher.execute(taskName + "-data", tuple, null, fields, tupleValues, migratedKeys,
+                numberOfTuplesDispatched = dispatcher.execute(streamIdentifier + "-data", tuple, null, fields, tupleValues, migratedKeys,
                         scaledTask, candidateTask, this.action);
             }
             collector.ack(tuple);
@@ -434,8 +437,8 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                         scaleTuple.add(stringBuilder.toString());
                         scaleTuple.add("");
                         scaleTuple.add("");
-                        collector.emitDirect(scaledTask, taskName + "-control", scaleTuple);
-                        collector.emitDirect(candidateTask, taskName + "-control", scaleTuple);
+                        collector.emitDirect(scaledTask, streamIdentifier + "-control", scaleTuple);
+                        collector.emitDirect(candidateTask, streamIdentifier + "-control", scaleTuple);
                         startTransferTimestamp = System.currentTimeMillis();
                         /**
                          * Add the candidate-task to the active task list
@@ -488,8 +491,8 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                     scaleTuple.add(stringBuilder.toString());
                     scaleTuple.add("");
                     scaleTuple.add("");
-                    collector.emitDirect(scaledTask, taskName + "-control", scaleTuple);
-                    collector.emitDirect(candidateTask, taskName + "-control", scaleTuple);
+                    collector.emitDirect(scaledTask, streamIdentifier + "-control", scaleTuple);
+                    collector.emitDirect(candidateTask, streamIdentifier + "-control", scaleTuple);
                     startTransferTimestamp = System.currentTimeMillis();
                     activeDownstreamTaskIdentifiers.remove(activeDownstreamTaskIdentifiers.indexOf(scaledTask));
                     this.action = SynefoConstant.COL_REMOVE_ACTION;
@@ -505,9 +508,8 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
         schema.add("SYNEFO_HEADER");
         schema.add("attributes");
         schema.add("values");
-//        outputFieldsDeclarer.declare(new Fields(schema));
-        outputFieldsDeclarer.declareStream(taskName + "-data", true, new Fields(schema));
-        outputFieldsDeclarer.declareStream(taskName + "-control", true, new Fields(schema));
+        outputFieldsDeclarer.declareStream(streamIdentifier + "-data", true, new Fields(schema));
+        outputFieldsDeclarer.declareStream(streamIdentifier + "-control", true, new Fields(schema));
     }
 
     public void manageScaleTuple(String header) {
