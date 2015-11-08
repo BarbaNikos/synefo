@@ -168,7 +168,7 @@ public class ScaleDebugTopologyDriver {
         tasks = new ArrayList<>();
         tasks.add("dispatch");
         topology.put("inner", tasks);
-        topology.put("outer", new ArrayList<String>(tasks));
+        topology.put("outer", new ArrayList<>(tasks));
         CollocatedWindowDispatcher collocatedWindowDispatcher = new CollocatedWindowDispatcher("inner",
                 new Fields(Inner.schema), Inner.schema[0], "outer", new Fields(Outer.schema), Outer.schema[0],
                 new Fields(schema), (long) (windowInMinutes * (60 * 1000)), slideInMilliSeconds);
