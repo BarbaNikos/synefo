@@ -109,6 +109,8 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
 
     private HashMap<Integer, List<Long>> capacityHistory;
 
+    private HashMap<Integer, Long> responseTimeDeltas;
+
     private List<Integer> strugglersHistory;
 
     private List<Integer> slackersHistory;
@@ -234,6 +236,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
         strugglersHistory = new ArrayList<>();
         slackersHistory = new ArrayList<>();
         capacityHistory = new HashMap<>();
+        responseTimeDeltas = new HashMap<>();
         scaledTask = -1;
         candidateTask = -1;
         action = "";
@@ -299,7 +302,6 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                     collector.emitDirect(task, streamIdentifier + "-control", controlTuple);
                 }
 //            }
-//            logger.info("received a tick-tuple");
             collector.ack(tuple);
             return;
         }
@@ -318,19 +320,25 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                 return;
             }
             if (header != null && !header.equals("") && isControlTuple(header)) {
-//                logger.info("dispatcher received control tuple.");
                 int task = tuple.getSourceTask();
                 long start = Long.parseLong(header.split(":")[1]);
                 long end = System.nanoTime();
                 List<Long> intervals = null;
-//                if (capacityHistory.containsKey(task))
-//                    intervals = capacityHistory.get(intervals);
-//                else
-//                    intervals = new ArrayList<>();
-//                intervals.add(end - start);
-//                capacityHistory.put(task, intervals);
+                if (capacityHistory.containsKey(task)) {
+                    intervals = capacityHistory.get(intervals);
+                } else {
+                    intervals = new ArrayList<>();
+                }
+                if (responseTimeDeltas.containsKey(task)) {
+                    long delta = responseTimeDeltas.get(task);
+                    long newDelta = (end - start) - intervals.get(intervals.size() - 1);
+                    responseTimeDeltas.put(task, new Long(newDelta - delta));
+                }else {
+                    responseTimeDeltas.put(task, new Long(0));
+                }
+                intervals.add(end - start);
+                capacityHistory.put(task, intervals);
                 collector.ack(tuple);
-//                logger.info("received control interval tuple (" + (end - start) + ")");
                 controlTupleInterval.setValue(tuple.getSourceTask() + "-" + (end - start));
                 return;
             }
@@ -410,6 +418,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                             break;
                         }
                     }
+                    if (responseTimeDeltas.get(overloadedTask) < 0)
                     if (scaleNeeded) {
                         scaledTask = overloadedTask;
                         //Overloaded task id is overloadedTask
