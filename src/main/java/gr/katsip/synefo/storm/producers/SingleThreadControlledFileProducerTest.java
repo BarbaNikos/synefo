@@ -4,7 +4,9 @@ import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.tuple.Values;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -16,6 +18,9 @@ import java.util.HashMap;
  */
 public class SingleThreadControlledFileProducerTest {
 
+    @Rule
+    public TemporaryFolder folder = new TemporaryFolder();
+
     private SingleThreadControlledFileProducer producer;
 
     private File temporaryFile;
@@ -24,12 +29,10 @@ public class SingleThreadControlledFileProducerTest {
 
     @Before
     public void setUp() throws Exception {
-        temporaryFile = new File("tmp-test.csv");
-        if (temporaryFile.exists())
-            temporaryFile.delete();
+        temporaryFile = folder.newFile("tmp-test.csv");
         temporaryFile.createNewFile();
         PrintWriter writer = new PrintWriter(new FileWriter(temporaryFile));
-        for (int i = 0; i < 15000; i++) {
+        for (int i = 0; i < 6100; i++) {
             writer.println(i);
         }
         writer.flush();
@@ -40,7 +43,7 @@ public class SingleThreadControlledFileProducerTest {
          * Total tuples = 10 * 6 + 1000 * 6 + 10 * 6 = 6120 tuples sent
          */
         double[] outputRate = { 10, 1000, 10, 1000, 10 };
-        int[] checkPoints = { 0, 6, 12, 18, 24 };
+        int[] checkPoints = { 0, 3, 6, 9, 12 };
         producer = new SingleThreadControlledFileProducer(temporaryFile.getAbsolutePath(), schema, projectedSchema,
                 outputRate, checkPoints);
         producer.init();
@@ -48,7 +51,8 @@ public class SingleThreadControlledFileProducerTest {
 
     @After
     public void tearDown() throws Exception {
-        if (temporaryFile.isFile() && temporaryFile.exists())
+        producer = null;
+        if (temporaryFile.exists())
             temporaryFile.delete();
     }
 
@@ -76,6 +80,8 @@ public class SingleThreadControlledFileProducerTest {
             }else {
                 throughput++;
             }
+            if (result == -2)
+                result = 0;
         } while (result >= 0);
     }
 
