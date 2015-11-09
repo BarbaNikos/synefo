@@ -10,7 +10,7 @@ import java.io.PrintWriter;
  */
 public class BalancedFileGenerator {
     public static void main(String[] args) throws IOException {
-        if (args.length < 3) {
+        if (args.length < 2) {
             System.out.println("arguments: output-directory number-of-tuples");
             System.exit(1);
         }
