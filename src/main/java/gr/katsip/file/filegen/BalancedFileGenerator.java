@@ -31,7 +31,7 @@ public class BalancedFileGenerator {
             outerWriter.println("1");
             innerWriter.println("2");
             outerWriter.println("2");
-            counter++;
+            counter += 2;
         }
         innerWriter.flush();
         outerWriter.flush();
