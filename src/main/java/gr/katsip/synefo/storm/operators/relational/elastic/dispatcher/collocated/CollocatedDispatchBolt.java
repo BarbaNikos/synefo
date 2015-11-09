@@ -323,9 +323,9 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                 int task = tuple.getSourceTask();
                 long start = Long.parseLong(header.split(":")[1]);
                 long end = System.nanoTime();
-                List<Long> intervals = null;
+                List<Long> intervals;
                 if (capacityHistory.containsKey(task)) {
-                    intervals = capacityHistory.get(intervals);
+                    intervals = capacityHistory.get(task);
                 } else {
                     intervals = new ArrayList<>();
                 }
