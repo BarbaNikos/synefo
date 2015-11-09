@@ -23,7 +23,7 @@ public class SingleThreadControlledFileProducer implements Serializable, FilePro
 
     private String pathToFile;
 
-    private long startTimestamp = -1L;
+    private long nextPeriodTimestamp = -1L;
 
     private long nextTimestamp = -1L;
 
@@ -68,17 +68,22 @@ public class SingleThreadControlledFileProducer implements Serializable, FilePro
         }else {
             logger.error("file not found");
         }
-        nextTimestamp = System.nanoTime();
-        startTimestamp = nextTimestamp;
-        index = -1;
         inputRate = 0;
         throughputPreviousTimestamp = System.currentTimeMillis();
         finished = false;
+        nextTimestamp = System.nanoTime();
+        nextPeriodTimestamp = nextTimestamp;
+        index = -1;
+        progress();
+        if (index <= (outputRate.length - 2))
+            nextPeriodTimestamp += ((long) checkpoints[index + 1] * 1E+9);
+        else
+            nextPeriodTimestamp += Long.MAX_VALUE * 1E+9;
+        nextTimestamp += delay;
     }
 
     private void progress() {
-        index++;
-        startTimestamp += (checkpoints[index] * 1E+9);
+        index += 1;
         delay = (long) ( 1E+9 / outputRate[index] );
     }
 
@@ -110,19 +115,25 @@ public class SingleThreadControlledFileProducer implements Serializable, FilePro
             tuple.add(projectedSchema);
             tuple.add(values);
             tupleStatistics.put(tuple, System.currentTimeMillis());
-            spoutOutputCollector.emitDirect(taskIdentifier, streamId, tuple, tuple);
-            inputRate++;
-            if (startTimestamp < System.nanoTime() && index < (outputRate.length - 1))
+            if (spoutOutputCollector != null)
+                spoutOutputCollector.emitDirect(taskIdentifier, streamId, tuple, tuple);
+//            inputRate++;
+//            throughputCurrentTimestamp = System.currentTimeMillis();
+//            int throughput = -2;
+//            if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
+//                throughput = inputRate;
+//                throughputPreviousTimestamp = throughputCurrentTimestamp;
+//                inputRate = 0;
+//            }
+            if (nextPeriodTimestamp < System.nanoTime() && index <= (outputRate.length - 1)) {
+                if (index <= (outputRate.length - 2))
+                    nextPeriodTimestamp += ((long) checkpoints[index + 1] * 1E+9);
+                else
+                    nextPeriodTimestamp += Long.MAX_VALUE * 1E+9;
                 progress();
-            throughputCurrentTimestamp = System.currentTimeMillis();
-            int throughput = -2;
-            if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
-                throughput = inputRate;
-                throughputPreviousTimestamp = throughputCurrentTimestamp;
-                inputRate = 0;
             }
             nextTimestamp += delay;
-            return throughput;
+            return 0;
         }else {
             finished = true;
             return -1;
