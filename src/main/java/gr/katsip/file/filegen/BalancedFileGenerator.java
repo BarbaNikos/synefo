@@ -1,22 +1,68 @@
 package gr.katsip.file.filegen;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 
 /**
  * Created by katsip on 11/9/2015.
  */
 public class BalancedFileGenerator {
+
+    private static int scale;
+
+    private static String[] inputFile;
+
+    private static double[] outputRate;
+
+    private static int[] checkpoint;
+
+    private static float windowInMinutes;
+
+    private static long slideInMilliSeconds;
+
+    public static void configure(String fileName) {
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(new File(fileName)));
+            scale = Integer.parseInt(reader.readLine().split("=")[1]);
+            inputFile = reader.readLine().split("=")[1].split(",");
+            String[] strOutputRate = reader.readLine().split("=")[1].split(",");
+            String[] strCheckpoint = reader.readLine().split("=")[1].split(",");
+            outputRate = new double[strOutputRate.length];
+            checkpoint = new int[strCheckpoint.length];
+            for (int i = 0; i < strOutputRate.length; i++) {
+                outputRate[i] = Double.parseDouble(strOutputRate[i]);
+                checkpoint[i] = Integer.parseInt(strCheckpoint[i]);
+            }
+            windowInMinutes = Float.parseFloat(reader.readLine().split("=")[1]);
+            slideInMilliSeconds = Long.parseLong(reader.readLine().split("=")[1]);
+            System.out.println("window-in-minutes: " + windowInMinutes + ", slide-in-msec: " + slideInMilliSeconds);
+            int numberOfWorkers = Integer.parseInt(reader.readLine().split("=")[1]);
+            String synefoAddress = reader.readLine().split("=")[1];
+            String zookeeperAddress = reader.readLine().split("=")[1];
+            String strType = reader.readLine().split("=")[1].toUpperCase();
+            String strReaderType = reader.readLine().split("=")[1].toUpperCase();
+            String autoScale = reader.readLine().split("=")[1];
+            int maxSpoutPending = Integer.parseInt(reader.readLine().split("=")[1]);
+            reader.close();
+        }catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void main(String[] args) throws IOException {
         if (args.length < 2) {
-            System.out.println("arguments: output-directory number-of-tuples");
+            System.out.println("arguments: driver-conf output-directory");
             System.exit(1);
         }
-        long numberOfTuples = Long.parseLong(args[1]);
-        File inner = new File(args[0] + File.separator + "inner.tbl");
-        File outer = new File(args[0] + File.separator + "outer.tbl");
+        int numberOfTuples = 0;
+        configure(args[0]);
+        for (int i = 0; i < checkpoint.length - 1; i++) {
+            System.out.println("for interval between [" + checkpoint[i] + "," + checkpoint[i+1] + ") and rate: " +
+            outputRate[i] + " will produce " + (outputRate[i] * (checkpoint[i+1] - checkpoint[i]) / 2) + " tuples.");
+            numberOfTuples += (outputRate[i] * (checkpoint[i+1] - checkpoint[i]) / 2);
+        }
+        System.out.println("number of tuples produced per file: " + numberOfTuples);
+        File inner = new File(args[1] + File.separator + "inner.tbl");
+        File outer = new File(args[1] + File.separator + "outer.tbl");
         if (inner.exists())
             inner.delete();
         if (outer.exists())
