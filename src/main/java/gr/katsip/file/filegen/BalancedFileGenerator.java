@@ -34,14 +34,6 @@ public class BalancedFileGenerator {
             }
             windowInMinutes = Float.parseFloat(reader.readLine().split("=")[1]);
             slideInMilliSeconds = Long.parseLong(reader.readLine().split("=")[1]);
-            System.out.println("window-in-minutes: " + windowInMinutes + ", slide-in-msec: " + slideInMilliSeconds);
-            int numberOfWorkers = Integer.parseInt(reader.readLine().split("=")[1]);
-            String synefoAddress = reader.readLine().split("=")[1];
-            String zookeeperAddress = reader.readLine().split("=")[1];
-            String strType = reader.readLine().split("=")[1].toUpperCase();
-            String strReaderType = reader.readLine().split("=")[1].toUpperCase();
-            String autoScale = reader.readLine().split("=")[1];
-            int maxSpoutPending = Integer.parseInt(reader.readLine().split("=")[1]);
             reader.close();
         }catch (IOException e) {
             e.printStackTrace();
@@ -60,6 +52,9 @@ public class BalancedFileGenerator {
             outputRate[i] + " will produce " + (outputRate[i] * (checkpoint[i+1] - checkpoint[i])) + " tuples per file.");
             numberOfTuples += (outputRate[i] * (checkpoint[i+1] - checkpoint[i]));
         }
+        System.out.println("for the interval between [" + checkpoint[checkpoint.length - 1] + ",+INF] tuples per file: " +
+                (outputRate[outputRate.length - 1] * 2 * windowInMinutes * 60));
+        numberOfTuples += (outputRate[outputRate.length - 1] * 2 * windowInMinutes * 60);
         System.out.println("number of tuples produced per file: " + numberOfTuples);
         File inner = new File(args[1] + File.separator + "inner.tbl");
         File outer = new File(args[1] + File.separator + "outer.tbl");
