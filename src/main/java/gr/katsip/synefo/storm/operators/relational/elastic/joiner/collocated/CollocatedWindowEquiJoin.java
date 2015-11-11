@@ -36,6 +36,8 @@ public class CollocatedWindowEquiJoin implements Serializable {
 
     private long byteStateSize;
 
+    private long mirrorBufferByteStateSize;
+
     private long innerRelationCardinality;
 
     private long outerRelationCardinality;
@@ -63,6 +65,7 @@ public class CollocatedWindowEquiJoin implements Serializable {
         this.innerRelationJoinAttribute = innerRelationJoinAttribute;
         this.outerRelationJoinAttribute = outerRelationJoinAttribute;
         this.byteStateSize = 0L;
+        this.mirrorBufferByteStateSize = 0L;
         innerRelationCardinality = 0L;
         outerRelationCardinality = 0L;
         this.innerRelation = innerRelation;
@@ -238,14 +241,17 @@ public class CollocatedWindowEquiJoin implements Serializable {
         while(mirrorBuffer.size() > 0) {
             BasicCollocatedEquiWindow window = mirrorBuffer.get(0);
             if ((window.start + windowSize) < timestamp) {
+                mirrorBufferByteStateSize -= mirrorBuffer.get(0).byteStateSize;
                 mirrorBuffer.removeFirst();
                 continue;
             }else {
                 break;
             }
         }
-        if (mirrorBuffer.size() == 0)
+        if (mirrorBuffer.size() == 0) {
             migratedKeys.clear();
+            mirrorBufferByteStateSize = 0;
+        }
     }
 
     public ArrayList<Values> mirrorJoin(Long currentTimestamp, Fields schema, Values tuple) {
@@ -304,7 +310,7 @@ public class CollocatedWindowEquiJoin implements Serializable {
     }
 
     public long getStateSize() {
-        return byteStateSize;
+        return byteStateSize + mirrorBufferByteStateSize;
     }
 
     public void initializeScaleOut(List<String> migratedKeys) {
@@ -317,11 +323,17 @@ public class CollocatedWindowEquiJoin implements Serializable {
                 BasicCollocatedEquiWindow mirrorWindow = new BasicCollocatedEquiWindow();
                 mirrorWindow.start = window.start;
                 mirrorWindow.end = window.end;
+                mirrorWindow.byteStateSize = 0L;
                 HashMap<String, ArrayList<Values>> temporaryMap = new HashMap<>();
                 for (String key : window.innerRelation.keySet()) {
                     if (migratedKeys.indexOf(key) >= 0) {
                         ArrayList<Values> migratedTuples = window.innerRelation.get(key);
                         mirrorWindow.innerRelation.put(key, migratedTuples);
+                        int size = migratedTuples.toString().length();
+                        mirrorWindow.byteStateSize += size;
+                        mirrorBufferByteStateSize += size;
+                        byteStateSize -= size;
+                        window.byteStateSize -= size;
                     }else {
                         temporaryMap.put(key, new ArrayList<Values>(window.innerRelation.get(key)));
                     }
@@ -336,6 +348,11 @@ public class CollocatedWindowEquiJoin implements Serializable {
                     if (migratedKeys.indexOf(key) >= 0) {
                         ArrayList<Values> migratedTuples = window.outerRelation.get(key);
                         mirrorWindow.outerRelation.put(key, migratedTuples);
+                        int size = migratedTuples.toString().length();
+                        mirrorWindow.byteStateSize += size;
+                        mirrorBufferByteStateSize += size;
+                        byteStateSize -= size;
+                        window.byteStateSize -= size;
                     }else {
                         temporaryMap.put(key, new ArrayList<Values>(window.outerRelation.get(key)));
                     }
@@ -368,6 +385,11 @@ public class CollocatedWindowEquiJoin implements Serializable {
                     if (migratedKeys.indexOf(key) >= 0) {
                         ArrayList<Values> migratedTuples = window.innerRelation.get(key);
                         mirrorWindow.innerRelation.put(key, migratedTuples);
+                        int size = migratedTuples.toString().length();
+                        mirrorWindow.byteStateSize += size;
+                        mirrorBufferByteStateSize += size;
+                        byteStateSize -= size;
+                        window.byteStateSize -= size;
                     }else {
                         temporaryMap.put(key, new ArrayList<Values>(window.innerRelation.get(key)));
                     }
@@ -382,6 +404,11 @@ public class CollocatedWindowEquiJoin implements Serializable {
                     if (migratedKeys.indexOf(key) >= 0) {
                         ArrayList<Values> migratedTuples = window.outerRelation.get(key);
                         mirrorWindow.outerRelation.put(key, migratedTuples);
+                        int size = migratedTuples.toString().length();
+                        mirrorWindow.byteStateSize += size;
+                        mirrorBufferByteStateSize += size;
+                        byteStateSize -= size;
+                        window.byteStateSize -= size;
                     }else {
                         temporaryMap.put(key, new ArrayList<Values>(window.outerRelation.get(key)));
                     }

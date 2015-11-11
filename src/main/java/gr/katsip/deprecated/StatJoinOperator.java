@@ -1,7 +1,7 @@
 package gr.katsip.deprecated;
 
 import gr.katsip.synefo.metric.TaskStatistics;
-import gr.katsip.synefo.storm.operators.crypstream.DataCollector;
+import gr.katsip.deprecated.crypstream.DataCollector;
 
 import java.io.Serializable;
 import java.util.ArrayList;

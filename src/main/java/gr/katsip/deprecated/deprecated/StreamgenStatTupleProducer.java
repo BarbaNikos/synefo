@@ -10,7 +10,7 @@ import java.net.UnknownHostException;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 import gr.katsip.synefo.metric.TaskStatistics;
-import gr.katsip.synefo.storm.operators.crypstream.DataCollector;
+import gr.katsip.deprecated.crypstream.DataCollector;
 
 /**
  * @deprecated

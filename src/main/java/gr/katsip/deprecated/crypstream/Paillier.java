@@ -1,4 +1,4 @@
-package gr.katsip.synefo.storm.operators.crypstream;
+package gr.katsip.deprecated.crypstream;
 
 import gr.katsip.deprecated.AbstractOperator;
 

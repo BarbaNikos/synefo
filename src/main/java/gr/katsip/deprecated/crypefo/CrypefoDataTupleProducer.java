@@ -1,7 +1,7 @@
 package gr.katsip.deprecated.crypefo;
 
 import gr.katsip.synefo.metric.TaskStatistics;
-import gr.katsip.synefo.storm.operators.crypstream.DataCollector;
+import gr.katsip.deprecated.crypstream.DataCollector;
 import gr.katsip.deprecated.deprecated.AbstractStatTupleProducer;
 import java.io.BufferedReader;
 import java.io.IOException;

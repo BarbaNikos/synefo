@@ -109,7 +109,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
 
     private HashMap<Integer, List<Long>> capacityHistory;
 
-    private HashMap<Integer, Long> responseTimeDeltas;
+    private HashMap<Integer, Long> responseTime;
 
     private List<Integer> strugglersHistory;
 
@@ -236,7 +236,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
         strugglersHistory = new ArrayList<>();
         slackersHistory = new ArrayList<>();
         capacityHistory = new HashMap<>();
-        responseTimeDeltas = new HashMap<>();
+        responseTime = new HashMap<>();
         scaledTask = -1;
         candidateTask = -1;
         action = "";
@@ -329,17 +329,11 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                 } else {
                     intervals = new ArrayList<>();
                 }
-                if (responseTimeDeltas.containsKey(task)) {
-                    long delta = responseTimeDeltas.get(task);
-                    long newDelta = (end - start) - intervals.get(intervals.size() - 1);
-                    responseTimeDeltas.put(task, new Long(newDelta - delta));
-                }else {
-                    responseTimeDeltas.put(task, new Long(0));
-                }
-                intervals.add(end - start);
+                responseTime.put(task, new Long((long) ((end - start) / 1E+6)));
+                intervals.add((long) ((end - start) / 1E+6));
                 capacityHistory.put(task, intervals);
                 collector.ack(tuple);
-                controlTupleInterval.setValue(tuple.getSourceTask() + "-" + (end - start));
+                controlTupleInterval.setValue(tuple.getSourceTask() + "-" + (long) ((end - start) / 1E+6));
                 return;
             }
 
@@ -418,8 +412,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                             break;
                         }
                     }
-                    if (responseTimeDeltas.get(overloadedTask) < 0)
-                    if (scaleNeeded) {
+                    if (scaleNeeded && responseTime.get(overloadedTask) > 2L) {
                         scaledTask = overloadedTask;
                         //Overloaded task id is overloadedTask
                         //Divide tasks keys into two sets (migratedKeys are going to be handled by new task
@@ -475,7 +468,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                         break;
                     }
                 }
-                if (scaleNeeded) {
+                if (scaleNeeded && responseTime.get(slackerTask) < 2) {
                     scaledTask = slackerTask;
                     List<String> keys = dispatcher.getKeysForATask(scaledTask);
 //                    migratedKeys = keys.subList(0, (int) Math.ceil((double) (keys.size() / 2)));

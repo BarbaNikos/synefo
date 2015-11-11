@@ -5,9 +5,9 @@ import gr.katsip.deprecated.cestorm.db.OperatorStatisticCollector;
 import gr.katsip.deprecated.deprecated.SynefoBolt;
 import gr.katsip.deprecated.deprecated.SynefoSpout;
 import gr.katsip.synefo.utils.SynefoMessage;
-import gr.katsip.synefo.storm.operators.crypstream.Client;
-import gr.katsip.synefo.storm.operators.crypstream.Select;
-import gr.katsip.synefo.storm.operators.crypstream.Sum;
+import gr.katsip.deprecated.crypstream.Client;
+import gr.katsip.deprecated.crypstream.Select;
+import gr.katsip.deprecated.crypstream.Sum;
 
 import java.io.BufferedReader;
 import java.io.File;
