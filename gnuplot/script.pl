@@ -37,7 +37,7 @@ foreach my $joiner (@joiner_array)
     system("rm -f interval-$joiner.dat");
     system("grep \"dispatch\\s*control-interval\" metrics.log | sed 's/^201[0-9][-][0-9]*[-][0-9]*[ \t]*[0-9]*:[0-9]*:[0-9]*,[0-9]*[ \t]*[0-9]*[ \t]*//' | sed 's/[ \t]*astro2.cs.pitt.edu:[0-9]*[ \t]*[0-9]:dispatch[ \t]*control-interval[ \t]*/\t/' | grep \"$joiner-\" | sed 's/$joiner-//'  > interval-$joiner.dat");
 	system("rm -f state-$joiner.dat");
-	system("grep \"$joiner:joiner.*state\" metrics.log | sed 's/^201[0-9][-][0-9]*[-][0-9]*[ \t]*[0-9]*:[0-9]*:[0-9]*,[0-9]*[ \t]*[0-9]*[ \t]*//' | sed 's/[ \t]*astro2.cs.pitt.edu:[0-9]*//' | sed 's/:joiner[ \t]*/\t/' | sed 's/[ \t]*state-size[ \t]*/\t/' | sed 's/[ \t]+/\t/' > state-$joiner.dat");
+	system("grep \"$joiner:joiner.*state-size\" metrics.log | sed 's/^201[0-9][-][0-9]*[-][0-9]*[ \t]*[0-9]*:[0-9]*:[0-9]*,[0-9]*[ \t]*[0-9]*[ \t]*//' | sed 's/[ \t]*astro2.cs.pitt.edu:[0-9]*//' | sed 's/:joiner[ \t]*/\t/' | sed 's/[ \t]*state-size[ \t]*/\t/' | sed 's/[ \t]+/\t/' > state-$joiner.dat");
 	system("rm -f input-rate-$joiner.dat");
 	system("grep \"$joiner:joiner\\s*input-rate\" metrics.log | sed 's/^201[0-9][-][0-9]*[-][0-9]*[ \t]*[0-9]*:[0-9]*:[0-9]*,[0-9]*[ \t]*[0-9]*[ \t]*//' | sed 's/[ \t]*astro2.cs.pitt.edu:[0-9]*[ \t]*$joiner:joiner[ \t]*input-rate[ \t]*/\t/' > input-rate-$joiner.dat");
 }
