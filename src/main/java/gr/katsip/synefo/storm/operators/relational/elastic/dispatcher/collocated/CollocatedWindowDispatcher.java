@@ -127,51 +127,45 @@ public class CollocatedWindowDispatcher implements Serializable {
         if (fields.toList().toString().equals(innerRelationSchema.toList().toString())) {
             key = (String) values.get(innerRelationSchema.fieldIndex(innerRelationKey));
             victimTask = locateTask(currentTimestamp, innerRelationName, key);
-            if (victimTask < 0)
+            if (victimTask < 0 && migratedKeys != null && migratedKeys.size() == 0)
                 victimTask = pickTaskForNewKey();
-            if (migratedKeys != null && migratedKeys.indexOf(key) >= 0 && scaledTask != -1 && candidateTask != -1) {
+            if (migratedKeys.size() > 0 && migratedKeys.indexOf(key) >= 0 && scaledTask != -1 && candidateTask != -1) {
                 updateCurrentWindow(currentTimestamp, innerRelationName, key, candidateTask);
-                if (action.equals(SynefoConstant.COL_ADD_ACTION)) {
-                    if (collector != null) {
-                        collector.emitDirect(candidateTask, streamId, anchor, tuple);
-                        collector.emitDirect(scaledTask, streamId, anchor, tuple);
-                        numberOfDispatchedTuples += 2;
-                    }
-                }else if (action.equals(SynefoConstant.COL_REMOVE_ACTION)) {
-                    if (collector != null) {
-                        collector.emitDirect(candidateTask, streamId, anchor, tuple);
-                        collector.emitDirect(scaledTask, streamId, anchor, tuple);
-                        numberOfDispatchedTuples += 2;
-                    }
+                if (victimTask >= 0 && victimTask != scaledTask && victimTask != candidateTask) {
+                    logger.error("inconsistency located. victim-task: " + victimTask + " is neither equal to scaled-task (" +
+                            scaledTask + ") nor candidate-task (" + candidateTask + ")");
+                    throw new RuntimeException("Candidate inconsistency");
                 }
-            }else {
-                updateCurrentWindow(currentTimestamp, outerRelationName, key, victimTask);
+                if (collector != null) {
+                    collector.emitDirect(candidateTask, streamId, anchor, tuple);
+                    collector.emitDirect(scaledTask, streamId, anchor, tuple);
+                    numberOfDispatchedTuples += 2;
+                }
+            } else {
+                updateCurrentWindow(currentTimestamp, innerRelationName, key, victimTask);
                 if (collector != null && victimTask >= 0) {
                     collector.emitDirect(victimTask, streamId, anchor, tuple);
                     numberOfDispatchedTuples++;
                 }
             }
-        }else if (fields.toList().toString().equals(outerRelationSchema.toList().toString())) {
+        } else if (fields.toList().toString().equals(outerRelationSchema.toList().toString())) {
             key = (String) values.get(outerRelationSchema.fieldIndex(outerRelationKey));
             victimTask = locateTask(currentTimestamp, outerRelationName, key);
-            if (victimTask < 0)
+            if (victimTask < 0 && migratedKeys != null && migratedKeys.size() == 0)
                 victimTask = pickTaskForNewKey();
-            if (migratedKeys != null && migratedKeys.indexOf(key) >= 0 && scaledTask != -1 && candidateTask != -1) {
+            if (migratedKeys.size() > 0 && migratedKeys.indexOf(key) >= 0 && scaledTask != -1 && candidateTask != -1) {
                 updateCurrentWindow(currentTimestamp, outerRelationName, key, candidateTask);
-                if (action.equals(SynefoConstant.COL_ADD_ACTION)) {
-                    if (collector != null) {
-                        collector.emitDirect(candidateTask, streamId, anchor, tuple);
-                        collector.emitDirect(scaledTask, streamId, anchor, tuple);
-                        numberOfDispatchedTuples += 2;
-                    }
-                }else if (action.equals(SynefoConstant.COL_REMOVE_ACTION)) {
-                    if (collector != null) {
-                        collector.emitDirect(candidateTask, streamId, anchor, tuple);
-                        collector.emitDirect(scaledTask, streamId, anchor, tuple);
-                        numberOfDispatchedTuples += 2;
-                    }
+                if (victimTask >= 0 && victimTask != scaledTask && victimTask != candidateTask) {
+                    logger.error("inconsistency located. victim-task: " + victimTask + " is neither equal to scaled-task (" +
+                            scaledTask + ") nor candidate-task (" + candidateTask + ")");
+                    throw new RuntimeException("Candidate inconsistency");
                 }
-            }else {
+                if (collector != null) {
+                    collector.emitDirect(candidateTask, streamId, anchor, tuple);
+                    collector.emitDirect(scaledTask, streamId, anchor, tuple);
+                    numberOfDispatchedTuples += 2;
+                }
+            } else {
                 updateCurrentWindow(currentTimestamp, outerRelationName, key, victimTask);
                 if (collector != null && victimTask >= 0) {
                     collector.emitDirect(victimTask, streamId, anchor, tuple);
