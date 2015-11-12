@@ -1,4 +1,4 @@
-mints = ! "cat min_ts.txt.tmp"
+mints = system("cat min_ts.txt.tmp")
 
 set terminal postscript eps size 6,2.62 enhanced color \
 	font 'Helvetica,20' linewidth 2
