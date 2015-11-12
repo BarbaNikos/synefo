@@ -413,7 +413,10 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                             break;
                         }
                     }
-                    if (scaleNeeded && responseTime.get(overloadedTask) > 2L) {
+                    long responseInterval = -1L;
+                    if (responseTime.containsKey(overloadedTask))
+                        responseInterval = responseTime.get(overloadedTask);
+                    if (scaleNeeded && responseInterval > 0 && responseInterval > 2L) {
                         scaledTask = overloadedTask;
                         //Overloaded task id is overloadedTask
                         //Divide tasks keys into two sets (migratedKeys are going to be handled by new task
@@ -469,7 +472,10 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                         break;
                     }
                 }
-                if (scaleNeeded && responseTime.get(slackerTask) < 2) {
+                long responseInterval = -1L;
+                if (responseTime.containsKey(overloadedTask))
+                    responseInterval = responseTime.get(overloadedTask);
+                if (scaleNeeded && responseInterval > 0 && responseInterval <= 2L) {
                     scaledTask = slackerTask;
                     List<String> keys = dispatcher.getKeysForATask(scaledTask);
                     migratedKeys.addAll(keys);
