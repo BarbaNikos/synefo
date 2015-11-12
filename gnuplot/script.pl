@@ -3,13 +3,14 @@
 use strict;
 use Getopt::Std;
 use warnings;
+use Cwd;
 
 my @joiner_array = (5, 6);
 
 my $line = `grep -m 1 "[0-9]:dispatch" metrics.log`;
 my @tokens = split /\s+/, $line;
-print "Tokens: \n";
-print join(", ", @tokens);
+# print "Tokens: \n";
+# print join(", ", @tokens);
 
 my $file = "min_ts.txt.tmp";
 if (-e $file)
@@ -30,7 +31,7 @@ system("grep \"dispatch\\s*input-rate\" metrics.log | sed 's/^201[0-9][-][0-9]*[
 system("rm -f latency.dat");
 system("grep \"comp-latency\" metrics.log | sed 's/^201[0-9][-][0-9]*[-][0-9]*[ \t]*[0-9]*:[0-9]*:[0-9]*,[0-9]*[ \t]*[0-9]*[ \t]*//' | sed 's/[ \t]*astro2.cs.pitt.edu:[0-9]*//' | sed 's/:[a-z]*[ \t]*comp-latency[ \t]*/\t/' > latency.dat");
 
-# populate the state size files
+# populate the interval, input-rate, and state-size files
 foreach my $joiner (@joiner_array)
 {
     system("rm -f interval-$joiner.dat");

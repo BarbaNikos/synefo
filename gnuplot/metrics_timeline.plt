@@ -34,5 +34,5 @@ set output "state.eps"
 set ylabel "State (KB)"
 set yrange [0:500]
 #set ytics (0,100,500)
-plot "state-5.dat" using ($1 - mints):($2/1000) title 'task-5' with lines, \
-	"state-6.dat" using ($1 - mints):($2/1000) title 'task-6' with lines
+plot "state-5.dat" using ($1 - mints):($3/1000) title 'task-5' with lines, \
+	"state-6.dat" using ($1 - mints):($3/1000) title 'task-6' with lines
