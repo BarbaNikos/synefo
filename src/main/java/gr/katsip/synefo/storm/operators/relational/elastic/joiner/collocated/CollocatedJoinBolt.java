@@ -76,8 +76,6 @@ public class CollocatedJoinBolt extends BaseRichBolt {
 
     private transient AssignableMetric stateTransferTime;
 
-//    private transient AssignableMetric controlTupleInterval;
-
     private long startTransferTimestamp;
 
     private int temporaryInputRate;
@@ -249,13 +247,6 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                 collector.ack(tuple);
                 return;
             }else if (header != null && !header.equals("") && isControlTuple(header)) {
-//                long timestamp = System.nanoTime();
-//                long receivedTimestamp = Long.parseLong(header.split(":")[1]);
-//                Values controlTuple = new Values();
-//                controlTuple.add(SynefoConstant.COL_TICK_HEADER + ":" + receivedTimestamp + "," + timestamp);
-//                controlTuple.add(null);
-//                controlTuple.add(null);
-//                logger.info("received control-interval tuple. sending it back.");
                 Values controlTuple = new Values();
                 controlTuple.add(header);
                 controlTuple.add(null);
@@ -277,7 +268,6 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                 /**
                  * Remove from both values and fields SYNEFO_HEADER (SYNEFO_TIMESTAMP)
                  */
-//                logger.info("received tuple: " + tuple.getValues().toString());
                 Values values = new Values(tuple.getValues().toArray());
                 values.remove(0);
                 Fields fields = null;
@@ -341,6 +331,11 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                 this.candidateTask = Integer.parseInt(candidateTask);
                 joiner.initializeScaleOut(migratedKeys);
                 startTransferTimestamp = System.currentTimeMillis();
+                logger.info("JOIN-BOLT-" + taskName + ":" + taskIdentifier +
+                        "participates into scale-action ADD and it is NOT the candidate");
+            } else {
+                logger.info("JOIN-BOLT-" + taskName + ":" + taskIdentifier +
+                        " participates into scale-action ADD and it is the candidate.");
             }
         } else if (action.equals(SynefoConstant.COL_REMOVE_ACTION)) {
             if (Integer.parseInt(candidateTask) == taskIdentifier) {
@@ -351,6 +346,11 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                 this.candidateTask = Integer.parseInt(candidateTask);
                 joiner.initializeScaleIn(migratedKeys);
                 startTransferTimestamp = System.currentTimeMillis();
+                logger.info("JOIN-BOLT-" + taskName + ":" + taskIdentifier +
+                        "participates into scale-action REMOVE and it is the candidate");
+            } else {
+                logger.info("JOIN-BOLT-" + taskName + ":" + taskIdentifier +
+                        "participates into scale-action REMOVE and it is NOT the candidate");
             }
         }
     }
