@@ -13,9 +13,9 @@ import gr.katsip.synefo.storm.operators.relational.elastic.dispatcher.collocated
 import gr.katsip.synefo.storm.operators.relational.elastic.joiner.collocated.CollocatedEquiJoiner;
 import gr.katsip.synefo.storm.operators.relational.elastic.joiner.collocated.CollocatedJoinBolt;
 import gr.katsip.synefo.storm.producers.FileProducer;
-import gr.katsip.synefo.storm.producers.LocalControlledFileProducer;
+import gr.katsip.synefo.storm.producers.ControlledFileProducer;
 import gr.katsip.synefo.storm.producers.LocalFileProducer;
-import gr.katsip.synefo.storm.producers.SingleThreadControlledFileProducer;
+import gr.katsip.synefo.storm.producers.SerialControlledFileProducer;
 import gr.katsip.synefo.utils.SynefoMessage;
 import gr.katsip.tpch.Inner;
 import gr.katsip.tpch.Outer;
@@ -88,7 +88,7 @@ public class ScaleDebugTopologyDriver {
             }
             windowInMinutes = Float.parseFloat(reader.readLine().split("=")[1]);
             slideInMilliSeconds = Long.parseLong(reader.readLine().split("=")[1]);
-            System.out.println("window-in-minutes: " + windowInMinutes + ", slide-in-msec: " + slideInMilliSeconds);
+//            System.out.println("window-in-minutes: " + windowInMinutes + ", slide-in-msec: " + slideInMilliSeconds);
             numberOfWorkers = Integer.parseInt(reader.readLine().split("=")[1]);
             synefoAddress = reader.readLine().split("=")[1];
             zookeeperAddress = reader.readLine().split("=")[1];
@@ -139,18 +139,18 @@ public class ScaleDebugTopologyDriver {
                 outer.setSchema(new Fields(schema));
                 break;
             case SERIAL_CONTROLLED_FILE_READER:
-                inner = new SingleThreadControlledFileProducer(inputFile[0], Inner.schema, Inner.schema, outputRate,
+                inner = new SerialControlledFileProducer(inputFile[0], Inner.schema, Inner.schema, outputRate,
                         checkpoint);
                 inner.setSchema(new Fields(schema));
-                outer = new SingleThreadControlledFileProducer(inputFile[1], Outer.schema, Outer.schema, outputRate,
+                outer = new SerialControlledFileProducer(inputFile[1], Outer.schema, Outer.schema, outputRate,
                         checkpoint);
                 outer.setSchema(new Fields(schema));
                 break;
             case CONTROLLED_FILE_READER:
-                inner = new LocalControlledFileProducer(inputFile[0], Inner.schema, Inner.schema, outputRate,
+                inner = new ControlledFileProducer(inputFile[0], Inner.schema, Inner.schema, outputRate,
                         checkpoint);
                 inner.setSchema(new Fields(schema));
-                outer = new LocalControlledFileProducer(inputFile[1], Outer.schema, Outer.schema, outputRate,
+                outer = new ControlledFileProducer(inputFile[1], Outer.schema, Outer.schema, outputRate,
                         checkpoint);
                 outer.setSchema(new Fields(schema));
                 break;

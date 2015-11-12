@@ -16,9 +16,9 @@ import gr.katsip.synefo.storm.operators.relational.elastic.joiner.NewJoinJoiner;
 import gr.katsip.synefo.storm.operators.relational.elastic.joiner.collocated.CollocatedEquiJoiner;
 import gr.katsip.synefo.storm.operators.relational.elastic.joiner.collocated.CollocatedJoinBolt;
 import gr.katsip.synefo.storm.producers.FileProducer;
-import gr.katsip.synefo.storm.producers.LocalControlledFileProducer;
+import gr.katsip.synefo.storm.producers.ControlledFileProducer;
 import gr.katsip.synefo.storm.producers.LocalFileProducer;
-import gr.katsip.synefo.storm.producers.SingleThreadControlledFileProducer;
+import gr.katsip.synefo.storm.producers.SerialControlledFileProducer;
 import gr.katsip.synefo.utils.SynefoMessage;
 import gr.katsip.synefo.storm.operators.relational.elastic.dispatcher.Dispatcher;
 import gr.katsip.synefo.storm.operators.relational.elastic.dispatcher.HistoryDispatcher;
@@ -63,6 +63,8 @@ public class TopologyDriver {
     private DispatcherType type;
 
     private FileReaderType readerType;
+
+    private int maxSpoutPending;
 
     public enum DispatcherType {
         OBLIVIOUS_DISPATCH,
@@ -130,19 +132,20 @@ public class TopologyDriver {
             } else {
                 readerType = FileReaderType.DEFAULT_FILE_READER;
             }
-            System.out.println("driver located dispatcher type: " + type);
+//            System.out.println("driver located dispatcher type: " + type);
             String autoScale = reader.readLine().split(":")[1];
             if (autoScale.toLowerCase().equals("true"))
                 AUTO_SCALE = true;
             else
                 AUTO_SCALE = false;
+            maxSpoutPending = Integer.parseInt(reader.readLine().split("=")[1]);
             reader.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public void submit(int maxSpoutPending) throws ClassNotFoundException {
+    public void submit() throws ClassNotFoundException {
         Integer numberOfTasks = 0;
         ArrayList<String> tasks;
         HashMap<String, ArrayList<String>> topology = new HashMap<>();
@@ -158,18 +161,18 @@ public class TopologyDriver {
                 lineitem.setSchema(new Fields(schema));
                 break;
             case CONTROLLED_FILE_READER:
-                order = new LocalControlledFileProducer(inputFile[0], Order.schema, Order.schema, outputRate,
+                order = new ControlledFileProducer(inputFile[0], Order.schema, Order.schema, outputRate,
                         checkpoint);
                 order.setSchema(new Fields(schema));
-                lineitem = new LocalControlledFileProducer(inputFile[1], LineItem.schema, LineItem.schema, outputRate,
+                lineitem = new ControlledFileProducer(inputFile[1], LineItem.schema, LineItem.schema, outputRate,
                         checkpoint);
                 lineitem.setSchema(new Fields(schema));
                 break;
             case SERIAL_CONTROLLED_FILE_READER:
-                order = new SingleThreadControlledFileProducer(inputFile[0], Order.schema, Order.schema, outputRate,
+                order = new SerialControlledFileProducer(inputFile[0], Order.schema, Order.schema, outputRate,
                         checkpoint);
                 order.setSchema(new Fields(schema));
-                lineitem = new SingleThreadControlledFileProducer(inputFile[1], LineItem.schema, LineItem.schema, outputRate,
+                lineitem = new SerialControlledFileProducer(inputFile[1], LineItem.schema, LineItem.schema, outputRate,
                         checkpoint);
                 lineitem.setSchema(new Fields(schema));
                 break;
@@ -178,6 +181,7 @@ public class TopologyDriver {
                 order.setSchema(new Fields(schema));
                 lineitem = new LocalFileProducer(inputFile[1], LineItem.schema, LineItem.schema);
                 lineitem.setSchema(new Fields(schema));
+                break;
         }
         builder.setSpout("order", new ElasticFileSpout("order", synefoAddress, synefoPort, order, zookeeperAddress), scale);
         builder.setSpout("lineitem", new ElasticFileSpout("lineitem", synefoAddress, synefoPort, lineitem, zookeeperAddress), scale);

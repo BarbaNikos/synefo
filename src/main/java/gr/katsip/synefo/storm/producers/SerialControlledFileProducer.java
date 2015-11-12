@@ -7,13 +7,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.util.HashMap;
+import java.util.Random;
 
 /**
  * Created by Nick R. Katsipoulakis on 11/6/2015.
  */
-public class SingleThreadControlledFileProducer implements Serializable, FileProducer {
+public class SerialControlledFileProducer implements Serializable, FileProducer {
 
-    Logger logger = LoggerFactory.getLogger(SingleThreadControlledFileProducer.class);
+    Logger logger = LoggerFactory.getLogger(SerialControlledFileProducer.class);
 
     private Fields fields;
 
@@ -45,14 +46,17 @@ public class SingleThreadControlledFileProducer implements Serializable, FilePro
 
     private BufferedReader reader;
 
-    public SingleThreadControlledFileProducer(String pathToFile, String[] schema, String[] projectedSchema,
-                                              double[] outputRate, int[] checkpoints) {
+    private Random random;
+
+    public SerialControlledFileProducer(String pathToFile, String[] schema, String[] projectedSchema,
+                                        double[] outputRate, int[] checkpoints) {
         this.schema = new Fields(schema);
         this.projectedSchema = new Fields(projectedSchema);
         this.pathToFile = pathToFile;
         this.checkpoints = checkpoints;
         this.outputRate = outputRate;
         finished = false;
+        random = new Random();
     }
 
     @Override
@@ -80,7 +84,7 @@ public class SingleThreadControlledFileProducer implements Serializable, FilePro
 
     private void progress() {
         index += 1;
-        delay = (long) ( 1E+9 / outputRate[index] );
+        delay = (long) ( 1E+9 / (outputRate[index] + random.nextInt(10)) );
         if (index <= (outputRate.length - 2))
             nextPeriodTimestamp += ((long) (checkpoints[index + 1] - checkpoints[index]) * 1E+9);
         else

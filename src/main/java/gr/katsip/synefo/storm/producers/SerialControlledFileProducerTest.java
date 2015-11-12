@@ -16,12 +16,12 @@ import java.util.HashMap;
 /**
  * Created by nick on 11/8/15.
  */
-public class SingleThreadControlledFileProducerTest {
+public class SerialControlledFileProducerTest {
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
-    private SingleThreadControlledFileProducer producer;
+    private SerialControlledFileProducer producer;
 
     private File temporaryFile;
 
@@ -44,7 +44,7 @@ public class SingleThreadControlledFileProducerTest {
          */
         double[] outputRate = { 10, 1000, 10, 1000, 10 };
         int[] checkPoints = { 0, 3, 6, 9, 12 };
-        producer = new SingleThreadControlledFileProducer(temporaryFile.getAbsolutePath(), schema, projectedSchema,
+        producer = new SerialControlledFileProducer(temporaryFile.getAbsolutePath(), schema, projectedSchema,
                 outputRate, checkPoints);
         producer.init();
     }

@@ -8,14 +8,15 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.HashMap;
+import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 
 /**
  * Created by katsip on 9/15/2015.
  */
-public class LocalControlledFileProducer implements Serializable, FileProducer {
+public class ControlledFileProducer implements Serializable, FileProducer {
 
-    Logger logger = LoggerFactory.getLogger(LocalControlledFileProducer.class);
+    Logger logger = LoggerFactory.getLogger(ControlledFileProducer.class);
 
     private Fields fields;
 
@@ -53,8 +54,10 @@ public class LocalControlledFileProducer implements Serializable, FileProducer {
 
     private boolean finished;
 
-    public LocalControlledFileProducer(String pathToFile, String[] schema, String[] projectedSchema, double[] outputRate,
-                                       int[] checkpoints) {
+    private Random random;
+
+    public ControlledFileProducer(String pathToFile, String[] schema, String[] projectedSchema, double[] outputRate,
+                                  int[] checkpoints) {
         this.schema = new Fields(schema);
         this.projectedSchema = new Fields(projectedSchema);
         this.pathToFile = pathToFile;
@@ -62,6 +65,7 @@ public class LocalControlledFileProducer implements Serializable, FileProducer {
         this.outputRate = outputRate;
         buffer = new ArrayBlockingQueue<>(SIZE, true);
         finished = false;
+        random = new Random();
     }
 
     public void init() {
@@ -94,8 +98,8 @@ public class LocalControlledFileProducer implements Serializable, FileProducer {
 
     private void progressCheckpoint() {
         index++;
-        startTimestamp += (checkpoints[index] * 1000 * 1000 * 1000);
-        delay = (long) ((1000 * 1000 * 1000) / outputRate[index]);
+        startTimestamp += ( checkpoints[index] * 1E+9 );
+        delay = (long) ( 1E+9 / (outputRate[index] + random.nextInt(10)) );
     }
 
     public int nextTuple(SpoutOutputCollector spoutOutputCollector, String streamId, Integer taskIdentifier,
@@ -117,9 +121,6 @@ public class LocalControlledFileProducer implements Serializable, FileProducer {
             e.printStackTrace();
         }
         if (line == EOF) {
-            /**
-             * file is fully scanned
-             */
             try {
                 fileScanner.join();
             } catch (InterruptedException e) {

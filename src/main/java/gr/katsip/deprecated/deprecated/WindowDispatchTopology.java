@@ -14,7 +14,7 @@ import gr.katsip.synefo.utils.SynefoMessage;
 import gr.katsip.synefo.storm.operators.relational.elastic.joiner.NewJoinJoiner;
 import gr.katsip.synefo.storm.operators.relational.elastic.dispatcher.WindowDispatcher;
 import gr.katsip.tpch.LineItem;
-import gr.katsip.synefo.storm.producers.LocalControlledFileProducer;
+import gr.katsip.synefo.storm.producers.ControlledFileProducer;
 import gr.katsip.tpch.Order;
 
 import java.io.IOException;
@@ -64,9 +64,9 @@ public class WindowDispatchTopology {
         String[] dataSchema = { "attributes", "values" };
         double[] outputRate = { 3000, 3000, 3000};
         int[] checkpoints = { 0, 30, 60 };
-        LocalControlledFileProducer order = new LocalControlledFileProducer(data[0], Order.schema, Order.query5Schema, outputRate, checkpoints);
+        ControlledFileProducer order = new ControlledFileProducer(data[0], Order.schema, Order.query5Schema, outputRate, checkpoints);
         order.setSchema(new Fields(dataSchema));
-        LocalControlledFileProducer lineitem = new LocalControlledFileProducer(data[1], LineItem.schema, LineItem.query5Schema, outputRate, checkpoints);
+        ControlledFileProducer lineitem = new ControlledFileProducer(data[1], LineItem.schema, LineItem.query5Schema, outputRate, checkpoints);
         lineitem.setSchema(new Fields(dataSchema));
         builder.setSpout("order",
                 new ElasticFileSpout("order", synefoAddress, synefoPort, order, zooIP), 2);
