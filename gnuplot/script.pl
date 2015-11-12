@@ -8,6 +8,7 @@ my @joiner_array = (5, 6);
 
 my $line = system("grep -m 1 \"[0-9]:dispatch\" metrics.log");
 my @tokens = split /\s+/, $line;
+print "Tokens: \n";
 print join(", ", @tokens);
 
 my $file = "min_ts.txt.tmp";
