@@ -8,12 +8,17 @@ set timefmt "%s"
 set format x "%s"
 set xlabel "Time (seconds)"
 
-set output "input-rate-timeline.eps"
+set output "dispatcher-input-rate.eps"
 set ylabel "Input rate (tuples/sec)"
 set format y "%1.0e"
 #set ytics (0,1000,6000)
 set yrange [0:6000]
 plot "dispatcher-input-rate.dat" using ($1 - mints):2 notitle with lines
+
+set output "input-rate.eps"
+set yrange [0:5000]
+plot "input-rate-5.dat" using ($1 - mints):2 title 'task-5' with lines, \
+    "input-rate-6.dat" using ($1 - mints):2 title 'task-6' with lines
 
 unset format y
 
