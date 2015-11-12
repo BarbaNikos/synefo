@@ -6,7 +6,7 @@ use warnings;
 
 my @joiner_array = (5, 6);
 
-my $line = `"grep -m 1 \"[0-9]:dispatch\" metrics.log"`;
+my $line = `grep -m 1 "[0-9]:dispatch" metrics.log`;
 my @tokens = split /\s+/, $line;
 print "Tokens: \n";
 print join(", ", @tokens);
