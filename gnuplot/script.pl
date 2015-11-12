@@ -16,7 +16,7 @@ if (-e $file)
 }
 
 open my $file_handle, ">", "$file" or die "Could not create file $file";
-print $file_handle @tokens[3];
+print $file_handle $tokens[3];
 close $file_handle;
 
 
