@@ -6,7 +6,19 @@ use warnings;
 
 my @joiner_array = (5, 6);
 
-system("grep -m 1 \"[0-9]:dispatch\" metrics.log");
+my $line = system("grep -m 1 \"[0-9]:dispatch\" metrics.log");
+my @tokens = split /\s+/, $line;
+
+my $file = "min_ts.txt.tmp";
+if (-e $file)
+{
+    unlink $file or warn "Could not unlink $file: $!";
+}
+
+open my $file_handle, ">", "$file" or die "Could not create file $file";
+print $file_handle @tokens[3];
+close $file_handle;
+
 
 # populate the dispatcher-input-rate file
 system("rm -f dispatcher-input-rate.dat");
