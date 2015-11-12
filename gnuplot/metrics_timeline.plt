@@ -21,7 +21,7 @@ set output "latency.eps"
 set ylabel "Latency (msec)"
 #set ytics (0,4,12)
 set yrange [0:11]
-plot "latency.dat" using ($1 - mints):4 notitle with lines
+plot "latency.dat" using ($1 - mints):3 notitle with lines
 
 set output "interval.eps"
 set ylabel "Response time (msec)"
