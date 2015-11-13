@@ -376,10 +376,11 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                 throughput.setValue(temporaryThroughput);
                 temporaryThroughput = 0;
             }
-            if (!SCALE_ACTION_FLAG)
+            if (!SCALE_ACTION_FLAG) {
                 tupleCounter++;
-            if (tupleCounter >= LOAD_CHECK_PERIOD && !SCALE_ACTION_FLAG)
-                scale();
+                if (tupleCounter >= LOAD_CHECK_PERIOD)
+                    scale();
+            }
         }
     }
 
@@ -389,20 +390,20 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
          */
         int overloadedTask = -1, slackerTask = -1;
         long maxNumberOfTuples = 0, minNumberOfTuples = Long.MAX_VALUE;
-        if (!SCALE_ACTION_FLAG && activeDownstreamTaskIdentifiers.size() < downstreamTaskIdentifiers.size()) {
-            DescriptiveStatistics statistics = new DescriptiveStatistics();
-            HashMap<Integer, Long> numberOfTuplesPerTask = dispatcher.getNumberOfTuplesPerTask();
-            for (Integer task : numberOfTuplesPerTask.keySet()) {
-                if (maxNumberOfTuples < numberOfTuplesPerTask.get(task)) {
-                    overloadedTask = task;
-                    maxNumberOfTuples = numberOfTuplesPerTask.get(task);
-                }
-                if (minNumberOfTuples > numberOfTuplesPerTask.get(task)) {
-                    minNumberOfTuples = numberOfTuplesPerTask.get(task);
-                    slackerTask = task;
-                }
-                statistics.addValue((double) numberOfTuplesPerTask.get(task));
+        DescriptiveStatistics statistics = new DescriptiveStatistics();
+        HashMap<Integer, Long> numberOfTuplesPerTask = dispatcher.getNumberOfTuplesPerTask();
+        for (Integer task : numberOfTuplesPerTask.keySet()) {
+            if (maxNumberOfTuples < numberOfTuplesPerTask.get(task)) {
+                overloadedTask = task;
+                maxNumberOfTuples = numberOfTuplesPerTask.get(task);
             }
+            if (minNumberOfTuples > numberOfTuplesPerTask.get(task)) {
+                minNumberOfTuples = numberOfTuplesPerTask.get(task);
+                slackerTask = task;
+            }
+            statistics.addValue((double) numberOfTuplesPerTask.get(task));
+        }
+        if (!SCALE_ACTION_FLAG && activeDownstreamTaskIdentifiers.size() < downstreamTaskIdentifiers.size()) {
             if (overloadedTask != -1) {
                 strugglersHistory.add(overloadedTask);
                 if (strugglersHistory.size() >= LOAD_RELUCTANCY) {
