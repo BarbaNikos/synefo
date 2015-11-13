@@ -53,8 +53,8 @@ public class BalancedFileGenerator {
             numberOfTuples += (outputRate[i] * (checkpoint[i+1] - checkpoint[i]));
         }
         System.out.println("for the interval between [" + checkpoint[checkpoint.length - 1] + ",+INF] tuples per file: " +
-                (outputRate[outputRate.length - 1] * 2 * windowInMinutes * 60));
-        numberOfTuples += (outputRate[outputRate.length - 1] * 2 * windowInMinutes * 60);
+                (outputRate[outputRate.length - 1] * 4 * windowInMinutes * 60));
+        numberOfTuples += (outputRate[outputRate.length - 1] * 4 * windowInMinutes * 60);
         System.out.println("number of tuples produced per file: " + numberOfTuples);
         File inner = new File(args[1] + File.separator + "inner.tbl");
         File outer = new File(args[1] + File.separator + "outer.tbl");
