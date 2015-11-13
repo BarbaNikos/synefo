@@ -70,13 +70,13 @@ public class BalancedFileGenerator {
         PrintWriter outerWriter = new PrintWriter(new FileWriter(outer));
         long counter = 0;
         while (counter < numberOfTuples) {
-            innerWriter.println("1," + innerCounter);
+            innerWriter.println("1|" + innerCounter);
             innerCounter++;
-            outerWriter.println("1," + outerCounter);
+            outerWriter.println("1|" + outerCounter);
             outerCounter++;
-            innerWriter.println("2," + innerCounter);
+            innerWriter.println("2|" + innerCounter);
             innerCounter++;
-            outerWriter.println("2," + outerCounter);
+            outerWriter.println("2|" + outerCounter);
             outerCounter++;
             counter += 2;
         }
