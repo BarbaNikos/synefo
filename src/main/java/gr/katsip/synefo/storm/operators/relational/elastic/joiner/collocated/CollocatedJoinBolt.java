@@ -98,6 +98,8 @@ public class CollocatedJoinBolt extends BaseRichBolt {
 
     private int candidateTask;
 
+    private String scaleAction;
+
     public CollocatedJoinBolt(String taskName, String synefoAddress, Integer synefoPort,
                               CollocatedEquiJoiner joiner, String zookeeperAddress) {
         this.taskName = taskName;
@@ -202,6 +204,7 @@ public class CollocatedJoinBolt extends BaseRichBolt {
         initMetrics(topologyContext);
         migratedKeys = new ArrayList<>();
         candidateTask = -1;
+        scaleAction = "";
     }
 
     private void initMetrics(TopologyContext context) {
@@ -313,6 +316,14 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                     candidateTask = -1;
                     long currentTimestamp = System.currentTimeMillis();
                     stateTransferTime.setValue((currentTimestamp - startTransferTimestamp));
+                    if (scaleAction.equals(SynefoConstant.COL_REMOVE_ACTION)) {
+                        inputRate.getValueAndReset();
+                        stateSize.getValueAndReset();
+                        throughput.getValueAndReset();
+                        executeLatency.getValueAndReset();
+                        stateTransferTime.getValueAndReset();
+                    }
+                    scaleAction = "";
                 }
             }
         }
@@ -333,6 +344,7 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                 startTransferTimestamp = System.currentTimeMillis();
                 logger.info("JOIN-BOLT-" + taskName + ":" + taskIdentifier +
                         "participates into scale-action ADD and it is NOT the candidate");
+                scaleAction = SynefoConstant.COL_ADD_ACTION;
             } else {
                 logger.info("JOIN-BOLT-" + taskName + ":" + taskIdentifier +
                         " participates into scale-action ADD and it is the candidate.");
@@ -348,6 +360,7 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                 startTransferTimestamp = System.currentTimeMillis();
                 logger.info("JOIN-BOLT-" + taskName + ":" + taskIdentifier +
                         "participates into scale-action REMOVE and it is the candidate");
+                scaleAction = SynefoConstant.COL_REMOVE_ACTION;
             } else {
                 logger.info("JOIN-BOLT-" + taskName + ":" + taskIdentifier +
                         "participates into scale-action REMOVE and it is NOT the candidate");

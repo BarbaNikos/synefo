@@ -488,14 +488,14 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                         break;
                     }
                 }
-                if (!scaleNeeded)
-                    logger.info("failed the reluctancy test for slacker-task: " + slackerTask + " history: " + slackersHistory);
+//                if (!scaleNeeded)
+//                    logger.info("failed the reluctancy test for slacker-task: " + slackerTask + " history: " + slackersHistory);
                 long responseInterval = -1L;
                 if (responseTime.containsKey(overloadedTask))
                     responseInterval = responseTime.get(overloadedTask);
-                if (responseInterval <= 2L)
-                    logger.info("succeeded the response interval test for slacker-task: " + slackerTask +
-                            ", reluctancy test: " + scaleNeeded + " interval: " + responseInterval);
+//                if (responseInterval <= 2L)
+//                    logger.info("succeeded the response interval test for slacker-task: " + slackerTask +
+//                            ", reluctancy test: " + scaleNeeded + " interval: " + responseInterval);
                 if (scaleNeeded && responseInterval > 0 && responseInterval <= 2L) {
                     scaledTask = slackerTask;
                     List<String> keys = dispatcher.getKeysForATask(scaledTask);
