@@ -294,7 +294,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                  */
                 Values controlTuple = new Values();
                 StringBuilder stringBuilder = new StringBuilder();
-                long timestamp = System.nanoTime();
+                long timestamp = System.currentTimeMillis();
                 stringBuilder.append(SynefoConstant.COL_TICK_HEADER + ":" + timestamp);
                 controlTuple.add(stringBuilder.toString());
                 controlTuple.add(null);
@@ -321,20 +321,20 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                 return;
             }
             if (header != null && !header.equals("") && isControlTuple(header)) {
+                long end = System.currentTimeMillis();
                 int task = tuple.getSourceTask();
                 long start = Long.parseLong(header.split(":")[1]);
-                long end = System.nanoTime();
                 List<Long> intervals;
                 if (capacityHistory.containsKey(task)) {
                     intervals = capacityHistory.get(task);
                 } else {
                     intervals = new ArrayList<>();
                 }
-                responseTime.put(task, new Long((long) ((end - start) / 1E+6)));
-                intervals.add((long) ((end - start) / 1E+6));
+                responseTime.put(task, new Long( (end - start) ));
+                intervals.add((end - start));
                 capacityHistory.put(task, intervals);
                 collector.ack(tuple);
-                controlTupleInterval.setValue(tuple.getSourceTask() + "-" + (long) ((end - start) / 1E+6));
+                controlTupleInterval.setValue(tuple.getSourceTask() + "-" + (end - start));
                 return;
             }
 

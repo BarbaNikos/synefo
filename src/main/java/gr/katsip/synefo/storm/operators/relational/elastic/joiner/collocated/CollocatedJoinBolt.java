@@ -317,11 +317,11 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                     long currentTimestamp = System.currentTimeMillis();
                     stateTransferTime.setValue((currentTimestamp - startTransferTimestamp));
                     if (scaleAction.equals(SynefoConstant.COL_REMOVE_ACTION)) {
-                        inputRate.getValueAndReset();
-                        stateSize.getValueAndReset();
-                        throughput.getValueAndReset();
-                        executeLatency.getValueAndReset();
-                        stateTransferTime.getValueAndReset();
+                        inputRate.setValue(null);
+                        stateSize.setValue(null);
+                        throughput.setValue(null);
+                        executeLatency.setValue(null);
+                        stateTransferTime.setValue(null);
                     }
                     scaleAction = "";
                 }
@@ -348,6 +348,11 @@ public class CollocatedJoinBolt extends BaseRichBolt {
             } else {
                 logger.info("JOIN-BOLT-" + taskName + ":" + taskIdentifier +
                         " participates into scale-action ADD and it is the candidate.");
+                inputRate.setValue(null);
+                stateSize.setValue(null);
+                throughput.setValue(null);
+                executeLatency.setValue(null);
+                stateTransferTime.setValue(null);
             }
         } else if (action.equals(SynefoConstant.COL_REMOVE_ACTION)) {
             if (Integer.parseInt(candidateTask) == taskIdentifier) {

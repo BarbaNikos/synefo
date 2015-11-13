@@ -46,6 +46,8 @@ public class BalancedFileGenerator {
             System.exit(1);
         }
         int numberOfTuples = 0;
+        long innerCounter = 0;
+        long outerCounter = 0;
         configure(args[0]);
         for (int i = 0; i < checkpoint.length - 1; i++) {
             System.out.println("for interval between [" + checkpoint[i] + "," + checkpoint[i+1] + "] and rate: " +
@@ -68,10 +70,14 @@ public class BalancedFileGenerator {
         PrintWriter outerWriter = new PrintWriter(new FileWriter(outer));
         long counter = 0;
         while (counter < numberOfTuples) {
-            innerWriter.println("1");
-            outerWriter.println("1");
-            innerWriter.println("2");
-            outerWriter.println("2");
+            innerWriter.println("1," + innerCounter);
+            innerCounter++;
+            outerWriter.println("1," + outerCounter);
+            outerCounter++;
+            innerWriter.println("2," + innerCounter);
+            innerCounter++;
+            outerWriter.println("2," + outerCounter);
+            outerCounter++;
             counter += 2;
         }
         innerWriter.flush();

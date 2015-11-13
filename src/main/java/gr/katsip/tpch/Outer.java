@@ -5,6 +5,7 @@ package gr.katsip.tpch;
  */
 public class Outer {
     public static final String[] schema = {
-            "O_KEY"
+            "O_KEY",
+            "O_CNT"
     };
 }

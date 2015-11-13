@@ -5,6 +5,7 @@ package gr.katsip.tpch;
  */
 public class Inner {
     public static final String[] schema = {
-            "I_KEY"
+            "I_KEY",
+            "I_CNT"
     };
 }
