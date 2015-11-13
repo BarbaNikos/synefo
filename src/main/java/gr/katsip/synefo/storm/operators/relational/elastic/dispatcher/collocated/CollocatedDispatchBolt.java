@@ -413,7 +413,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                             scaleNeeded = false;
                             break;
                         }
-                    }
+                    };
                     long responseInterval = -1L;
                     if (responseTime.containsKey(overloadedTask))
                         responseInterval = responseTime.get(overloadedTask);
@@ -474,9 +474,13 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                         break;
                     }
                 }
+                if (!scaleNeeded)
+                    logger.info("failed the reluctancy test for slacker-task: " + slackerTask + " history: " + slackersHistory);
                 long responseInterval = -1L;
                 if (responseTime.containsKey(overloadedTask))
                     responseInterval = responseTime.get(overloadedTask);
+                if (responseInterval <= 2L)
+                    logger.info("failed the response interval test for slacker-task: " + slackerTask + ", reluctancy test: " + scaleNeeded + " interval: " + responseInterval);
 //                logger.info("found out that slacker task " + slackerTask + " resulted from RELUCTANCY to: " + scaleNeeded +
 //                        " and the response-interval is: " + responseInterval);
                 if (scaleNeeded && responseInterval > 0 && responseInterval <= 2L) {
