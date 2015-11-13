@@ -466,7 +466,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
         if (activeDownstreamTaskIdentifiers.size() > 1 && slackerTask != -1 && !SCALE_ACTION_FLAG) {
             slackersHistory.add(slackerTask);
             if (slackersHistory.size() >= LOAD_RELUCTANCY) {
-                logger.info("found out that there exists a slacker task " + slackerTask + " about to do RELUCTANCY_CHECK.");
+//                logger.info("found out that there exists a slacker task " + slackerTask + " about to do RELUCTANCY_CHECK.");
                 boolean scaleNeeded = true;
                 for (int i = slackersHistory.size() - 1; i >= (slackersHistory.size() - LOAD_RELUCTANCY) && i >= 0; i--) {
                     if (slackersHistory.get(i) != slackerTask) {
@@ -477,8 +477,8 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                 long responseInterval = -1L;
                 if (responseTime.containsKey(overloadedTask))
                     responseInterval = responseTime.get(overloadedTask);
-                logger.info("found out that slacker task " + slackerTask + " resulted from RELUCTANCY to: " + scaleNeeded +
-                        " and the response-interval is: " + responseInterval);
+//                logger.info("found out that slacker task " + slackerTask + " resulted from RELUCTANCY to: " + scaleNeeded +
+//                        " and the response-interval is: " + responseInterval);
                 if (scaleNeeded && responseInterval > 0 && responseInterval <= 2L) {
                     scaledTask = slackerTask;
                     List<String> keys = dispatcher.getKeysForATask(scaledTask);
