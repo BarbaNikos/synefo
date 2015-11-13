@@ -405,6 +405,12 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
         }
         if (!SCALE_ACTION_FLAG && activeDownstreamTaskIdentifiers.size() < downstreamTaskIdentifiers.size()) {
             if (overloadedTask != -1) {
+                if (strugglersHistory.size() >= (LOAD_RELUCTANCY * 3)) {
+                    List<Integer> temp = new ArrayList<>(strugglersHistory.subList(strugglersHistory.size() - LOAD_RELUCTANCY,
+                            strugglersHistory.size()));
+                    strugglersHistory.clear();
+                    strugglersHistory.addAll(temp);
+                }
                 strugglersHistory.add(overloadedTask);
                 if (strugglersHistory.size() >= LOAD_RELUCTANCY) {
                     boolean scaleNeeded = true;
@@ -464,6 +470,15 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
          * and scales-in the one that has the least tuples (global minimum)
          */
         if (activeDownstreamTaskIdentifiers.size() > 1 && slackerTask != -1 && !SCALE_ACTION_FLAG) {
+            /**
+             * GC slacker-history
+             */
+            if (slackersHistory.size() >= (LOAD_RELUCTANCY * 3)) {
+                List<Integer> temp = new ArrayList<>(slackersHistory.subList(slackersHistory.size() - LOAD_RELUCTANCY,
+                        slackersHistory.size()));
+                slackersHistory.clear();
+                slackersHistory.addAll(temp);
+            }
             slackersHistory.add(slackerTask);
             if (slackersHistory.size() >= LOAD_RELUCTANCY) {
 //                logger.info("found out that there exists a slacker task " + slackerTask + " about to do RELUCTANCY_CHECK.");
