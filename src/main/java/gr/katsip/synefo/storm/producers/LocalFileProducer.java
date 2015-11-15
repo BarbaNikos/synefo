@@ -60,7 +60,7 @@ public class LocalFileProducer implements Serializable, FileProducer {
     }
 
     public int nextTuple(SpoutOutputCollector spoutOutputCollector, String streamId, Integer taskIdentifier,
-                         HashMap<Values, Long> tupleStatistics) {
+                         HashMap<String, Long> tupleStatistics) {
         if (throughputPreviousTimestamp == -1)
             throughputPreviousTimestamp = System.currentTimeMillis();
         Values values = new Values();
@@ -86,7 +86,7 @@ public class LocalFileProducer implements Serializable, FileProducer {
             tuple.add("0");
             tuple.add(projectedSchema);
             tuple.add(values);
-            tupleStatistics.put(tuple, System.currentTimeMillis());
+            tupleStatistics.put(tuple.toString(), System.currentTimeMillis());
             spoutOutputCollector.emitDirect(taskIdentifier, streamId, tuple, tuple);
             inputRate++;
             throughputCurrentTimestamp = System.currentTimeMillis();

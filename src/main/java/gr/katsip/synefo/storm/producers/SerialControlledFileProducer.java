@@ -84,7 +84,7 @@ public class SerialControlledFileProducer implements Serializable, FileProducer 
 
     private void progress() {
         index += 1;
-        delay = (long) ( 1E+9 / (outputRate[index] + random.nextInt(10)) );
+        delay = (long) ( 1E+9 / (outputRate[index] + random.nextInt(100)) );
         if (index <= (outputRate.length - 2))
             nextPeriodTimestamp += ((long) (checkpoints[index + 1] - checkpoints[index]) * 1E+9);
         else
@@ -93,7 +93,7 @@ public class SerialControlledFileProducer implements Serializable, FileProducer 
 
     @Override
     public int nextTuple(SpoutOutputCollector spoutOutputCollector, String streamId, Integer taskIdentifier,
-                         HashMap<Values, Long> tupleStatistics) {
+                         HashMap<String, Long> tupleStatistics) {
         if (finished)
             return -1;
         while (System.nanoTime() < nextTimestamp) {
@@ -118,9 +118,9 @@ public class SerialControlledFileProducer implements Serializable, FileProducer 
             tuple.add("");
             tuple.add(projectedSchema);
             tuple.add(values);
-            tupleStatistics.put(tuple, System.currentTimeMillis());
             if (spoutOutputCollector != null)
                 spoutOutputCollector.emitDirect(taskIdentifier, streamId, tuple, tuple);
+            tupleStatistics.put(tuple.toString(), System.currentTimeMillis());
             inputRate++;
             throughputCurrentTimestamp = System.currentTimeMillis();
             int throughput = -2;

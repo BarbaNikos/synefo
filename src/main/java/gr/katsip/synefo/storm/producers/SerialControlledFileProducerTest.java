@@ -64,7 +64,7 @@ public class SerialControlledFileProducerTest {
     @Test
     public void testNextTuple() throws Exception {
         SpoutOutputCollector collector = null;
-        HashMap<Values, Long> statistics = new HashMap<>();
+        HashMap<String, Long> statistics = new HashMap<>();
         long startTimestamp = System.currentTimeMillis();
         int throughput = 0, result;
         long previous = System.currentTimeMillis();

@@ -67,7 +67,7 @@ public class ElasticFileSpout extends BaseRichSpout {
 
     private AssignableMetric inputRate;
 
-    private HashMap<Values, Long> tupleStatistics;
+    private HashMap<String, Long> tupleStatistics;
 
     private long startTime = -1;
 
@@ -168,7 +168,7 @@ public class ElasticFileSpout extends BaseRichSpout {
     private void initMetrics(TopologyContext context) {
         completeLatency = new AssignableMetric(null);
         context.registerMetric("comp-latency", completeLatency, METRIC_FREQ_SEC);
-        tupleStatistics = new HashMap<Values, Long>();
+        tupleStatistics = new HashMap<>();
         inputRate = new AssignableMetric(null);
         context.registerMetric("input-rate", inputRate, METRIC_FREQ_SEC);
         timeToScanInput = new AssignableMetric(null);
@@ -178,8 +178,8 @@ public class ElasticFileSpout extends BaseRichSpout {
     public void ack(Object msgId) {
         Long currentTimestamp = System.currentTimeMillis();
         Values values = (Values) msgId;
-        if (tupleStatistics.containsKey(values)) {
-            Long emitTimestamp = tupleStatistics.remove(values);
+        if (tupleStatistics.containsKey(values.toString())) {
+            Long emitTimestamp = tupleStatistics.remove(values.toString());
             completeLatency.setValue((currentTimestamp - emitTimestamp));
         }
     }
