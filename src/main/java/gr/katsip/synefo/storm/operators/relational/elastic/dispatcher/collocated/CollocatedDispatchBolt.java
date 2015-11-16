@@ -123,6 +123,8 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
 
     private int candidateTask;
 
+    private boolean AUTO_SCALE;
+
     public CollocatedDispatchBolt(String taskName, String synefoAddress, Integer synefoPort,
                                   CollocatedWindowDispatcher dispatcher, String zookeeperAddress, boolean AUTO_SCALE) {
         this.taskName = taskName;
@@ -136,8 +138,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
         activeDownstreamTaskIdentifiers = null;
         this.dispatcher = dispatcher;
         this.zookeeperAddress = zookeeperAddress;
-        if (!AUTO_SCALE)
-            SCALE_ACTION_FLAG = true;
+        this.AUTO_SCALE = AUTO_SCALE;
     }
 
     public void register() {
@@ -231,8 +232,10 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
             register();
         initMetrics(topologyContext);
         tupleCounter = 0;
-
-        SCALE_ACTION_FLAG = false;
+        if (!AUTO_SCALE)
+            SCALE_ACTION_FLAG = true;
+        else
+            SCALE_ACTION_FLAG = false;
         migratedKeys = new ArrayList<>();
         strugglersHistory = new ArrayList<>();
         slackersHistory = new ArrayList<>();
@@ -288,7 +291,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
     public void execute(Tuple tuple) {
         String header = "";
         if (isTickTuple(tuple)) {
-//            if (!SCALE_ACTION_FLAG) {
+            if (!SCALE_ACTION_FLAG) {
                 /**
                  * Send out CTRL tuples if no scale-action is in progress
                  */
@@ -302,7 +305,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                 for (Integer task : activeDownstreamTaskIdentifiers) {
                     collector.emitDirect(task, streamIdentifier + "-control", controlTuple);
                 }
-//            }
+            }
             collector.ack(tuple);
             return;
         }
