@@ -393,74 +393,74 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
         DescriptiveStatistics statistics = new DescriptiveStatistics();
         HashMap<Integer, Long> numberOfTuplesPerTask = dispatcher.getNumberOfTuplesPerTask();
         for (Integer task : numberOfTuplesPerTask.keySet()) {
-            if (maxNumberOfTuples < numberOfTuplesPerTask.get(task)) {
-                overloadedTask = task;
-                maxNumberOfTuples = numberOfTuplesPerTask.get(task);
-            }
-            if (minNumberOfTuples > numberOfTuplesPerTask.get(task)) {
-                minNumberOfTuples = numberOfTuplesPerTask.get(task);
-                slackerTask = task;
-            }
-            statistics.addValue((double) numberOfTuplesPerTask.get(task));
-        }
-        if (!SCALE_ACTION_FLAG && activeDownstreamTaskIdentifiers.size() < downstreamTaskIdentifiers.size()) {
-            if (overloadedTask != -1) {
-                if (strugglersHistory.size() >= (LOAD_RELUCTANCY * 3)) {
-                    List<Integer> temp = new ArrayList<>(strugglersHistory.subList(strugglersHistory.size() - LOAD_RELUCTANCY,
-                            strugglersHistory.size()));
-                    strugglersHistory.clear();
-                    strugglersHistory.addAll(temp);
+            if (activeDownstreamTaskIdentifiers.contains(task)) {
+                if (maxNumberOfTuples < numberOfTuplesPerTask.get(task)) {
+                    overloadedTask = task;
+                    maxNumberOfTuples = numberOfTuplesPerTask.get(task);
                 }
-                strugglersHistory.add(overloadedTask);
-                if (strugglersHistory.size() >= LOAD_RELUCTANCY) {
-                    boolean scaleNeeded = true;
-                    for (int i = strugglersHistory.size() - 1; i >= (strugglersHistory.size() - LOAD_RELUCTANCY) && i >= 0; i--) {
-                        if (strugglersHistory.get(i) != overloadedTask) {
-                            scaleNeeded = false;
-                            break;
-                        }
-                    };
-                    long responseInterval = -1L;
-                    if (responseTime.containsKey(overloadedTask))
-                        responseInterval = responseTime.get(overloadedTask);
-                    if (scaleNeeded && responseInterval > 0 && responseInterval > 2L) {
-                        scaledTask = overloadedTask;
-                        //Overloaded task id is overloadedTask
-                        //Divide tasks keys into two sets (migratedKeys are going to be handled by new task
-                        List<String> keys = dispatcher.getKeysForATask(scaledTask);
-                        migratedKeys.addAll(keys.subList(0, (int) Math.ceil((double) (keys.size() / 2))));
-                        SCALE_ACTION_FLAG = true;
-                        action = SynefoConstant.COL_ADD_ACTION;
-                        //Pick random in-active task (candidate)
-                        List<Integer> candidates = new ArrayList<>(downstreamTaskIdentifiers);
-                        candidates.removeAll(activeDownstreamTaskIdentifiers);
-                        Random random = new Random();
-                        candidateTask = candidates.get(random.nextInt(candidates.size()));
-                        logger.info("decided to scale-out " + scaledTask + " and transfer keys " + migratedKeys.toString() +
-                                " to task " + candidateTask);
-                        StringBuilder stringBuilder = new StringBuilder();
-                        stringBuilder.append(SynefoConstant.COL_SCALE_ACTION_PREFIX + ":" + SynefoConstant.COL_ADD_ACTION);
-                        stringBuilder.append("|" + SynefoConstant.COL_KEYS + ":");
-                        for (String key : migratedKeys) {
-                            stringBuilder.append(key + ",");
-                        }
-                        if (stringBuilder.length() > 0 && stringBuilder.charAt(stringBuilder.length() - 1) == ',')
-                            stringBuilder.setLength(stringBuilder.length() - 1);
-                        stringBuilder.append("|" + SynefoConstant.COL_PEER + ":" + candidateTask);
-                        Values scaleTuple = new Values();
-                        scaleTuple.add(stringBuilder.toString());
-                        scaleTuple.add("");
-                        scaleTuple.add("");
-                        collector.emitDirect(scaledTask, streamIdentifier + "-control", scaleTuple);
-                        collector.emitDirect(candidateTask, streamIdentifier + "-control", scaleTuple);
-                        startTransferTimestamp = System.currentTimeMillis();
-                        /**
-                         * Add the candidate-task to the active task list
-                         */
-                        activeDownstreamTaskIdentifiers.add(candidateTask);
-                        dispatcher.setTaskToRelationIndex(activeDownstreamTaskIdentifiers);
-                        return;
+                if (minNumberOfTuples > numberOfTuplesPerTask.get(task)) {
+                    minNumberOfTuples = numberOfTuplesPerTask.get(task);
+                    slackerTask = task;
+                }
+                statistics.addValue((double) numberOfTuplesPerTask.get(task));
+            }
+        }
+        if (!SCALE_ACTION_FLAG && activeDownstreamTaskIdentifiers.size() < downstreamTaskIdentifiers.size() && overloadedTask != -1) {
+            if (strugglersHistory.size() >= (LOAD_RELUCTANCY * 3)) {
+                List<Integer> temp = new ArrayList<>(strugglersHistory.subList(strugglersHistory.size() - LOAD_RELUCTANCY,
+                        strugglersHistory.size()));
+                strugglersHistory.clear();
+                strugglersHistory.addAll(temp);
+            }
+            strugglersHistory.add(overloadedTask);
+            if (strugglersHistory.size() >= LOAD_RELUCTANCY) {
+                boolean scaleNeeded = true;
+                for (int i = strugglersHistory.size() - 1; i >= (strugglersHistory.size() - LOAD_RELUCTANCY) && i >= 0; i--) {
+                    if (strugglersHistory.get(i) != overloadedTask) {
+                        scaleNeeded = false;
+                        break;
                     }
+                };
+                long responseInterval = -1L;
+                if (responseTime.containsKey(overloadedTask))
+                    responseInterval = responseTime.get(overloadedTask);
+                if (scaleNeeded && responseInterval > 0 && responseInterval > 2L) {
+                    scaledTask = overloadedTask;
+                    //Overloaded task id is overloadedTask
+                    //Divide tasks keys into two sets (migratedKeys are going to be handled by new task
+                    List<String> keys = dispatcher.getKeysForATask(scaledTask);
+                    migratedKeys.addAll(keys.subList(0, (int) Math.ceil((double) (keys.size() / 2))));
+                    SCALE_ACTION_FLAG = true;
+                    action = SynefoConstant.COL_ADD_ACTION;
+                    //Pick random in-active task (candidate)
+                    List<Integer> candidates = new ArrayList<>(downstreamTaskIdentifiers);
+                    candidates.removeAll(activeDownstreamTaskIdentifiers);
+                    Random random = new Random();
+                    candidateTask = candidates.get(random.nextInt(candidates.size()));
+                    logger.info("decided to scale-out " + scaledTask + " and transfer keys " + migratedKeys.toString() +
+                            " to task " + candidateTask);
+                    StringBuilder stringBuilder = new StringBuilder();
+                    stringBuilder.append(SynefoConstant.COL_SCALE_ACTION_PREFIX + ":" + SynefoConstant.COL_ADD_ACTION);
+                    stringBuilder.append("|" + SynefoConstant.COL_KEYS + ":");
+                    for (String key : migratedKeys) {
+                        stringBuilder.append(key + ",");
+                    }
+                    if (stringBuilder.length() > 0 && stringBuilder.charAt(stringBuilder.length() - 1) == ',')
+                        stringBuilder.setLength(stringBuilder.length() - 1);
+                    stringBuilder.append("|" + SynefoConstant.COL_PEER + ":" + candidateTask);
+                    Values scaleTuple = new Values();
+                    scaleTuple.add(stringBuilder.toString());
+                    scaleTuple.add("");
+                    scaleTuple.add("");
+                    collector.emitDirect(scaledTask, streamIdentifier + "-control", scaleTuple);
+                    collector.emitDirect(candidateTask, streamIdentifier + "-control", scaleTuple);
+                    startTransferTimestamp = System.currentTimeMillis();
+                    /**
+                     * Add the candidate-task to the active task list
+                     */
+                    activeDownstreamTaskIdentifiers.add(candidateTask);
+                    dispatcher.setTaskToRelationIndex(activeDownstreamTaskIdentifiers);
+                    return;
                 }
             }
         }
@@ -491,8 +491,8 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
 //                if (!scaleNeeded)
 //                    logger.info("failed the reluctancy test for slacker-task: " + slackerTask + " history: " + slackersHistory);
                 long responseInterval = -1L;
-                if (responseTime.containsKey(overloadedTask))
-                    responseInterval = responseTime.get(overloadedTask);
+                if (responseTime.containsKey(slackerTask))
+                    responseInterval = responseTime.get(slackerTask);
 //                if (responseInterval <= 2L)
 //                    logger.info("succeeded the response interval test for slacker-task: " + slackerTask +
 //                            ", reluctancy test: " + scaleNeeded + " interval: " + responseInterval);
