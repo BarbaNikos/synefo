@@ -23,7 +23,7 @@ for my $joiner (@joiner_array)
     if (index($joiner, ":") == -1 && index($joiner, "_") == -1 && index($joiner, "system") == -1 &&
         index($joiner, "ack") == -1 && index($joiner, "{") == -1)
         {
-            push @joiners, joiner;
+            push @joiners, $joiner;
         }
 }
 
