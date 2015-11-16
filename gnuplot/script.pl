@@ -5,7 +5,12 @@ use Getopt::Std;
 use warnings;
 use Cwd;
 
-my @joiner_array = (5, 6);
+my $line = `grep "[[:digit:]]\+:joiner" metrics.log | sed 's/.*astro2.cs.pitt.edu:6700[ \t]*//' | sed 's/:joiner.*//' | sort | uniq`;
+my @joiner_array = split /\s+/, $line;
+
+print "Joiner tasks: ";
+print join(", ", @joiner_array);
+print "\n";
 
 my $line = `grep -m 1 "[0-9]:dispatch" metrics.log`;
 my @tokens = split /\s+/, $line;
