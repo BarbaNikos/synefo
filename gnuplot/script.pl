@@ -7,9 +7,9 @@ use Cwd;
 
 
 system("rm -rf joiner-tasks.tmp");
-system("grep \":joiner\" metrics.log | sed 's/.*astro2.cs.pitt.edu:6700[ \t]*//' | sed 's/:joiner.*//' | sort | uniq | tr '\n' ',' > joiner-tasks.tmp");
+system("grep \":joiner\" metrics.log | sed 's/.*astro2.cs.pitt.edu:6700[ \t]*//' | sed 's/:joiner.*//' | sort | uniq | tr '\n' ' ' > joiner-tasks.tmp");
 
-print "command failed" if (!$?);
+#print "command failed" if (!$?);
 
 my $line = `cat joiner-tasks.tmp`;
 
@@ -18,7 +18,7 @@ my $line = `cat joiner-tasks.tmp`;
 my @joiner_array = split /,/, $line;
 
 print "Joiner tasks: ";
-print join(", ", @joiner_array);
+print join(" ", @joiner_array);
 print "\n";
 
 $line = `grep -m 1 "[0-9]:dispatch" metrics.log`;
