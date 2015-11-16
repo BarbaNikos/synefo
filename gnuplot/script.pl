@@ -5,10 +5,17 @@ use Getopt::Std;
 use warnings;
 use Cwd;
 
-#my $line = `grep "[[:digit:]]\+:joiner" metrics.log | sed 's/.*astro2.cs.pitt.edu:6700[ \t]*//' | sed 's/:joiner.*//' | sort | uniq`;
-my $line = `grep "[[:digit:]]\+:joiner" metrics.log `;
-print "Line parsed: $line .\n";
-my @joiner_array = split /\s+/, $line;
+
+system("rm -rf joiner-tasks.tmp");
+system("grep \":joiner\" metrics.log | sed 's/.*astro2.cs.pitt.edu:6700[ \t]*//' | sed 's/:joiner.*//' | sort | uniq | tr '\n' ',' > joiner-tasks.tmp");
+
+print "command failed" if (!$?);
+
+my $line = `cat joiner-tasks.tmp`;
+
+#print "Line parsed: $line .\n";
+
+my @joiner_array = split /,/, $line;
 
 print "Joiner tasks: ";
 print join(", ", @joiner_array);
