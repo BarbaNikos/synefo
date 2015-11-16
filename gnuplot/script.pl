@@ -16,9 +16,19 @@ my $line = `cat joiner-tasks.tmp`;
 #print "Line parsed: $line .\n";
 
 my @joiner_array = split /\s+/, $line;
+my @joiners;
+
+for my $joiner (@joiner_array)
+{
+    if (index($joiner, ":") == -1 && index($joiner, "_") == -1 && index($joiner, "system") == -1 &&
+        index($joiner, "ack") == -1 && index($joiner, "{") == -1)
+        {
+            push @joiners, joiner;
+        }
+}
 
 print "Joiner tasks: ";
-print join(" ", @joiner_array);
+print join(" ", @joiners);
 print ".\n";
 
 $line = `grep -m 1 "[0-9]:dispatch" metrics.log`;
@@ -48,7 +58,7 @@ system("grep \"comp-latency\" metrics.log | sed 's/^201[0-9][-][0-9]*[-][0-9]*[ 
 print "resolved end-to-end latency.\n";
 
 # populate the interval, input-rate, and state-size files
-foreach my $joiner (@joiner_array)
+foreach my $joiner (@joiners)
 {
     print "preparing statistics for joiner task-$joiner.\n";
     system("rm -f interval-$joiner.dat");
