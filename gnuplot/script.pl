@@ -15,7 +15,7 @@ my $line = `cat joiner-tasks.tmp`;
 
 #print "Line parsed: $line .\n";
 
-my @joiner_array = split /,/, $line;
+my @joiner_array = split /\s+/, $line;
 
 print "Joiner tasks: ";
 print join(" ", @joiner_array);
