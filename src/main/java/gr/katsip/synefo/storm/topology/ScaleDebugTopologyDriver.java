@@ -232,7 +232,7 @@ public class ScaleDebugTopologyDriver {
         conf.put(Config.TOPOLOGY_MAX_SPOUT_PENDING, maxSpoutPending);
         conf.put(Config.TOPOLOGY_TRANSFER_BUFFER_SIZE, 32);
         conf.put(Config.TOPOLOGY_EXECUTOR_RECEIVE_BUFFER_SIZE, 4096);
-        conf.put(Config.TOPOLOGY_EXECUTOR_SEND_BUFFER_SIZE, 8192);
+        conf.put(Config.TOPOLOGY_EXECUTOR_SEND_BUFFER_SIZE, 4096);
         try {
             StormSubmitter.submitTopology("debug-elastic-join", conf, builder.createTopology());
         } catch (AlreadyAliveException e) {
