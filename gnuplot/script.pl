@@ -19,7 +19,7 @@ my @joiner_array = split /,/, $line;
 
 print "Joiner tasks: ";
 print join(" ", @joiner_array);
-print "\n";
+print ".\n";
 
 $line = `grep -m 1 "[0-9]:dispatch" metrics.log`;
 my @tokens = split /\s+/, $line;
