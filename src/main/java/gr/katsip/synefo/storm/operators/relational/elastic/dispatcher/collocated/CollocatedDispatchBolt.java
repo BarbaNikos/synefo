@@ -498,9 +498,9 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                 slackersHistory.addAll(temp);
             }
             slackersHistory.add(slackerTask);
-            if (slackersHistory.size() >= LOAD_RELUCTANCY) {
+            if (slackersHistory.size() >= LOAD_RELUCTANCY * 2) {
                 boolean scaleNeeded = true;
-                for (int i = slackersHistory.size() - 1; i >= (slackersHistory.size() - Math.ceil(LOAD_RELUCTANCY / 2)) && i >= 0; i--) {
+                for (int i = slackersHistory.size() - 1; i >= (slackersHistory.size() - LOAD_RELUCTANCY * 2) && i >= 0; i--) {
                     if (slackersHistory.get(i) != slackerTask) {
                         scaleNeeded = false;
                         break;
