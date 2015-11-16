@@ -5,7 +5,8 @@ use Getopt::Std;
 use warnings;
 use Cwd;
 
-my $line = `grep "[[:digit:]]\+:joiner" metrics.log | sed 's/.*astro2.cs.pitt.edu:6700[ \t]*//' | sed 's/:joiner.*//' | sort | uniq`;
+#my $line = `grep "[[:digit:]]\+:joiner" metrics.log | sed 's/.*astro2.cs.pitt.edu:6700[ \t]*//' | sed 's/:joiner.*//' | sort | uniq`;
+my $line = `grep "[[:digit:]]\+:joiner" metrics.log | sed 's/.*astro2.cs.pitt.edu:6700[ \t]*//' | sed 's/:joiner.*//'`;
 print "Line parsed: $line .\n";
 my @joiner_array = split /\s+/, $line;
 
