@@ -273,12 +273,12 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
         return (header.contains(SynefoConstant.COL_TICK_HEADER + ":"));
     }
 
-    @Override
-    public Map<String, Object> getComponentConfiguration() {
-        Config conf = new Config();
-        conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 1);
-        return conf;
-    }
+//    @Override
+//    public Map<String, Object> getComponentConfiguration() {
+//        Config conf = new Config();
+//        conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 1);
+//        return conf;
+//    }
 
     private boolean isTickTuple(Tuple tuple) {
         String sourceComponent = tuple.getSourceComponent();
@@ -290,25 +290,25 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
     @Override
     public void execute(Tuple tuple) {
         String header = "";
-        if (isTickTuple(tuple)) {
-            if (!SCALE_ACTION_FLAG) {
-                /**
-                 * Send out CTRL tuples if no scale-action is in progress
-                 */
-                Values controlTuple = new Values();
-                StringBuilder stringBuilder = new StringBuilder();
-                long timestamp = System.currentTimeMillis();
-                stringBuilder.append(SynefoConstant.COL_TICK_HEADER + ":" + timestamp);
-                controlTuple.add(stringBuilder.toString());
-                controlTuple.add(null);
-                controlTuple.add(null);
-                for (Integer task : activeDownstreamTaskIdentifiers) {
-                    collector.emitDirect(task, streamIdentifier + "-control", controlTuple);
-                }
-            }
-            collector.ack(tuple);
-            return;
-        }
+//        if (isTickTuple(tuple)) {
+//            if (!SCALE_ACTION_FLAG) {
+//                /**
+//                 * Send out CTRL tuples if no scale-action is in progress
+//                 */
+//                Values controlTuple = new Values();
+//                StringBuilder stringBuilder = new StringBuilder();
+//                long timestamp = System.currentTimeMillis();
+//                stringBuilder.append(SynefoConstant.COL_TICK_HEADER + ":" + timestamp);
+//                controlTuple.add(stringBuilder.toString());
+//                controlTuple.add(null);
+//                controlTuple.add(null);
+//                for (Integer task : activeDownstreamTaskIdentifiers) {
+//                    collector.emitDirect(task, streamIdentifier + "-control", controlTuple);
+//                }
+//            }
+//            collector.ack(tuple);
+//            return;
+//        }
         if (!tuple.getFields().contains("SYNEFO_HEADER")) {
             logger.error("COL-DISPATCH-BOLT-" + taskName + ":" + taskIdentifier +
                     " missing synefo header (source: " +
@@ -388,6 +388,21 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
     }
 
     public void scale() {
+        tupleCounter = 0;
+        //Send out interval control tuple every LOAD_CHECK_PERIOD
+        /**
+         * Send out CTRL tuples if no scale-action is in progress
+         */
+        Values controlTuple = new Values();
+        StringBuilder stringBuilder = new StringBuilder();
+        long timestamp = System.currentTimeMillis();
+        stringBuilder.append(SynefoConstant.COL_TICK_HEADER + ":" + timestamp);
+        controlTuple.add(stringBuilder.toString());
+        controlTuple.add(null);
+        controlTuple.add(null);
+        for (Integer task : activeDownstreamTaskIdentifiers) {
+            collector.emitDirect(task, streamIdentifier + "-control", controlTuple);
+        }
         /**
          * Check if one of the nodes is overloaded
          */
@@ -442,7 +457,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                     candidateTask = candidates.get(random.nextInt(candidates.size()));
                     logger.info("decided to scale-out " + scaledTask + " and transfer keys " + migratedKeys.toString() +
                             " to task " + candidateTask);
-                    StringBuilder stringBuilder = new StringBuilder();
+                    stringBuilder = new StringBuilder();
                     stringBuilder.append(SynefoConstant.COL_SCALE_ACTION_PREFIX + ":" + SynefoConstant.COL_ADD_ACTION);
                     stringBuilder.append("|" + SynefoConstant.COL_KEYS + ":");
                     for (String key : migratedKeys) {
@@ -511,7 +526,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                     candidateTask = candidates.get(random.nextInt(candidates.size()));
                     logger.info("decided to scale-in " + scaledTask + " and transfer keys " + migratedKeys.toString() +
                             " to task " + candidateTask);
-                    StringBuilder stringBuilder = new StringBuilder();
+                    stringBuilder = new StringBuilder();
                     stringBuilder.append(SynefoConstant.COL_SCALE_ACTION_PREFIX + ":" + SynefoConstant.COL_REMOVE_ACTION);
                     stringBuilder.append("|" + SynefoConstant.COL_KEYS + ":");
                     for (String key : migratedKeys) {
