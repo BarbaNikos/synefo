@@ -27,6 +27,16 @@ for my $joiner (@joiner_array)
         }
 }
 
+my $file = "joiner-tasks.tmp";
+if (-e $file)
+{
+    unlink $file or warn "Could not unlink $file: $!";
+}
+
+open my $file_handle, ">", "$file" or die "Could not create file $file";
+print $file_handle join(" ", @joiners);
+close $file_handle;
+
 print "Joiner tasks: ";
 print join(" ", @joiners);
 print ".\n";
@@ -36,13 +46,13 @@ my @tokens = split /\s+/, $line;
 # print "Tokens: \n";
 # print join(", ", @tokens);
 
-my $file = "min_ts.txt.tmp";
+$file = "min_ts.txt.tmp";
 if (-e $file)
 {
     unlink $file or warn "Could not unlink $file: $!";
 }
 
-open my $file_handle, ">", "$file" or die "Could not create file $file";
+open $file_handle, ">", "$file" or die "Could not create file $file";
 print $file_handle $tokens[3];
 close $file_handle;
 
