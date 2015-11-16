@@ -78,7 +78,27 @@ public class BalancedFileGenerator {
             innerCounter++;
             outerWriter.println("2|" + outerCounter);
             outerCounter++;
-            counter += 2;
+            innerWriter.println("3|" + innerCounter);
+            innerCounter++;
+            outerWriter.println("3|" + outerCounter);
+            outerCounter++;
+            innerWriter.println("4|" + innerCounter);
+            innerCounter++;
+            outerWriter.println("4|" + outerCounter);
+            outerCounter++;
+            innerWriter.println("5|" + innerCounter);
+            innerCounter++;
+            outerWriter.println("5|" + outerCounter);
+            outerCounter++;
+            innerWriter.println("6|" + innerCounter);
+            innerCounter++;
+            outerWriter.println("6|" + outerCounter);
+            outerCounter++;
+            innerWriter.println("7|" + innerCounter);
+            innerCounter++;
+            outerWriter.println("7|" + outerCounter);
+            outerCounter++;
+            counter += 7;
         }
         innerWriter.flush();
         outerWriter.flush();
