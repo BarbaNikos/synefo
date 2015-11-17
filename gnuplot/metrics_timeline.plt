@@ -19,7 +19,7 @@ plot "dispatcher-input-rate.dat" using ($1 - mints):2 notitle with lines
 
 set output "input-rate.eps"
 #set yrange [0:5000]
-plot for [joiner in joiners] 'input-rate-'.joiner.'.dat' using ($1 - mints):2 title 'task-'.joiner with lines
+plot for [joiner in joiners] 'input-rate-'.joiner.'.dat' using ($1 - mints):2 title 'task-'.joiner with linepoints
 
 unset format y
 
