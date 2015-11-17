@@ -438,7 +438,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                         scaleNeeded = false;
                         break;
                     }
-                };
+                }
                 long responseInterval = -1L;
                 if (responseTime.containsKey(overloadedTask))
                     responseInterval = responseTime.get(overloadedTask);
