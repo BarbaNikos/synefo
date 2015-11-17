@@ -46,8 +46,6 @@ public class SerialControlledFileProducer implements Serializable, FileProducer 
 
     private BufferedReader reader;
 
-    private Random random;
-
     public SerialControlledFileProducer(String pathToFile, String[] schema, String[] projectedSchema,
                                         double[] outputRate, int[] checkpoints) {
         this.schema = new Fields(schema);
@@ -56,7 +54,6 @@ public class SerialControlledFileProducer implements Serializable, FileProducer 
         this.checkpoints = checkpoints;
         this.outputRate = outputRate;
         finished = false;
-        random = new Random();
     }
 
     @Override
@@ -84,7 +81,7 @@ public class SerialControlledFileProducer implements Serializable, FileProducer 
 
     private void progress() {
         index += 1;
-        delay = (long) ( 1E+9 / (outputRate[index] + random.nextInt(100)) );
+        delay = (long) ( 1E+9 / outputRate[index] );
         if (index <= (outputRate.length - 2))
             nextPeriodTimestamp += ((long) (checkpoints[index + 1] - checkpoints[index]) * 1E+9);
         else
