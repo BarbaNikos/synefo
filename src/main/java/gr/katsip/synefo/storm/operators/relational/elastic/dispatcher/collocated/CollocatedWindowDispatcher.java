@@ -317,4 +317,22 @@ public class CollocatedWindowDispatcher implements Serializable {
     public void updateIndex(String scaleAction, String taskWithIdentifier, String relation, List<String> result) {
         //Single Dispatcher version - Not supported
     }
+
+    public void reassignKeys(List<String> migratedKeys, int scaledTask, int candidateTask) {
+        Long timestamp = System.currentTimeMillis();
+        for (int i = 0; i < ringBuffer.size(); i++) {
+            CollocatedDispatchWindow window = ringBuffer.get(i);
+            if ((window.start + this.window) >= timestamp) {
+                for (String key : migratedKeys) {
+                    window.keyToTaskMapping.put(key, candidateTask);
+                    if (window.innerRelationIndex.containsKey(key) && window.innerRelationIndex.get(key).get(0) == scaledTask)
+                        window.innerRelationIndex.get(key).set(0, candidateTask);
+                    if (window.outerRelationIndex.containsKey(key)&& window.outerRelationIndex.get(key).get(0) == scaledTask)
+                        window.outerRelationIndex.get(key).set(0, candidateTask);
+                }
+            }else {
+                break;
+            }
+        }
+    }
 }

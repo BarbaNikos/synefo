@@ -457,6 +457,14 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                     candidateTask = candidates.get(random.nextInt(candidates.size()));
                     logger.info("decided to scale-out " + scaledTask + " and transfer keys " + migratedKeys.toString() +
                             " to task " + candidateTask);
+                    /**
+                     * The following part is for experimenting for instant transfer of state
+                     *
+                     */
+                    dispatcher.reassignKeys(migratedKeys, scaledTask, candidateTask);
+                    /**
+                     * END of experiment for instant transfer of state
+                     */
                     stringBuilder = new StringBuilder();
                     stringBuilder.append(SynefoConstant.COL_SCALE_ACTION_PREFIX + ":" + SynefoConstant.COL_ADD_ACTION);
                     stringBuilder.append("|" + SynefoConstant.COL_KEYS + ":");
