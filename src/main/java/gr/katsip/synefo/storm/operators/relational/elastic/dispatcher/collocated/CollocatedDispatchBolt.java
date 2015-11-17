@@ -448,6 +448,11 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                     //Divide tasks keys into two sets (migratedKeys are going to be handled by new task
                     List<String> keys = dispatcher.getKeysForATask(scaledTask);
                     migratedKeys.addAll(keys.subList(0, (int) Math.ceil((double) (keys.size() / 2))));
+                    if (migratedKeys.size() == 0) {
+                        scaledTask = -1;
+                        migratedKeys.clear();
+                        return;
+                    }
                     SCALE_ACTION_FLAG = true;
                     action = SynefoConstant.COL_ADD_ACTION;
                     //Pick random in-active task (candidate)
