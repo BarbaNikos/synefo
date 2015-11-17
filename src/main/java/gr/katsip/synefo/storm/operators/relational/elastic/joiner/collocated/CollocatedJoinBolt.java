@@ -246,7 +246,7 @@ public class CollocatedJoinBolt extends BaseRichBolt {
             header = tuple.getString(tuple.getFields()
                     .fieldIndex("SYNEFO_HEADER"));
             if (header != null && !header.equals("") && isScaleHeader(header)) {
-                manageScaleTuple(header);
+                manageScaleTuple(tuple, header);
                 collector.ack(tuple);
                 return;
             }else if (header != null && !header.equals("") && isControlTuple(header)) {
@@ -329,7 +329,7 @@ public class CollocatedJoinBolt extends BaseRichBolt {
         }
     }
 
-    public void manageScaleTuple(String header) {
+    public void manageScaleTuple(Tuple tuple, String header) {
         String action = header.split("[|]")[0].split(":")[1];
         String serializedMigratedKeys = header.split("[|]")[1].split(":")[1];
         String candidateTask = header.split("[|]")[2].split(":")[1];
@@ -345,6 +345,33 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                 logger.info("JOIN-BOLT-" + taskName + ":" + taskIdentifier +
                         "participates into scale-action ADD and it is NOT the candidate");
                 scaleAction = SynefoConstant.COL_ADD_ACTION;
+                /**
+                 * The next part is for experimentation purposes.
+                 * It simulates the case where scaling happens almost instantly
+                 */
+                migratedKeys.clear();
+                joiner.initializeScaleOut(migratedKeys);
+                if (this.candidateTask != -1 && migratedKeys.size() == 0) {
+                    StringBuilder stringBuilder = new StringBuilder();
+                    stringBuilder.append(SynefoConstant.COL_SCALE_ACTION_PREFIX + ":" + SynefoConstant.COL_COMPLETE_ACTION +
+                            "|" + SynefoConstant.COL_KEYS + ":|" + SynefoConstant.COL_PEER + ":" + taskIdentifier);
+                    Values scaleCompleteTuple = new Values();
+                    scaleCompleteTuple.add(stringBuilder.toString());
+                    scaleCompleteTuple.add("");
+                    scaleCompleteTuple.add("");
+                    collector.emitDirect(tuple.getSourceTask(), streamIdentifier + "-control", scaleCompleteTuple);
+                    this.candidateTask = -1;
+                    long currentTimestamp = System.currentTimeMillis();
+                    stateTransferTime.setValue((currentTimestamp - startTransferTimestamp));
+                    if (scaleAction.equals(SynefoConstant.COL_REMOVE_ACTION)) {
+                        inputRate.setValue(null);
+                        stateSize.setValue(null);
+                        throughput.setValue(null);
+                        executeLatency.setValue(null);
+                        stateTransferTime.setValue(null);
+                    }
+                    scaleAction = "";
+                }
             } else {
                 logger.info("JOIN-BOLT-" + taskName + ":" + taskIdentifier +
                         " participates into scale-action ADD and it is the candidate.");

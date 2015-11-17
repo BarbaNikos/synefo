@@ -317,6 +317,8 @@ public class CollocatedWindowEquiJoin implements Serializable {
         long timestamp = System.currentTimeMillis();
         this.migratedKeys = migratedKeys;
         mirrorBuffer = new LinkedList<>();
+        if (migratedKeys.size() == 0)
+            return;
         for (int i = 0; i < ringBuffer.size(); i++) {
             BasicCollocatedEquiWindow window = ringBuffer.get(i);
             if ((window.start + this.windowSize) > timestamp) {
