@@ -82,6 +82,7 @@ public class SerialControlledFileProducer implements Serializable, FileProducer 
     private void progress() {
         index += 1;
         delay = (long) ( 1E+9 / outputRate[index] );
+        logger.info("output-rate: " + outputRate[index] + ", and the delay: " + delay);
         if (index <= (outputRate.length - 2))
             nextPeriodTimestamp += ((long) (checkpoints[index + 1] - checkpoints[index]) * 1E+9);
         else

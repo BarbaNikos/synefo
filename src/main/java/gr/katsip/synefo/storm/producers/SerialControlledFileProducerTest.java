@@ -42,8 +42,8 @@ public class SerialControlledFileProducerTest {
         /**
          * Total tuples = 10 * 6 + 1000 * 6 + 10 * 6 = 6120 tuples sent
          */
-        double[] outputRate = { 10, 1000, 10, 1000, 10 };
-        int[] checkPoints = { 0, 3, 6, 9, 12 };
+        double[] outputRate = { 100, 200 };
+        int[] checkPoints = { 0, 24 };
         producer = new SerialControlledFileProducer(temporaryFile.getAbsolutePath(), schema, projectedSchema,
                 outputRate, checkPoints);
         producer.init();
