@@ -178,6 +178,7 @@ public class ElasticFileSpout extends BaseRichSpout {
     public void ack(Object msgId) {
         Long currentTimestamp = System.currentTimeMillis();
         Values values = (Values) msgId;
+        logger.info("ACK-RECEIVED: " + msgId.toString());
         if (tupleStatistics.containsKey(values.toString())) {
             Long emitTimestamp = tupleStatistics.remove(values.toString());
             completeLatency.setValue((currentTimestamp - emitTimestamp));
