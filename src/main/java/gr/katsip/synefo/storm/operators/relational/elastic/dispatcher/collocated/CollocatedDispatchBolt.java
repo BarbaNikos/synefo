@@ -487,67 +487,67 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
          * Dispatcher makes a histogram of tuples per node
          * and scales-in the one that has the least tuples (global minimum)
          */
-        if (activeDownstreamTaskIdentifiers.size() > 1 && slackerTask != -1 && !SCALE_ACTION_FLAG) {
-            /**
-             * GC slacker-history
-             */
-            if (slackersHistory.size() >= (LOAD_RELUCTANCY * 3)) {
-                List<Integer> temp = new ArrayList<>(slackersHistory.subList(slackersHistory.size() - LOAD_RELUCTANCY,
-                        slackersHistory.size()));
-                slackersHistory.clear();
-                slackersHistory.addAll(temp);
-            }
-            slackersHistory.add(slackerTask);
-            if (slackersHistory.size() >= LOAD_RELUCTANCY * 2) {
-                boolean scaleNeeded = true;
-                for (int i = slackersHistory.size() - 1; i >= (slackersHistory.size() - LOAD_RELUCTANCY * 2) && i >= 0; i--) {
-                    if (slackersHistory.get(i) != slackerTask) {
-                        scaleNeeded = false;
-                        break;
-                    }
-                }
-//                if (!scaleNeeded)
-//                    logger.info("failed the reluctancy test for slacker-task: " + slackerTask + " history: " + slackersHistory);
-                long responseInterval = -1L;
-                if (responseTime.containsKey(slackerTask))
-                    responseInterval = responseTime.get(slackerTask);
-//                if (responseInterval <= 2L)
-//                    logger.info("succeeded the response interval test for slacker-task: " + slackerTask +
-//                            ", reluctancy test: " + scaleNeeded + " interval: " + responseInterval);
-                if (scaleNeeded && responseInterval > 0 && responseInterval <= 2L) {
-                    scaledTask = slackerTask;
-                    List<String> keys = dispatcher.getKeysForATask(scaledTask);
-                    migratedKeys.addAll(keys);
-                    SCALE_ACTION_FLAG = true;
-                    action = SynefoConstant.COL_REMOVE_ACTION;
-                    List<Integer> candidates = new ArrayList<>(activeDownstreamTaskIdentifiers);
-                    candidates.remove(candidates.indexOf(scaledTask));
-                    Random random = new Random();
-                    candidateTask = candidates.get(random.nextInt(candidates.size()));
-                    logger.info("decided to scale-in " + scaledTask + " and transfer keys " + migratedKeys.toString() +
-                            " to task " + candidateTask);
-                    stringBuilder = new StringBuilder();
-                    stringBuilder.append(SynefoConstant.COL_SCALE_ACTION_PREFIX + ":" + SynefoConstant.COL_REMOVE_ACTION);
-                    stringBuilder.append("|" + SynefoConstant.COL_KEYS + ":");
-                    for (String key : migratedKeys) {
-                        stringBuilder.append(key + ",");
-                    }
-                    if (stringBuilder.length() > 0 && stringBuilder.charAt(stringBuilder.length() - 1) == ',')
-                        stringBuilder.setLength(stringBuilder.length() - 1);
-                    stringBuilder.append("|" + SynefoConstant.COL_PEER + ":" + scaledTask);
-                    Values scaleTuple = new Values();
-                    scaleTuple.add(stringBuilder.toString());
-                    scaleTuple.add("");
-                    scaleTuple.add("");
-                    collector.emitDirect(scaledTask, streamIdentifier + "-control", scaleTuple);
-                    collector.emitDirect(candidateTask, streamIdentifier + "-control", scaleTuple);
-                    startTransferTimestamp = System.currentTimeMillis();
-                    activeDownstreamTaskIdentifiers.remove(activeDownstreamTaskIdentifiers.indexOf(scaledTask));
-                    this.action = SynefoConstant.COL_REMOVE_ACTION;
-                    dispatcher.setTaskToRelationIndex(activeDownstreamTaskIdentifiers);
-                }
-            }
-        }
+//        if (activeDownstreamTaskIdentifiers.size() > 1 && slackerTask != -1 && !SCALE_ACTION_FLAG) {
+//            /**
+//             * GC slacker-history
+//             */
+//            if (slackersHistory.size() >= (LOAD_RELUCTANCY * 3)) {
+//                List<Integer> temp = new ArrayList<>(slackersHistory.subList(slackersHistory.size() - LOAD_RELUCTANCY,
+//                        slackersHistory.size()));
+//                slackersHistory.clear();
+//                slackersHistory.addAll(temp);
+//            }
+//            slackersHistory.add(slackerTask);
+//            if (slackersHistory.size() >= LOAD_RELUCTANCY * 2) {
+//                boolean scaleNeeded = true;
+//                for (int i = slackersHistory.size() - 1; i >= (slackersHistory.size() - LOAD_RELUCTANCY * 2) && i >= 0; i--) {
+//                    if (slackersHistory.get(i) != slackerTask) {
+//                        scaleNeeded = false;
+//                        break;
+//                    }
+//                }
+////                if (!scaleNeeded)
+////                    logger.info("failed the reluctancy test for slacker-task: " + slackerTask + " history: " + slackersHistory);
+//                long responseInterval = -1L;
+//                if (responseTime.containsKey(slackerTask))
+//                    responseInterval = responseTime.get(slackerTask);
+////                if (responseInterval <= 2L)
+////                    logger.info("succeeded the response interval test for slacker-task: " + slackerTask +
+////                            ", reluctancy test: " + scaleNeeded + " interval: " + responseInterval);
+//                if (scaleNeeded && responseInterval > 0 && responseInterval <= 2L) {
+//                    scaledTask = slackerTask;
+//                    List<String> keys = dispatcher.getKeysForATask(scaledTask);
+//                    migratedKeys.addAll(keys);
+//                    SCALE_ACTION_FLAG = true;
+//                    action = SynefoConstant.COL_REMOVE_ACTION;
+//                    List<Integer> candidates = new ArrayList<>(activeDownstreamTaskIdentifiers);
+//                    candidates.remove(candidates.indexOf(scaledTask));
+//                    Random random = new Random();
+//                    candidateTask = candidates.get(random.nextInt(candidates.size()));
+//                    logger.info("decided to scale-in " + scaledTask + " and transfer keys " + migratedKeys.toString() +
+//                            " to task " + candidateTask);
+//                    stringBuilder = new StringBuilder();
+//                    stringBuilder.append(SynefoConstant.COL_SCALE_ACTION_PREFIX + ":" + SynefoConstant.COL_REMOVE_ACTION);
+//                    stringBuilder.append("|" + SynefoConstant.COL_KEYS + ":");
+//                    for (String key : migratedKeys) {
+//                        stringBuilder.append(key + ",");
+//                    }
+//                    if (stringBuilder.length() > 0 && stringBuilder.charAt(stringBuilder.length() - 1) == ',')
+//                        stringBuilder.setLength(stringBuilder.length() - 1);
+//                    stringBuilder.append("|" + SynefoConstant.COL_PEER + ":" + scaledTask);
+//                    Values scaleTuple = new Values();
+//                    scaleTuple.add(stringBuilder.toString());
+//                    scaleTuple.add("");
+//                    scaleTuple.add("");
+//                    collector.emitDirect(scaledTask, streamIdentifier + "-control", scaleTuple);
+//                    collector.emitDirect(candidateTask, streamIdentifier + "-control", scaleTuple);
+//                    startTransferTimestamp = System.currentTimeMillis();
+//                    activeDownstreamTaskIdentifiers.remove(activeDownstreamTaskIdentifiers.indexOf(scaledTask));
+//                    this.action = SynefoConstant.COL_REMOVE_ACTION;
+//                    dispatcher.setTaskToRelationIndex(activeDownstreamTaskIdentifiers);
+//                }
+//            }
+//        }
     }
 
     @Override
