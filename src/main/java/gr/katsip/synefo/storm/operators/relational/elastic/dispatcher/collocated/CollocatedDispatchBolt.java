@@ -433,7 +433,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
             strugglersHistory.add(overloadedTask);
             if (strugglersHistory.size() >= LOAD_RELUCTANCY) {
                 boolean scaleNeeded = true;
-                for (int i = strugglersHistory.size() - 1; i >= (strugglersHistory.size() - LOAD_RELUCTANCY) && i >= 0; i--) {
+                for (int i = strugglersHistory.size() - 1; i >= (strugglersHistory.size() - Math.ceil(LOAD_RELUCTANCY / 2)) && i >= 0; i--) {
                     if (strugglersHistory.get(i) != overloadedTask) {
                         scaleNeeded = false;
                         break;
