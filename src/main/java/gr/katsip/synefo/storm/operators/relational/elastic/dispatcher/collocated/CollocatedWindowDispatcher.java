@@ -120,57 +120,38 @@ public class CollocatedWindowDispatcher implements Serializable {
         int numberOfDispatchedTuples = 0;
         int victimTask;
         String key = null;
+        String relationName = null;
         Values tuple = new Values();
         tuple.add("0");
         tuple.add(fields);
         tuple.add(values);
         if (fields.toList().toString().equals(innerRelationSchema.toList().toString())) {
+            relationName = innerRelationName;
             key = (String) values.get(innerRelationSchema.fieldIndex(innerRelationKey));
-            victimTask = locateTask(currentTimestamp, innerRelationName, key);
-            if (victimTask < 0 && migratedKeys != null && migratedKeys.size() == 0)
-                victimTask = pickTaskForNewKey();
-            if (migratedKeys.size() > 0 && migratedKeys.indexOf(key) >= 0 && scaledTask != -1 && candidateTask != -1) {
-                updateCurrentWindow(currentTimestamp, innerRelationName, key, candidateTask);
-                if (victimTask >= 0 && victimTask != scaledTask && victimTask != candidateTask) {
-                    logger.error("inconsistency located. victim-task: " + victimTask + " is neither equal to scaled-task (" +
-                            scaledTask + ") nor candidate-task (" + candidateTask + ")");
-                    throw new RuntimeException("Candidate inconsistency");
-                }
-                if (collector != null) {
-                    collector.emitDirect(candidateTask, streamId, anchor, tuple);
-                    collector.emitDirect(scaledTask, streamId, anchor, tuple);
-                    numberOfDispatchedTuples += 2;
-                }
-            } else {
-                updateCurrentWindow(currentTimestamp, innerRelationName, key, victimTask);
-                if (collector != null && victimTask >= 0) {
-                    collector.emitDirect(victimTask, streamId, anchor, tuple);
-                    numberOfDispatchedTuples++;
-                }
-            }
-        } else if (fields.toList().toString().equals(outerRelationSchema.toList().toString())) {
+        }else if (fields.toList().toString().equals(outerRelationSchema.toList().toString())) {
+            relationName = outerRelationName;
             key = (String) values.get(outerRelationSchema.fieldIndex(outerRelationKey));
-            victimTask = locateTask(currentTimestamp, outerRelationName, key);
-            if (victimTask < 0 && migratedKeys != null && migratedKeys.size() == 0)
+        }
+        victimTask = locateTask(currentTimestamp, relationName, key);
+        if (migratedKeys.size() > 0 && migratedKeys.indexOf(key) >= 0 && scaledTask != -1 && candidateTask != -1) {
+            updateCurrentWindow(currentTimestamp, relationName, key, candidateTask);
+            if (victimTask >= 0 && victimTask != scaledTask && victimTask != candidateTask) {
+                logger.error("inconsistency located. victim-task: " + victimTask + " is neither equal to scaled-task (" +
+                        scaledTask + ") nor candidate-task (" + candidateTask + ")");
+                throw new RuntimeException("Candidate inconsistency");
+            }
+            if (collector != null) {
+                collector.emitDirect(candidateTask, streamId, anchor, tuple);
+                collector.emitDirect(scaledTask, streamId, anchor, tuple);
+                numberOfDispatchedTuples += 2;
+            }
+        }else {
+            if (victimTask < 0)
                 victimTask = pickTaskForNewKey();
-            if (migratedKeys.size() > 0 && migratedKeys.indexOf(key) >= 0 && scaledTask != -1 && candidateTask != -1) {
-                updateCurrentWindow(currentTimestamp, outerRelationName, key, candidateTask);
-                if (victimTask >= 0 && victimTask != scaledTask && victimTask != candidateTask) {
-                    logger.error("inconsistency located. victim-task: " + victimTask + " is neither equal to scaled-task (" +
-                            scaledTask + ") nor candidate-task (" + candidateTask + ")");
-                    throw new RuntimeException("Candidate inconsistency");
-                }
-                if (collector != null) {
-                    collector.emitDirect(candidateTask, streamId, anchor, tuple);
-                    collector.emitDirect(scaledTask, streamId, anchor, tuple);
-                    numberOfDispatchedTuples += 2;
-                }
-            } else {
-                updateCurrentWindow(currentTimestamp, outerRelationName, key, victimTask);
-                if (collector != null && victimTask >= 0) {
-                    collector.emitDirect(victimTask, streamId, anchor, tuple);
-                    numberOfDispatchedTuples++;
-                }
+            updateCurrentWindow(currentTimestamp, relationName, key, victimTask);
+            if (collector != null && victimTask >= 0) {
+                collector.emitDirect(victimTask, streamId, anchor, tuple);
+                numberOfDispatchedTuples++;
             }
         }
         return numberOfDispatchedTuples;
@@ -324,15 +305,18 @@ public class CollocatedWindowDispatcher implements Serializable {
             CollocatedDispatchWindow window = ringBuffer.get(i);
             if ((window.start + this.window) >= timestamp) {
                 for (String key : migratedKeys) {
-                    window.keyToTaskMapping.put(key, candidateTask);
+                    //The following assert is for debug purposes
+                    if (window.keyToTaskMapping.containsKey(key))
+                        assert window.keyToTaskMapping.get(key) == scaledTask;
+                    if (window.keyToTaskMapping.containsKey(key) && window.keyToTaskMapping.get(key) == scaledTask)
+                        window.keyToTaskMapping.put(key, candidateTask);
                     if (window.innerRelationIndex.containsKey(key) && window.innerRelationIndex.get(key).get(0) == scaledTask)
                         window.innerRelationIndex.get(key).set(0, candidateTask);
                     if (window.outerRelationIndex.containsKey(key)&& window.outerRelationIndex.get(key).get(0) == scaledTask)
                         window.outerRelationIndex.get(key).set(0, candidateTask);
                 }
-            }else {
-                break;
             }
         }
     }
+
 }
