@@ -74,18 +74,25 @@ public class CollocatedWindowEquiJoin implements Serializable {
     }
 
     public void store(Long currentTimestamp, Fields schema, Values tuple) {
+        String key = null;
+        int fieldIndex = -1;
         if (schema.toList().toString().equals(innerRelationSchema.toList().toString())) {
-            String key = (String) tuple.get(innerRelationSchema.fieldIndex(innerRelationJoinAttribute));
-            if (migratedKeys != null && migratedKeys.size() > 0 && migratedKeys.indexOf(key) >= 0)
-                return;
+            key = (String) tuple.get(innerRelationSchema.fieldIndex(innerRelationJoinAttribute));
+            fieldIndex = innerRelationSchema.fieldIndex(innerRelationJoinAttribute);
+        } else if (schema.toList().toString().equals(outerRelationSchema.toList().toString())) {
+            key = (String) tuple.get(outerRelationSchema.fieldIndex(outerRelationJoinAttribute));
+            fieldIndex = outerRelationSchema.fieldIndex(outerRelationJoinAttribute);
+        }
+        if (migratedKeys != null && migratedKeys.size() > 0 && migratedKeys.indexOf(key) >= 0)
+            return;
+        if (schema.toList().toString().equals(innerRelationSchema.toList().toString())) {
             if (ringBuffer.size() == 0) {
                 BasicCollocatedEquiWindow window = new BasicCollocatedEquiWindow();
                 window.start = currentTimestamp;
                 window.end = window.start + slide;
                 ArrayList<Values> tuples = new ArrayList<>();
                 tuples.add(tuple);
-                window.innerRelation.put((String) tuple.get(innerRelationSchema.fieldIndex(innerRelationJoinAttribute)),
-                        tuples);
+                window.innerRelation.put((String) tuple.get(fieldIndex), tuples);
                 window.byteStateSize = tuple.toArray().toString().length();
                 window.innerRelationCardinality = 1;
                 ringBuffer.addFirst(window);
@@ -94,15 +101,12 @@ public class CollocatedWindowEquiJoin implements Serializable {
             }else if (ringBuffer.size() > 0 && ringBuffer.getFirst().start <= currentTimestamp &&
                     ringBuffer.getFirst().end >= currentTimestamp) {
                 ArrayList<Values> tuples;
-                if (ringBuffer.getFirst().innerRelation.containsKey(
-                        tuple.get(innerRelationSchema.fieldIndex(innerRelationJoinAttribute))))
-                    tuples = ringBuffer.getFirst().innerRelation.get(tuple.get(innerRelationSchema
-                            .fieldIndex(innerRelationJoinAttribute)));
+                if (ringBuffer.getFirst().innerRelation.containsKey(tuple.get(fieldIndex)))
+                    tuples = ringBuffer.getFirst().innerRelation.get(tuple.get(fieldIndex));
                 else
                     tuples = new ArrayList<>();
                 tuples.add(tuple);
-                ringBuffer.getFirst().innerRelation.put((String) tuple.get(
-                                innerRelationSchema.fieldIndex(innerRelationJoinAttribute)), tuples);
+                ringBuffer.getFirst().innerRelation.put((String) tuple.get(fieldIndex), tuples);
                 ringBuffer.getFirst().byteStateSize += (tuple.toArray().toString().length());
                 ringBuffer.getFirst().innerRelationCardinality += 1;
                 innerRelationCardinality += 1;
@@ -119,8 +123,7 @@ public class CollocatedWindowEquiJoin implements Serializable {
                 window.end = window.start + slide;
                 ArrayList<Values> tuples = new ArrayList<>();
                 tuples.add(tuple);
-                window.innerRelation.put((String) tuple.get(
-                                innerRelationSchema.fieldIndex(innerRelationJoinAttribute)), tuples);
+                window.innerRelation.put((String) tuple.get(fieldIndex), tuples);
                 window.byteStateSize = tuple.toArray().toString().length();
                 window.innerRelationCardinality = 1;
                 ringBuffer.addFirst(window);
@@ -128,17 +131,13 @@ public class CollocatedWindowEquiJoin implements Serializable {
                 innerRelationCardinality += 1;
             }
         }else if (schema.toList().toString().equals(outerRelationSchema.toList().toString())) {
-            String key = (String) tuple.get(outerRelationSchema.fieldIndex(outerRelationJoinAttribute));
-            if (migratedKeys != null && migratedKeys.size() > 0 && migratedKeys.indexOf(key) >= 0)
-                return;
             if (ringBuffer.size() == 0) {
                 BasicCollocatedEquiWindow window = new BasicCollocatedEquiWindow();
                 window.start = currentTimestamp;
                 window.end = window.start + slide;
                 ArrayList<Values> tuples = new ArrayList<>();
                 tuples.add(tuple);
-                window.outerRelation.put((String) tuple.get(outerRelationSchema.fieldIndex(outerRelationJoinAttribute)),
-                        tuples);
+                window.outerRelation.put((String) tuple.get(fieldIndex), tuples);
                 window.byteStateSize = tuple.toArray().toString().length();
                 window.outerRelationCardinality = 1;
                 ringBuffer.addFirst(window);
@@ -147,15 +146,12 @@ public class CollocatedWindowEquiJoin implements Serializable {
             }else if (ringBuffer.size() > 0 && ringBuffer.getFirst().start <= currentTimestamp &&
                     ringBuffer.getFirst().end >= currentTimestamp) {
                 ArrayList<Values> tuples;
-                if (ringBuffer.getFirst().outerRelation.containsKey(
-                        tuple.get(outerRelationSchema.fieldIndex(outerRelationJoinAttribute))))
-                    tuples = ringBuffer.getFirst().outerRelation.get(tuple.get(outerRelationSchema
-                            .fieldIndex(outerRelationJoinAttribute)));
+                if (ringBuffer.getFirst().outerRelation.containsKey(tuple.get(fieldIndex)))
+                    tuples = ringBuffer.getFirst().outerRelation.get(tuple.get(fieldIndex));
                 else
                     tuples = new ArrayList<>();
                 tuples.add(tuple);
-                ringBuffer.getFirst().outerRelation.put((String) tuple.get(
-                        outerRelationSchema.fieldIndex(outerRelationJoinAttribute)), tuples);
+                ringBuffer.getFirst().outerRelation.put((String) tuple.get(fieldIndex), tuples);
                 ringBuffer.getFirst().byteStateSize += (tuple.toArray().toString().length());
                 ringBuffer.getFirst().outerRelationCardinality += 1;
                 outerRelationCardinality += 1;
@@ -172,8 +168,7 @@ public class CollocatedWindowEquiJoin implements Serializable {
                 window.end = window.start + slide;
                 ArrayList<Values> tuples = new ArrayList<>();
                 tuples.add(tuple);
-                window.outerRelation.put((String) tuple.get(
-                        outerRelationSchema.fieldIndex(outerRelationJoinAttribute)), tuples);
+                window.outerRelation.put((String) tuple.get(fieldIndex), tuples);
                 window.byteStateSize = tuple.toArray().toString().length();
                 window.outerRelationCardinality = 1;
                 ringBuffer.addFirst(window);
@@ -337,7 +332,7 @@ public class CollocatedWindowEquiJoin implements Serializable {
                         byteStateSize -= size;
                         window.byteStateSize -= size;
                     }else {
-                        temporaryMap.put(key, new ArrayList<Values>(window.innerRelation.get(key)));
+                        temporaryMap.put(key, new ArrayList<>(window.innerRelation.get(key)));
                     }
                 }
                 //remove migratedTuples from inner relation
@@ -356,7 +351,7 @@ public class CollocatedWindowEquiJoin implements Serializable {
                         byteStateSize -= size;
                         window.byteStateSize -= size;
                     }else {
-                        temporaryMap.put(key, new ArrayList<Values>(window.outerRelation.get(key)));
+                        temporaryMap.put(key, new ArrayList<>(window.outerRelation.get(key)));
                     }
                 }
                 //remove migratedTuples from outer relation
@@ -366,7 +361,7 @@ public class CollocatedWindowEquiJoin implements Serializable {
                 }
                 //Add mirrorWindow to mirror-buffer
                 mirrorBuffer.addLast(mirrorWindow);
-            }else {
+            } else {
                 break;
             }
         }
