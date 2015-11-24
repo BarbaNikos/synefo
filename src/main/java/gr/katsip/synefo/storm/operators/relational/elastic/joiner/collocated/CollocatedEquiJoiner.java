@@ -83,7 +83,7 @@ public class CollocatedEquiJoiner implements Serializable {
         Long timestamp = System.currentTimeMillis();
         collocatedWindowEquiJoin.store(timestamp, fields, values);
         List<Values> tuples = collocatedWindowEquiJoin.join(timestamp, fields, values);
-        if (migratedKeys != null && migratedKeys.size() > 0) {
+        if (migratedKeys.size() > 0) {
             List<Values> mirrorTuples = collocatedWindowEquiJoin.mirrorJoin(timestamp, fields, values);
             mirrorTuples.removeAll(tuples);
             tuples.addAll(mirrorTuples);

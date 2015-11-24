@@ -83,7 +83,7 @@ public class CollocatedWindowEquiJoin implements Serializable {
             key = (String) tuple.get(outerRelationSchema.fieldIndex(outerRelationJoinAttribute));
             fieldIndex = outerRelationSchema.fieldIndex(outerRelationJoinAttribute);
         }
-        if (migratedKeys != null && migratedKeys.size() > 0 && migratedKeys.indexOf(key) >= 0)
+        if (migratedKeys.size() > 0 && migratedKeys.indexOf(key) >= 0)
             return;
         if (schema.toList().toString().equals(innerRelationSchema.toList().toString())) {
             if (ringBuffer.size() == 0) {
