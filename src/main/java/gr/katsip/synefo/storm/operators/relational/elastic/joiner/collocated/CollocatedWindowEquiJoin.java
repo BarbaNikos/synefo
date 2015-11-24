@@ -70,7 +70,7 @@ public class CollocatedWindowEquiJoin implements Serializable {
         outerRelationCardinality = 0L;
         this.innerRelation = innerRelation;
         this.outerRelation = outerRelation;
-        migratedKeys = null;
+        migratedKeys = new ArrayList<>();
     }
 
     public void store(Long currentTimestamp, Fields schema, Values tuple) {
