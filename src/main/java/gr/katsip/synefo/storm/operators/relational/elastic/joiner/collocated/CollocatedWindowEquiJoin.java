@@ -423,4 +423,5 @@ public class CollocatedWindowEquiJoin implements Serializable {
         }
     }
 
+    public long getNumberOfTuples() { return innerRelationCardinality + outerRelationCardinality; }
 }

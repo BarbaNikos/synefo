@@ -76,6 +76,8 @@ public class CollocatedJoinBolt extends BaseRichBolt {
 
     private transient AssignableMetric stateTransferTime;
 
+    private transient AssignableMetric numberOfTuples;
+
     private long startTransferTimestamp;
 
     private int temporaryInputRate;
@@ -213,13 +215,13 @@ public class CollocatedJoinBolt extends BaseRichBolt {
         inputRate = new AssignableMetric(null);
         throughput = new AssignableMetric(null);
         stateTransferTime = new AssignableMetric(null);
-//        controlTupleInterval = new AssignableMetric(null);
+        numberOfTuples = new AssignableMetric(null);
         context.registerMetric("execute-latency", executeLatency, METRIC_REPORT_FREQ_SEC);
         context.registerMetric("state-size", stateSize, METRIC_REPORT_FREQ_SEC);
         context.registerMetric("input-rate", inputRate, METRIC_REPORT_FREQ_SEC);
         context.registerMetric("throughput", throughput, METRIC_REPORT_FREQ_SEC);
         context.registerMetric("state-transfer", stateTransferTime, METRIC_REPORT_FREQ_SEC);
-//        context.registerMetric("control-interval", controlTupleInterval, METRIC_REPORT_FREQ_SEC);
+        context.registerMetric("number-of-tuples", numberOfTuples, METRIC_REPORT_FREQ_SEC);
     }
 
     public static boolean isScaleHeader(String header) {
@@ -295,6 +297,7 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                 lastStateSizeMetric = joiner.getStateSize();
                 executeLatency.setValue(lastExecuteLatencyMetric);
                 stateSize.setValue(lastStateSizeMetric);
+                numberOfTuples.setValue(joiner.getNumberOfTuples());
                 throughputCurrentTimestamp = System.currentTimeMillis();
                 if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
                     throughputPreviousTimestamp = throughputCurrentTimestamp;
@@ -316,17 +319,20 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                     candidateTask = -1;
                     long currentTimestamp = System.currentTimeMillis();
                     stateTransferTime.setValue((currentTimestamp - startTransferTimestamp));
-                    if (scaleAction.equals(SynefoConstant.COL_REMOVE_ACTION)) {
-                        inputRate.setValue(null);
-                        stateSize.setValue(null);
-                        throughput.setValue(null);
-                        executeLatency.setValue(null);
-                        stateTransferTime.setValue(null);
-                    }
+                    if (scaleAction.equals(SynefoConstant.COL_REMOVE_ACTION))
+                        initializeStats();
                     scaleAction = "";
                 }
             }
         }
+    }
+
+    private void initializeStats() {
+        inputRate.setValue(null);
+        stateSize.setValue(null);
+        throughput.setValue(null);
+        executeLatency.setValue(null);
+        stateTransferTime.setValue(null);
     }
 
     public void manageScaleTuple(Tuple tuple, String header) {
@@ -363,13 +369,8 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                     this.candidateTask = -1;
                     long currentTimestamp = System.currentTimeMillis();
                     stateTransferTime.setValue((currentTimestamp - startTransferTimestamp));
-                    if (scaleAction.equals(SynefoConstant.COL_REMOVE_ACTION)) {
-                        inputRate.setValue(null);
-                        stateSize.setValue(null);
-                        throughput.setValue(null);
-                        executeLatency.setValue(null);
-                        stateTransferTime.setValue(null);
-                    }
+                    if (scaleAction.equals(SynefoConstant.COL_REMOVE_ACTION))
+                        initializeStats();
                     scaleAction = "";
                 }
             } else {

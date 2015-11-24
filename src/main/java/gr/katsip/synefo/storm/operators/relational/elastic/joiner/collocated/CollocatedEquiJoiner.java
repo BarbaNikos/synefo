@@ -122,4 +122,8 @@ public class CollocatedEquiJoiner implements Serializable {
         collocatedWindowEquiJoin.initializeScaleIn(migratedKeys);
     }
 
+    public long getNumberOfTuples() {
+        return collocatedWindowEquiJoin.getNumberOfTuples();
+    }
+
 }
