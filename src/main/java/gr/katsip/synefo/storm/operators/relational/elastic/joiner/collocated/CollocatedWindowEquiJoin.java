@@ -308,8 +308,19 @@ public class CollocatedWindowEquiJoin implements Serializable {
         return byteStateSize + mirrorBufferByteStateSize;
     }
 
+    private void initializeBuffer() {
+        ringBuffer.clear();
+        byteStateSize = 0L;
+        innerRelationCardinality = 0L;
+        outerRelationCardinality = 0L;
+    }
     public void initializeScaleOut(List<String> migratedKeys) {
         long timestamp = System.currentTimeMillis();
+        /**
+         * Just for experimental purposed to remove all the state
+         * and see if load-shedding helps the situation
+         */
+        initializeBuffer();
         this.migratedKeys = migratedKeys;
         mirrorBuffer = new LinkedList<>();
         if (migratedKeys.size() == 0)
