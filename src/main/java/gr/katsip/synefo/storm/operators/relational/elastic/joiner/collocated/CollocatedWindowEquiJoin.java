@@ -93,11 +93,11 @@ public class CollocatedWindowEquiJoin implements Serializable {
                 ArrayList<Values> tuples = new ArrayList<>();
                 tuples.add(tuple);
                 window.innerRelation.put((String) tuple.get(fieldIndex), tuples);
-                window.byteStateSize = tuple.toArray().toString().length();
                 window.innerRelationCardinality = 1;
+                innerRelationCardinality += 1;
+                window.byteStateSize = tuple.toArray().toString().length();
                 ringBuffer.addFirst(window);
                 byteStateSize += (tuple.toArray().toString().length());
-                innerRelationCardinality += 1;
             }else if (ringBuffer.size() > 0 && ringBuffer.getFirst().start <= currentTimestamp &&
                     ringBuffer.getFirst().end >= currentTimestamp) {
                 ArrayList<Values> tuples;

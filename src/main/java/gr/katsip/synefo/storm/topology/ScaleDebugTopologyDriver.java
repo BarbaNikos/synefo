@@ -222,7 +222,7 @@ public class ScaleDebugTopologyDriver {
             e.printStackTrace();
         }
         conf.setDebug(false);
-        conf.registerMetricsConsumer(LoggingMetricsConsumer.class, numberOfWorkers);
+        conf.registerMetricsConsumer(LoggingMetricsConsumer.class, numberOfTasks);
         conf.setNumWorkers(numberOfWorkers);
         conf.setNumAckers(numberOfWorkers);
         conf.put(Config.TOPOLOGY_WORKER_CHILDOPTS,
