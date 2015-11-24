@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -70,7 +71,7 @@ public class CollocatedEquiJoiner implements Serializable {
         this.slide = slide;
         collocatedWindowEquiJoin = new CollocatedWindowEquiJoin(this.windowSize, this.slide, this.innerRelationSchema,
                 this.outerRelationSchema, this.innerRelationKey, this.outerRelationKey, this.innerRelation, this.outerRelation);
-        migratedKeys = null;
+        migratedKeys = new ArrayList<>();
     }
 
     public void setOutputSchema(Fields output_schema) {
