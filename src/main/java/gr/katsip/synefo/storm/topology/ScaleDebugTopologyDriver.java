@@ -222,7 +222,7 @@ public class ScaleDebugTopologyDriver {
             e.printStackTrace();
         }
         conf.setDebug(false);
-        conf.registerMetricsConsumer(LoggingMetricsConsumer.class, numberOfTasks);
+        conf.registerMetricsConsumer(LoggingMetricsConsumer.class, 1);
         conf.setNumWorkers(numberOfWorkers);
         conf.setNumAckers(numberOfWorkers);
         conf.put(Config.TOPOLOGY_WORKER_CHILDOPTS,
@@ -231,8 +231,8 @@ public class ScaleDebugTopologyDriver {
         conf.put(Config.TOPOLOGY_RECEIVER_BUFFER_SIZE, 8);
         conf.put(Config.TOPOLOGY_MAX_SPOUT_PENDING, maxSpoutPending);
         conf.put(Config.TOPOLOGY_TRANSFER_BUFFER_SIZE, 32);
-        conf.put(Config.TOPOLOGY_EXECUTOR_RECEIVE_BUFFER_SIZE, 8192);
-        conf.put(Config.TOPOLOGY_EXECUTOR_SEND_BUFFER_SIZE, 8192);
+        conf.put(Config.TOPOLOGY_EXECUTOR_RECEIVE_BUFFER_SIZE, 16384);
+        conf.put(Config.TOPOLOGY_EXECUTOR_SEND_BUFFER_SIZE, 16384);
         try {
             StormSubmitter.submitTopology("debug-elastic-join", conf, builder.createTopology());
         } catch (AlreadyAliveException e) {
