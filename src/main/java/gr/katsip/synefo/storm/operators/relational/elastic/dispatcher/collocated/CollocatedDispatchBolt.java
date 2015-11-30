@@ -273,12 +273,12 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
         return (header.contains(SynefoConstant.COL_TICK_HEADER + ":"));
     }
 
-//    @Override
-//    public Map<String, Object> getComponentConfiguration() {
-//        Config conf = new Config();
-//        conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 1);
-//        return conf;
-//    }
+    @Override
+    public Map<String, Object> getComponentConfiguration() {
+        Config conf = new Config();
+        conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 1);
+        return conf;
+    }
 
     private boolean isTickTuple(Tuple tuple) {
         String sourceComponent = tuple.getSourceComponent();
@@ -290,25 +290,10 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
     @Override
     public void execute(Tuple tuple) {
         String header = "";
-//        if (isTickTuple(tuple)) {
-//            if (!SCALE_ACTION_FLAG) {
-//                /**
-//                 * Send out CTRL tuples if no scale-action is in progress
-//                 */
-//                Values controlTuple = new Values();
-//                StringBuilder stringBuilder = new StringBuilder();
-//                long timestamp = System.currentTimeMillis();
-//                stringBuilder.append(SynefoConstant.COL_TICK_HEADER + ":" + timestamp);
-//                controlTuple.add(stringBuilder.toString());
-//                controlTuple.add(null);
-//                controlTuple.add(null);
-//                for (Integer task : activeDownstreamTaskIdentifiers) {
-//                    collector.emitDirect(task, streamIdentifier + "-control", controlTuple);
-//                }
-//            }
-//            collector.ack(tuple);
-//            return;
-//        }
+        if (isTickTuple(tuple)) {
+            collector.ack(tuple);
+            return;
+        }
         if (!tuple.getFields().contains("SYNEFO_HEADER")) {
             logger.error("COL-DISPATCH-BOLT-" + taskName + ":" + taskIdentifier +
                     " missing synefo header (source: " +
