@@ -185,11 +185,11 @@ public class ElasticFileSpout extends BaseRichSpout {
             Long emitTimestamp = tupleStatistics.remove(values.toString());
             completeLatency.setValue((currentTimestamp - emitTimestamp));
         }
-        if (fileScanned == true && tupleStatistics.isEmpty()) {
-            logger.info("file completely scanned and all tuples acknowledged.");
+        if (fileScanned && tupleStatistics.isEmpty()) {
+            logger.info("spout-" + taskName + "scanned file completely and all tuples were acknowledged.");
             endTime = System.currentTimeMillis();
             timeToScanInput.setValue((endTime - startTime));
-            throw new RuntimeException("Input file scanned and processed completely");
+            close();
         }
     }
 
