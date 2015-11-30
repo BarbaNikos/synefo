@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 /**
- * Created by katsip on 11/2/2015.
+ * Created by Nick R. Katsipoulakis on 11/2/2015.
  */
 public class ScaleDebugTopologyDriver {
 
@@ -226,7 +226,8 @@ public class ScaleDebugTopologyDriver {
         conf.setNumWorkers(numberOfWorkers);
         conf.setNumAckers(numberOfWorkers);
         conf.put(Config.TOPOLOGY_WORKER_CHILDOPTS,
-                "-Xmx4096m -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:NewSize=128m -XX:CMSInitiatingOccupancyFraction=70 -XX:-CMSConcurrentMTEnabled -Djava.net.preferIPv4Stack=true"
+                "-Xmx4096m -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:NewSize=128m " +
+                "-XX:CMSInitiatingOccupancyFraction=70 -XX:-CMSConcurrentMTEnabled -Djava.net.preferIPv4Stack=true"
         );
         conf.put(Config.TOPOLOGY_RECEIVER_BUFFER_SIZE, 8);
         conf.put(Config.TOPOLOGY_MAX_SPOUT_PENDING, maxSpoutPending);

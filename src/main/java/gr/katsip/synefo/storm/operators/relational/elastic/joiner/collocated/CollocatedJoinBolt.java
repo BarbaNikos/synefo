@@ -26,7 +26,7 @@ import java.net.UnknownHostException;
 import java.util.*;
 
 /**
- * Created by katsip on 10/22/2015.
+ * Created by Nick R. Katsipoulakis on 10/22/2015.
  */
 public class CollocatedJoinBolt extends BaseRichBolt {
 

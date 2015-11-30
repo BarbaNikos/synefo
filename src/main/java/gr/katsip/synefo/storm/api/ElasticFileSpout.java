@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Created by katsip on 9/15/2015.
+ * Created by Nick R. Katsipoulakis on 9/15/2015.
  */
 public class ElasticFileSpout extends BaseRichSpout {
 
@@ -75,6 +75,8 @@ public class ElasticFileSpout extends BaseRichSpout {
 
     private AssignableMetric timeToScanInput;
 
+    private boolean fileScanned;
+
     public ElasticFileSpout(String taskName, String synefoIpAddress, Integer synefoPort,
                             FileProducer producer, String zooAddress) {
         streamIdentifier = taskName;
@@ -86,6 +88,7 @@ public class ElasticFileSpout extends BaseRichSpout {
         this.synefoPort = synefoPort;
         this.producer = producer;
         this.zooAddress = zooAddress;
+        fileScanned = false;
     }
 
     public void register() {
@@ -178,10 +181,15 @@ public class ElasticFileSpout extends BaseRichSpout {
     public void ack(Object msgId) {
         Long currentTimestamp = System.currentTimeMillis();
         Values values = (Values) msgId;
-//        logger.info("ACK-RECEIVED: " + msgId.toString());
         if (tupleStatistics.containsKey(values.toString())) {
             Long emitTimestamp = tupleStatistics.remove(values.toString());
             completeLatency.setValue((currentTimestamp - emitTimestamp));
+        }
+        if (fileScanned == true && tupleStatistics.isEmpty()) {
+            logger.info("file completely scanned and all tuples acknowledged.");
+            endTime = System.currentTimeMillis();
+            timeToScanInput.setValue((endTime - startTime));
+            throw new RuntimeException("Input file scanned and processed completely");
         }
     }
 
@@ -205,23 +213,24 @@ public class ElasticFileSpout extends BaseRichSpout {
             register();
         initMetrics(topologyContext);
         producer.init();
+        fileScanned = false;
     }
 
     @Override
     public void nextTuple() {
         if (startTime == -1)
             startTime = System.currentTimeMillis();
+        if (fileScanned)
+            return;
         if (activeDownstreamTaskIdentifiers != null && activeDownstreamTaskNames.size() > 0) {
             int value = producer.nextTuple(spoutOutputCollector, streamIdentifier,
                     activeDownstreamTaskIdentifiers.get(index), tupleStatistics);
             if (value >= 0) {
                 inputRate.setValue(value);
             }else {
-                if (value == -1 && tupleStatistics.isEmpty()) {
-                    logger.info("file completely scanned and all tuples acknowledged.");
-                    endTime = System.currentTimeMillis();
-                    timeToScanInput.setValue((endTime - startTime));
-                    throw new RuntimeException("Input file scanned and processed completely");
+                if (value == -1) {
+                    fileScanned = true;
+                    return;
                 }
             }
             if (index >= (activeDownstreamTaskIdentifiers.size() - 1))

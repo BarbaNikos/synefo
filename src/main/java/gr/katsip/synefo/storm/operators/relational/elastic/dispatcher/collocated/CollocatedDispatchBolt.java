@@ -16,7 +16,6 @@ import gr.katsip.synefo.utils.SynefoMessage;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -27,7 +26,7 @@ import java.net.UnknownHostException;
 import java.util.*;
 
 /**
- * Created by katsip on 10/22/2015.
+ * Created by Nick R. Katsipoulakis on 10/22/2015.
  */
 public class CollocatedDispatchBolt extends BaseRichBolt {
 
@@ -104,7 +103,6 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
     /**
      * Scale action information
      */
-
     private String action;
 
     private HashMap<Integer, List<Long>> capacityHistory;
