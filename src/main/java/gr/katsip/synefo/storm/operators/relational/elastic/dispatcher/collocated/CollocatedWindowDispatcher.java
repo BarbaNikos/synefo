@@ -83,6 +83,9 @@ public class CollocatedWindowDispatcher implements Serializable {
         int task = -1;
         for (int i = 0; i < ringBuffer.size(); i++) {
             CollocatedDispatchWindow window = ringBuffer.get(i);
+            /**
+             * If window is valid, get the task that currently has the tuple
+             */
             if ((window.start + this.window) >= timestamp) {
                 if (relation.equals(innerRelationName)) {
                     if (window.innerRelationIndex.containsKey(key)) {
