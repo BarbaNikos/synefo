@@ -4,7 +4,6 @@ import backtype.storm.task.OutputCollector;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
-import gr.katsip.synefo.utils.SynefoConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Serializable;
@@ -295,6 +294,11 @@ public class CollocatedWindowDispatcher implements Serializable {
 
     public void updateIndex(String scaleAction, String taskWithIdentifier, String relation, List<String> result) {
         //Single Dispatcher version - Not supported
+    }
+
+    public void reinitializeBuffer() {
+        ringBuffer.clear();
+        numberOfTuplesPerTask.clear();
     }
 
     public void reassignKeys(List<String> migratedKeys, int scaledTask, int candidateTask) {
