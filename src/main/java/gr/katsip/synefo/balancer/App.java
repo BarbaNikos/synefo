@@ -14,8 +14,8 @@ public class App {
         }
 //        ResourceThresholdParser parser = new ResourceThresholdParser();
 //        parser.parseThresholds(args[0]);
-        String zookeeperAddress = args[1];
-        boolean INIT_MINIMAL_RESOURCES = Boolean.parseBoolean(args[2]);
+        String zookeeperAddress = args[0];
+        boolean INIT_MINIMAL_RESOURCES = Boolean.parseBoolean(args[1]);
         HashMap<String, Pair<Number, Number>> inputRateThresholds = new HashMap<>();
         Pair<Number, Number> pair = new Pair<>();
         pair.first = new Integer(500);
