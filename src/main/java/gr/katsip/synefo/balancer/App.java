@@ -8,8 +8,8 @@ import java.util.HashMap;
  */
 public class App {
     public static void main(String[] args) {
-        if(args.length < 3) {
-            System.err.println("arguments: <resource-file-thresholds.xml> <zoo-ip1:port1,zoo-ip2:port2,...,zoo-ipN:portN> <INIT_MINIMAL_RESOURCES>");
+        if(args.length < 2) {
+            System.err.println("arguments:<zoo-ip1:port1,zoo-ip2:port2,...,zoo-ipN:portN> <INIT_MINIMAL_RESOURCES>");
             System.exit(1);
         }
 //        ResourceThresholdParser parser = new ResourceThresholdParser();
@@ -21,7 +21,6 @@ public class App {
         pair.first = new Integer(500);
         pair.second = new Integer(500);
         inputRateThresholds.put("input-rate", pair);
-//        BalanceServer server = new BalanceServer(zookeeperAddress, parser.get_thresholds(), null);
         BalanceServer server = new BalanceServer(zookeeperAddress, inputRateThresholds, INIT_MINIMAL_RESOURCES);
         server.runServer();
     }
