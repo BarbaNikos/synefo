@@ -243,6 +243,10 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
         candidateTask = -1;
         action = "";
         zookeeperClient.clearActionData();
+        /**
+         * Just added the following cause it is not needed anymore
+         */
+        zookeeperClient.disconnect();
     }
 
     private void initMetrics(TopologyContext context) {
@@ -343,11 +347,11 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
             int numberOfTuplesDispatched = 0;
             long startTime = System.currentTimeMillis();
             if (activeDownstreamTaskIdentifiers.size() > 0) {
-                numberOfTuplesDispatched = dispatcher.execute(streamIdentifier + "-data", tuple, collector, fields, tupleValues, migratedKeys,
-                        scaledTask, candidateTask, this.action);
+                numberOfTuplesDispatched = dispatcher.execute(streamIdentifier + "-data", tuple, collector, fields,
+                        tupleValues, migratedKeys, scaledTask, candidateTask, this.action);
             }else {
-                numberOfTuplesDispatched = dispatcher.execute(streamIdentifier + "-data", tuple, null, fields, tupleValues, migratedKeys,
-                        scaledTask, candidateTask, this.action);
+                numberOfTuplesDispatched = dispatcher.execute(streamIdentifier + "-data", tuple, null, fields,
+                        tupleValues, migratedKeys, scaledTask, candidateTask, this.action);
             }
             collector.ack(tuple);
             temporaryThroughput += numberOfTuplesDispatched;

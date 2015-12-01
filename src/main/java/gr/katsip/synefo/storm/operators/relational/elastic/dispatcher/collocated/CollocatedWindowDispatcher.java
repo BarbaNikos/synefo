@@ -114,8 +114,8 @@ public class CollocatedWindowDispatcher implements Serializable {
         return victim;
     }
 
-    public int execute(String streamId, Tuple anchor, OutputCollector collector, Fields fields, Values values, List<String> migratedKeys,
-                       int scaledTask, int candidateTask, String action) {
+    public int execute(String streamId, Tuple anchor, OutputCollector collector, Fields fields, Values values,
+                       List<String> migratedKeys, int scaledTask, int candidateTask, String action) {
         long currentTimestamp = System.currentTimeMillis();
         int numberOfDispatchedTuples = 0;
         int victimTask;
@@ -134,6 +134,8 @@ public class CollocatedWindowDispatcher implements Serializable {
         }
         victimTask = locateTask(currentTimestamp, relationName, key);
         if (migratedKeys.size() > 0 && migratedKeys.indexOf(key) >= 0 && scaledTask != -1 && candidateTask != -1) {
+            logger.info("ongoing migration for received key[" + key + "], scaledTask: " + scaledTask + ", candidate: " +
+                    candidateTask + ", victim-task: " + victimTask + ", will update current window.");
             updateCurrentWindow(currentTimestamp, relationName, key, candidateTask);
             if (victimTask >= 0 && victimTask != scaledTask && victimTask != candidateTask) {
                 logger.error("inconsistency located. victim-task: " + victimTask + " is neither equal to scaled-task (" +
@@ -146,13 +148,17 @@ public class CollocatedWindowDispatcher implements Serializable {
                 numberOfDispatchedTuples += 2;
             }
         }else {
-            if (victimTask < 0)
+            String logInfo = "no migration for received key[" + key + "], victim-task: " + victimTask;
+            if (victimTask < 0) {
                 victimTask = pickTaskForNewKey();
+                logInfo = logInfo + "~~picked new task: " + victimTask + "";
+            }
             updateCurrentWindow(currentTimestamp, relationName, key, victimTask);
             if (collector != null && victimTask >= 0) {
                 collector.emitDirect(victimTask, streamId, anchor, tuple);
                 numberOfDispatchedTuples++;
             }
+            logger.info(logInfo);
         }
         return numberOfDispatchedTuples;
     }

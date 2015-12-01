@@ -74,6 +74,14 @@ public class ZookeeperClient {
         scaleAction = "";
     }
 
+    public void disconnect() {
+        try {
+            zookeeper.close();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
     public ZookeeperClient(String zookeeperAddress, String taskName, Integer identifier, String taskAddress) {
         this.zookeeperAddress = zookeeperAddress;
         this.taskName = taskName;

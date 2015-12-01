@@ -207,6 +207,7 @@ public class CollocatedJoinBolt extends BaseRichBolt {
         migratedKeys = new ArrayList<>();
         candidateTask = -1;
         scaleAction = "";
+        zookeeperClient.disconnect();
     }
 
     private void initMetrics(TopologyContext context) {
