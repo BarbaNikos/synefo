@@ -310,7 +310,8 @@ public class CollocatedWindowEquiJoin implements Serializable {
 
     public void initializeBuffer() {
         ringBuffer.clear();
-        mirrorBuffer.clear();
+        if (mirrorBuffer != null)
+            mirrorBuffer.clear();
         byteStateSize = 0L;
         innerRelationCardinality = 0L;
         outerRelationCardinality = 0L;
