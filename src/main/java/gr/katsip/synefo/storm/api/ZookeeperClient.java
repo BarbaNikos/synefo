@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * Created by nick on 9/23/15.
+ * Created by Nick R. Katsipoulakis on 9/23/15.
  */
 public class ZookeeperClient {
 
