@@ -38,7 +38,7 @@ public class CollocatedWindowDispatcher implements Serializable {
 
     private int bufferSize;
 
-    private HashMap<String, List<Integer>> taskToRelationIndex;
+    private ArrayList<Integer> joinerTasks;
 
     private int innerRelationCardinality;
 
@@ -73,9 +73,7 @@ public class CollocatedWindowDispatcher implements Serializable {
      * @param activeDownstreamTaskIdentifiers
      */
     public void setTaskToRelationIndex(List<Integer> activeDownstreamTaskIdentifiers) {
-        taskToRelationIndex = new HashMap<>();
-        taskToRelationIndex.put(innerRelationName, new ArrayList<>(activeDownstreamTaskIdentifiers));
-        taskToRelationIndex.put(outerRelationName, new ArrayList<>(activeDownstreamTaskIdentifiers));
+        joinerTasks = new ArrayList<>(activeDownstreamTaskIdentifiers);
         index = 0;
     }
 
@@ -106,8 +104,8 @@ public class CollocatedWindowDispatcher implements Serializable {
         /**
          * TODO: Here taskToRelationIndex can be simplified to a simple LinkedList
          */
-        int victim = taskToRelationIndex.get(innerRelationName).get(index);
-        if (index == taskToRelationIndex.get(innerRelationName).size() - 1)
+        int victim = joinerTasks.get(index);
+        if (index == joinerTasks.size() - 1)
             index = 0;
         else
             index++;
@@ -293,6 +291,8 @@ public class CollocatedWindowDispatcher implements Serializable {
                     if (window.keyIndex.containsKey(key) && window.keyIndex.get(key) == scaledTask)
                         window.keyIndex.put(key, candidateTask);
                 }
+            } else {
+                break;
             }
         }
     }

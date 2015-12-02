@@ -455,8 +455,8 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                      * the latency back to acceptable levels.
                      *
                      */
-//                    dispatcher.reassignKeys(migratedKeys, scaledTask, candidateTask);
-                    dispatcher.reinitializeBuffer();
+                    dispatcher.reassignKeys(migratedKeys, scaledTask, candidateTask);
+//                    dispatcher.reinitializeBuffer();
                     /**
                      * END of experiment for instant transfer of state
                      */
