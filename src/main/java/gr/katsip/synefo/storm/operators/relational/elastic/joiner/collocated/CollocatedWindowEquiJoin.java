@@ -323,7 +323,7 @@ public class CollocatedWindowEquiJoin implements Serializable {
          * Just for experimental purposed to remove all the state
          * and see if load-shedding helps the situation
          */
-        initializeBuffer();
+//        initializeBuffer();
         this.migratedKeys = migratedKeys;
         mirrorBuffer = new LinkedList<>();
         if (migratedKeys.size() == 0)
@@ -336,6 +336,9 @@ public class CollocatedWindowEquiJoin implements Serializable {
                 mirrorWindow.end = window.end;
                 mirrorWindow.byteStateSize = 0L;
                 HashMap<String, ArrayList<Values>> temporaryMap = new HashMap<>();
+                /**
+                 * Get inner relation tuples
+                 */
                 for (String key : window.innerRelation.keySet()) {
                     if (migratedKeys.indexOf(key) >= 0) {
                         ArrayList<Values> migratedTuples = window.innerRelation.get(key);

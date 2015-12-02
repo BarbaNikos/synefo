@@ -356,9 +356,12 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                  * The next part is for experimentation purposes.
                  * It simulates the case where scaling happens almost instantly
                  */
-                migratedKeys.clear();
-                joiner.initializeBuffer();
-//                joiner.initializeScaleOut(migratedKeys);
+//                migratedKeys.clear();
+//                joiner.initializeBuffer();
+                long start = System.currentTimeMillis();
+                joiner.initializeScaleOut(migratedKeys);
+                long end = System.currentTimeMillis();
+                logger.info("separation of keys took: " + (end - start) / 1000L + " seconds");
                 if (this.candidateTask != -1 && migratedKeys.size() == 0) {
                     StringBuilder stringBuilder = new StringBuilder();
                     stringBuilder.append(SynefoConstant.COL_SCALE_ACTION_PREFIX + ":" + SynefoConstant.COL_COMPLETE_ACTION +
