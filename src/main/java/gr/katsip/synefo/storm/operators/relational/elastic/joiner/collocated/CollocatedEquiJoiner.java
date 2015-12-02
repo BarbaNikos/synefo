@@ -79,29 +79,37 @@ public class CollocatedEquiJoiner implements Serializable {
     }
 
     public Pair<Integer, Integer> execute(String streamId, Tuple anchor, OutputCollector collector, List<Integer> activeTasks,
-                                          Integer taskIndex, Fields fields, Values values) {
+                                          Integer taskIndex, Fields fields, Values values, List<Long> times) {
         Integer numberOfTuplesProduced = 0;
-        Long timestamp = System.currentTimeMillis();
-        collocatedWindowEquiJoin.store(timestamp, fields, values);
-        List<Values> tuples = collocatedWindowEquiJoin.join(timestamp, fields, values);
+        Long t1 = System.currentTimeMillis();
+        collocatedWindowEquiJoin.store(t1, fields, values);
+        long t2 = System.currentTimeMillis();
+        List<Values> tuples = collocatedWindowEquiJoin.join(t1, fields, values);
+        long t3 = System.currentTimeMillis();
+        long t4 = -1;
         if (migratedKeys.size() > 0) {
-            List<Values> mirrorTuples = collocatedWindowEquiJoin.mirrorJoin(timestamp, fields, values);
+            List<Values> mirrorTuples = collocatedWindowEquiJoin.mirrorJoin(t1, fields, values);
+            t4 = System.currentTimeMillis();
             mirrorTuples.removeAll(tuples);
             tuples.addAll(mirrorTuples);
         }
-        for (Values tuple : tuples) {
-            Values output = new Values();
-            output.add(timestamp.toString());
-            output.add(joinResultSchema);
-            output.add(tuple);
-            numberOfTuplesProduced++;
-            if (activeTasks.size() > 0) {
+        if (activeTasks.size() > 0) {
+            for (Values tuple : tuples) {
+                Values output = new Values();
+                output.add(t1.toString());
+                output.add(joinResultSchema);
+                output.add(tuple);
+                numberOfTuplesProduced++;
                 collector.emitDirect(activeTasks.get(taskIndex), streamId, anchor, output);
                 taskIndex++;
                 if (taskIndex >= activeTasks.size())
                     taskIndex = 0;
             }
         }
+        times.add(new Long((t2 - t1) / 1000L));
+        times.add(new Long((t3 - t2) / 1000L));
+        if (t4 > -1)
+        times.add(new Long((t4 - t3) / 1000L));
         return new Pair<>(taskIndex, numberOfTuplesProduced);
     }
 

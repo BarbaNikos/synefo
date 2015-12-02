@@ -287,16 +287,14 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                     e.printStackTrace();
                 }
                 Values tupleValues = (Values) values.get(1);
-                long startTime = System.currentTimeMillis();
+                List<Long> times = new ArrayList<>();
                 Pair<Integer, Integer> pair = joiner.execute(streamIdentifier + "-data", tuple, collector, activeDownstreamTaskIdentifiers,
-                        downstreamIndex, fields, tupleValues);
+                        downstreamIndex, fields, tupleValues, times);
                 downstreamIndex = pair.first;
                 temporaryThroughput += pair.second;
-                long endTime = System.currentTimeMillis();
-                lastExecuteLatencyMetric = endTime - startTime;
                 collector.ack(tuple);
                 lastStateSizeMetric = joiner.getStateSize();
-                executeLatency.setValue(lastExecuteLatencyMetric);
+                executeLatency.setValue(Arrays.toString(times.toArray()));
                 stateSize.setValue(lastStateSizeMetric);
                 numberOfTuples.setValue(joiner.getNumberOfTuples());
                 throughputCurrentTimestamp = System.currentTimeMillis();
