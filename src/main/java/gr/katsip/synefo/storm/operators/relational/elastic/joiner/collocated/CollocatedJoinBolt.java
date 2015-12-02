@@ -327,9 +327,9 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                 }
                 Long t4 = System.currentTimeMillis();
                 times = new ArrayList<>();
-                times.add(new Long((t2 - t1) / 1000L));
-                times.add(new Long((t3 - t2) / 1000L));
-                times.add(new Long((t4 - t3) / 1000L));
+                times.add(new Long((t2 - t1)));
+                times.add(new Long((t3 - t2)));
+                times.add(new Long((t4 - t3)));
                 if (temporaryInputRate == 0) {
                     nonExecuteLatency.setValue(Arrays.toString(times.toArray()));
                 }

@@ -106,10 +106,10 @@ public class CollocatedEquiJoiner implements Serializable {
                     taskIndex = 0;
             }
         }
-        times.add(new Long((t2 - t1) / 1000L));
-        times.add(new Long((t3 - t2) / 1000L));
+        times.add(new Long((t2 - t1)));
+        times.add(new Long((t3 - t2)));
         if (t4 > -1)
-        times.add(new Long((t4 - t3) / 1000L));
+        times.add(new Long((t4 - t3)));
         return new Pair<>(taskIndex, numberOfTuplesProduced);
     }
 
