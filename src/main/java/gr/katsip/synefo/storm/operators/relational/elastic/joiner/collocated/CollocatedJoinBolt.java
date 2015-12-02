@@ -261,19 +261,10 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                 collector.ack(tuple);
                 return;
             }else {
-                inputRateCurrentTimestamp = System.currentTimeMillis();
-                if ((inputRateCurrentTimestamp - inputRatePreviousTimestamp) >= 1000L) {
-                    inputRatePreviousTimestamp = inputRateCurrentTimestamp;
-                    inputRate.setValue(temporaryInputRate);
-                    executeLatency.setValue(lastExecuteLatencyMetric);
-                    stateSize.setValue(lastStateSizeMetric);
-                    temporaryInputRate = 0;
-                }else {
-                    temporaryInputRate++;
-                }
                 /**
                  * Remove from both values and fields SYNEFO_HEADER (SYNEFO_TIMESTAMP)
                  */
+                collector.ack(tuple);
                 Values values = new Values(tuple.getValues().toArray());
                 values.remove(0);
                 Fields fields = null;
@@ -288,21 +279,33 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                 }
                 Values tupleValues = (Values) values.get(1);
                 List<Long> times = new ArrayList<>();
+
                 Pair<Integer, Integer> pair = joiner.execute(streamIdentifier + "-data", tuple, collector, activeDownstreamTaskIdentifiers,
                         downstreamIndex, fields, tupleValues, times);
                 downstreamIndex = pair.first;
+
                 temporaryThroughput += pair.second;
-                collector.ack(tuple);
-                lastStateSizeMetric = joiner.getStateSize();
-                executeLatency.setValue(Arrays.toString(times.toArray()));
-                stateSize.setValue(lastStateSizeMetric);
-                numberOfTuples.setValue(joiner.getNumberOfTuples());
+                temporaryInputRate++;
                 throughputCurrentTimestamp = System.currentTimeMillis();
                 if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
                     throughputPreviousTimestamp = throughputCurrentTimestamp;
                     throughput.setValue(temporaryThroughput);
+                    inputRate.setValue(temporaryInputRate);
+                    temporaryInputRate = 0;
                     temporaryThroughput = 0;
+                    lastStateSizeMetric = joiner.getStateSize();
+                    stateSize.setValue(lastStateSizeMetric);
+                    executeLatency.setValue(Arrays.toString(times.toArray()));
+                    numberOfTuples.setValue(joiner.getNumberOfTuples());
                 }
+//                inputRateCurrentTimestamp = System.currentTimeMillis();
+//                if ((inputRateCurrentTimestamp - inputRatePreviousTimestamp) >= 1000L) {
+//                    inputRatePreviousTimestamp = inputRateCurrentTimestamp;
+//                    inputRate.setValue(temporaryInputRate);
+//                    temporaryInputRate = 0;
+//                }else {
+//                    temporaryInputRate++;
+//                }
                 /**
                  * Check if SCALE-ACTION concluded (previous state expired)
                  */
