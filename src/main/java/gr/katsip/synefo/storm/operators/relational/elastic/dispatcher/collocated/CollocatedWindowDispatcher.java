@@ -132,8 +132,8 @@ public class CollocatedWindowDispatcher implements Serializable {
         }
         victimTask = locateTask(currentTimestamp, key);
         if (migratedKeys.size() > 0 && migratedKeys.indexOf(key) >= 0 && scaledTask != -1 && candidateTask != -1) {
-            logger.info("ongoing migration for received key[" + key + "], scaledTask: " + scaledTask + ", candidate: " +
-                    candidateTask + ", victim-task: " + victimTask + ", will update current window.");
+//            logger.info("ongoing migration for received key[" + key + "], scaledTask: " + scaledTask + ", candidate: " +
+//                    candidateTask + ", victim-task: " + victimTask + ", will update current window.");
             updateCurrentWindow(currentTimestamp, relationName, key, candidateTask);
             if (victimTask >= 0 && victimTask != scaledTask && victimTask != candidateTask) {
                 logger.error("inconsistency located. victim-task: " + victimTask + " is neither equal to scaled-task (" +
@@ -146,17 +146,17 @@ public class CollocatedWindowDispatcher implements Serializable {
                 numberOfDispatchedTuples += 2;
             }
         }else {
-            String logInfo = "no migration for received key[" + key + "], victim-task: " + victimTask;
+//            String logInfo = "no migration for received key[" + key + "], victim-task: " + victimTask;
             if (victimTask < 0) {
                 victimTask = pickTaskForNewKey();
-                logInfo = logInfo + "~~picked new task: " + victimTask + "";
+//                logInfo = logInfo + "~~picked new task: " + victimTask + "";
             }
             updateCurrentWindow(currentTimestamp, relationName, key, victimTask);
             if (collector != null && victimTask >= 0) {
                 collector.emitDirect(victimTask, streamId, anchor, tuple);
                 numberOfDispatchedTuples++;
             }
-            logger.info(logInfo);
+//            logger.info(logInfo);
         }
         return numberOfDispatchedTuples;
     }
