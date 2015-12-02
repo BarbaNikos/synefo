@@ -70,6 +70,8 @@ public class CollocatedJoinBolt extends BaseRichBolt {
 
     private transient AssignableMetric executeLatency;
 
+    private transient AssignableMetric nonExecuteLatency;
+
     private transient AssignableMetric stateSize;
 
     private transient AssignableMetric inputRate;
@@ -84,15 +86,9 @@ public class CollocatedJoinBolt extends BaseRichBolt {
 
     private int temporaryThroughput;
 
-    private long inputRateCurrentTimestamp;
-
-    private long inputRatePreviousTimestamp;
-
     private long throughputCurrentTimestamp;
 
     private long throughputPreviousTimestamp;
-
-    private long lastExecuteLatencyMetric = 0L;
 
     private long lastStateSizeMetric = 0L;
 
@@ -182,7 +178,6 @@ public class CollocatedJoinBolt extends BaseRichBolt {
         logger.info(strBuild.toString());
         logger.info("COL-JOIN-BOLT-" + taskName + ":" + taskIdentifier + " registered to load-balancer");
         downstreamIndex = 0;
-        inputRatePreviousTimestamp = System.currentTimeMillis();
         throughputPreviousTimestamp = System.currentTimeMillis();
         temporaryInputRate = 0;
         temporaryThroughput = 0;
@@ -212,12 +207,14 @@ public class CollocatedJoinBolt extends BaseRichBolt {
 
     private void initMetrics(TopologyContext context) {
         executeLatency = new AssignableMetric(null);
+        nonExecuteLatency = new AssignableMetric(null);
         stateSize = new AssignableMetric(null);
         inputRate = new AssignableMetric(null);
         throughput = new AssignableMetric(null);
         stateTransferTime = new AssignableMetric(null);
         numberOfTuples = new AssignableMetric(null);
         context.registerMetric("execute-latency", executeLatency, METRIC_REPORT_FREQ_SEC);
+        context.registerMetric("nonexecute-latency", nonExecuteLatency, METRIC_REPORT_FREQ_SEC);
         context.registerMetric("state-size", stateSize, METRIC_REPORT_FREQ_SEC);
         context.registerMetric("input-rate", inputRate, METRIC_REPORT_FREQ_SEC);
         context.registerMetric("throughput", throughput, METRIC_REPORT_FREQ_SEC);
@@ -265,6 +262,7 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                  * Remove from both values and fields SYNEFO_HEADER (SYNEFO_TIMESTAMP)
                  */
                 collector.ack(tuple);
+                Long t1 = System.currentTimeMillis();
                 Values values = new Values(tuple.getValues().toArray());
                 values.remove(0);
                 Fields fields = null;
@@ -279,11 +277,13 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                 }
                 Values tupleValues = (Values) values.get(1);
                 List<Long> times = new ArrayList<>();
+                Long t2 = System.currentTimeMillis();
 
                 Pair<Integer, Integer> pair = joiner.execute(streamIdentifier + "-data", tuple, collector, activeDownstreamTaskIdentifiers,
                         downstreamIndex, fields, tupleValues, times);
                 downstreamIndex = pair.first;
 
+                Long t3 = System.currentTimeMillis();
                 temporaryThroughput += pair.second;
                 temporaryInputRate++;
                 throughputCurrentTimestamp = System.currentTimeMillis();
@@ -324,6 +324,14 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                     if (scaleAction.equals(SynefoConstant.COL_REMOVE_ACTION))
                         initializeStats();
                     scaleAction = "";
+                }
+                Long t4 = System.currentTimeMillis();
+                times = new ArrayList<>();
+                times.add(new Long((t2 - t1) / 1000L));
+                times.add(new Long((t3 - t2) / 1000L));
+                times.add(new Long((t4 - t3) / 1000L));
+                if (temporaryInputRate == 0) {
+                    nonExecuteLatency.setValue(Arrays.toString(times.toArray()));
                 }
             }
         }
