@@ -37,7 +37,9 @@ public class CollocatedEquiJoiner implements Serializable {
 
     private Fields joinResultSchema;
 
-    private CollocatedWindowEquiJoin collocatedWindowEquiJoin;
+//    private CollocatedWindowEquiJoin collocatedWindowEquiJoin;
+
+    private OptimizedWindowEquiJoin optimizedWindowEquiJoin;
 
     private int windowSize;
 
@@ -70,7 +72,9 @@ public class CollocatedEquiJoiner implements Serializable {
             this.joinResultSchema = new Fields((String[]) ArrayUtils.addAll(outerRelationArray, innerRelationArray));
         this.windowSize = window;
         this.slide = slide;
-        collocatedWindowEquiJoin = new CollocatedWindowEquiJoin(this.windowSize, this.slide, this.innerRelationSchema,
+//        collocatedWindowEquiJoin = new CollocatedWindowEquiJoin(this.windowSize, this.slide, this.innerRelationSchema,
+//                this.outerRelationSchema, this.innerRelationKey, this.outerRelationKey, this.innerRelation, this.outerRelation);
+        optimizedWindowEquiJoin = new OptimizedWindowEquiJoin(this.windowSize, this.slide, this.innerRelationSchema,
                 this.outerRelationSchema, this.innerRelationKey, this.outerRelationKey, this.innerRelation, this.outerRelation);
         migratedKeys = new ArrayList<>();
     }
@@ -83,18 +87,19 @@ public class CollocatedEquiJoiner implements Serializable {
                                           Integer taskIndex, Fields fields, Values values, List<Long> times) {
         Integer numberOfTuplesProduced = 0;
         Long t1 = System.currentTimeMillis();
-        collocatedWindowEquiJoin.store(t1, fields, values);
+//        collocatedWindowEquiJoin.store(t1, fields, values);
+        optimizedWindowEquiJoin.store(t1, fields, values);
         long t2 = System.currentTimeMillis();
-        List<Values> tuples = new LinkedList<>();
 //        List<Values> tuples = collocatedWindowEquiJoin.join(t1, fields, values);
+        List<Values> tuples = optimizedWindowEquiJoin.join(t1, fields, values);
         long t3 = System.currentTimeMillis();
-        long t4 = -1;
-        if (migratedKeys.size() > 0) {
-            List<Values> mirrorTuples = collocatedWindowEquiJoin.mirrorJoin(t1, fields, values);
-            t4 = System.currentTimeMillis();
-            mirrorTuples.removeAll(tuples);
-            tuples.addAll(mirrorTuples);
-        }
+//        long t4 = -1;
+//        if (migratedKeys.size() > 0) {
+//            List<Values> mirrorTuples = collocatedWindowEquiJoin.mirrorJoin(t1, fields, values);
+//            t4 = System.currentTimeMillis();
+//            mirrorTuples.removeAll(tuples);
+//            tuples.addAll(mirrorTuples);
+//        }
         if (activeTasks.size() > 0) {
             for (Values tuple : tuples) {
                 Values output = new Values();
@@ -110,8 +115,8 @@ public class CollocatedEquiJoiner implements Serializable {
         }
         times.add(new Long((t2 - t1)));
         times.add(new Long((t3 - t2)));
-        if (t4 > -1)
-        times.add(new Long((t4 - t3)));
+//        if (t4 > -1)
+//        times.add(new Long((t4 - t3)));
         return new Pair<>(taskIndex, numberOfTuplesProduced);
     }
 
@@ -120,25 +125,30 @@ public class CollocatedEquiJoiner implements Serializable {
     }
 
     public long getStateSize() {
-        return collocatedWindowEquiJoin.getStateSize();
+//        return collocatedWindowEquiJoin.getStateSize();
+        return optimizedWindowEquiJoin.getStateSize();
     }
 
-    public void initializeScaleOut(List<String> migratedKeys) {
+    public void initializeScaleOut(Long timestamp, List<String> migratedKeys) {
         this.migratedKeys = migratedKeys;
-        collocatedWindowEquiJoin.initializeScaleOut(migratedKeys);
+//        collocatedWindowEquiJoin.initializeScaleOut(migratedKeys);
+        optimizedWindowEquiJoin.initScaleBuffer(timestamp, migratedKeys);
     }
 
-    public void initializeScaleIn(List<String> migratedKeys) {
+    public void initializeScaleIn(Long timestamp, List<String> migratedKeys) {
         this.migratedKeys = migratedKeys;
-        collocatedWindowEquiJoin.initializeScaleIn(migratedKeys);
+//        collocatedWindowEquiJoin.initializeScaleIn(migratedKeys);
+        optimizedWindowEquiJoin.initScaleBuffer(timestamp, migratedKeys);
     }
 
     public void initializeBuffer() {
-        collocatedWindowEquiJoin.initializeBuffer();
+//        collocatedWindowEquiJoin.initializeBuffer();
+        optimizedWindowEquiJoin.initBuffer();
     }
 
     public long getNumberOfTuples() {
-        return collocatedWindowEquiJoin.getNumberOfTuples();
+//        return collocatedWindowEquiJoin.getNumberOfTuples();
+        return optimizedWindowEquiJoin.getNumberOfTuples();
     }
 
 }

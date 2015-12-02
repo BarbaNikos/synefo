@@ -235,6 +235,7 @@ public class CollocatedJoinBolt extends BaseRichBolt {
 
     @Override
     public void execute(Tuple tuple) {
+        Long t1 = System.currentTimeMillis();
         String header = "";
         if (!tuple.getFields().contains("SYNEFO_HEADER")) {
             logger.error("JOIN-BOLT-" + taskName + ":" + taskIdentifier +
@@ -246,7 +247,7 @@ public class CollocatedJoinBolt extends BaseRichBolt {
             header = tuple.getString(tuple.getFields()
                     .fieldIndex("SYNEFO_HEADER"));
             if (header != null && !header.equals("") && isScaleHeader(header)) {
-                manageScaleTuple(tuple, header);
+                manageScaleTuple(t1, tuple, header);
                 collector.ack(tuple);
                 return;
             }else if (header != null && !header.equals("") && isControlTuple(header)) {
@@ -262,7 +263,6 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                  * Remove from both values and fields SYNEFO_HEADER (SYNEFO_TIMESTAMP)
                  */
                 collector.ack(tuple);
-                Long t1 = System.currentTimeMillis();
                 Values values = new Values(tuple.getValues().toArray());
                 values.remove(0);
                 Fields fields = null;
@@ -345,7 +345,7 @@ public class CollocatedJoinBolt extends BaseRichBolt {
         stateTransferTime.setValue(null);
     }
 
-    public void manageScaleTuple(Tuple tuple, String header) {
+    public void manageScaleTuple(Long timestamp, Tuple tuple, String header) {
         String action = header.split("[|]")[0].split(":")[1];
         String serializedMigratedKeys = header.split("[|]")[1].split(":")[1];
         String candidateTask = header.split("[|]")[2].split(":")[1];
@@ -356,7 +356,7 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                     migratedKeys.add(key);
                 }
                 this.candidateTask = Integer.parseInt(candidateTask);
-                joiner.initializeScaleOut(migratedKeys);
+                joiner.initializeScaleOut(timestamp, migratedKeys);
                 startTransferTimestamp = System.currentTimeMillis();
                 logger.info("JOIN-BOLT-" + taskName + ":" + taskIdentifier +
                         "participates into scale-action ADD and it is NOT the candidate");
@@ -368,7 +368,7 @@ public class CollocatedJoinBolt extends BaseRichBolt {
 //                migratedKeys.clear();
 //                joiner.initializeBuffer();
                 long start = System.currentTimeMillis();
-                joiner.initializeScaleOut(migratedKeys);
+                joiner.initializeScaleOut(timestamp, migratedKeys);
                 long end = System.currentTimeMillis();
                 logger.info("separation of keys took: " + (end - start) / 1000L + " seconds");
                 if (this.candidateTask != -1 && migratedKeys.size() == 0) {
@@ -403,7 +403,7 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                     migratedKeys.add(key);
                 }
                 this.candidateTask = Integer.parseInt(candidateTask);
-                joiner.initializeScaleIn(migratedKeys);
+                joiner.initializeScaleIn(timestamp, migratedKeys);
                 startTransferTimestamp = System.currentTimeMillis();
                 logger.info("JOIN-BOLT-" + taskName + ":" + taskIdentifier +
                         "participates into scale-action REMOVE and it is the candidate");
