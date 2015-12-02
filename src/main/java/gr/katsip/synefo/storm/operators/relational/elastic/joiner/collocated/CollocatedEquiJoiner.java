@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -84,7 +85,8 @@ public class CollocatedEquiJoiner implements Serializable {
         Long t1 = System.currentTimeMillis();
         collocatedWindowEquiJoin.store(t1, fields, values);
         long t2 = System.currentTimeMillis();
-        List<Values> tuples = collocatedWindowEquiJoin.join(t1, fields, values);
+        List<Values> tuples = new LinkedList<>();
+//        List<Values> tuples = collocatedWindowEquiJoin.join(t1, fields, values);
         long t3 = System.currentTimeMillis();
         long t4 = -1;
         if (migratedKeys.size() > 0) {
