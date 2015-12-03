@@ -127,8 +127,8 @@ public class QueryFiveDriver {
                 (long) (windowInMinutes * (60 * 1000)), slideInMilliSeconds);
         builder.setBolt("cust_ord_dispatch", new CollocatedDispatchBolt("cust_ord_dispatch", synefoAddress, synefoPort, dispatcher,
                 zookeeperAddress, AUTO_SCALE), 1)
-                .directGrouping("customer", "customer-data")
-                .directGrouping("order", "order-data")
+                .directGrouping("customer", "customer")
+                .directGrouping("order", "order")
                 .directGrouping("cust_ord_join", "cust_ord_join-control")
                 .setNumTasks(1);
         numberOfTasks += 1;
@@ -159,8 +159,8 @@ public class QueryFiveDriver {
                 (long) (windowInMinutes * (60 * 1000)), slideInMilliSeconds);
         builder.setBolt("line_sup_dispatch", new CollocatedDispatchBolt("line_sup_dispatch", synefoAddress, synefoPort, dispatcher,
                 zookeeperAddress, AUTO_SCALE), 1)
-                .directGrouping("lineitem", "lineitem-data")
-                .directGrouping("supplier", "supplier-data")
+                .directGrouping("lineitem", "lineitem")
+                .directGrouping("supplier", "supplier")
                 .directGrouping("line_sup_join", "line_sup_join-control")
                 .setNumTasks(1);
         numberOfTasks += 1;
