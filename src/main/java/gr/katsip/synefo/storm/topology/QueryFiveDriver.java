@@ -192,7 +192,7 @@ public class QueryFiveDriver {
                 synefoPort, dispatcher, zookeeperAddress, AUTO_SCALE), 1)
                 .directGrouping("cust_ord_join", "cust_ord_join-data")
                 .directGrouping("line_sup_join", "line_sup_join-data")
-                .directGrouping("cust_ord_line_sup_join-control")
+                .directGrouping("cust_ord_line_sup_join", "cust_ord_line_sup_join-control")
                 .setNumTasks(1);
         numberOfTasks += 1;
         tasks = new ArrayList<>();
