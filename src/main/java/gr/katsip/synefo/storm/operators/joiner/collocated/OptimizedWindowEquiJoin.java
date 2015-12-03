@@ -99,7 +99,13 @@ public class OptimizedWindowEquiJoin implements Serializable {
                 HashMap<String, LinkedList<Values>> tupleIndex;
                 if (ringBuffer.getFirst().tupleIndex.containsKey(key)) {
                     tupleIndex = ringBuffer.getFirst().tupleIndex.get(key);
-                    if (tupleIndex.get(relationName).indexOf(tuple) < 0) {
+                    if (!tupleIndex.containsKey(relationName)) {
+                        LinkedList<Values> tuples = new LinkedList<>();
+                        tuples.add(tuple);
+                        tupleIndex.put(relationName, tuples);
+                        addedTuple = true;
+                        ringBuffer.getFirst().tupleIndex.put(key, tupleIndex);
+                    } else if (tupleIndex.get(relationName).indexOf(tuple) < 0) {
                         tupleIndex.get(relationName).add(tuple);
                         addedTuple = true;
                         ringBuffer.getFirst().tupleIndex.put(key, tupleIndex);
