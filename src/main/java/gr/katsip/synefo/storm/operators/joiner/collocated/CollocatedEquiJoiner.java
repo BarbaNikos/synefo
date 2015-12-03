@@ -120,7 +120,7 @@ public class CollocatedEquiJoiner implements Serializable {
     }
 
     public Fields getOutputSchema() {
-        return outputSchema;
+        return joinResultSchema;
     }
 
     public long getStateSize() {
