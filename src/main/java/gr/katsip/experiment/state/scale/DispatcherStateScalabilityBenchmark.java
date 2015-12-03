@@ -78,7 +78,7 @@ public class DispatcherStateScalabilityBenchmark {
             tuple.add(order);
             long currentTimestamp = System.currentTimeMillis();
             long dispatchStart = System.currentTimeMillis();
-            orderDispatcher.execute(null, null, orderSchema, tuple);
+            orderDispatcher.execute(null, null, null, orderSchema, tuple);
             long dispatchEnd = System.currentTimeMillis();
             dispatchStatistics.addValue((dispatchEnd - dispatchStart));
         }
