@@ -101,12 +101,16 @@ public class QueryFiveDriver {
 
         SerialControlledFileProducer customerProducer = new SerialControlledFileProducer(inputFile[0], Customer.schema,
                 Customer.query5schema, outputRate, checkpoint);
+        customerProducer.setSchema(new Fields(schema));
         SerialControlledFileProducer lineitemProducer = new SerialControlledFileProducer(inputFile[1], LineItem.schema,
                 LineItem.query5Schema, outputRate, checkpoint);
+        lineitemProducer.setSchema(new Fields(schema));
         SerialControlledFileProducer orderProducer = new SerialControlledFileProducer(inputFile[2], Order.schema,
                 Order.query5Schema, outputRate, checkpoint);
+        orderProducer.setSchema(new Fields(schema));
         SerialControlledFileProducer supplierProducer = new SerialControlledFileProducer(inputFile[3], Supplier.schema,
                 Supplier.query5Schema, outputRate, checkpoint);
+        supplierProducer.setSchema(new Fields(schema));
         /**
          * CUSTOMER.C_CUSTKEY = ORDER.O_ORDERKEY
          */
