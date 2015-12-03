@@ -3,12 +3,13 @@ package gr.katsip.synefo.storm.operators.relational.elastic.joiner.collocated;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
+import java.io.Serializable;
 import java.util.*;
 
 /**
  * Created by katsip on 12/2/2015.
  */
-public class OptimizedWindowEquiJoin {
+public class OptimizedWindowEquiJoin implements Serializable {
 
     private long windowSize;
 
