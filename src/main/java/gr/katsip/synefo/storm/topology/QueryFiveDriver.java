@@ -118,34 +118,34 @@ public class QueryFiveDriver {
         builder.setSpout("order", new ElasticFileSpout("order", synefoAddress, synefoPort, orderProducer, zookeeperAddress), 1);
         numberOfTasks += 2;
         tasks = new ArrayList<>();
-        tasks.add("cust_ord_dispatch");
+        tasks.add("cust-ord-dispatch");
         topology.put("customer", tasks);
         topology.put("order", new ArrayList<>(tasks));
 
         CollocatedWindowDispatcher dispatcher = new CollocatedWindowDispatcher("customer", new Fields(Customer.query5schema),
                 Customer.query5schema[0], "order", new Fields(Order.query5Schema), Order.query5Schema[1], new Fields(schema),
                 (long) (windowInMinutes * (60 * 1000)), slideInMilliSeconds);
-        builder.setBolt("cust_ord_dispatch", new CollocatedDispatchBolt("cust_ord_dispatch", synefoAddress, synefoPort, dispatcher,
+        builder.setBolt("cust-ord-dispatch", new CollocatedDispatchBolt("cust-ord-dispatch", synefoAddress, synefoPort, dispatcher,
                 zookeeperAddress, AUTO_SCALE), 1)
                 .directGrouping("customer", "customer")
                 .directGrouping("order", "order")
-                .directGrouping("cust_ord_join", "cust_ord_join-control")
+                .directGrouping("cust-ord-join", "cust-ord-join-control")
                 .setNumTasks(1);
         numberOfTasks += 1;
         tasks = new ArrayList<>();
-        tasks.add("cust_ord_join");
-        topology.put("cust_ord_dispatch", tasks);
+        tasks.add("cust-ord-join");
+        topology.put("cust-ord-dispatch", tasks);
 
         CollocatedEquiJoiner joiner = new CollocatedEquiJoiner("order", new Fields(Order.query5Schema), "customer", new Fields(Customer.query5schema),
                 Order.query5Schema[1], Customer.query5schema[0], (int) (windowInMinutes * (60 * 1000)), (int) slideInMilliSeconds);
-        builder.setBolt("cust_ord_join", new CollocatedJoinBolt("cust_ord_join", synefoAddress, synefoPort, joiner, zookeeperAddress), scale)
-                .directGrouping("cust_ord_dispatch", "cust_ord_dispatch-data")
-                .directGrouping("cust_ord_dispatch", "cust_ord_dispatch-control")
+        builder.setBolt("cust-ord-join", new CollocatedJoinBolt("cust-ord-join", synefoAddress, synefoPort, joiner, zookeeperAddress), scale)
+                .directGrouping("cust-ord-dispatch", "cust-ord-dispatch-data")
+                .directGrouping("cust-ord-dispatch", "cust-ord-dispatch-control")
                 .setNumTasks(scale);
         numberOfTasks += scale;
         tasks = new ArrayList<>();
-        tasks.add("cust_ord_line_sup_dispatch");
-        topology.put("cust_ord_join", tasks);
+        tasks.add("cust-ord-line-sup-dispatch");
+        topology.put("cust-ord-join", tasks);
 
         Fields customerOrderJoinSchema = joiner.getOutputSchema();
         /**
@@ -155,35 +155,35 @@ public class QueryFiveDriver {
         builder.setSpout("supplier", new ElasticFileSpout("supplier", synefoAddress, synefoPort, supplierProducer, zookeeperAddress), 1);
         numberOfTasks += 2;
         tasks = new ArrayList<>();
-        tasks.add("line_sup_dispatch");
+        tasks.add("line-sup-dispatch");
         topology.put("lineitem", tasks);
         topology.put("supplier", new ArrayList<>(tasks));
 
         dispatcher = new CollocatedWindowDispatcher("lineitem", new Fields(LineItem.query5Schema), LineItem.query5Schema[1],
                 "supplier", new Fields(Supplier.query5Schema), Supplier.query5Schema[0], new Fields(schema),
                 (long) (windowInMinutes * (60 * 1000)), slideInMilliSeconds);
-        builder.setBolt("line_sup_dispatch", new CollocatedDispatchBolt("line_sup_dispatch", synefoAddress, synefoPort, dispatcher,
+        builder.setBolt("line-sup-dispatch", new CollocatedDispatchBolt("line-sup-dispatch", synefoAddress, synefoPort, dispatcher,
                 zookeeperAddress, AUTO_SCALE), 1)
                 .directGrouping("lineitem", "lineitem")
                 .directGrouping("supplier", "supplier")
-                .directGrouping("line_sup_join", "line_sup_join-control")
+                .directGrouping("line-sup-join", "line-sup-join-control")
                 .setNumTasks(1);
         numberOfTasks += 1;
         tasks = new ArrayList<>();
-        tasks.add("line_sup_join");
-        topology.put("line_sup_dispatch", tasks);
+        tasks.add("line-sup-join");
+        topology.put("line-sup-dispatch", tasks);
 
         joiner = new CollocatedEquiJoiner("supplier", new Fields(Supplier.query5Schema),
                 "lineitem", new Fields(LineItem.query5Schema), Supplier.query5Schema[0], LineItem.query5Schema[1],
                 (int) (windowInMinutes * (60 * 1000)), (int) slideInMilliSeconds);
-        builder.setBolt("line_sup_join", new CollocatedJoinBolt("line_sup_join", synefoAddress, synefoPort, joiner, zookeeperAddress), scale)
-                .directGrouping("line_sup_dispatch", "line_sup_dispatch-data")
-                .directGrouping("line_sup_dispatch", "line_sup_dispatch-control")
+        builder.setBolt("line-sup-join", new CollocatedJoinBolt("line-sup-join", synefoAddress, synefoPort, joiner, zookeeperAddress), scale)
+                .directGrouping("line-sup-dispatch", "line-sup-dispatch-data")
+                .directGrouping("line-sup-dispatch", "line-sup-dispatch-control")
                 .setNumTasks(scale);
         numberOfTasks += scale;
         tasks = new ArrayList<>();
-        tasks.add("cust_ord_line_sup_dispatch");
-        topology.put("line_sup_join", tasks);
+        tasks.add("cust-ord-line-sup-dispatch");
+        topology.put("line-sup-join", tasks);
 
         Fields lineitemSupplierJoinSchema = joiner.getOutputSchema();
 
@@ -193,26 +193,26 @@ public class QueryFiveDriver {
         dispatcher = new CollocatedWindowDispatcher("cust_ord", customerOrderJoinSchema, Order.query5Schema[1],
                 "line_sup", lineitemSupplierJoinSchema, LineItem.query5Schema[0], new Fields(schema),
                 (int) (windowInMinutes * (60 * 1000)), (int) slideInMilliSeconds);
-        builder.setBolt("cust_ord_line_sup_dispatch", new CollocatedDispatchBolt("cust_ord_line_sup_dispatch", synefoAddress,
+        builder.setBolt("cust-ord-line-sup-dispatch", new CollocatedDispatchBolt("cust-ord-line-sup-dispatch", synefoAddress,
                 synefoPort, dispatcher, zookeeperAddress, AUTO_SCALE), 1)
-                .directGrouping("cust_ord_join", "cust_ord_join-data")
-                .directGrouping("line_sup_join", "line_sup_join-data")
-                .directGrouping("cust_ord_line_sup_join", "cust_ord_line_sup_join-control")
+                .directGrouping("cust-ord-join", "cust-ord-join-data")
+                .directGrouping("line-sup-join", "line-sup-join-data")
+                .directGrouping("cust-ord-line-sup-join", "cust-ord-line-sup-join-control")
                 .setNumTasks(1);
         numberOfTasks += 1;
         tasks = new ArrayList<>();
-        tasks.add("cust_ord_line_sup_join");
-        topology.put("cust_ord_line_sup_dispatch", tasks);
+        tasks.add("cust-ord-line-sup-join");
+        topology.put("cust-ord-line-sup-dispatch", tasks);
 
         joiner = new CollocatedEquiJoiner("line_sup", lineitemSupplierJoinSchema, "cust_ord", customerOrderJoinSchema, LineItem.query5Schema[0], Order.query5Schema[1],
                 (int) (windowInMinutes * (60 * 1000)), (int) slideInMilliSeconds);
-        builder.setBolt("cust_ord_line_sup_join", new CollocatedJoinBolt("cust_ord_line_sup_join", synefoAddress,
+        builder.setBolt("cust-ord-line-sup-join", new CollocatedJoinBolt("cust-ord-line-sup-join", synefoAddress,
                 synefoPort, joiner, zookeeperAddress), scale)
-                .directGrouping("cust_ord_line_sup_dispatch", "cust_ord_line_sup_dispatch-data")
-                .directGrouping("cust_ord_line_sup_dispatch", "cust_ord_line_sup_dispatch-control")
+                .directGrouping("cust-ord-line-sup-dispatch", "cust-ord-line-sup-dispatch-data")
+                .directGrouping("cust-ord-line-sup-dispatch", "cust-ord-line-sup-dispatch-control")
                 .setNumTasks(scale);
         numberOfTasks += scale;
-        topology.put("cust_ord_line_sup_join", new ArrayList<String>());
+        topology.put("cust-ord-line-sup-join", new ArrayList<String>());
         try {
             Socket socket = new Socket(synefoAddress, synefoPort);
             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
