@@ -1,4 +1,4 @@
-package gr.katsip.synefo.storm.operators.relational.elastic.joiner.collocated;
+package gr.katsip.synefo.storm.operators.joiner.collocated;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.tuple.Fields;
@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 
 /**

@@ -1,4 +1,4 @@
-package gr.katsip.synefo.storm.operators.relational.elastic.dispatcher.collocated;
+package gr.katsip.synefo.storm.operators.dispatcher.collocated;
 
 import backtype.storm.Config;
 import backtype.storm.Constants;
@@ -10,7 +10,7 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
-import gr.katsip.synefo.storm.api.ZookeeperClient;
+import gr.katsip.synefo.storm.operators.ZookeeperClient;
 import gr.katsip.synefo.utils.SynefoConstant;
 import gr.katsip.synefo.utils.SynefoMessage;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
@@ -87,14 +87,6 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
     private int temporaryInputRate;
 
     private int temporaryThroughput;
-
-    private long lastExecuteLatencyMetric = 0L;
-
-    private long lastStateSizeMetric = 0L;
-
-    private long inputRateCurrentTimestamp;
-
-    private long inputRatePreviousTimestamp;
 
     private long throughputCurrentTimestamp;
 
@@ -207,7 +199,6 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
         }
         logger.info(strBuild.toString());
         logger.info("COL-DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + " registered to load-balancer");
-        inputRatePreviousTimestamp = System.currentTimeMillis();
         throughputPreviousTimestamp = System.currentTimeMillis();
         temporaryInputRate = 0;
         temporaryThroughput = 0;
@@ -327,15 +318,6 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                 controlTupleInterval.setValue(tuple.getSourceTask() + "-" + (end - start));
                 return;
             }
-
-            inputRateCurrentTimestamp = System.currentTimeMillis();
-            if ((inputRateCurrentTimestamp - inputRatePreviousTimestamp) >= 1000L) {
-                inputRatePreviousTimestamp = inputRateCurrentTimestamp;
-                inputRate.setValue(temporaryInputRate);
-                temporaryInputRate = 0;
-            }else {
-                temporaryInputRate++;
-            }
             /**
              * Remove from both values and fields SYNEFO_HEADER (SYNEFO_TIMESTAMP)
              */
@@ -353,18 +335,22 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                 numberOfTuplesDispatched = dispatcher.execute(streamIdentifier + "-data", tuple, null, fields,
                         tupleValues, migratedKeys, scaledTask, candidateTask, this.action);
             }
-            collector.ack(tuple);
-            temporaryThroughput += numberOfTuplesDispatched;
             long endTime = System.currentTimeMillis();
-            lastExecuteLatencyMetric = endTime - startTime;
-            lastStateSizeMetric = dispatcher.getStateSize();
-            executeLatency.setValue(lastExecuteLatencyMetric);
-            stateSize.setValue(lastStateSizeMetric);
+
+            collector.ack(tuple);
+
             throughputCurrentTimestamp = System.currentTimeMillis();
             if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
                 throughputPreviousTimestamp = throughputCurrentTimestamp;
                 throughput.setValue(temporaryThroughput);
+                inputRate.setValue(temporaryInputRate);
                 temporaryThroughput = 0;
+                temporaryInputRate = 0;
+                executeLatency.setValue((endTime - startTime));
+                stateSize.setValue(dispatcher.getStateSize());
+            } else {
+                temporaryThroughput += numberOfTuplesDispatched;
+                temporaryInputRate++;
             }
             if (!SCALE_ACTION_FLAG) {
                 tupleCounter++;

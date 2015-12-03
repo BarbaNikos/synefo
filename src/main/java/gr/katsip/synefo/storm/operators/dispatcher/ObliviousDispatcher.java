@@ -1,4 +1,4 @@
-package gr.katsip.synefo.storm.operators.relational.elastic.dispatcher;
+package gr.katsip.synefo.storm.operators.dispatcher;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.tuple.Fields;
@@ -11,7 +11,7 @@ import java.io.Serializable;
 import java.util.*;
 
 /**
- * Created by katsip on 10/8/2015.
+ * Created by Nick R. Katsipoulakis on 10/8/2015.
  */
 public class ObliviousDispatcher implements Serializable, Dispatcher {
 
@@ -66,7 +66,7 @@ public class ObliviousDispatcher implements Serializable, Dispatcher {
     }
 
     @Override
-    public int execute(Tuple anchor, OutputCollector collector, Fields fields, Values values) {
+    public int execute(String streamIdentifier, Tuple anchor, OutputCollector collector, Fields fields, Values values) {
         Values tuple = new Values();
         tuple.add("0");
         tuple.add(fields);
@@ -77,7 +77,7 @@ public class ObliviousDispatcher implements Serializable, Dispatcher {
              * STORE: Send tuple to one of the active tasks of the outer relation (also increment index)
              */
             List<Integer> activeTaskIdentifiers = taskToRelationIndex.get(outerRelationName);
-            collector.emitDirect(activeTaskIdentifiers.get(outerRelationIndex), anchor, tuple);
+            collector.emitDirect(activeTaskIdentifiers.get(outerRelationIndex), streamIdentifier, anchor, tuple);
             numberOfTuplesDispatched++;
             if (outerRelationIndex >= (activeTaskIdentifiers.size() - 1))
                 outerRelationIndex = 0;
@@ -88,7 +88,7 @@ public class ObliviousDispatcher implements Serializable, Dispatcher {
              */
             activeTaskIdentifiers = taskToRelationIndex.get(innerRelationName);
             for (Integer task : activeTaskIdentifiers) {
-                collector.emitDirect(task, anchor, tuple);
+                collector.emitDirect(task, streamIdentifier, anchor, tuple);
                 numberOfTuplesDispatched++;
             }
         }else if (fields.toList().toString().equals(innerRelationSchema.toList().toString())) {
@@ -96,7 +96,7 @@ public class ObliviousDispatcher implements Serializable, Dispatcher {
              * STORE: Send tuple to one of the active tasks of the outer relation (also increment index)
              */
             List<Integer> activeTaskIdentifiers = taskToRelationIndex.get(innerRelationName);
-            collector.emitDirect(activeTaskIdentifiers.get(innerRelationIndex), anchor, tuple);
+            collector.emitDirect(activeTaskIdentifiers.get(innerRelationIndex), streamIdentifier, anchor, tuple);
             numberOfTuplesDispatched++;
             if (innerRelationIndex >= (activeTaskIdentifiers.size() - 1))
                 innerRelationIndex = 0;
@@ -107,7 +107,7 @@ public class ObliviousDispatcher implements Serializable, Dispatcher {
              */
             activeTaskIdentifiers = taskToRelationIndex.get(outerRelationName);
             for (Integer task : activeTaskIdentifiers) {
-                collector.emitDirect(task, anchor, tuple);
+                collector.emitDirect(task, streamIdentifier, anchor, tuple);
                 numberOfTuplesDispatched++;
             }
         }

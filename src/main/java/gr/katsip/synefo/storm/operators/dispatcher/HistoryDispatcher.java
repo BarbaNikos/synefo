@@ -1,4 +1,4 @@
-package gr.katsip.synefo.storm.operators.relational.elastic.dispatcher;
+package gr.katsip.synefo.storm.operators.dispatcher;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.tuple.Fields;
@@ -11,7 +11,7 @@ import java.io.Serializable;
 import java.util.*;
 
 /**
- * Created by katsip on 9/11/2015.
+ * Created by Nick R. Katsipoulakis on 9/11/2015.
  */
 public class HistoryDispatcher implements Serializable, Dispatcher {
 
@@ -85,7 +85,7 @@ public class HistoryDispatcher implements Serializable, Dispatcher {
 
     private int dispatch(String primaryKey, String foreignKey, HashMap<String, List<Integer>> primaryRelationIndex,
                          String primaryRelationName, HashMap<String, List<Integer>> secondaryRelationIndex,
-                         Fields attributeNames, Values attributeValues, OutputCollector collector, Tuple anchor) {
+                         Fields attributeNames, Values attributeValues, OutputCollector collector, Tuple anchor, String streamIdentifier) {
         int numberOfTuplesDispatched = 0;
 //        logger.info("\tattributes: {" + attributeNames.toList().toString() + "}, values: {" + attributeValues.toString() + "}");
         /**
@@ -106,9 +106,9 @@ public class HistoryDispatcher implements Serializable, Dispatcher {
             tuple.add(attributeValues);
             if (collector != null) {
                 if (anchor != null)
-                    collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), anchor, tuple);
+                    collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), streamIdentifier, anchor, tuple);
                 else
-                    collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), tuple);
+                    collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), streamIdentifier, tuple);
 //                logger.info("\ttuple was dispatched to task: " + dispatchInfo.get(dispatchInfo.get(0)) + ".");
             }
             numberOfTuplesDispatched++;
@@ -142,9 +142,9 @@ public class HistoryDispatcher implements Serializable, Dispatcher {
                 tuple.add(attributeValues);
                 if (collector != null) {
                     if (anchor != null)
-                        collector.emitDirect(victimTask, anchor, tuple);
+                        collector.emitDirect(victimTask, streamIdentifier, anchor, tuple);
                     else
-                        collector.emitDirect(victimTask, tuple);
+                        collector.emitDirect(victimTask, streamIdentifier, tuple);
                 }
                 //Increment state by the size of shared-key-tasks (bytes) and the length of the key + pointer (int)
                 stateSize = stateSize + tasks.toString().length() + primaryKey.length() + 4;
@@ -182,7 +182,7 @@ public class HistoryDispatcher implements Serializable, Dispatcher {
     }
 
     @Override
-    public int execute(Tuple anchor, OutputCollector collector, Fields fields, Values values) {
+    public int execute(String streamIdentifier, Tuple anchor, OutputCollector collector, Fields fields, Values values) {
         int numberOfTuplesDispatched = 0;
         if (fields.toList().toString().equals(outerRelationSchema.toList().toString())) {
             String primaryKey = (String) values.get(outerRelationSchema.fieldIndex(outerRelationKey));
@@ -190,14 +190,14 @@ public class HistoryDispatcher implements Serializable, Dispatcher {
 //            logger.info("received tuple from relation: " + outerRelationName + " with primary key: " + primaryKey +
 //                    " and join-foreign key: " + foreignKey + ".");
             numberOfTuplesDispatched = dispatch(primaryKey, foreignKey, outerRelationIndex, outerRelationName, innerRelationIndex,
-                    fields, values, collector, anchor);
+                    fields, values, collector, anchor, streamIdentifier);
         }else if (fields.toList().toString().equals(innerRelationSchema.toList().toString())) {
             String primaryKey = (String) values.get(innerRelationSchema.fieldIndex(innerRelationKey));
             String foreignKey = (String) values.get(innerRelationSchema.fieldIndex(innerRelationForeignKey));
 //            logger.info("received tuple from relation: " + outerRelationName + " with primary key: " + primaryKey +
 //                    " and join-foreign key: " + foreignKey + ".");
             numberOfTuplesDispatched = dispatch(primaryKey, foreignKey, innerRelationIndex, innerRelationName, outerRelationIndex,
-                    fields, values, collector, anchor);
+                    fields, values, collector, anchor, streamIdentifier);
         }
         return numberOfTuplesDispatched;
     }

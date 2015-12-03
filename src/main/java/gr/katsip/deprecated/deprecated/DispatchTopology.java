@@ -7,11 +7,13 @@ import backtype.storm.generated.InvalidTopologyException;
 import backtype.storm.metric.LoggingMetricsConsumer;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
-import gr.katsip.synefo.storm.api.*;
+import gr.katsip.synefo.storm.operators.dispatcher.DispatchBolt;
+import gr.katsip.synefo.storm.operators.joiner.JoinBolt;
 import gr.katsip.synefo.storm.producers.ControlledFileProducer;
+import gr.katsip.synefo.storm.producers.ElasticFileSpout;
 import gr.katsip.synefo.utils.SynefoMessage;
-import gr.katsip.synefo.storm.operators.relational.elastic.dispatcher.HistoryDispatcher;
-import gr.katsip.synefo.storm.operators.relational.elastic.joiner.NewJoinJoiner;
+import gr.katsip.synefo.storm.operators.dispatcher.HistoryDispatcher;
+import gr.katsip.synefo.storm.operators.joiner.NewJoinJoiner;
 import gr.katsip.tpch.*;
 
 import java.io.IOException;

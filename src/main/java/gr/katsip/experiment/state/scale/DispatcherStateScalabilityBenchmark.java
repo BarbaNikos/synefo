@@ -2,7 +2,7 @@ package gr.katsip.experiment.state.scale;
 
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
-import gr.katsip.synefo.storm.operators.relational.elastic.dispatcher.HistoryDispatcher;
+import gr.katsip.synefo.storm.operators.dispatcher.HistoryDispatcher;
 import gr.katsip.tpch.LineItem;
 import gr.katsip.tpch.Order;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;

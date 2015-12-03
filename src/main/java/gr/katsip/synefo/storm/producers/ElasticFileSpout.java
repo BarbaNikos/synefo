@@ -1,4 +1,4 @@
-package gr.katsip.synefo.storm.api;
+package gr.katsip.synefo.storm.producers;
 
 import backtype.storm.metric.api.AssignableMetric;
 import backtype.storm.spout.SpoutOutputCollector;
@@ -7,8 +7,8 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
+import gr.katsip.synefo.storm.operators.ZookeeperClient;
 import gr.katsip.synefo.utils.SynefoMessage;
-import gr.katsip.synefo.storm.producers.FileProducer;
 import gr.katsip.synefo.utils.SynefoConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

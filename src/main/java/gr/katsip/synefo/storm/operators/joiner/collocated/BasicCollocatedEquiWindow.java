@@ -1,23 +1,23 @@
-package gr.katsip.synefo.storm.operators.relational.elastic.joiner.collocated;
+package gr.katsip.synefo.storm.operators.joiner.collocated;
 
-import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 
 /**
- * Created by katsip on 12/2/2015.
+ * Created by katsip on 10/21/2015.
  */
-public class OptimizedCollocatedEquiWindow implements Serializable {
+public class BasicCollocatedEquiWindow implements Serializable {
 
     public Long start;
 
     public Long end;
 
-    public HashMap<String, HashMap<String, LinkedList<Values>>> tupleIndex;
+    public HashMap<String, ArrayList<Values>> innerRelation;
+
+    public HashMap<String, ArrayList<Values>> outerRelation;
 
     public long byteStateSize;
 
@@ -25,13 +25,13 @@ public class OptimizedCollocatedEquiWindow implements Serializable {
 
     public long outerRelationCardinality;
 
-    public OptimizedCollocatedEquiWindow() {
+    public BasicCollocatedEquiWindow() {
         start = 0L;
         end = 0L;
-        tupleIndex = new HashMap<>();
+        innerRelation = new HashMap<>();
+        outerRelation = new HashMap<>();
         byteStateSize = 0L;
         innerRelationCardinality = 0L;
         outerRelationCardinality = 0L;
     }
-
 }

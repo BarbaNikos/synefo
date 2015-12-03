@@ -1,5 +1,7 @@
-package gr.katsip.synefo.storm.api;
+package gr.katsip.synefo.storm.operators.dispatcher;
 
+import backtype.storm.Config;
+import backtype.storm.Constants;
 import backtype.storm.metric.api.AssignableMetric;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -8,8 +10,8 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import gr.katsip.synefo.storm.operators.ZookeeperClient;
 import gr.katsip.synefo.utils.SynefoMessage;
-import gr.katsip.synefo.storm.operators.relational.elastic.dispatcher.Dispatcher;
 import gr.katsip.synefo.utils.SynefoConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,19 +22,19 @@ import java.net.UnknownHostException;
 import java.util.*;
 
 /**
- * Created by katsip on 9/14/2015.
+ * Created by Nick R. Katsipoulakis on 9/14/2015.
  */
 public class DispatchBolt extends BaseRichBolt {
 
     Logger logger = LoggerFactory.getLogger(DispatchBolt.class);
 
-    private static final int METRIC_REPORT_FREQ_SEC = 5;
-
-    private static final int WARM_UP_THRESHOLD = 10000;
+    private static final int METRIC_REPORT_FREQ_SEC = 1;
 
     private OutputCollector collector;
 
     private String taskName;
+
+    private String streamIdentifier;
 
     private int taskIdentifier;
 
@@ -60,8 +62,6 @@ public class DispatchBolt extends BaseRichBolt {
 
     private HashMap<String, List<Integer>> relationTaskIndex;
 
-    private boolean SYSTEM_WARM_FLAG;
-
     private int tupleCounter;
 
     private transient AssignableMetric executeLatency;
@@ -74,19 +74,13 @@ public class DispatchBolt extends BaseRichBolt {
 
     private transient AssignableMetric stateTransferTime;
 
+    private transient AssignableMetric controlTupleInterval;
+
     private long startTransferTimestamp;
 
     private int temporaryInputRate;
 
     private int temporaryThroughput;
-
-    private long lastExecuteLatencyMetric = 0L;
-
-    private long lastStateSizeMetric = 0L;
-
-    private long inputRateCurrentTimestamp;
-
-    private long inputRatePreviousTimestamp;
 
     private long throughputCurrentTimestamp;
 
@@ -113,6 +107,7 @@ public class DispatchBolt extends BaseRichBolt {
     public DispatchBolt(String taskName, String synefoAddress, Integer synefoPort,
                         Dispatcher dispatcher, String zookeeperAddress) {
         this.taskName = taskName;
+        streamIdentifier = taskName;
         this.workerPort = -1;
         this.synefoAddress = synefoAddress;
         this.synefoPort = synefoPort;
@@ -122,7 +117,6 @@ public class DispatchBolt extends BaseRichBolt {
         activeDownstreamTaskIdentifiers = null;
         this.dispatcher = dispatcher;
         this.zookeeperAddress = zookeeperAddress;
-        SYSTEM_WARM_FLAG = false;
         relationTaskIndex = null;
         tupleCounter = 0;
     }
@@ -228,7 +222,6 @@ public class DispatchBolt extends BaseRichBolt {
         }
         logger.info(strBuild.toString());
         logger.info("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier + " registered to load-balancer");
-        inputRatePreviousTimestamp = System.currentTimeMillis();
         throughputPreviousTimestamp = System.currentTimeMillis();
         temporaryInputRate = 0;
         temporaryThroughput = 0;
@@ -239,6 +232,7 @@ public class DispatchBolt extends BaseRichBolt {
         this.collector = outputCollector;
         taskIdentifier = topologyContext.getThisTaskId();
         workerPort = topologyContext.getThisWorkerPort();
+        streamIdentifier = taskName;
         taskName = taskName + "_" + taskIdentifier;
         try {
             taskAddress = InetAddress.getLocalHost().getHostAddress();
@@ -249,7 +243,6 @@ public class DispatchBolt extends BaseRichBolt {
         if(downstreamTaskNames == null && activeDownstreamTaskNames == null)
             register();
         initMetrics(topologyContext);
-        SYSTEM_WARM_FLAG = false;
         tupleCounter = 0;
         SCALE_ACTION_FLAG = false;
         elasticTask = "";
@@ -265,11 +258,13 @@ public class DispatchBolt extends BaseRichBolt {
         inputRate = new AssignableMetric(null);
         throughput = new AssignableMetric(null);
         stateTransferTime = new AssignableMetric(null);
+        controlTupleInterval = new AssignableMetric(null);
         context.registerMetric("execute-latency", executeLatency, DispatchBolt.METRIC_REPORT_FREQ_SEC);
         context.registerMetric("state-size", stateSize, DispatchBolt.METRIC_REPORT_FREQ_SEC);
         context.registerMetric("input-rate", inputRate, DispatchBolt.METRIC_REPORT_FREQ_SEC);
         context.registerMetric("throughput", throughput, DispatchBolt.METRIC_REPORT_FREQ_SEC);
         context.registerMetric("state-transfer", stateTransferTime, DispatchBolt.METRIC_REPORT_FREQ_SEC);
+        context.registerMetric("control-interval", controlTupleInterval, METRIC_REPORT_FREQ_SEC);
     }
 
     private boolean isScaleHeader(String header) {
@@ -279,14 +274,36 @@ public class DispatchBolt extends BaseRichBolt {
                 header.split("/")[0].equals(SynefoConstant.PUNCT_TUPLE_TAG));
     }
 
+    public static boolean isControlTuple(String header) {
+        return (header.contains(SynefoConstant.COL_TICK_HEADER + ":"));
+    }
+
     private boolean isStateHeader(String header) {
         return ( header.split("/")[0].equals(SynefoConstant.STATE_PREFIX) &&
                 header.split("[/:]")[1].equals(SynefoConstant.COMP_TAG));
     }
 
     @Override
+    public Map<String, Object> getComponentConfiguration() {
+        Config conf = new Config();
+        conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 1);
+        return conf;
+    }
+
+    private boolean isTickTuple(Tuple tuple) {
+        String sourceComponent = tuple.getSourceComponent();
+        String sourceStreamIdentifier = tuple.getSourceStreamId();
+        return sourceComponent.equals(Constants.SYSTEM_COMPONENT_ID) &&
+                sourceStreamIdentifier.equals(Constants.SYSTEM_TICK_STREAM_ID);
+    }
+
+    @Override
     public void execute(Tuple tuple) {
         String header = "";
+        if (isTickTuple(tuple)) {
+            collector.ack(tuple);
+            return;
+        }
         if (!tuple.getFields().contains("SYNEFO_HEADER")) {
             logger.error("DISPATCH-BOLT-" + taskName + ":" + taskIdentifier +
                     " missing synefo header (source: " +
@@ -294,6 +311,15 @@ public class DispatchBolt extends BaseRichBolt {
             collector.fail(tuple);
             return;
         }else {
+            header = tuple.getString(tuple.getFields()
+                    .fieldIndex("SYNEFO_HEADER"));
+            if (header != null && !header.equals("") && isControlTuple(header)) {
+                long end = System.currentTimeMillis();
+                long start = Long.parseLong(header.split(":")[1]);
+                collector.ack(tuple);
+                controlTupleInterval.setValue(tuple.getSourceTask() + "-" + (end - start));
+                return;
+            }
             if (SCALE_ACTION_FLAG) {
                 scaleTupleBuffer.addFirst(tuple);
                 List<String> result = zookeeperClient.getScaleResult();
@@ -317,8 +343,6 @@ public class DispatchBolt extends BaseRichBolt {
                     }
                 }
             }else {
-                header = tuple.getString(tuple.getFields()
-                        .fieldIndex("SYNEFO_HEADER"));
                 if (header != null && !header.equals("") && header.contains("/") &&
                         isScaleHeader(header)) {
                     altManageScaleTuple(tuple);
@@ -329,15 +353,6 @@ public class DispatchBolt extends BaseRichBolt {
                     collector.ack(tuple);
                     return;
                 }
-                inputRateCurrentTimestamp = System.currentTimeMillis();
-                if ((inputRateCurrentTimestamp - inputRatePreviousTimestamp) >= 1000L) {
-                    inputRatePreviousTimestamp = inputRateCurrentTimestamp;
-                    inputRate.setValue(temporaryInputRate);
-                    zookeeperClient.addInputRateData((double) temporaryInputRate);
-                    temporaryInputRate = 0;
-                }else {
-                    temporaryInputRate++;
-                }
                 /**
                  * Remove from both values and fields SYNEFO_HEADER (SYNEFO_TIMESTAMP)
                  */
@@ -346,32 +361,30 @@ public class DispatchBolt extends BaseRichBolt {
                 Fields fields = new Fields(((Fields) values.get(0)).toList());
                 Values tupleValues = (Values) values.get(1);
                 int numberOfTuplesDispatched = 0;
+
                 long startTime = System.currentTimeMillis();
                 if (activeDownstreamTaskIdentifiers.size() > 0) {
-                    numberOfTuplesDispatched = dispatcher.execute(tuple, collector, fields, tupleValues);
-                    collector.ack(tuple);
+                    numberOfTuplesDispatched = dispatcher.execute(streamIdentifier + "-data", tuple, collector, fields, tupleValues);
                 }else {
-                    numberOfTuplesDispatched = dispatcher.execute(tuple, null, fields, tupleValues);
-                    collector.ack(tuple);
+                    numberOfTuplesDispatched = dispatcher.execute(streamIdentifier + "-data", tuple, null, fields, tupleValues);
                 }
-                temporaryThroughput += numberOfTuplesDispatched;
                 long endTime = System.currentTimeMillis();
-                lastExecuteLatencyMetric = endTime - startTime;
-                lastStateSizeMetric = dispatcher.getStateSize();
-                executeLatency.setValue(lastExecuteLatencyMetric);
-                stateSize.setValue(lastStateSizeMetric);
+
+                collector.ack(tuple);
                 throughputCurrentTimestamp = System.currentTimeMillis();
                 if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
                     throughputPreviousTimestamp = throughputCurrentTimestamp;
                     throughput.setValue(temporaryThroughput);
-                    //TODO: change the following
-//                    zookeeperClient.addInputRateData((double) temporaryInputRate);
+                    inputRate.setValue(temporaryInputRate);
+                    executeLatency.setValue((endTime - startTime));
+                    stateSize.setValue(dispatcher.getStateSize());
                     temporaryThroughput = 0;
+                    temporaryInputRate = 0;
+                } else {
+                    temporaryThroughput += numberOfTuplesDispatched;
+                    temporaryInputRate++;
                 }
                 tupleCounter++;
-                if (tupleCounter >= WARM_UP_THRESHOLD && !SYSTEM_WARM_FLAG)
-                    SYSTEM_WARM_FLAG = true;
-
                 String command = "";
                 if (!zookeeperClient.commands.isEmpty() && SCALE_ACTION_FLAG == false) {
                     command = zookeeperClient.commands.poll();
@@ -387,7 +400,8 @@ public class DispatchBolt extends BaseRichBolt {
         schema.add("SYNEFO_HEADER");
         schema.add("attributes");
         schema.add("values");
-        outputFieldsDeclarer.declare(new Fields(schema));
+        outputFieldsDeclarer.declareStream(streamIdentifier + "-data", true, new Fields(schema));
+        outputFieldsDeclarer.declareStream(streamIdentifier + "-control", true, new Fields(schema));
     }
 
     public void manageCommand(String command) {

@@ -5,10 +5,10 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 
-import gr.katsip.synefo.storm.operators.relational.elastic.joiner.SlidingWindowThetaJoin;
+import gr.katsip.synefo.storm.operators.joiner.SlidingWindowThetaJoin;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
-import gr.katsip.synefo.storm.operators.relational.elastic.joiner.SlidingWindowJoin;
+import gr.katsip.synefo.storm.operators.joiner.SlidingWindowJoin;
 import gr.katsip.tpch.LineItem;
 import gr.katsip.tpch.Order;
 import backtype.storm.tuple.Fields;

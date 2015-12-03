@@ -1,4 +1,4 @@
-package gr.katsip.synefo.storm.operators.relational.elastic.dispatcher;
+package gr.katsip.synefo.storm.operators.dispatcher;
 
 import java.io.Serializable;
 import java.util.HashMap;

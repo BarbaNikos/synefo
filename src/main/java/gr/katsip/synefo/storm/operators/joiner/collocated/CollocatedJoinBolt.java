@@ -1,4 +1,4 @@
-package gr.katsip.synefo.storm.operators.relational.elastic.joiner.collocated;
+package gr.katsip.synefo.storm.operators.joiner.collocated;
 
 import backtype.storm.metric.api.AssignableMetric;
 import backtype.storm.task.OutputCollector;
@@ -8,12 +8,10 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
-import gr.katsip.synefo.storm.api.ZookeeperClient;
-import gr.katsip.synefo.storm.topology.WordCountTopology;
+import gr.katsip.synefo.storm.operators.ZookeeperClient;
 import gr.katsip.synefo.utils.Pair;
 import gr.katsip.synefo.utils.SynefoConstant;
 import gr.katsip.synefo.utils.SynefoMessage;
-import gr.katsip.synefo.utils.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

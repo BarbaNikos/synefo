@@ -1,4 +1,4 @@
-package gr.katsip.synefo.storm.operators.relational.elastic.dispatcher.collocated;
+package gr.katsip.synefo.storm.operators.dispatcher.collocated;
 
 import backtype.storm.tuple.Fields;
 import gr.katsip.file.filegen.BalancedFileGenerator;
@@ -13,8 +13,6 @@ import org.junit.rules.TemporaryFolder;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
-
-import static org.junit.Assert.*;
 
 /**
  * Created by nick on 12/1/15.

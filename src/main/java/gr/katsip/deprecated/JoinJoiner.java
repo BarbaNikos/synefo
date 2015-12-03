@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import backtype.storm.tuple.Tuple;
-import gr.katsip.synefo.storm.operators.relational.elastic.joiner.SlidingWindowJoin;
+import gr.katsip.synefo.storm.operators.joiner.SlidingWindowJoin;
 import org.apache.commons.lang.ArrayUtils;
 
 import backtype.storm.task.OutputCollector;

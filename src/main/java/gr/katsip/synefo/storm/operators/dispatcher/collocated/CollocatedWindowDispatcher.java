@@ -1,4 +1,4 @@
-package gr.katsip.synefo.storm.operators.relational.elastic.dispatcher.collocated;
+package gr.katsip.synefo.storm.operators.dispatcher.collocated;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.tuple.Fields;

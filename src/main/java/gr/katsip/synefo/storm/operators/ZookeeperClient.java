@@ -1,4 +1,4 @@
-package gr.katsip.synefo.storm.api;
+package gr.katsip.synefo.storm.operators;
 
 import gr.katsip.synefo.utils.Util;
 import org.apache.storm.zookeeper.AsyncCallback;

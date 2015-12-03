@@ -1,4 +1,4 @@
-package gr.katsip.synefo.storm.operators.relational.elastic.joiner;
+package gr.katsip.synefo.storm.operators.joiner;
 
 import java.io.Serializable;
 import java.util.*;

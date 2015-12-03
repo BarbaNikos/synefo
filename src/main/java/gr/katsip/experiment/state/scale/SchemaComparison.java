@@ -1,10 +1,7 @@
 package gr.katsip.experiment.state.scale;
 
-import gr.katsip.synefo.storm.operators.relational.elastic.joiner.collocated.BasicCollocatedEquiWindow;
-import gr.katsip.synefo.storm.operators.relational.elastic.joiner.collocated.CollocatedJoinBolt;
+import gr.katsip.synefo.storm.operators.joiner.collocated.CollocatedJoinBolt;
 import gr.katsip.synefo.utils.SynefoConstant;
-
-import java.util.LinkedList;
 
 /**
  * Created by katsip on 10/20/2015.

@@ -1,4 +1,4 @@
-package gr.katsip.synefo.storm.operators.relational.elastic.joiner;
+package gr.katsip.synefo.storm.operators.joiner;
 
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;

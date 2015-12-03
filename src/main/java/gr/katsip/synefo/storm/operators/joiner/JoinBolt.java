@@ -1,4 +1,4 @@
-package gr.katsip.synefo.storm.api;
+package gr.katsip.synefo.storm.operators.joiner;
 
 import backtype.storm.metric.api.AssignableMetric;
 import backtype.storm.task.OutputCollector;
@@ -8,10 +8,10 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import gr.katsip.synefo.storm.operators.ZookeeperClient;
 import gr.katsip.synefo.utils.Pair;
 import gr.katsip.synefo.utils.Util;
 import gr.katsip.synefo.utils.SynefoMessage;
-import gr.katsip.synefo.storm.operators.relational.elastic.joiner.NewJoinJoiner;
 import gr.katsip.synefo.utils.SynefoConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,13 +31,17 @@ public class JoinBolt extends BaseRichBolt {
 
     Logger logger = LoggerFactory.getLogger(JoinBolt.class);
 
-    private static final int METRIC_REPORT_FREQ_SEC = 5;
+    private static final int METRIC_REPORT_FREQ_SEC = 1;
 
-    private static final int WARM_UP_THRESHOLD = 10000;
+//    private static final int WARM_UP_THRESHOLD = 10000;
+
+//    private boolean SYSTEM_WARM_FLAG;
 
     private OutputCollector collector;
 
     private String taskName;
+
+    private String streamIdentifier;
 
     private Integer taskIdentifier;
 
@@ -64,8 +68,6 @@ public class JoinBolt extends BaseRichBolt {
     private Integer downstreamIndex;
 
     private NewJoinJoiner joiner;
-
-    private boolean SYSTEM_WARM_FLAG;
 
     private int tupleCounter;
 
@@ -123,7 +125,7 @@ public class JoinBolt extends BaseRichBolt {
         activeDownstreamTaskIdentifiers = null;
         this.joiner = joiner;
         this.zookeeperAddress = zookeeperAddress;
-        SYSTEM_WARM_FLAG = false;
+//        SYSTEM_WARM_FLAG = false;
         tupleCounter = 0;
     }
 
@@ -214,7 +216,7 @@ public class JoinBolt extends BaseRichBolt {
         if(downstreamTaskNames == null && activeDownstreamTaskNames == null)
             register();
         initMetrics(topologyContext);
-        SYSTEM_WARM_FLAG = false;
+//        SYSTEM_WARM_FLAG = false;
         tupleCounter = 0;
         SCALE_RECEIVE_STATE = false;
         SCALE_SEND_STATE = false;
@@ -306,8 +308,8 @@ public class JoinBolt extends BaseRichBolt {
             temporaryThroughput = 0;
         }
         tupleCounter++;
-        if (tupleCounter >= WARM_UP_THRESHOLD && !SYSTEM_WARM_FLAG)
-            SYSTEM_WARM_FLAG = true;
+//        if (tupleCounter >= WARM_UP_THRESHOLD && !SYSTEM_WARM_FLAG)
+//            SYSTEM_WARM_FLAG = true;
 
         String command = "";
         if (!zookeeperClient.commands.isEmpty()) {

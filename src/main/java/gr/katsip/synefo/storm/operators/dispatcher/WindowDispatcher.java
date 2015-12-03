@@ -1,4 +1,4 @@
-package gr.katsip.synefo.storm.operators.relational.elastic.dispatcher;
+package gr.katsip.synefo.storm.operators.dispatcher;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.tuple.Fields;
@@ -12,7 +12,7 @@ import java.io.Serializable;
 import java.util.*;
 
 /**
- * Created by katsip on 10/8/2015.
+ * Created by Nick R. Katsipoulakis on 10/8/2015.
  */
 public class WindowDispatcher implements Serializable, Dispatcher {
 
@@ -81,7 +81,7 @@ public class WindowDispatcher implements Serializable, Dispatcher {
 
     private int dispatch(String primaryKey, String foreignKey, HashMap<String, List<Integer>> primaryRelationIndex,
                          String primaryRelationName, HashMap<String, List<Integer>> secondaryRelationIndex, String secondaryRelationName,
-                         Fields attributeNames, Values attributeValues, OutputCollector collector, Tuple anchor) {
+                         Fields attributeNames, Values attributeValues, OutputCollector collector, Tuple anchor, String streamIdentifier) {
         int numberOfTuplesDispatched = 0;
         if(secondaryRelationIndex.containsKey(foreignKey)) {
             List<Integer> dispatchInfo = new ArrayList<>(secondaryRelationIndex.get(foreignKey)
@@ -93,9 +93,9 @@ public class WindowDispatcher implements Serializable, Dispatcher {
             for(Integer task : dispatchInfo) {
                 if (collector != null && taskToRelationIndex.get(secondaryRelationName).contains(task)) {
                     if (anchor != null)
-                        collector.emitDirect(task, anchor, tuple);
+                        collector.emitDirect(task, streamIdentifier, anchor, tuple);
                     else
-                        collector.emitDirect(task, tuple);
+                        collector.emitDirect(task, streamIdentifier, tuple);
                     numberOfTuplesDispatched++;
                 }
             }
@@ -126,7 +126,7 @@ public class WindowDispatcher implements Serializable, Dispatcher {
     }
 
     @Override
-    public int execute(Tuple anchor, OutputCollector collector, Fields fields, Values values) {
+    public int execute(String streamIdentifier, Tuple anchor, OutputCollector collector, Fields fields, Values values) {
         long currentTimestamp = System.currentTimeMillis();
         int numberOfTuplesDispatched = 0;
         //First check if a window needs to be discarded and add a new window accordingly
@@ -147,9 +147,9 @@ public class WindowDispatcher implements Serializable, Dispatcher {
                 if (taskToRelationIndex.get(outerRelationName).contains(dispatchInfo.get(dispatchInfo.get(0)))) {
                     if (collector != null) {
                         if (anchor != null)
-                            collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), anchor, tuple);
+                            collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), streamIdentifier, anchor, tuple);
                         else
-                            collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), tuple);
+                            collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), streamIdentifier, tuple);
                         numberOfTuplesDispatched++;
                     }
                     if (dispatchInfo.get(0) >= (dispatchInfo.size() - 1)) {
@@ -168,9 +168,9 @@ public class WindowDispatcher implements Serializable, Dispatcher {
                     tasks.add(victimTask);
                     if (collector != null) {
                         if (anchor != null)
-                            collector.emitDirect(victimTask, anchor, tuple);
+                            collector.emitDirect(victimTask, streamIdentifier, anchor, tuple);
                         else
-                            collector.emitDirect(victimTask, tuple);
+                            collector.emitDirect(victimTask, streamIdentifier, tuple);
                         numberOfTuplesDispatched++;
                     }
                     ringBuffer.getFirst().outerRelationIndex.put(primaryKey, tasks);
@@ -185,9 +185,9 @@ public class WindowDispatcher implements Serializable, Dispatcher {
                 if (taskToRelationIndex.get(innerRelationName).contains(dispatchInfo.get(dispatchInfo.get(0)))) {
                     if (collector != null) {
                         if (anchor != null)
-                            collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), anchor, tuple);
+                            collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), streamIdentifier, anchor, tuple);
                         else
-                            collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), tuple);
+                            collector.emitDirect(dispatchInfo.get(dispatchInfo.get(0)), streamIdentifier, tuple);
                         numberOfTuplesDispatched++;
                     }
                     if (dispatchInfo.get(0) >= (dispatchInfo.size() - 1)) {
@@ -206,9 +206,9 @@ public class WindowDispatcher implements Serializable, Dispatcher {
                     tasks.add(victimTask);
                     if (collector != null) {
                         if (anchor != null)
-                            collector.emitDirect(victimTask, anchor, tuple);
+                            collector.emitDirect(victimTask, streamIdentifier, anchor, tuple);
                         else
-                            collector.emitDirect(victimTask, tuple);
+                            collector.emitDirect(victimTask, streamIdentifier, tuple);
                         numberOfTuplesDispatched++;
                     }
                     ringBuffer.getFirst().innerRelationIndex.put(primaryKey, tasks);
@@ -227,12 +227,12 @@ public class WindowDispatcher implements Serializable, Dispatcher {
                     String primaryKey = (String) values.get(outerRelationSchema.fieldIndex(outerRelationKey));
                     String foreignKey = (String) values.get(outerRelationSchema.fieldIndex(outerRelationForeignKey));
                     numberOfTuplesDispatched += dispatch(primaryKey, foreignKey, window.outerRelationIndex, outerRelationName, window.innerRelationIndex, innerRelationName,
-                            fields, values, collector, anchor);
+                            fields, values, collector, anchor, streamIdentifier);
                 }else if (fields.toList().toString().equals(innerRelationSchema.toList().toString())) {
                     String primaryKey = (String) values.get(innerRelationSchema.fieldIndex(innerRelationKey));
                     String foreignKey = (String) values.get(innerRelationSchema.fieldIndex(innerRelationForeignKey));
                     numberOfTuplesDispatched += dispatch(primaryKey, foreignKey, window.innerRelationIndex, innerRelationName, window.outerRelationIndex, outerRelationName,
-                            fields, values, collector, anchor);
+                            fields, values, collector, anchor, streamIdentifier);
                 }
             }
         }
