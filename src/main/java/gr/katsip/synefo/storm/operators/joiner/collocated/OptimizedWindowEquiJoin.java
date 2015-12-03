@@ -213,6 +213,9 @@ public class OptimizedWindowEquiJoin implements Serializable {
             if ((window.start + windowSize) > timestamp) {
                 if (window.tupleIndex.containsKey(key)) {
                     LinkedList<Values> tuples = window.tupleIndex.get(key).get(joinRelationName);
+                    if (tuples == null || tuples.size() == 0) {
+                        continue;
+                    }
                     for (Values t : tuples) {
                         Values joinResult;
                         if (innerRelation.compareTo(outerRelation) <= 0) {
