@@ -153,6 +153,11 @@ public class QueryFiveDriver {
          */
         builder.setSpout("lineitem", new ElasticFileSpout("lineitem", synefoAddress, synefoPort, lineitemProducer, zookeeperAddress), 1);
         builder.setSpout("supplier", new ElasticFileSpout("supplier", synefoAddress, synefoPort, supplierProducer, zookeeperAddress), 1);
+        numberOfTasks += 2;
+        tasks = new ArrayList<>();
+        tasks.add("line_sup_dispatch");
+        topology.put("lineitem", tasks);
+        topology.put("supplier", new ArrayList<>(tasks));
 
         dispatcher = new CollocatedWindowDispatcher("lineitem", new Fields(LineItem.query5Schema), LineItem.query5Schema[1],
                 "supplier", new Fields(Supplier.query5Schema), Supplier.query5Schema[0], new Fields(schema),
