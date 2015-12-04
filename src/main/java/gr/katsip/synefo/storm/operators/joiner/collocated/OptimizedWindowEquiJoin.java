@@ -104,10 +104,12 @@ public class OptimizedWindowEquiJoin implements Serializable {
                         tuples.add(tuple);
                         tupleIndex.put(relationName, tuples);
                         addedTuple = true;
+                        augmentStatistics(relationName, tupleIndex, ringBuffer.getFirst());
                         ringBuffer.getFirst().tupleIndex.put(key, tupleIndex);
                     } else if (tupleIndex.get(relationName).indexOf(tuple) < 0) {
                         tupleIndex.get(relationName).add(tuple);
                         addedTuple = true;
+                        augmentStatistics(relationName, tupleIndex, ringBuffer.getFirst());
                         ringBuffer.getFirst().tupleIndex.put(key, tupleIndex);
                     }
                 } else {
@@ -116,17 +118,16 @@ public class OptimizedWindowEquiJoin implements Serializable {
                     tuples.add(tuple);
                     addedTuple = true;
                     tupleIndex.put(relationName, tuples);
+                    augmentStatistics(relationName, tupleIndex, ringBuffer.getFirst());
                     ringBuffer.getFirst().tupleIndex.put(key, tupleIndex);
                 }
-                if (relationName.equals(innerRelation)) {
-                    if (addedTuple) {
+                if (addedTuple) {
+                    if (relationName.equals(innerRelation)) {
                         ringBuffer.getFirst().byteStateSize += tuple.toArray().toString().length();
                         ringBuffer.getFirst().innerRelationCardinality += 1;
                         byteStateSize += tuple.toArray().toString().length();
                         innerRelationCardinality += 1;
-                    }
-                } else {
-                    if (addedTuple) {
+                    } else {
                         ringBuffer.getFirst().byteStateSize += tuple.toArray().toString().length();
                         ringBuffer.getFirst().outerRelationCardinality += 1;
                         byteStateSize += tuple.toArray().toString().length();
@@ -219,20 +220,24 @@ public class OptimizedWindowEquiJoin implements Serializable {
             if ((window.start + windowSize) > timestamp) {
                 if (window.tupleIndex.containsKey(key)) {
                     LinkedList<Values> tuples = window.tupleIndex.get(key).get(joinRelationName);
+                    /**
+                     * If no matching tuples exist from the other relation, we skip to the next window
+                     */
                     if (tuples == null || tuples.size() == 0) {
                         continue;
-                    }
-                    for (Values t : tuples) {
-                        Values joinResult;
-                        if (innerRelation.compareTo(outerRelation) <= 0) {
-                            joinResult = new Values(tuple.toArray());
-                            joinResult.addAll(t);
-                        } else {
-                            joinResult = new Values(t.toArray());
-                            joinResult.addAll(tuple);
+                    } else {
+                        for (Values t : tuples) {
+                            Values joinResult;
+                            if (innerRelation.compareTo(outerRelation) <= 0) {
+                                joinResult = new Values(tuple.toArray());
+                                joinResult.addAll(t);
+                            } else {
+                                joinResult = new Values(t.toArray());
+                                joinResult.addAll(tuple);
+                            }
+                            if (result.indexOf(joinResult) < 0)
+                                result.add(joinResult);
                         }
-                        if (result.indexOf(joinResult) < 0)
-                            result.add(joinResult);
                     }
                 }
             }else {

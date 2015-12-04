@@ -15,9 +15,9 @@ import java.util.*;
 /**
  * Created by katsip on 9/21/2015.
  */
-public class NewJoinJoiner implements Serializable {
+public class Joiner implements Serializable {
 
-    Logger logger = LoggerFactory.getLogger(NewJoinJoiner.class);
+    Logger logger = LoggerFactory.getLogger(Joiner.class);
 
     private String storedRelation;
 
@@ -37,7 +37,7 @@ public class NewJoinJoiner implements Serializable {
 
     private Fields joinOutputSchema;
 
-    private SlidingWindowJoin slidingWindowJoin;
+    private WindowEquiJoin windowEquiJoin;
 
     /**
      * Window size in seconds
@@ -49,8 +49,8 @@ public class NewJoinJoiner implements Serializable {
      */
     private int slide;
 
-    public NewJoinJoiner(String storedRelation, Fields storedRelationSchema, String otherRelation,
-                         Fields otherRelationSchema, String storedJoinAttribute, String otherJoinAttribute, int window, int slide) {
+    public Joiner(String storedRelation, Fields storedRelationSchema, String otherRelation,
+                  Fields otherRelationSchema, String storedJoinAttribute, String otherJoinAttribute, int window, int slide) {
         this.storedRelation = storedRelation;
         this.storedRelationSchema = new Fields(storedRelationSchema.toList());
         this.otherRelation = otherRelation;
@@ -74,17 +74,9 @@ public class NewJoinJoiner implements Serializable {
         }
         this.windowSize = window;
         this.slide = slide;
-        slidingWindowJoin = new SlidingWindowJoin(windowSize, this.slide, storedRelationSchema,
+        windowEquiJoin = new WindowEquiJoin(windowSize, this.slide, storedRelationSchema,
                 storedJoinAttribute, storedRelation, otherRelation);
     }
-
-//    public void init(List<Values> stateValues) {
-//        this.stateValues = stateValues;
-//    }
-
-//    public void setStateSchema(Fields stateSchema) {
-//        //Do nothing
-//    }
 
     public void setOutputSchema(Fields output_schema) {
         outputSchema = new Fields(output_schema.toList());
@@ -102,14 +94,14 @@ public class NewJoinJoiner implements Serializable {
             /**
              * Store the new tuple
              */
-            slidingWindowJoin.insertTuple(currentTimestamp, values);
+            windowEquiJoin.insertTuple(currentTimestamp, values);
         }else if (fields.toList().toString().equals(otherRelationSchema.toList().toString())) {
             /**
              * Attempt to join with stored tuples
              */
 //            logger.info("received tuple's schema: " + fields.toList().toString() + ", other relation schema: " +
 //                    otherRelationSchema.toList().toString());
-            List<Values> joinResult = slidingWindowJoin.joinTuple(currentTimestamp, values,
+            List<Values> joinResult = windowEquiJoin.joinTuple(currentTimestamp, values,
                     fields, otherJoinAttribute);
             for(Values result : joinResult) {
                 Values tuple = new Values();
@@ -133,24 +125,12 @@ public class NewJoinJoiner implements Serializable {
         return new Pair<>(taskIndex, numberOfTuplesProduced);
     }
 
-//    public List<Values> getStateValues() {
-//        stateValues.clear();
-//        Values state = new Values();
-//        state.add(slidingWindowJoin);
-//        stateValues.add(state);
-//        return stateValues;
-//    }
-
-//    public Fields getStateSchema() {
-//        return null;
-//    }
-
     public Fields getOutputSchema() {
         return outputSchema;
     }
 
     public List<String> setState(HashMap<String, ArrayList<Values>> statePacket) {
-        slidingWindowJoin.initializeState(statePacket);
+        windowEquiJoin.initializeState(statePacket);
         List<String> keys = new ArrayList<>();
         Iterator<Map.Entry<String, ArrayList<Values>>> iterator = statePacket.entrySet().iterator();
         while (iterator.hasNext()) {
@@ -167,13 +147,13 @@ public class NewJoinJoiner implements Serializable {
         while (iterator.hasNext()) {
             Map.Entry<String, ArrayList<Values>> entry = iterator.next();
             for (Values tuple : entry.getValue()) {
-                slidingWindowJoin.insertTuple(currentTimestamp, tuple);
+                windowEquiJoin.insertTuple(currentTimestamp, tuple);
             }
         }
     }
 
     public HashMap<String, ArrayList<Values>> getStateToBeSent() {
-        return this.slidingWindowJoin.getStatePart().tuples;
+        return this.windowEquiJoin.getStatePart().tuples;
     }
 
     public String operatorStep() {
@@ -185,11 +165,11 @@ public class NewJoinJoiner implements Serializable {
     }
 
     public long getStateSize() {
-        return slidingWindowJoin.getStateSize();
+        return windowEquiJoin.getStateSize();
     }
 
-//    public Fields getJoinOutputSchema() {
-//        return new Fields(joinOutputSchema.toList());
-//    }
+    public Fields getJoinOutputSchema() {
+        return new Fields(joinOutputSchema.toList());
+    }
 
 }

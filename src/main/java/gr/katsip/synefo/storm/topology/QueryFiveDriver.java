@@ -7,6 +7,8 @@ import backtype.storm.generated.InvalidTopologyException;
 import backtype.storm.metric.LoggingMetricsConsumer;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
+import gr.katsip.synefo.storm.operators.dispatcher.DispatchBolt;
+import gr.katsip.synefo.storm.operators.dispatcher.ObliviousDispatcher;
 import gr.katsip.synefo.storm.operators.dispatcher.collocated.CollocatedDispatchBolt;
 import gr.katsip.synefo.storm.operators.dispatcher.collocated.CollocatedDispatchWindow;
 import gr.katsip.synefo.storm.operators.dispatcher.collocated.CollocatedWindowDispatcher;
@@ -90,6 +92,50 @@ public class QueryFiveDriver {
         }catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void submitStateOfTheArt() {
+        Integer numberOfTasks = 0;
+        Config conf = new Config();
+        HashMap<String, List<String>> topology = new HashMap<>();
+        List<String> tasks;
+        TopologyBuilder builder = new TopologyBuilder();
+
+        SerialControlledFileProducer customerProducer = new SerialControlledFileProducer(inputFile[0], Customer.schema,
+                Customer.query5schema, outputRate, checkpoint);
+        customerProducer.setSchema(new Fields(schema));
+        SerialControlledFileProducer lineitemProducer = new SerialControlledFileProducer(inputFile[1], LineItem.schema,
+                LineItem.query5Schema, outputRate, checkpoint);
+        lineitemProducer.setSchema(new Fields(schema));
+        SerialControlledFileProducer orderProducer = new SerialControlledFileProducer(inputFile[2], Order.schema,
+                Order.query5Schema, outputRate, checkpoint);
+        orderProducer.setSchema(new Fields(schema));
+        SerialControlledFileProducer supplierProducer = new SerialControlledFileProducer(inputFile[3], Supplier.schema,
+                Supplier.query5Schema, outputRate, checkpoint);
+        supplierProducer.setSchema(new Fields(schema));
+        /**
+         * CUSTOMER.C_CUSTKEY = ORDER.O_ORDERKEY
+         */
+        builder.setSpout("customer", new ElasticFileSpout("customer", synefoAddress, synefoPort, customerProducer, zookeeperAddress), 1);
+        builder.setSpout("order", new ElasticFileSpout("order", synefoAddress, synefoPort, orderProducer, zookeeperAddress), 1);
+        numberOfTasks += 2;
+        tasks = new ArrayList<>();
+        tasks.add("cust-ord-dispatch");
+        topology.put("customer", tasks);
+        topology.put("order", new ArrayList<>(tasks));
+
+        ObliviousDispatcher dispatcher = new ObliviousDispatcher("customer", new Fields(Customer.query5schema), Customer.query5schema[0],
+                Customer.query5schema[0],
+                "order", new Fields(Order.query5Schema), Order.query5Schema[1], Order.query5Schema[1], new Fields(schema));
+        builder.setBolt("cust-ord-dispatch", new DispatchBolt("cust-ord-dispatch", synefoAddress, synefoPort, dispatcher, zookeeperAddress))
+                .directGrouping("customer", "customer")
+                .directGrouping("order", "order")
+                .setNumTasks(1);
+        numberOfTasks += 1;
+        tasks = new ArrayList<>();
+        tasks.add("cust-ord-join");
+        topology.put("cust-ord-dispatch", tasks);
+
     }
 
     public void submit() {

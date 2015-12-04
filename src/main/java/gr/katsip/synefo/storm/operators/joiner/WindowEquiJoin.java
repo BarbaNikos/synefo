@@ -8,9 +8,9 @@ import backtype.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SlidingWindowJoin implements Serializable {
+public class WindowEquiJoin implements Serializable {
 
-    private static Logger logger = LoggerFactory.getLogger(SlidingWindowJoin.class);
+    private static Logger logger = LoggerFactory.getLogger(WindowEquiJoin.class);
 
     private long windowSize;
 	
@@ -39,8 +39,8 @@ public class SlidingWindowJoin implements Serializable {
 	 * @param schema the schema of the tuples that will be stored
 	 * @param joinAttribute the name of the join attribute
 	 */
-	public SlidingWindowJoin(long windowSize, long slide, Fields schema, String joinAttribute, String storedRelation,
-							 String otherRelation) {
+	public WindowEquiJoin(long windowSize, long slide, Fields schema, String joinAttribute, String storedRelation,
+						  String otherRelation) {
 		ringBuffer = new LinkedList<BasicEqualityWindow>();
 		this.windowSize = windowSize;
 		this.slide = slide;

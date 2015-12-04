@@ -67,7 +67,7 @@ public class JoinBolt extends BaseRichBolt {
 
     private Integer downstreamIndex;
 
-    private NewJoinJoiner joiner;
+    private Joiner joiner;
 
     private int tupleCounter;
 
@@ -114,7 +114,7 @@ public class JoinBolt extends BaseRichBolt {
     private List<String> keys = null;
 
     public JoinBolt(String taskName, String synefoAddress, Integer synefoPort,
-                    NewJoinJoiner joiner, String zookeeperAddress) {
+                    Joiner joiner, String zookeeperAddress) {
         this.taskName = taskName;
         this.workerPort = -1;
         this.synefoAddress = synefoAddress;

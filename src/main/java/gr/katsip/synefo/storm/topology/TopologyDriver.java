@@ -12,7 +12,7 @@ import gr.katsip.synefo.storm.producers.ElasticFileSpout;
 import gr.katsip.synefo.storm.operators.joiner.JoinBolt;
 import gr.katsip.synefo.storm.operators.dispatcher.collocated.CollocatedDispatchBolt;
 import gr.katsip.synefo.storm.operators.dispatcher.collocated.CollocatedWindowDispatcher;
-import gr.katsip.synefo.storm.operators.joiner.NewJoinJoiner;
+import gr.katsip.synefo.storm.operators.joiner.Joiner;
 import gr.katsip.synefo.storm.operators.joiner.collocated.CollocatedEquiJoiner;
 import gr.katsip.synefo.storm.operators.joiner.collocated.CollocatedJoinBolt;
 import gr.katsip.synefo.storm.producers.FileProducer;
@@ -231,7 +231,7 @@ public class TopologyDriver {
             tasks.add("joinorder");
             tasks.add("joinline");
             topology.put("dispatch", tasks);
-            NewJoinJoiner joiner = new NewJoinJoiner("order", new Fields(Order.schema), "lineitem", new Fields(LineItem.schema),
+            Joiner joiner = new Joiner("order", new Fields(Order.schema), "lineitem", new Fields(LineItem.schema),
                     "O_ORDERKEY", "L_ORDERKEY", (int) (windowInMinutes * (60 * 1000)), (int) slideInMilliSeconds);
             joiner.setOutputSchema(new Fields(schema));
             builder.setBolt("joinorder", new JoinBolt("joinorder", synefoAddress, synefoPort, joiner, zookeeperAddress),
@@ -241,7 +241,7 @@ public class TopologyDriver {
             numberOfTasks += scale;
             topology.put("joinorder", new ArrayList<String>());
 
-            joiner = new NewJoinJoiner("lineitem", new Fields(LineItem.schema), "order", new Fields(Order.schema),
+            joiner = new Joiner("lineitem", new Fields(LineItem.schema), "order", new Fields(Order.schema),
                     "L_ORDERKEY", "O_ORDERKEY", (int) (windowInMinutes * (60 * 1000)), (int) slideInMilliSeconds);
             joiner.setOutputSchema(new Fields(schema));
             builder.setBolt("joinline", new JoinBolt("joinline", synefoAddress, synefoPort, joiner, zookeeperAddress),

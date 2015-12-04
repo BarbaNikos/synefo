@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import backtype.storm.tuple.Tuple;
-import gr.katsip.synefo.storm.operators.joiner.SlidingWindowJoin;
+import gr.katsip.synefo.storm.operators.joiner.WindowEquiJoin;
 import org.apache.commons.lang.ArrayUtils;
 
 import backtype.storm.task.OutputCollector;
@@ -42,7 +42,7 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 	
 	private Fields joinOutputSchema;
 	
-	private SlidingWindowJoin slidingWindowJoin;
+	private WindowEquiJoin windowEquiJoin;
 	
 	/**
 	 * Window size in seconds
@@ -79,7 +79,7 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 		}
 		this.windowSize = window;
 		this.slide = slide;
-		slidingWindowJoin = new SlidingWindowJoin(windowSize, this.slide, storedRelationSchema, 
+		windowEquiJoin = new WindowEquiJoin(windowSize, this.slide, storedRelationSchema,
 				storedJoinAttribute, storedRelation, otherRelation);
 	}
 	
@@ -113,13 +113,13 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 			/**
 			 * Store the new tuple
 			 */
-			slidingWindowJoin.insertTuple(currentTimestamp, attributeValues);
+			windowEquiJoin.insertTuple(currentTimestamp, attributeValues);
 		}else if(Arrays.equals(attributeNames.toList().toArray(), otherRelationSchema.toList().toArray()) && 
 				activeTasks != null && activeTasks.size() > 0) {
 			/**
 			 * Attempt to join with stored tuples
 			 */
-			List<Values> joinResult = slidingWindowJoin.joinTuple(currentTimestamp, attributeValues, 
+			List<Values> joinResult = windowEquiJoin.joinTuple(currentTimestamp, attributeValues,
 					attributeNames, otherJoinAttribute);
 			for(Values result : joinResult) {
 				Values tuple = new Values();
@@ -142,7 +142,7 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 	public List<Values> getStateValues() {
 		stateValues.clear();
 		Values state = new Values();
-		state.add(slidingWindowJoin);
+		state.add(windowEquiJoin);
 		stateValues.add(state);
 		return stateValues;
 	}
@@ -176,7 +176,7 @@ public class JoinJoiner implements AbstractJoinOperator, Serializable {
 	
 	@Override
 	public long getStateSize() {
-		return slidingWindowJoin.getStateSize();
+		return windowEquiJoin.getStateSize();
 	}
 
 	@Override

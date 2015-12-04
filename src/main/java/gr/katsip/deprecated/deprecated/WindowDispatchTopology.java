@@ -11,7 +11,7 @@ import gr.katsip.synefo.storm.operators.dispatcher.DispatchBolt;
 import gr.katsip.synefo.storm.producers.ElasticFileSpout;
 import gr.katsip.synefo.storm.operators.joiner.JoinBolt;
 import gr.katsip.synefo.utils.SynefoMessage;
-import gr.katsip.synefo.storm.operators.joiner.NewJoinJoiner;
+import gr.katsip.synefo.storm.operators.joiner.Joiner;
 import gr.katsip.synefo.storm.operators.dispatcher.WindowDispatcher;
 import gr.katsip.tpch.LineItem;
 import gr.katsip.synefo.storm.producers.ControlledFileProducer;
@@ -98,7 +98,7 @@ public class WindowDispatchTopology {
         /**
          * Stage 2 : join joiners
          */
-        NewJoinJoiner joiner = new NewJoinJoiner("order", new Fields(Order.query5Schema), "lineitem",
+        Joiner joiner = new Joiner("order", new Fields(Order.query5Schema), "lineitem",
                 new Fields(LineItem.query5Schema), "O_ORDERKEY", "L_ORDERKEY", windowSizeInMinutes, 1000);
         joiner.setOutputSchema(new Fields(dataSchema));
         builder.setBolt("joinorder", new JoinBolt("joinorder", synefoAddress, synefoPort,
@@ -108,7 +108,7 @@ public class WindowDispatchTopology {
         taskNumber += scaleFactor;
         topology.put("joinorder", new ArrayList<String>());
 
-        joiner = new NewJoinJoiner("lineitem", new Fields(LineItem.query5Schema),
+        joiner = new Joiner("lineitem", new Fields(LineItem.query5Schema),
                 "order", new Fields(Order.query5Schema), "L_ORDERKEY", "O_ORDERKEY", windowSizeInMinutes, 1000);
         joiner.setOutputSchema(new Fields(dataSchema));
         builder.setBolt("joinline", new JoinBolt("joinline", synefoAddress, synefoPort,

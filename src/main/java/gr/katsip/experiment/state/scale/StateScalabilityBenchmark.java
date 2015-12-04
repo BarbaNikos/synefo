@@ -8,7 +8,7 @@ import java.io.IOException;
 import gr.katsip.synefo.storm.operators.joiner.SlidingWindowThetaJoin;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
-import gr.katsip.synefo.storm.operators.joiner.SlidingWindowJoin;
+import gr.katsip.synefo.storm.operators.joiner.WindowEquiJoin;
 import gr.katsip.tpch.LineItem;
 import gr.katsip.tpch.Order;
 import backtype.storm.tuple.Fields;
@@ -37,9 +37,9 @@ public class StateScalabilityBenchmark {
 	}
 	
 	public void benchmark() throws IOException {
-		SlidingWindowJoin orderSlidingJoin = new SlidingWindowJoin(window, slide, 
+		WindowEquiJoin orderSlidingJoin = new WindowEquiJoin(window, slide,
 				new Fields(Order.schema), Order.schema[0], "order", "lineitem");
-		SlidingWindowJoin lineitemSlidingJoin = new SlidingWindowJoin(window, slide, 
+		WindowEquiJoin lineitemSlidingJoin = new WindowEquiJoin(window, slide,
 				new Fields(LineItem.schema), LineItem.schema[0], "lineitem", "order");
         SlidingWindowThetaJoin.ThetaCondition theta = SlidingWindowThetaJoin.ThetaCondition.LESS_THAN;
         SlidingWindowThetaJoin thetaJoin = new SlidingWindowThetaJoin(window, slide,
