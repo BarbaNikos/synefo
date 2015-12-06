@@ -12,6 +12,9 @@ import gr.katsip.synefo.storm.operators.dispatcher.ObliviousDispatcher;
 import gr.katsip.synefo.storm.operators.dispatcher.collocated.CollocatedDispatchBolt;
 import gr.katsip.synefo.storm.operators.dispatcher.collocated.CollocatedDispatchWindow;
 import gr.katsip.synefo.storm.operators.dispatcher.collocated.CollocatedWindowDispatcher;
+import gr.katsip.synefo.storm.operators.joiner.JoinBolt;
+import gr.katsip.synefo.storm.operators.joiner.Joiner;
+import gr.katsip.synefo.storm.operators.joiner.WindowEquiJoin;
 import gr.katsip.synefo.storm.operators.joiner.collocated.CollocatedEquiJoiner;
 import gr.katsip.synefo.storm.operators.joiner.collocated.CollocatedJoinBolt;
 import gr.katsip.synefo.storm.producers.ElasticFileSpout;
@@ -127,14 +130,60 @@ public class QueryFiveDriver {
         ObliviousDispatcher dispatcher = new ObliviousDispatcher("customer", new Fields(Customer.query5schema), Customer.query5schema[0],
                 Customer.query5schema[0],
                 "order", new Fields(Order.query5Schema), Order.query5Schema[1], Order.query5Schema[1], new Fields(schema));
-        builder.setBolt("cust-ord-dispatch", new DispatchBolt("cust-ord-dispatch", synefoAddress, synefoPort, dispatcher, zookeeperAddress))
+        builder.setBolt("cust-ord-dispatch", new DispatchBolt("cust-ord-dispatch", synefoAddress, synefoPort, dispatcher, zookeeperAddress), 1)
                 .directGrouping("customer", "customer")
                 .directGrouping("order", "order")
                 .setNumTasks(1);
         numberOfTasks += 1;
         tasks = new ArrayList<>();
         tasks.add("cust-ord-join");
+        tasks.add("ord-cust-join");
         topology.put("cust-ord-dispatch", tasks);
+
+        Joiner joiner = new Joiner("customer", new Fields(Customer.query5schema), "order", new Fields(Order.query5Schema), Customer.query5schema[0],
+                Order.query5Schema[1], (int) (windowInMinutes * (60 * 1000)), (int) slideInMilliSeconds);
+        builder.setBolt("cust-ord-join", new JoinBolt("cust-ord-join", synefoAddress, synefoPort, joiner, zookeeperAddress), scale)
+                .directGrouping("cust-ord-dispatch", "cust-ord-dispatch-data")
+                .directGrouping("cust-ord-dispatch", "cust-ord-dispatch-control")
+                .setNumTasks(scale);
+        numberOfTasks += scale;
+        tasks = new ArrayList<>();
+        tasks.add("cust-ord-line-sup-dispatch");
+        topology.put("cust-ord-join", tasks);
+
+        joiner = new Joiner("order", new Fields(Order.query5Schema), "customer", new Fields(Customer.query5schema), Order.query5Schema[1],
+                Customer.query5schema[0], (int) (windowInMinutes * (60 * 1000)), (int) slideInMilliSeconds);
+        builder.setBolt("ord-cust-join", new JoinBolt("ord-cust-join", synefoAddress, synefoPort, joiner, zookeeperAddress), scale)
+                .directGrouping("cust-ord-dispatch", "cust-ord-dispatch-data")
+                .directGrouping("cust-ord-dispatch", "cust-ord-dispatch-control")
+                .setNumTasks(scale);
+        numberOfTasks += scale;
+        tasks = new ArrayList<>();
+        tasks.add("cust-ord-line-sup-dispatch");
+        topology.put("ord-cust-join", tasks);
+        /**
+         * LINEITEM.L_SUPPKEY = SUPPLIER.S_SUPPKEY
+         */
+        builder.setSpout("lineitem", new ElasticFileSpout("lineitem", synefoAddress, synefoPort, lineitemProducer, zookeeperAddress), 1);
+        builder.setSpout("supplier", new ElasticFileSpout("supplier", synefoAddress, synefoPort, supplierProducer, zookeeperAddress), 1);
+        numberOfTasks += 2;
+        tasks = new ArrayList<>();
+        tasks.add("line-sup-dispatch");
+        topology.put("lineitem", tasks);
+        topology.put("supplier", new ArrayList<>(tasks));
+
+        dispatcher = new ObliviousDispatcher("lineitem", new Fields(LineItem.query5Schema), LineItem.query5Schema[1],
+                LineItem.query5Schema[1], "supplier", new Fields(Supplier.schema), Supplier.query5Schema[0], Supplier.query5Schema[0], new Fields(schema));
+        builder.setBolt("line-sup-dispatch", new DispatchBolt("line-sup-dispatch", synefoAddress, synefoPort, dispatcher, zookeeperAddress), 1)
+                .directGrouping("lineitem", "lineitem")
+                .directGrouping("supplier", "supplier")
+                .setNumTasks(1);
+        numberOfTasks += 1;
+        tasks = new ArrayList<>();
+        tasks.add("line-sup-join");
+        tasks.add("sup-line-join");
+        topology.put("line-sup-dispatch", tasks);
+
 
     }
 
