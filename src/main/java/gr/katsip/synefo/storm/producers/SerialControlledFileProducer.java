@@ -89,6 +89,32 @@ public class SerialControlledFileProducer implements Serializable, FileProducer 
             nextPeriodTimestamp = Long.MAX_VALUE;
     }
 
+    /**
+     * For debug purposes.
+     * @return
+     */
+    public Values nextTuple() {
+        Values values = new Values();
+        String line = null;
+        try {
+            line = reader.readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (line != null) {
+            String[] attributes = line.split("\\|");
+            if (attributes.length < schema.size())
+                return null;
+            for (int i = 0; i < schema.size(); i++) {
+                if (projectedSchema.toList().contains(schema.get(i)))
+                    values.add(attributes[i]);
+            }
+            return values;
+        } else {
+            return null;
+        }
+    }
+
     @Override
     public int nextTuple(SpoutOutputCollector spoutOutputCollector, String streamId, Integer taskIdentifier,
                          HashMap<String, Long> tupleStatistics) {
