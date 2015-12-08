@@ -361,30 +361,36 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                 scaleAction = SynefoConstant.COL_ADD_ACTION;
                 /**
                  * The next part is for experimentation purposes.
-                 * It simulates the case where scaling happens almost instantly
+                 * It simulates the case where scaling happens instantly by dropping
+                 * all the data (QoD = 0)
                  */
 //                migratedKeys.clear();
 //                joiner.initializeBuffer();
+//                if (this.candidateTask != -1 && migratedKeys.size() == 0) {
+//                    StringBuilder stringBuilder = new StringBuilder();
+//                    stringBuilder.append(SynefoConstant.COL_SCALE_ACTION_PREFIX + ":" + SynefoConstant.COL_COMPLETE_ACTION +
+//                            "|" + SynefoConstant.COL_KEYS + ":|" + SynefoConstant.COL_PEER + ":" + taskIdentifier);
+//                    Values scaleCompleteTuple = new Values();
+//                    scaleCompleteTuple.add(stringBuilder.toString());
+//                    scaleCompleteTuple.add("");
+//                    scaleCompleteTuple.add("");
+//                    collector.emitDirect(tuple.getSourceTask(), streamIdentifier + "-control", scaleCompleteTuple);
+//                    this.candidateTask = -1;
+//                    long currentTimestamp = System.currentTimeMillis();
+//                    stateTransferTime.setValue((currentTimestamp - startTransferTimestamp));
+//                    if (scaleAction.equals(SynefoConstant.COL_REMOVE_ACTION))
+//                        initializeStats();
+//                    scaleAction = "";
+//                }
+                /**
+                 * The next part is for experimentation purposes.
+                 * It simulates the case where scaling happens normally, by waiting the
+                 * data to expire (QoD = 1)
+                 */
                 long start = System.currentTimeMillis();
                 joiner.initializeScaleOut(timestamp, migratedKeys);
                 long end = System.currentTimeMillis();
                 logger.info("separation of keys took: " + (end - start) / 1000L + " seconds");
-                if (this.candidateTask != -1 && migratedKeys.size() == 0) {
-                    StringBuilder stringBuilder = new StringBuilder();
-                    stringBuilder.append(SynefoConstant.COL_SCALE_ACTION_PREFIX + ":" + SynefoConstant.COL_COMPLETE_ACTION +
-                            "|" + SynefoConstant.COL_KEYS + ":|" + SynefoConstant.COL_PEER + ":" + taskIdentifier);
-                    Values scaleCompleteTuple = new Values();
-                    scaleCompleteTuple.add(stringBuilder.toString());
-                    scaleCompleteTuple.add("");
-                    scaleCompleteTuple.add("");
-                    collector.emitDirect(tuple.getSourceTask(), streamIdentifier + "-control", scaleCompleteTuple);
-                    this.candidateTask = -1;
-                    long currentTimestamp = System.currentTimeMillis();
-                    stateTransferTime.setValue((currentTimestamp - startTransferTimestamp));
-                    if (scaleAction.equals(SynefoConstant.COL_REMOVE_ACTION))
-                        initializeStats();
-                    scaleAction = "";
-                }
             } else {
                 logger.info("JOIN-BOLT-" + taskName + ":" + taskIdentifier +
                         " participates into scale-action ADD and it is the candidate.");

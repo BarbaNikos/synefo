@@ -104,12 +104,12 @@ public class OptimizedWindowEquiJoin implements Serializable {
                         tuples.add(tuple);
                         tupleIndex.put(relationName, tuples);
                         addedTuple = true;
-                        augmentStatistics(relationName, tupleIndex, ringBuffer.getFirst());
+//                        augmentStatistics(relationName, tupleIndex, ringBuffer.getFirst());
                         ringBuffer.getFirst().tupleIndex.put(key, tupleIndex);
                     } else if (tupleIndex.get(relationName).indexOf(tuple) < 0) {
                         tupleIndex.get(relationName).add(tuple);
                         addedTuple = true;
-                        augmentStatistics(relationName, tupleIndex, ringBuffer.getFirst());
+//                        augmentStatistics(relationName, tupleIndex, ringBuffer.getFirst());
                         ringBuffer.getFirst().tupleIndex.put(key, tupleIndex);
                     }
                 } else {
