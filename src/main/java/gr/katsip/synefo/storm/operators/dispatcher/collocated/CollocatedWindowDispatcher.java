@@ -91,6 +91,7 @@ public class CollocatedWindowDispatcher implements Serializable {
             if ((window.start + this.window) >= timestamp) {
                 if (window.keyIndex.containsKey(key)) {
                     task = window.keyIndex.get(key);
+                    logger.info("found task: " + task + " for key: " + key);
                     break;
                 }
             }else {
@@ -101,9 +102,6 @@ public class CollocatedWindowDispatcher implements Serializable {
     }
 
     public int pickTaskForNewKey() {
-        /**
-         * TODO: Here taskToRelationIndex can be simplified to a simple LinkedList
-         */
         int victim = joinerTasks.get(index);
         if (index == joinerTasks.size() - 1)
             index = 0;
@@ -149,6 +147,7 @@ public class CollocatedWindowDispatcher implements Serializable {
 //            String logInfo = "no migration for received key[" + key + "], victim-task: " + victimTask;
             if (victimTask < 0) {
                 victimTask = pickTaskForNewKey();
+                logger.info("picked task " + victimTask + " for key " + key);
 //                logInfo = logInfo + "~~picked new task: " + victimTask + "";
             }
             updateCurrentWindow(currentTimestamp, relationName, key, victimTask);
