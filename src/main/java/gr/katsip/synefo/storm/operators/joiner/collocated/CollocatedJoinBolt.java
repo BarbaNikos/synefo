@@ -298,7 +298,7 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                     lastStateSizeMetric = joiner.getStateSize();
                     stateSize.setValue(lastStateSizeMetric);
                     executeLatency.setValue(Arrays.toString(times.toArray()));
-                    writer.writeData(Arrays.toString(times.toArray()));
+                    writer.writeData(Integer.toString(temporaryThroughput));
                     numberOfTuples.setValue(joiner.getNumberOfTuples());
                 }
 //                inputRateCurrentTimestamp = System.currentTimeMillis();
