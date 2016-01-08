@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 
 /**
  * Created by katsip on 1/8/2016.
@@ -13,6 +15,8 @@ public class StatisticFileWriter implements Serializable {
     private static Logger logger = LoggerFactory.getLogger(StatisticFileWriter.class);
 
     private File log;
+
+    private FileOutputStream foStream;
 
     private BufferedWriter writer;
 
@@ -27,7 +31,8 @@ public class StatisticFileWriter implements Serializable {
             e.printStackTrace();
         }
         try {
-            writer = new BufferedWriter(new FileWriter(log));
+//            writer = new BufferedWriter(new FileWriter(log));
+            foStream = new FileOutputStream(log);
         } catch (IOException e) {
             logger.error("failed to initialize writer: " + directory + File.separator + taskName + ".log");
             e.printStackTrace();
@@ -36,7 +41,8 @@ public class StatisticFileWriter implements Serializable {
 
     public void writeData(String dataPoint) {
         try {
-            writer.write(dataPoint + "\n");
+//            writer.write(dataPoint + "\n");
+            foStream.write(dataPoint.getBytes("UTF-8"));
         } catch (IOException e) {
             logger.error("exception thrown while writing data");
             e.printStackTrace();
