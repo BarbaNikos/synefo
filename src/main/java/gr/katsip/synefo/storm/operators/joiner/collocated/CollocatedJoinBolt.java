@@ -292,18 +292,18 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                 if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
                     throughputPreviousTimestamp = throughputCurrentTimestamp;
 //                    throughput.setValue(temporaryThroughput);
-                    writer.writeData(throughputCurrentTimestamp + ",throughput," + Integer.toString(temporaryThroughput));
+                    writer.writeData(throughputCurrentTimestamp + ",throughput," + Integer.toString(temporaryThroughput) + "\n");
 //                    inputRate.setValue(temporaryInputRate);
-                    writer.writeData(throughputCurrentTimestamp + ",input-rate," + Integer.toString(temporaryInputRate));
+                    writer.writeData(throughputCurrentTimestamp + ",input-rate," + Integer.toString(temporaryInputRate) + "\n");
                     temporaryInputRate = 0;
                     temporaryThroughput = 0;
                     lastStateSizeMetric = joiner.getStateSize();
-                    writer.writeData(throughputCurrentTimestamp + ",state-size," + lastStateSizeMetric);
+                    writer.writeData(throughputCurrentTimestamp + ",state-size," + lastStateSizeMetric + "\n");
 //                    stateSize.setValue(lastStateSizeMetric);
 //                    executeLatency.setValue(Arrays.toString(times.toArray()));
-                    writer.writeData(throughputCurrentTimestamp + ",execute-latency," + Arrays.toString(times.toArray()));
+                    writer.writeData(throughputCurrentTimestamp + ",execute-latency," + Arrays.toString(times.toArray()) + "\n");
 //                    numberOfTuples.setValue(joiner.getNumberOfTuples());
-                    writer.writeData(throughputCurrentTimestamp + ",number-of-tuples," + joiner.getNumberOfTuples());
+                    writer.writeData(throughputCurrentTimestamp + ",number-of-tuples," + joiner.getNumberOfTuples() + "\n");
                 }
                 /**
                  * Check if SCALE-ACTION concluded (previous state expired)

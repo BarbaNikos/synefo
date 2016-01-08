@@ -321,7 +321,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                 capacityHistory.put(task, intervals);
                 collector.ack(tuple);
 //                controlTupleInterval.setValue(tuple.getSourceTask() + "-" + (end - start));
-                writer.writeData(System.currentTimeMillis() + ",control-interval," + tuple.getSourceTask() + "-" + (end - start));
+                writer.writeData(System.currentTimeMillis() + ",control-interval," + tuple.getSourceTask() + "-" + (end - start) + "\n");
                 return;
             }
             /**
@@ -349,15 +349,15 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
             if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
                 throughputPreviousTimestamp = throughputCurrentTimestamp;
 //                throughput.setValue(temporaryThroughput);
-                writer.writeData(throughputCurrentTimestamp + ",throughput," + temporaryThroughput);
+                writer.writeData(throughputCurrentTimestamp + ",throughput," + temporaryThroughput + "\n");
 //                inputRate.setValue(temporaryInputRate);
-                writer.writeData(throughputCurrentTimestamp + ",input-rate," + temporaryInputRate);
+                writer.writeData(throughputCurrentTimestamp + ",input-rate," + temporaryInputRate + "\n");
                 temporaryThroughput = 0;
                 temporaryInputRate = 0;
 //                executeLatency.setValue((endTime - startTime));
-                writer.writeData(throughputCurrentTimestamp + ",execute-latency," + (endTime - startTime));
+                writer.writeData(throughputCurrentTimestamp + ",execute-latency," + (endTime - startTime) + "\n");
 //                stateSize.setValue(dispatcher.getStateSize());
-                writer.writeData(throughputCurrentTimestamp + ",state-size," + dispatcher.getStateSize());
+                writer.writeData(throughputCurrentTimestamp + ",state-size," + dispatcher.getStateSize() + "\n");
             } else {
                 temporaryThroughput += numberOfTuplesDispatched;
                 temporaryInputRate++;
