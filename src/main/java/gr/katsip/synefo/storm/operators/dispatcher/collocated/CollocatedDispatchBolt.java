@@ -10,6 +10,7 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import gr.katsip.synefo.metric.StatisticFileWriter;
 import gr.katsip.synefo.storm.operators.ZookeeperClient;
 import gr.katsip.synefo.utils.SynefoConstant;
 import gr.katsip.synefo.utils.SynefoMessage;
@@ -71,17 +72,19 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
 
     private int tupleCounter;
 
-    private transient AssignableMetric executeLatency;
+//    private transient AssignableMetric executeLatency;
+//
+//    private transient AssignableMetric stateSize;
+//
+//    private transient AssignableMetric inputRate;
+//
+//    private transient AssignableMetric throughput;
+//
+//    private transient AssignableMetric stateTransferTime;
+//
+//    private transient AssignableMetric controlTupleInterval;
 
-    private transient AssignableMetric stateSize;
-
-    private transient AssignableMetric inputRate;
-
-    private transient AssignableMetric throughput;
-
-    private transient AssignableMetric stateTransferTime;
-
-    private transient AssignableMetric controlTupleInterval;
+    private StatisticFileWriter writer;
 
     private long startTransferTimestamp;
 
@@ -239,21 +242,22 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
          * Just added the following cause it is not needed anymore
          */
         zookeeperClient.disconnect();
+        writer = new StatisticFileWriter("/u/katsip", taskName);
     }
 
     private void initMetrics(TopologyContext context) {
-        executeLatency = new AssignableMetric(null);
-        stateSize = new AssignableMetric(null);
-        inputRate = new AssignableMetric(null);
-        throughput = new AssignableMetric(null);
-        stateTransferTime = new AssignableMetric(null);
-        controlTupleInterval = new AssignableMetric(null);
-        context.registerMetric("execute-latency", executeLatency, METRIC_REPORT_FREQ_SEC);
-        context.registerMetric("state-size", stateSize, METRIC_REPORT_FREQ_SEC);
-        context.registerMetric("input-rate", inputRate, METRIC_REPORT_FREQ_SEC);
-        context.registerMetric("throughput", throughput, METRIC_REPORT_FREQ_SEC);
-        context.registerMetric("state-transfer", stateTransferTime, METRIC_REPORT_FREQ_SEC);
-        context.registerMetric("control-interval", controlTupleInterval, METRIC_REPORT_FREQ_SEC);
+//        executeLatency = new AssignableMetric(null);
+//        stateSize = new AssignableMetric(null);
+//        inputRate = new AssignableMetric(null);
+//        throughput = new AssignableMetric(null);
+//        stateTransferTime = new AssignableMetric(null);
+//        controlTupleInterval = new AssignableMetric(null);
+//        context.registerMetric("execute-latency", executeLatency, METRIC_REPORT_FREQ_SEC);
+//        context.registerMetric("state-size", stateSize, METRIC_REPORT_FREQ_SEC);
+//        context.registerMetric("input-rate", inputRate, METRIC_REPORT_FREQ_SEC);
+//        context.registerMetric("throughput", throughput, METRIC_REPORT_FREQ_SEC);
+//        context.registerMetric("state-transfer", stateTransferTime, METRIC_REPORT_FREQ_SEC);
+//        context.registerMetric("control-interval", controlTupleInterval, METRIC_REPORT_FREQ_SEC);
     }
 
     public static boolean isScaleHeader(String header) {
@@ -316,7 +320,8 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                 intervals.add((end - start));
                 capacityHistory.put(task, intervals);
                 collector.ack(tuple);
-                controlTupleInterval.setValue(tuple.getSourceTask() + "-" + (end - start));
+//                controlTupleInterval.setValue(tuple.getSourceTask() + "-" + (end - start));
+                writer.writeData(System.currentTimeMillis() + ",control-interval," + tuple.getSourceTask() + "-" + (end - start));
                 return;
             }
             /**
@@ -343,12 +348,16 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
             throughputCurrentTimestamp = System.currentTimeMillis();
             if ((throughputCurrentTimestamp - throughputPreviousTimestamp) >= 1000L) {
                 throughputPreviousTimestamp = throughputCurrentTimestamp;
-                throughput.setValue(temporaryThroughput);
-                inputRate.setValue(temporaryInputRate);
+//                throughput.setValue(temporaryThroughput);
+                writer.writeData(throughputCurrentTimestamp + ",throughput," + temporaryThroughput);
+//                inputRate.setValue(temporaryInputRate);
+                writer.writeData(throughputCurrentTimestamp + ",input-rate," + temporaryInputRate);
                 temporaryThroughput = 0;
                 temporaryInputRate = 0;
-                executeLatency.setValue((endTime - startTime));
-                stateSize.setValue(dispatcher.getStateSize());
+//                executeLatency.setValue((endTime - startTime));
+                writer.writeData(throughputCurrentTimestamp + ",execute-latency," + (endTime - startTime));
+//                stateSize.setValue(dispatcher.getStateSize());
+                writer.writeData(throughputCurrentTimestamp + ",state-size," + dispatcher.getStateSize());
             } else {
                 temporaryThroughput += numberOfTuplesDispatched;
                 temporaryInputRate++;
@@ -572,7 +581,7 @@ public class CollocatedDispatchBolt extends BaseRichBolt {
                     slackersHistory.clear();
                     tupleCounter = 0;
                     long timestamp = System.currentTimeMillis();
-                    stateTransferTime.setValue((timestamp - startTransferTimestamp));
+//                    stateTransferTime.setValue((timestamp - startTransferTimestamp));
                 }
             }
         }
