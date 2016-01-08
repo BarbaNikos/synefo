@@ -91,7 +91,7 @@ public class CollocatedWindowDispatcher implements Serializable {
             if ((window.start + this.window) >= timestamp) {
                 if (window.keyIndex.containsKey(key)) {
                     task = window.keyIndex.get(key);
-                    logger.info("found task: " + task + " for key: " + key);
+//                    logger.info("found task: " + task + " for key: " + key);
                     break;
                 }
             }else {
