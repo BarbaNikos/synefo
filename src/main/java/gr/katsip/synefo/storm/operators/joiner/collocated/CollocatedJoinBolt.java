@@ -8,6 +8,7 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import gr.katsip.synefo.metric.StatisticFileWriter;
 import gr.katsip.synefo.storm.operators.ZookeeperClient;
 import gr.katsip.synefo.utils.Pair;
 import gr.katsip.synefo.utils.SynefoConstant;
@@ -77,6 +78,8 @@ public class CollocatedJoinBolt extends BaseRichBolt {
     private transient AssignableMetric stateTransferTime;
 
     private transient AssignableMetric numberOfTuples;
+
+    private StatisticFileWriter writer;
 
     private long startTransferTimestamp;
 
@@ -201,6 +204,7 @@ public class CollocatedJoinBolt extends BaseRichBolt {
         candidateTask = -1;
         scaleAction = "";
         zookeeperClient.disconnect();
+        writer = new StatisticFileWriter("/u/katsip", taskName);
     }
 
     private void initMetrics(TopologyContext context) {
@@ -294,6 +298,7 @@ public class CollocatedJoinBolt extends BaseRichBolt {
                     lastStateSizeMetric = joiner.getStateSize();
                     stateSize.setValue(lastStateSizeMetric);
                     executeLatency.setValue(Arrays.toString(times.toArray()));
+                    writer.writeData(Arrays.toString(times.toArray()));
                     numberOfTuples.setValue(joiner.getNumberOfTuples());
                 }
 //                inputRateCurrentTimestamp = System.currentTimeMillis();
