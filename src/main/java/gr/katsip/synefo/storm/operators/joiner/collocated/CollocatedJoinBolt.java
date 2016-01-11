@@ -31,7 +31,7 @@ public class CollocatedJoinBolt extends BaseRichBolt {
 
     Logger logger = LoggerFactory.getLogger(CollocatedJoinBolt.class);
 
-    private static final int METRIC_REPORT_FREQ_SEC = 1;
+//    private static final int METRIC_REPORT_FREQ_SEC = 1;
 
     private OutputCollector collector;
 

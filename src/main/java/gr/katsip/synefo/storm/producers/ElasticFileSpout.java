@@ -1,5 +1,6 @@
 package gr.katsip.synefo.storm.producers;
 
+import backtype.storm.metric.SystemBolt;
 import backtype.storm.metric.api.AssignableMetric;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -7,6 +8,7 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
+import gr.katsip.synefo.metric.StatisticFileWriter;
 import gr.katsip.synefo.storm.operators.ZookeeperClient;
 import gr.katsip.synefo.utils.SynefoMessage;
 import gr.katsip.synefo.utils.SynefoConstant;
@@ -29,7 +31,7 @@ public class ElasticFileSpout extends BaseRichSpout {
 
     Logger logger = LoggerFactory.getLogger(ElasticFileSpout.class);
 
-    private static int METRIC_FREQ_SEC = 1;
+//    private static int METRIC_FREQ_SEC = 1;
 
     private SpoutOutputCollector spoutOutputCollector;
 
@@ -63,9 +65,9 @@ public class ElasticFileSpout extends BaseRichSpout {
 
     private int taskIdentifier;
 
-    private AssignableMetric completeLatency;
-
-    private AssignableMetric inputRate;
+//    private AssignableMetric completeLatency;
+//
+//    private AssignableMetric inputRate;
 
     private HashMap<String, Long> tupleStatistics;
 
@@ -73,7 +75,9 @@ public class ElasticFileSpout extends BaseRichSpout {
 
     private long endTime = -1;
 
-    private AssignableMetric timeToScanInput;
+//    private AssignableMetric timeToScanInput;
+
+    private StatisticFileWriter writer;
 
     private boolean fileScanned;
 
@@ -169,13 +173,13 @@ public class ElasticFileSpout extends BaseRichSpout {
     }
 
     private void initMetrics(TopologyContext context) {
-        completeLatency = new AssignableMetric(null);
-        context.registerMetric("comp-latency", completeLatency, METRIC_FREQ_SEC);
-        tupleStatistics = new HashMap<>();
-        inputRate = new AssignableMetric(null);
-        context.registerMetric("input-rate", inputRate, METRIC_FREQ_SEC);
-        timeToScanInput = new AssignableMetric(null);
-        context.registerMetric("time-to-scan", timeToScanInput, METRIC_FREQ_SEC);
+//        completeLatency = new AssignableMetric(null);
+//        context.registerMetric("comp-latency", completeLatency, METRIC_FREQ_SEC);
+//        tupleStatistics = new HashMap<>();
+//        inputRate = new AssignableMetric(null);
+//        context.registerMetric("input-rate", inputRate, METRIC_FREQ_SEC);
+//        timeToScanInput = new AssignableMetric(null);
+//        context.registerMetric("time-to-scan", timeToScanInput, METRIC_FREQ_SEC);
     }
 
     public void ack(Object msgId) {
@@ -183,12 +187,14 @@ public class ElasticFileSpout extends BaseRichSpout {
         Values values = (Values) msgId;
         if (tupleStatistics.containsKey(values.toString())) {
             Long emitTimestamp = tupleStatistics.remove(values.toString());
-            completeLatency.setValue((currentTimestamp - emitTimestamp));
+//            completeLatency.setValue((currentTimestamp - emitTimestamp));
+            writer.writeData(currentTimestamp + ",comp-latency," + (currentTimestamp - emitTimestamp));
         }
         if (fileScanned && tupleStatistics.isEmpty()) {
             logger.info("spout-" + taskName + "scanned file completely and all tuples were acknowledged.");
             endTime = System.currentTimeMillis();
-            timeToScanInput.setValue((endTime - startTime));
+//            timeToScanInput.setValue((endTime - startTime));
+            writer.writeData(currentTimestamp + ",time-to-scan," + (endTime - startTime));
             close();
         }
     }
@@ -214,6 +220,7 @@ public class ElasticFileSpout extends BaseRichSpout {
         initMetrics(topologyContext);
         producer.init();
         fileScanned = false;
+        writer = new StatisticFileWriter("/u/katsip", taskName);
     }
 
     @Override
@@ -226,7 +233,8 @@ public class ElasticFileSpout extends BaseRichSpout {
             int value = producer.nextTuple(spoutOutputCollector, streamIdentifier,
                     activeDownstreamTaskIdentifiers.get(index), tupleStatistics);
             if (value >= 0) {
-                inputRate.setValue(value);
+//                inputRate.setValue(value);
+                writer.writeData(System.currentTimeMillis() + ",input-rate," + value);
             }else {
                 if (value == -1) {
                     fileScanned = true;
