@@ -195,6 +195,7 @@ public class ElasticFileSpout extends BaseRichSpout {
             endTime = System.currentTimeMillis();
 //            timeToScanInput.setValue((endTime - startTime));
             writer.writeData(currentTimestamp + ",time-to-scan," + (endTime - startTime) + "\n");
+            writer.close();
             close();
         }
     }

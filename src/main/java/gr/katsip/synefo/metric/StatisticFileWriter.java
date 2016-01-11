@@ -43,8 +43,17 @@ public class StatisticFileWriter implements Serializable {
         try {
 //            writer.write(dataPoint + "\n");
             foStream.write(dataPoint.getBytes("UTF-8"));
+            foStream.flush();
         } catch (IOException e) {
             logger.error("exception thrown while writing data");
+            e.printStackTrace();
+        }
+    }
+
+    public void close() {
+        try {
+            foStream.close();
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
