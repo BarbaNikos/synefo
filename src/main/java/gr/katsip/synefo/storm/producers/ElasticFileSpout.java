@@ -175,7 +175,7 @@ public class ElasticFileSpout extends BaseRichSpout {
     private void initMetrics(TopologyContext context) {
 //        completeLatency = new AssignableMetric(null);
 //        context.registerMetric("comp-latency", completeLatency, METRIC_FREQ_SEC);
-//        tupleStatistics = new HashMap<>();
+        tupleStatistics = new HashMap<>();
 //        inputRate = new AssignableMetric(null);
 //        context.registerMetric("input-rate", inputRate, METRIC_FREQ_SEC);
 //        timeToScanInput = new AssignableMetric(null);
