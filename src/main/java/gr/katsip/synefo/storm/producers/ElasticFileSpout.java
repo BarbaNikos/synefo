@@ -188,13 +188,13 @@ public class ElasticFileSpout extends BaseRichSpout {
         if (tupleStatistics.containsKey(values.toString())) {
             Long emitTimestamp = tupleStatistics.remove(values.toString());
 //            completeLatency.setValue((currentTimestamp - emitTimestamp));
-            writer.writeData(currentTimestamp + ",comp-latency," + (currentTimestamp - emitTimestamp));
+            writer.writeData(currentTimestamp + ",comp-latency," + (currentTimestamp - emitTimestamp) + "\n");
         }
         if (fileScanned && tupleStatistics.isEmpty()) {
             logger.info("spout-" + taskName + "scanned file completely and all tuples were acknowledged.");
             endTime = System.currentTimeMillis();
 //            timeToScanInput.setValue((endTime - startTime));
-            writer.writeData(currentTimestamp + ",time-to-scan," + (endTime - startTime));
+            writer.writeData(currentTimestamp + ",time-to-scan," + (endTime - startTime) + "\n");
             close();
         }
     }
@@ -234,7 +234,7 @@ public class ElasticFileSpout extends BaseRichSpout {
                     activeDownstreamTaskIdentifiers.get(index), tupleStatistics);
             if (value >= 0) {
 //                inputRate.setValue(value);
-                writer.writeData(System.currentTimeMillis() + ",input-rate," + value);
+                writer.writeData(System.currentTimeMillis() + ",input-rate," + value + "\n");
             }else {
                 if (value == -1) {
                     fileScanned = true;
