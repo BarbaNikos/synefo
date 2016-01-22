@@ -90,7 +90,7 @@ public class OptimizedWindowEquiJoin implements Serializable {
             augmentStatistics(relationName, keyIndex, window);
             keyIndex.put(relationName, relation);
             window.tupleIndex.put(key, keyIndex);
-            window.byteStateSize = tuple.toArray().toString().length();
+            window.byteStateSize = tuple.toArray().toString().getBytes().length;
             byteStateSize += tuple.toArray().toString().length();
             ringBuffer.addFirst(window);
         } else {
