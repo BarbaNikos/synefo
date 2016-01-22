@@ -221,7 +221,7 @@ public class ScaleDebugTopologyDriver {
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
-        conf.setDebug(false);
+        conf.setDebug(true);
         conf.registerMetricsConsumer(LoggingMetricsConsumer.class, numberOfWorkers);
         conf.setNumWorkers(numberOfWorkers);
         conf.setNumAckers(numberOfWorkers);

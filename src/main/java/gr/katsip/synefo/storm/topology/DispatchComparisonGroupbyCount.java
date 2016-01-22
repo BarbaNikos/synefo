@@ -34,9 +34,33 @@ public class DispatchComparisonGroupbyCount {
 
     private static final Integer synefoPort = 5555;
 
+    private static final String synefoAddress = "localhost";
+
+    private static int numberOfWorkers = 1;
+
+    private static int maxSpoutPending = 500;
+
+    /**
+     * Application for executing Count Group-By with different dispatchers
+     * @param args input-file-comma-separated-list outputRate checkpoint zookeeper-ip:zookeeper-port window-in-minutes slide
+     */
     public static void main(String[] args) {
+        if (args.length < 6) {
+            System.exit(1);
+        }
+        String[] inputFile = args[0].split(",");
+        String literaloutputRate = args[1];
+        String literalCheckpoint = args[2];
+        double[] outputRate = new double[1];
+        outputRate[0] = Double.parseDouble(literaloutputRate);
+        int[] checkpoint = new int[1];
+        checkpoint[0] = Integer.parseInt(literalCheckpoint);
+        String zookeeperAddress = args[3];
+        int windowInMinutes = Integer.parseInt(args[4]);
+        int slideInMilliSeconds = Integer.parseInt(args[5]);
         Integer numberOfTasks = 0;
         ArrayList<String> tasks;
+        int scale = 1;
         HashMap<String, ArrayList<String>> topology = new HashMap<>();
         Config conf = new Config();
         TopologyBuilder builder = new TopologyBuilder();
@@ -71,14 +95,13 @@ public class DispatchComparisonGroupbyCount {
         CollocatedGroupByCounter groupByCounter = new CollocatedGroupByCounter("inner", new Fields(Inner.schema), Inner.schema[1],
                 (int) (windowInMinutes * (60 * 1000)), slideInMilliSeconds);
         groupByCounter.setOutputSchema(new Fields(schema));
-        builder.setBolt("groupby", new GroupbyBolt("groupby", synefoAddress, synefoPort, groupByCounter, zookeeperAddress).
+        builder.setBolt("groupby", new GroupbyBolt("groupby", synefoAddress, synefoPort, groupByCounter, zookeeperAddress),
         scale)
                 .setNumTasks(scale)
                 .directGrouping("dispatch", "dispatch-control")
                 .directGrouping("dispatch", "dispatch-data");
         numberOfTasks += scale;
         topology.put("groupby", new ArrayList<String>());
-        //Start Balancer process
         try {
             Socket socket = new Socket(synefoAddress, synefoPort);
             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
