@@ -3,6 +3,6 @@ This repository hosts the codebase for Synefo, which is an elasticity framework 
 
 # Overview
 Synefo consists of a number of abstraction classes for Apache Storm, along with an external server that manages the scale-in/-out requests. In detail, Synefo's components are: 
-..* Storm's Bolt class extensions
-..* External Synefo server
-..* ZooKeeper API
+  * Storm's Bolt class extensions
+  * External Synefo server
+  * ZooKeeper API
